@@ -1,0 +1,19 @@
+package com.app.miklink.data.db.model
+
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
+@Entity(tableName = "probe_config")
+data class ProbeConfig(
+    @PrimaryKey(autoGenerate = true)
+    val probeId: Long = 0,
+    val name: String,
+    val ipAddress: String,
+    val username: String,
+    val password: String,
+    val testInterface: String,
+    val isOnline: Boolean,
+    val modelName: String?,
+    val tdrSupported: Boolean,
+    val isHttps: Boolean = false
+)

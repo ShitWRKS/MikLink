@@ -1,0 +1,23 @@
+# Cartelle e file specifici del progetto Android Studio
+.gradle
+/local.properties
+/.idea/workspace.xml
+/.idea/libraries/
+.DS_Store
+
+# Risultati di Build e output
+/build
+/captures
+/out
+
+# Log KSP e di compilazione
+/kspCaches/
+
+# File personali e cache
+*.iml
+*.class
+*.jar
+
+# Files generati dal Debug
+# * Se hai un problema con .idea, potresti doverlo aggiungere e rimuovere l'intera cartella
+/.idea/

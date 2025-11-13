@@ -1,0 +1,36 @@
+<html>
+<head>
+    <style>
+        body { font-family: sans-serif; margin: 20px; color: #333; }
+        .header, .footer { text-align: center; }
+        .header h1 { color: #004D40; }
+        .report-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        .report-table th, .report-table td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        .report-table th { background-color: #E0E0E0; }
+        .section-title { font-size: 1.2em; font-weight: bold; margin-top: 25px; border-bottom: 2px solid #004D40; padding-bottom: 5px; }
+        .pass { color: #2E7D32; font-weight: bold; }
+        .fail { color: #C62828; font-weight: bold; }
+        .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>MikLink Test Report</h1>
+        <p><strong>Overall Status:</strong> <span class="{{OVERALL_STATUS_CLASS}}">{{OVERALL_STATUS}}</span></p>
+    </div>
+
+    <div class="section-title">Report Information</div>
+    <table class="report-table">
+        <tr><th>Client</th><td>{{CLIENT_NAME}}</td><th>Socket ID</th><td>{{SOCKET_ID}}</td></tr>
+        <tr><th>Location</th><td>{{LOCATION}}</td><th>Date & Time</th><td>{{TIMESTAMP}}</td></tr>
+        <tr><th>Probe Used</th><td>{{PROBE_NAME}}</td><th>Test Profile</th><td>{{PROFILE_NAME}}</td></tr>
+    </table>
+
+    <div class="section-title">Test Results</div>
+    <div id="test-results-body">{{TEST_RESULTS_HTML}}</div>
+
+    <div class="section-title">Notes</div>
+    <p>{{NOTES}}</p>
+
+</body>
+</html>

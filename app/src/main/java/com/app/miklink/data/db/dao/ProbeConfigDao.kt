@@ -1,0 +1,34 @@
+package com.app.miklink.data.db.dao
+
+import androidx.room.Dao
+import androidx.room.Delete
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
+import androidx.room.Update
+import com.app.miklink.data.db.model.ProbeConfig
+import kotlinx.coroutines.flow.Flow
+
+@Dao
+interface ProbeConfigDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(probe: ProbeConfig)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(probes: List<ProbeConfig>)
+
+    @Update
+    suspend fun update(probe: ProbeConfig)
+
+    @Delete
+    suspend fun delete(probe: ProbeConfig)
+
+    @Query("DELETE FROM probe_config")
+    suspend fun deleteAll()
+
+    @Query("SELECT * FROM probe_config ORDER BY name ASC")
+    fun getAllProbes(): Flow<List<ProbeConfig>>
+
+    @Query("SELECT * FROM probe_config WHERE probeId = :id")
+    fun getProbeById(id: Long): Flow<ProbeConfig?>
+}
