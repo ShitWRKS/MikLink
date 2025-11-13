@@ -1,5 +1,9 @@
 package com.app.miklink.data.repository
 
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
 import com.app.miklink.data.db.dao.ClientDao
 import com.app.miklink.data.db.dao.ProbeConfigDao
 import com.app.miklink.data.db.dao.ReportDao
@@ -7,6 +11,7 @@ import com.app.miklink.data.db.dao.TestProfileDao
 import com.app.miklink.data.db.model.ProbeConfig
 import com.app.miklink.data.network.*
 import com.app.miklink.utils.UiState
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -26,26 +31,55 @@ sealed class ProbeCheckResult {
 
 @Singleton
 class AppRepository @Inject constructor(
-    private val clientDao: ClientDao,
+    @ApplicationContext private val context: Context,
+    val clientDao: ClientDao,
     val probeConfigDao: ProbeConfigDao,
-    private val testProfileDao: TestProfileDao,
-    private val reportDao: ReportDao,
+    val testProfileDao: TestProfileDao,
+    val reportDao: ReportDao,
     private val retrofitBuilder: Retrofit.Builder,
-    private val okHttpClient: OkHttpClient,
+    private val baseOkHttpClient: OkHttpClient,
     private val authInterceptor: AuthInterceptor
 ) {
 
     private var apiService: MikroTikApiService? = null
+    private val connectivityManager by lazy { context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager }
 
-    fun setProbe(probe: ProbeConfig) {
+    private suspend fun findWifiNetwork(): Network? = withContext(Dispatchers.IO) {
+        val activeNetwork = connectivityManager.activeNetwork
+        val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork)
+        if (capabilities != null && capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
+            return@withContext activeNetwork
+        }
+        return@withContext null
+    }
+
+    suspend fun setProbe(probe: ProbeConfig) {
         authInterceptor.setCredentials(probe.username, probe.password)
         val protocol = if (probe.isHttps) "https://" else "http://"
         val baseUrl = "$protocol${probe.ipAddress}/"
+
+        val wifiNetwork = findWifiNetwork()
+
+        val dynamicClient = if (wifiNetwork != null) {
+            baseOkHttpClient.newBuilder()
+                .socketFactory(wifiNetwork.socketFactory)
+                .build()
+        } else {
+            baseOkHttpClient
+        }
+
         this.apiService = retrofitBuilder
             .baseUrl(baseUrl)
-            .client(okHttpClient)
+            .client(dynamicClient)
             .build()
             .create(MikroTikApiService::class.java)
+    }
+
+    suspend fun resolveTargetIp(target: String, interfaceName: String): String {
+        if (target == "DHCP_GATEWAY") {
+            return getDhcpGateway(interfaceName) ?: target
+        }
+        return target
     }
 
     private suspend fun <T> safeApiCall(apiCall: suspend () -> T): UiState<T> {
@@ -58,7 +92,7 @@ class AppRepository @Inject constructor(
         }
     }
 
-    suspend fun getDhcpGateway(interfaceName: String): String? {
+    internal suspend fun getDhcpGateway(interfaceName: String): String? {
         return try {
             apiService?.getDhcpClientStatus(InterfaceNameRequest(interfaceName))?.firstOrNull()?.gateway
         } catch (e: Exception) {
@@ -112,8 +146,9 @@ class AppRepository @Inject constructor(
         apiService!!.getIpNeighbors(request)
     }
 
-    suspend fun runPing(target: String): UiState<PingResult> = safeApiCall {
-        apiService!!.runPing(PingRequest(address = target)).first()
+    suspend fun runPing(target: String, interfaceName: String): UiState<PingResult> = safeApiCall {
+        val resolvedTarget = resolveTargetIp(target, interfaceName)
+        apiService!!.runPing(PingRequest(address = resolvedTarget)).first()
     }
 
     suspend fun runTraceroute(target: String): UiState<TracerouteResult> = safeApiCall {

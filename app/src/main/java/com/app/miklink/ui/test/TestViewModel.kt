@@ -138,7 +138,7 @@ class TestViewModel @Inject constructor(
                             target
                         }
 
-                        when (val pingResult = repository.runPing(resolvedTarget)) {
+                        when (val pingResult = repository.runPing(resolvedTarget, probe.testInterface)) {
                             is UiState.Success -> addLog("Ping ($resolvedTarget): SUCCESSO (${pingResult.data.avgRtt}ms)")
                             is UiState.Error -> { addLog("Ping ($resolvedTarget): FALLITO (${pingResult.message})") ; overallStatus = "FAIL" }
                             UiState.Loading -> {}
