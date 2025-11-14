@@ -1,16 +1,29 @@
 package com.app.miklink.ui.dashboard
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Error
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -35,83 +48,294 @@ fun DashboardScreen(
     val socketName by viewModel.socketName.collectAsStateWithLifecycle()
     val isProbeOnline by viewModel.isProbeOnline.collectAsStateWithLifecycle()
 
-    val isTestButtonEnabled = selectedClient != null && selectedProbe != null && selectedProfile != null && socketName.isNotBlank() && isProbeOnline
+    val isTestButtonEnabled = selectedClient != null && selectedProbe != null &&
+                            selectedProfile != null && socketName.isNotBlank() && isProbeOnline
+
+    // Animazione pulsante quando pronto
+    val infiniteTransition = rememberInfiniteTransition(label = "button_pulse")
+    val buttonAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.8f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "button_alpha"
+    )
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("MikLink Dashboard") },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.Dashboard,
+                            contentDescription = null,
+                            modifier = Modifier.size(28.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Text("Dashboard", fontWeight = FontWeight.Bold)
+                    }
+                },
                 actions = {
                     IconButton(onClick = { navController.navigate("history") }) {
-                        Icon(Icons.Default.History, contentDescription = "History")
+                        Badge {
+                            Icon(Icons.Default.History, contentDescription = "Storico")
+                        }
                     }
                     IconButton(onClick = { navController.navigate("settings") }) {
-                        Icon(Icons.Default.Settings, contentDescription = "Settings")
+                        Icon(Icons.Default.Settings, contentDescription = "Impostazioni")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                )
             )
         },
         bottomBar = {
-            Button(
-                onClick = {
-                    navController.navigate("test_execution/clientId=${selectedClient!!.clientId}&probeId=${selectedProbe!!.probeId}&profileId=${selectedProfile!!.profileId}&socketName=$socketName")
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-                    .navigationBarsPadding(),
-                enabled = isTestButtonEnabled
+            Surface(
+                tonalElevation = 8.dp,
+                shadowElevation = 8.dp
             ) {
-                Text("AVVIA TEST")
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                        .navigationBarsPadding()
+                ) {
+                    // Status chips
+                    AnimatedVisibility(visible = selectedClient != null || selectedProbe != null) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            if (selectedClient != null) {
+                                StatusChip(
+                                    icon = Icons.Default.Business,
+                                    label = selectedClient!!.companyName,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                            if (selectedProbe != null) {
+                                StatusChip(
+                                    icon = if (isProbeOnline) Icons.Default.CheckCircle else Icons.Default.Error,
+                                    label = selectedProbe!!.name,
+                                    color = if (isProbeOnline) Color(0xFF4CAF50) else Color(0xFFF44336)
+                                )
+                            }
+                        }
+                    }
+
+                    Button(
+                        onClick = {
+                            navController.navigate(
+                                "test_execution/clientId=${selectedClient!!.clientId}" +
+                                "&probeId=${selectedProbe!!.probeId}" +
+                                "&profileId=${selectedProfile!!.profileId}" +
+                                "&socketName=$socketName"
+                            )
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp)
+                            .alpha(if (isTestButtonEnabled) buttonAlpha else 1f),
+                        enabled = isTestButtonEnabled,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (isTestButtonEnabled)
+                                Color(0xFF4CAF50)
+                            else
+                                MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = if (isTestButtonEnabled)
+                                Color.White
+                            else
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.PlayArrow,
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = if (isTestButtonEnabled) "AVVIA TEST" else "CONFIGURA TEST",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
             }
         }
     ) { padding ->
         Column(
             modifier = Modifier
+                .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp)
-                .fillMaxSize(),
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            DropdownPanel(
-                label = "Client/Project",
+            // Header card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                ),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(20.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(56.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.Cable,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
+                    Spacer(Modifier.width(16.dp))
+                    Column {
+                        Text(
+                            text = "Certificazione MikLink",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Configura e avvia un nuovo test",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                        )
+                    }
+                }
+            }
+
+            // Client selection
+            SelectionCard(
+                title = "1. Seleziona Cliente",
+                icon = Icons.Default.Business,
                 items = clients,
                 selectedItem = selectedClient,
                 onItemSelected = { viewModel.selectedClient.value = it },
-                itemToString = { it.companyName }
+                itemToString = { it.companyName },
+                onManageClick = { navController.navigate("client_list") },
+                emptyMessage = "Nessun cliente configurato"
             )
 
-            DropdownPanel(
-                label = "Probe",
+            // Probe selection
+            SelectionCard(
+                title = "2. Seleziona Sonda",
+                icon = Icons.Default.Router,
                 items = probes,
                 selectedItem = selectedProbe,
                 onItemSelected = { viewModel.selectedProbe.value = it },
                 itemToString = { it.name },
-                leadingIcon = { 
-                    if (selectedProbe != null) {
-                        Icon(
-                            imageVector = if (isProbeOnline) Icons.Default.CheckCircle else Icons.Default.Error,
-                            contentDescription = if (isProbeOnline) "Online" else "Offline",
-                            tint = if (isProbeOnline) Color.Green else Color.Red
+                onManageClick = { navController.navigate("probe_list") },
+                emptyMessage = "Nessuna sonda configurata",
+                leadingIcon = if (selectedProbe != null) {
+                    {
+                        Box(
+                            modifier = Modifier
+                                .size(12.dp)
+                                .clip(CircleShape)
+                                .background(if (isProbeOnline) Color(0xFF4CAF50) else Color(0xFFF44336))
                         )
                     }
-                }
+                } else null
             )
 
-            DropdownPanel(
-                label = "Test Profile",
+            // Profile selection
+            SelectionCard(
+                title = "3. Seleziona Profilo Test",
+                icon = Icons.Default.Checklist,
                 items = profiles,
                 selectedItem = selectedProfile,
                 onItemSelected = { viewModel.selectedProfile.value = it },
-                itemToString = { it.profileName }
+                itemToString = { it.profileName },
+                onManageClick = { navController.navigate("profile_list") },
+                emptyMessage = "Nessun profilo configurato"
             )
 
-            OutlinedTextField(
-                value = socketName,
-                onValueChange = { viewModel.socketName.value = it },
-                label = { Text("Socket ID") },
+            // Socket ID input
+            Card(
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.PowerInput,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Text(
+                            text = "4. Inserisci ID Presa",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = socketName,
+                        onValueChange = { viewModel.socketName.value = it },
+                        label = { Text("ID Presa (es. Ufficio 1, Sala Riunioni)") },
+                        placeholder = { Text("Inserisci identificativo presa...") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        leadingIcon = {
+                            Icon(Icons.Default.Label, contentDescription = null)
+                        },
+                        shape = RoundedCornerShape(8.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun StatusChip(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    color: Color
+) {
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = color.copy(alpha = 0.15f),
+        border = androidx.compose.foundation.BorderStroke(1.dp, color.copy(alpha = 0.3f))
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = color,
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(Modifier.width(6.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                color = color,
+                fontWeight = FontWeight.Medium
             )
         }
     }
@@ -119,36 +343,130 @@ fun DashboardScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun <T> DropdownPanel(
-    label: String,
+private fun <T> SelectionCard(
+    title: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
     items: List<T>,
     selectedItem: T?,
     onItemSelected: (T) -> Unit,
     itemToString: (T) -> String,
-    leadingIcon: @Composable (() -> Unit)? = null
+    onManageClick: () -> Unit,
+    emptyMessage: String,
+    leadingIcon: (@Composable () -> Unit)? = null
 ) {
     var expanded by remember { mutableStateOf(false) }
 
-    Text(label, style = MaterialTheme.typography.titleMedium)
-    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
-        OutlinedTextField(
-            value = selectedItem?.let(itemToString) ?: "",
-            onValueChange = {},
-            readOnly = true,
-            label = { Text("Select $label") },
-            leadingIcon = leadingIcon,
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            modifier = Modifier.menuAnchor().fillMaxWidth()
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .animateContentSize(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (selectedItem != null)
+                MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f)
+            else
+                MaterialTheme.colorScheme.surfaceVariant
         )
-        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            items.forEach { item ->
-                DropdownMenuItem(
-                    text = { Text(itemToString(item)) },
-                    onClick = {
-                        onItemSelected(item)
-                        expanded = false
-                    }
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp)
                 )
+                Spacer(Modifier.width(12.dp))
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f)
+                )
+
+                TextButton(onClick = onManageClick) {
+                    Text("GESTISCI")
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            if (items.isEmpty()) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = emptyMessage,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    }
+                }
+            } else {
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = !expanded }
+                ) {
+                    OutlinedTextField(
+                        value = selectedItem?.let(itemToString) ?: "",
+                        onValueChange = {},
+                        readOnly = true,
+                        placeholder = { Text("Seleziona...") },
+                        leadingIcon = leadingIcon,
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                        },
+                        modifier = Modifier
+                            .menuAnchor()
+                            .fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = MaterialTheme.colorScheme.surface,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                        )
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        items.forEach { item ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        itemToString(item),
+                                        fontWeight = if (item == selectedItem)
+                                            FontWeight.Bold
+                                        else
+                                            FontWeight.Normal
+                                    )
+                                },
+                                onClick = {
+                                    onItemSelected(item)
+                                    expanded = false
+                                },
+                                leadingIcon = if (item == selectedItem) {
+                                    { Icon(Icons.Default.Check, contentDescription = null) }
+                                } else null
+                            )
+                        }
+                    }
+                }
             }
         }
     }

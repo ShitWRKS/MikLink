@@ -30,22 +30,26 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
     kotlinOptions {
-        jvmTarget = "17"
+        jvmTarget = "21"
     }
+    // Nota: Usando Java 25 ma target 21 per compatibilità Android
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+    // Rimuovo java toolchain - usa JDK di Android Studio
+    /*
     java {
         toolchain {
             languageVersion.set(JavaLanguageVersion.of(17))
         }
     }
+    */
 }
 
 dependencies {

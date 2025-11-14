@@ -5,7 +5,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.app.miklink.data.db.dao.*
 import com.app.miklink.data.db.model.*
-import com.app.miklink.data.network.NeighborDetail
 import com.app.miklink.data.repository.AppRepository
 import com.app.miklink.utils.UiState
 import com.app.miklink.utils.findDirectlyConnectedSwitch
@@ -63,18 +62,21 @@ class TestViewModel @Inject constructor(
 
             val testResults = mutableMapOf<String, Any>()
             var overallStatus = "PASS"
-            var vlanId: String? = null
-            var ipId: String? = null
+            val vlanId: String? = null
+            val ipId: String? = null
 
             try {
                 addLog("--- INIZIO TEST ---")
                 addLog("Cliente: ${client.companyName} | Presa: $socketName")
                 addLog("Sonda '${probe.name}' selezionata.")
 
+                // Imposta la probe corrente nel repository
+                repository.setProbe(probe)
+
                 if (profile.runTdr) {
                     if (probe.tdrSupported) {
                         addLog("Esecuzione TDR (Cable-Test)...")
-                        when (val tdrResult = repository.runCableTest(probe, probe.testInterface)) {
+                        when (val tdrResult = repository.runCableTest(probe.testInterface)) {
                             is UiState.Success -> {
                                 addLog("TDR: SUCCESSO.")
                                 testResults["tdr"] = tdrResult.data
@@ -92,11 +94,38 @@ class TestViewModel @Inject constructor(
 
                 if (profile.runLinkStatus) {
                     addLog("Esecuzione Test Stato Link...")
-                    when (val linkResult = repository.getLinkStatus(probe, probe.testInterface)) {
+                    when (val linkResult = repository.getLinkStatus(probe.testInterface)) {
                         is UiState.Success -> {
                             val data = linkResult.data
                             addLog("Stato Link: SUCCESSO (${data.status} @ ${data.rate})")
                             testResults["link"] = data
+
+                            // Se il link è down, interrompi il test
+                            if (data.status.contains("down", ignoreCase = true)) {
+                                addLog("ATTENZIONE: Link DOWN rilevato. Test interrotto.")
+                                overallStatus = "FAIL"
+                                addLog("--- TEST COMPLETATO ---")
+
+                                val type: Type = Types.newParameterizedType(Map::class.java, String::class.java, Any::class.java)
+                                val adapter: JsonAdapter<Map<String, Any>> = moshi.adapter(type)
+                                val resultsJson = adapter.toJson(testResults)
+
+                                val report = Report(
+                                    clientId = clientId,
+                                    timestamp = System.currentTimeMillis(),
+                                    socketName = socketName,
+                                    probeName = probe.name,
+                                    profileName = profile.profileName,
+                                    overallStatus = overallStatus,
+                                    resultsJson = resultsJson,
+                                    floor = client.lastFloor,
+                                    room = client.lastRoom,
+                                    notes = "Test interrotto: Link DOWN"
+                                )
+
+                                _uiState.value = UiState.Success(report)
+                                return@launch
+                            }
                         }
                         is UiState.Error -> {
                             addLog("Stato Link: FALLITO (${linkResult.message})")
@@ -108,7 +137,7 @@ class TestViewModel @Inject constructor(
 
                 if (profile.runLldp) {
                     addLog("Esecuzione Test LLDP/CDP...")
-                    when (val neighborResult = repository.getNeighborsForInterface(probe, probe.testInterface)) {
+                    when (val neighborResult = repository.getNeighborsForInterface(probe.testInterface)) {
                         is UiState.Success -> {
                             val switch = findDirectlyConnectedSwitch(neighborResult.data)
                             if (switch != null) {
@@ -131,14 +160,26 @@ class TestViewModel @Inject constructor(
                     val targets = listOfNotNull(profile.pingTarget1, profile.pingTarget2, profile.pingTarget3).filter { it.isNotBlank() }
                     targets.forEach { target ->
                         val resolvedTarget = if (target.equals("DHCP_GATEWAY", ignoreCase = true)) {
-                            repository.getDhcpGateway(probe, probe.testInterface) ?: target
+                            repository.getDhcpGateway(probe.testInterface) ?: target
                         } else {
                             target
                         }
 
-                        when (val pingResult = repository.runPing(probe, resolvedTarget)) {
-                            is UiState.Success -> addLog("Ping ($resolvedTarget): SUCCESSO (${pingResult.data.avgRtt}ms)")
-                            is UiState.Error -> { addLog("Ping ($resolvedTarget): FALLITO (${pingResult.message})") ; overallStatus = "FAIL" }
+                        when (val pingResult = repository.runPing(resolvedTarget, probe.testInterface)) {
+                            is UiState.Success -> {
+                                val avgRtt = pingResult.data.avgRtt
+                                if (!avgRtt.isNullOrBlank() && avgRtt.toDoubleOrNull() != null && avgRtt.toDouble() > 0) {
+                                    addLog("Ping ($resolvedTarget): SUCCESSO (${avgRtt}ms)")
+                                    testResults["ping_$resolvedTarget"] = pingResult.data
+                                } else {
+                                    addLog("Ping ($resolvedTarget): FALLITO (Nessuna risposta)")
+                                    overallStatus = "FAIL"
+                                }
+                            }
+                            is UiState.Error -> {
+                                addLog("Ping ($resolvedTarget): FALLITO (${pingResult.message})")
+                                overallStatus = "FAIL"
+                            }
                             UiState.Loading -> {}
                         }
                     }
@@ -146,16 +187,16 @@ class TestViewModel @Inject constructor(
 
             } catch (e: Exception) {
                 addLog("ERRORE IRREVERSIBILE: ${e.message}")
-                overallStatus = "FAIL" // Corrected from ERROR to FAIL
+                overallStatus = "FAIL"
             } finally {
                 addLog("--- FASE 4: PULIZIA FINALE ---")
                 vlanId?.let {
                     addLog("Rimozione VLAN ($it)...")
-                    repository.removeVlan(probe, it)
+                    repository.removeVlan(it)
                 }
                 ipId?.let {
                     addLog("Rimozione IP ($it)...")
-                    repository.removeIpAddress(probe, it)
+                    repository.removeIpAddress(it)
                 }
 
                 addLog("--- TEST COMPLETATO ---")

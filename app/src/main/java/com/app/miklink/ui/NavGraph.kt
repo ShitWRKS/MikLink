@@ -15,6 +15,7 @@ import com.app.miklink.ui.probe.ProbeEditScreen
 import com.app.miklink.ui.probe.ProbeListScreen
 import com.app.miklink.ui.profile.TestProfileEditScreen
 import com.app.miklink.ui.profile.TestProfileListScreen
+import com.app.miklink.ui.settings.SettingsScreen
 import com.app.miklink.ui.test.TestExecutionScreen
 
 @Composable

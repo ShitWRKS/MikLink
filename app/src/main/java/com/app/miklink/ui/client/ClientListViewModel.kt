@@ -38,9 +38,13 @@ class ClientListViewModel @Inject constructor(
             val client = clientDao.getClientById(clientId).firstOrNull()
 
             if (clientReports.isNotEmpty()) {
-                val htmlContent = pdfGenerator.populateProjectReportTemplate(clientReports, client)
-                pdfGenerator.createPdf(htmlContent, uri)
-                _pdfStatus.value = "Project Report saved successfully!"
+                try {
+                    pdfGenerator.createBatchPdf(clientReports, client, uri)
+                    _pdfStatus.value = "Project Report saved successfully!"
+                } catch (e: Exception) {
+                    _pdfStatus.value = "Error: ${e.message}"
+                    android.util.Log.e("ClientListViewModel", "Error creating batch PDF", e)
+                }
             } else {
                 _pdfStatus.value = "No reports found for this client."
             }

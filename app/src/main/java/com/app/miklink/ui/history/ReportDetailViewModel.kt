@@ -68,11 +68,11 @@ class ReportDetailViewModel @Inject constructor(
 
             _pdfStatus.value = "Generating PDF..."
             try {
-                val html = pdfGenerator.populateSingleReportTemplate(currentReport, client)
-                pdfGenerator.createPdf(html, uri)
+                pdfGenerator.createPdfFromReport(currentReport, client, uri)
                 _pdfStatus.value = "PDF saved successfully."
             } catch (e: Exception) {
                 _pdfStatus.value = "Error: ${e.message}"
+                android.util.Log.e("ReportDetailViewModel", "Error creating PDF", e)
             }
         }
     }

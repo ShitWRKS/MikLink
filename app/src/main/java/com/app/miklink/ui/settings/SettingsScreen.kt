@@ -1,17 +1,22 @@
 package com.app.miklink.ui.settings
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Business
-import androidx.compose.material.icons.filled.ColorLens
-import androidx.compose.material.icons.filled.Router
-import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 
@@ -21,51 +26,303 @@ fun SettingsScreen(
     navController: NavController,
 ) {
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Impostazioni") }) }
+        topBar = {
+            TopAppBar(
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.Settings,
+                            contentDescription = null,
+                            modifier = Modifier.size(28.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Text("Impostazioni", fontWeight = FontWeight.Bold)
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.3f)
+                )
+            )
+        }
     ) { paddingValues ->
-        Column(modifier = Modifier.padding(paddingValues)) {
-            // Management Section
-            Text("GESTIONE DATI", modifier = Modifier.padding(all = 16.dp), style = MaterialTheme.typography.titleMedium)
-            SettingsListItem(
-                headline = "Clienti",
-                leadingIcon = Icons.Default.Business,
-                onClick = { navController.navigate("client_list") }
-            )
-            SettingsListItem(
-                headline = "Sonde",
-                leadingIcon = Icons.Default.Router,
-                onClick = { navController.navigate("probe_list") }
-            )
-            SettingsListItem(
-                headline = "Profili di Test",
-                leadingIcon = Icons.Default.Speed,
-                onClick = { navController.navigate("profile_list") }
-            )
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Header info card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(20.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(56.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.AdminPanelSettings,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
+                    Spacer(Modifier.width(16.dp))
+                    Column {
+                        Text(
+                            text = "Configurazione App",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Gestisci dati e preferenze",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                        )
+                    }
+                }
+            }
 
-            HorizontalDivider()
+            // Sezione Gestione Dati
+            SettingsSection(
+                title = "Gestione Dati",
+                icon = Icons.Default.Folder,
+                iconColor = Color(0xFF2196F3)
+            ) {
+                SettingsCard(
+                    headline = "Clienti",
+                    subtitle = "Gestisci i tuoi clienti",
+                    leadingIcon = Icons.Default.Business,
+                    iconColor = Color(0xFF4CAF50),
+                    onClick = { navController.navigate("client_list") }
+                )
 
-            // Appearance Section
-            Text("ASPETTO", modifier = Modifier.padding(all = 16.dp), style = MaterialTheme.typography.titleMedium)
-            SettingsListItem(
-                headline = "Tema",
-                leadingIcon = Icons.Default.ColorLens,
-                onClick = { /* TODO: Implement Theme Selector */ }
-            )
+                SettingsCard(
+                    headline = "Sonde",
+                    subtitle = "Configura le sonde MikroTik",
+                    leadingIcon = Icons.Default.Router,
+                    iconColor = Color(0xFF2196F3),
+                    onClick = { navController.navigate("probe_list") }
+                )
+
+                SettingsCard(
+                    headline = "Profili di Test",
+                    subtitle = "Crea e modifica profili di test",
+                    leadingIcon = Icons.Default.Checklist,
+                    iconColor = Color(0xFF9C27B0),
+                    onClick = { navController.navigate("profile_list") }
+                )
+            }
+
+            // Sezione Aspetto
+            SettingsSection(
+                title = "Aspetto",
+                icon = Icons.Default.Palette,
+                iconColor = Color(0xFFFF9800)
+            ) {
+                SettingsCard(
+                    headline = "Tema",
+                    subtitle = "Chiaro, Scuro o Auto",
+                    leadingIcon = Icons.Default.DarkMode,
+                    iconColor = Color(0xFFFF9800),
+                    onClick = { /* TODO: Implement Theme Selector */ },
+                    trailingContent = {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.secondaryContainer
+                        ) {
+                            Text(
+                                text = "Auto",
+                                style = MaterialTheme.typography.labelSmall,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
+                    }
+                )
+            }
+
+            // Sezione Modalità di Filtraggio
+            SettingsSection(
+                title = "Modalità di Filtraggio",
+                icon = Icons.Default.Tune,
+                iconColor = Color(0xFF3F51B5)
+            ) {
+                SettingsCard(
+                    headline = "Filtraggio CDP/LLDP",
+                    subtitle = "Seleziona la modalità di filtraggio",
+                    leadingIcon = Icons.Default.FilterList,
+                    iconColor = Color(0xFF3F51B5),
+                    onClick = { /* TODO: Implement Filtering Mode Selector */ },
+                    trailingContent = {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.secondaryContainer
+                        ) {
+                            Text(
+                                text = "Auto",
+                                style = MaterialTheme.typography.labelSmall,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
+                    }
+                )
+            }
+
+            // Sezione Info
+            SettingsSection(
+                title = "Informazioni",
+                icon = Icons.Default.Info,
+                iconColor = Color(0xFF607D8B)
+            ) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        InfoRow("Versione", "1.0.0")
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                        InfoRow("Build", "Debug")
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                        InfoRow("Developed by", "MikLink Team")
+                    }
+                }
+            }
+
+            // Spacer finale
+            Spacer(Modifier.height(16.dp))
         }
     }
 }
 
 @Composable
-private fun SettingsListItem(headline: String, leadingIcon: ImageVector, onClick: () -> Unit) {
-    ListItem(
-        headlineContent = { Text(headline) },
-        leadingContent = {
+fun SettingsSection(
+    title: String,
+    icon: ImageVector,
+    iconColor: Color,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Column {
+        Row(
+            modifier = Modifier.padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Icon(
-                imageVector = leadingIcon,
+                icon,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary
+                tint = iconColor,
+                modifier = Modifier.size(20.dp)
             )
-        },
-        modifier = Modifier.clickable(onClick = onClick)
-    )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = title.uppercase(),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = iconColor
+            )
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            content()
+        }
+    }
+}
+
+@Composable
+private fun SettingsCard(
+    headline: String,
+    subtitle: String,
+    leadingIcon: ImageVector,
+    iconColor: Color,
+    onClick: () -> Unit,
+    trailingContent: (@Composable () -> Unit)? = null
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(iconColor.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = leadingIcon,
+                    contentDescription = null,
+                    tint = iconColor,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+
+            Spacer(Modifier.width(16.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = headline,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Medium
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            if (trailingContent != null) {
+                trailingContent()
+            } else {
+                Icon(
+                    Icons.Default.ChevronRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun InfoRow(label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium
+        )
+    }
 }
