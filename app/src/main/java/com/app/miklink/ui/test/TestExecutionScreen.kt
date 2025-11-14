@@ -103,7 +103,7 @@ fun TestExecutionScreen(
                                 color = resultColor
                             )
                             Spacer(Modifier.height(16.dp))
-                            Divider()
+                            HorizontalDivider()
                             LazyColumn(modifier = Modifier.weight(1f).padding(top = 8.dp)) {
                                 items(log) { message ->
                                     Text(message)

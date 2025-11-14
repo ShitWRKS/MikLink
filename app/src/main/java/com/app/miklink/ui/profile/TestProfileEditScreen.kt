@@ -59,7 +59,7 @@ fun TestProfileEditScreen(
                 OutlinedTextField(value = profileDescription, onValueChange = { viewModel.profileDescription.value = it }, label = { Text("Description") }, modifier = Modifier.fillMaxWidth())
             }
 
-            item { Divider() }
+            item { HorizontalDivider() }
 
             item {
                 SwitchListItem(checked = runTdr, onCheckedChange = { viewModel.runTdr.value = it }, headlineText = "Run TDR (Cable-Test)", supportingText = "Requires compatible probe")
