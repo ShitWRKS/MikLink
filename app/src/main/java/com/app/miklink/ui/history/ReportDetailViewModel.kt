@@ -1,6 +1,5 @@
 package com.app.miklink.ui.history
 
-import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -12,7 +11,6 @@ import com.app.miklink.data.pdf.PdfGenerator
 import com.app.miklink.ui.history.model.ParsedResults
 import com.squareup.moshi.Moshi
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -24,21 +22,21 @@ class ReportDetailViewModel @Inject constructor(
     private val pdfGenerator: PdfGenerator, // Injected dependency
     private val moshi: Moshi,
     savedStateHandle: SavedStateHandle
-) : ViewModel() {
+) : ViewModel(), ReportDetailScreenStateProvider {
 
     private val reportId: Long = savedStateHandle.get<Long>("reportId") ?: -1L
 
-    val report: StateFlow<Report?> = reportDao.getReportById(reportId)
+    override val report: StateFlow<Report?> = reportDao.getReportById(reportId)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
-    val socketName = MutableStateFlow("")
-    val notes = MutableStateFlow("")
+    override val socketName = MutableStateFlow("")
+    override val notes = MutableStateFlow("")
 
     private val _parsedResults = MutableStateFlow<ParsedResults?>(null)
-    val parsedResults = _parsedResults.asStateFlow()
-    
+    override val parsedResults: StateFlow<ParsedResults?> = _parsedResults.asStateFlow()
+
     private val _pdfStatus = MutableStateFlow("")
-    val pdfStatus = _pdfStatus.asStateFlow()
+    override val pdfStatus: StateFlow<String> = _pdfStatus.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -52,7 +50,7 @@ class ReportDetailViewModel @Inject constructor(
         }
     }
 
-    fun updateReportDetails() {
+    override fun updateReportDetails() {
         viewModelScope.launch {
             report.value?.let {
                 val updatedReport = it.copy(socketName = socketName.value, notes = notes.value)
@@ -60,8 +58,8 @@ class ReportDetailViewModel @Inject constructor(
             }
         }
     }
-    
-    fun exportReportToPdf(uri: Uri) {
+
+    override fun exportReportToPdf(uri: Uri) {
         viewModelScope.launch {
             val currentReport = report.value ?: return@launch
             val client = currentReport.clientId?.let { clientDao.getClientById(it).firstOrNull() }

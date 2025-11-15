@@ -120,17 +120,17 @@ fun DashboardScreen(
                                 .padding(bottom = 12.dp),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            if (selectedClient != null) {
+                            selectedClient?.let { client ->
                                 StatusChip(
                                     icon = Icons.Default.Business,
-                                    label = selectedClient!!.companyName,
+                                    label = client.companyName,
                                     color = MaterialTheme.colorScheme.primary
                                 )
                             }
-                            if (currentProbe != null) {
+                            currentProbe?.let { probe ->
                                 StatusChip(
                                     icon = if (isProbeOnline) Icons.Default.CheckCircle else Icons.Default.Error,
-                                    label = currentProbe!!.name,
+                                    label = probe.name,
                                     color = if (isProbeOnline) Color(0xFF4CAF50) else Color(0xFFF44336)
                                 )
                             }
@@ -170,10 +170,16 @@ fun DashboardScreen(
 
                     Button(
                         onClick = {
-                            val encodedSocket = Uri.encode(socketName)
-                            navController.navigate(
-                                "test_execution/${selectedClient!!.clientId}/${currentProbe!!.probeId}/${selectedProfile!!.profileId}/$encodedSocket"
-                            )
+                            selectedClient?.let { client ->
+                                currentProbe?.let { probe ->
+                                    selectedProfile?.let { profile ->
+                                        val encodedSocket = Uri.encode(socketName)
+                                        navController.navigate(
+                                            "test_execution/${client.clientId}/${probe.probeId}/${profile.profileId}/$encodedSocket"
+                                        )
+                                    }
+                                }
+                            }
                         },
                         modifier = Modifier
                             .fillMaxWidth()

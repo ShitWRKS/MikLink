@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.PlaylistAddCheck
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -98,7 +99,7 @@ fun TestProfileListScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                Icons.Default.PlaylistAddCheck,
+                                Icons.AutoMirrored.Filled.PlaylistAddCheck,
                                 contentDescription = null,
                                 modifier = Modifier.size(40.dp),
                                 tint = Color(0xFF9C27B0)

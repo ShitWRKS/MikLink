@@ -1,0 +1,62 @@
+kotlin version: 2.0.0
+error message: java.io.IOException: java.io.IOException: java.lang.IllegalArgumentException: 25.0.1
+	at org.jetbrains.kotlin.com.intellij.util.io.ResizeableMappedFile.close(ResizeableMappedFile.java:251)
+	at org.jetbrains.kotlin.com.intellij.util.io.PersistentEnumeratorBase.doClose(PersistentEnumeratorBase.java:483)
+	at org.jetbrains.kotlin.com.intellij.util.io.PersistentBTreeEnumerator.doClose(PersistentBTreeEnumerator.java:305)
+	at org.jetbrains.kotlin.com.intellij.util.io.PersistentEnumeratorBase.close(PersistentEnumeratorBase.java:464)
+	at org.jetbrains.kotlin.com.intellij.util.io.PersistentBTreeEnumerator.close(PersistentBTreeEnumerator.java:650)
+	at org.jetbrains.kotlin.com.intellij.util.io.PersistentMapImpl.doClose(PersistentMapImpl.java:812)
+	at org.jetbrains.kotlin.com.intellij.util.io.PersistentMapImpl.close(PersistentMapImpl.java:780)
+	at org.jetbrains.kotlin.com.intellij.util.io.PersistentMapImpl.close(PersistentMapImpl.java:760)
+	at org.jetbrains.kotlin.com.intellij.util.io.PersistentHashMap.close(PersistentHashMap.java:203)
+	at com.google.devtools.ksp.common.IncrementalContextBase.updateCachesAndOutputs(IncrementalContextBase.kt:724)
+	at com.google.devtools.ksp.AbstractKotlinSymbolProcessingExtension.doAnalysis(KotlinSymbolProcessingExtension.kt:362)
+	at org.jetbrains.kotlin.cli.jvm.compiler.TopDownAnalyzerFacadeForJVM.analyzeFilesWithJavaIntegration(TopDownAnalyzerFacadeForJVM.kt:112)
+	at org.jetbrains.kotlin.cli.jvm.compiler.TopDownAnalyzerFacadeForJVM.analyzeFilesWithJavaIntegration$default(TopDownAnalyzerFacadeForJVM.kt:75)
+	at org.jetbrains.kotlin.cli.jvm.compiler.KotlinToJVMBytecodeCompiler.analyze$lambda$12(KotlinToJVMBytecodeCompiler.kt:373)
+	at org.jetbrains.kotlin.cli.common.messages.AnalyzerWithCompilerReport.analyzeAndReport(AnalyzerWithCompilerReport.kt:115)
+	at org.jetbrains.kotlin.cli.jvm.compiler.KotlinToJVMBytecodeCompiler.analyze(KotlinToJVMBytecodeCompiler.kt:364)
+	at org.jetbrains.kotlin.cli.jvm.compiler.KotlinToJVMBytecodeCompiler.repeatAnalysisIfNeeded(KotlinToJVMBytecodeCompiler.kt:282)
+	at org.jetbrains.kotlin.cli.jvm.compiler.KotlinToJVMBytecodeCompiler.repeatAnalysisIfNeeded(KotlinToJVMBytecodeCompiler.kt:282)
+	at org.jetbrains.kotlin.cli.jvm.compiler.KotlinToJVMBytecodeCompiler.runFrontendAndGenerateIrUsingClassicFrontend(KotlinToJVMBytecodeCompiler.kt:195)
+	at org.jetbrains.kotlin.cli.jvm.compiler.KotlinToJVMBytecodeCompiler.compileModules$cli(KotlinToJVMBytecodeCompiler.kt:106)
+	at org.jetbrains.kotlin.cli.jvm.K2JVMCompiler.doExecute(K2JVMCompiler.kt:176)
+	at org.jetbrains.kotlin.cli.jvm.K2JVMCompiler.doExecute(K2JVMCompiler.kt:50)
+	at org.jetbrains.kotlin.cli.common.CLICompiler.execImpl(CLICompiler.kt:104)
+	at org.jetbrains.kotlin.cli.common.CLICompiler.execImpl(CLICompiler.kt:48)
+	at org.jetbrains.kotlin.cli.common.CLITool.exec(CLITool.kt:101)
+	at org.jetbrains.kotlin.daemon.CompileServiceImpl.compile(CompileServiceImpl.kt:1556)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:565)
+	at java.rmi/sun.rmi.server.UnicastServerRef.dispatch(UnicastServerRef.java:351)
+	at java.rmi/sun.rmi.transport.Transport.serviceCall(Transport.java:166)
+	at java.rmi/sun.rmi.transport.tcp.TCPTransport.handleMessages(TCPTransport.java:543)
+	at java.rmi/sun.rmi.transport.tcp.TCPTransport$ConnectionHandler.run0(TCPTransport.java:744)
+	at java.rmi/sun.rmi.transport.tcp.TCPTransport$ConnectionHandler.run(TCPTransport.java:623)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1090)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:614)
+	at java.base/java.lang.Thread.run(Thread.java:1474)
+Caused by: java.io.IOException: java.lang.IllegalArgumentException: 25.0.1
+	... 36 more
+Caused by: java.io.IOException: java.lang.IllegalArgumentException: 25.0.1
+	at org.jetbrains.kotlin.com.intellij.util.io.PagedFileStorage.close(PagedFileStorage.java:252)
+	at org.jetbrains.kotlin.com.intellij.util.io.ResizeableMappedFile.lambda$close$2(ResizeableMappedFile.java:249)
+	at org.jetbrains.kotlin.com.intellij.util.ExceptionUtil.runAndCatch(ExceptionUtil.java:149)
+	at org.jetbrains.kotlin.com.intellij.util.io.ResizeableMappedFile.close(ResizeableMappedFile.java:249)
+	... 35 more
+Caused by: java.lang.IllegalArgumentException: 25.0.1
+	... 39 more
+Caused by: java.lang.IllegalArgumentException: 25.0.1
+	at org.jetbrains.kotlin.com.intellij.util.lang.JavaVersion.parse(JavaVersion.java:305)
+	at org.jetbrains.kotlin.com.intellij.util.lang.JavaVersion.current(JavaVersion.java:174)
+	at org.jetbrains.kotlin.com.intellij.util.io.ByteBufferUtil.cleanBuffer(ByteBufferUtil.java:23)
+	at org.jetbrains.kotlin.com.intellij.util.io.DirectBufferWrapper.release(DirectBufferWrapper.java:132)
+	at org.jetbrains.kotlin.com.intellij.util.io.FilePageCache.disposeRemovedSegments(FilePageCache.java:190)
+	at org.jetbrains.kotlin.com.intellij.util.io.FilePageCache.unmapBuffersForOwner(FilePageCache.java:269)
+	at org.jetbrains.kotlin.com.intellij.util.io.PagedFileStorage.unmapAll(PagedFileStorage.java:257)
+	at org.jetbrains.kotlin.com.intellij.util.io.PagedFileStorage.lambda$close$3(PagedFileStorage.java:244)
+	at org.jetbrains.kotlin.com.intellij.util.ExceptionUtil.runAndCatch(ExceptionUtil.java:149)
+	at org.jetbrains.kotlin.com.intellij.util.io.PagedFileStorage.close(PagedFileStorage.java:243)
+	... 38 more
+
+

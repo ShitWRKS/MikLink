@@ -106,3 +106,4 @@ subprojects {
 
 // Nota: la configurazione subprojects per jvmToolchain è già presente e imposta Java 21.
 // Nessuna modifica aggiuntiva funzionale richiesta qui.
+

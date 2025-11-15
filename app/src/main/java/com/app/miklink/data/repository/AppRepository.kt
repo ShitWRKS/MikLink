@@ -196,14 +196,16 @@ class AppRepository @Inject constructor(
 
             // Altrimenti, configura il DHCP
             if (existingDhcp != null) {
-                // Client esiste ma è disabilitato o non bound: riabilita
-                if (existingDhcp.disabled == "true") {
-                    api.enableDhcpClient(NumbersRequest(existingDhcp.id!!))
-                } else {
-                    // Client abilitato ma non bound: disable/enable per refresh
-                    api.disableDhcpClient(NumbersRequest(existingDhcp.id!!))
-                    delay(500)
-                    api.enableDhcpClient(NumbersRequest(existingDhcp.id!!))
+                existingDhcp.id?.let { dhcpId ->
+                    // Client esiste ma è disabilitato o non bound: riabilita
+                    if (existingDhcp.disabled == "true") {
+                        api.enableDhcpClient(NumbersRequest(dhcpId))
+                    } else {
+                        // Client abilitato ma non bound: disable/enable per refresh
+                        api.disableDhcpClient(NumbersRequest(dhcpId))
+                        delay(500)
+                        api.enableDhcpClient(NumbersRequest(dhcpId))
+                    }
                 }
             } else {
                 // Client non esiste: crea
@@ -265,7 +267,7 @@ class AppRepository @Inject constructor(
                 interfaceName = iface,
                 address = cidr,
                 gateway = gw,
-                dns = null,
+dns = null,
                 message = "Indirizzo statico configurato"
             )
         }

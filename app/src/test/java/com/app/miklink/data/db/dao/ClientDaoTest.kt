@@ -8,6 +8,7 @@ import com.app.miklink.data.db.model.Client
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -105,34 +106,37 @@ class ClientDaoTest {
         // Ottiene il client inserito per avere l'ID auto-generato
         var insertedClient: Client? = null
         dao.getAllClients().test {
-            insertedClient = awaitItem().first()
+            insertedClient = awaitItem().firstOrNull()
             cancelAndIgnoreRemainingEvents()
         }
 
-        // Act - Aggiorna il client
-        val updatedClient = insertedClient!!.copy(
-            companyName = "Nuovo Nome",
-            location = "Nuova Sede",
-            notes = "Note Nuove",
-            networkMode = "STATIC",
-            staticIp = "10.0.0.1",
-            minLinkRate = "10G",
-            socketPrefix = "NEW"
-        )
-        dao.update(updatedClient)
+        assertNotNull(insertedClient)
+        insertedClient?.let { clientToUpdate ->
+            // Act - Aggiorna il client
+            val updatedClient = clientToUpdate.copy(
+                companyName = "Nuovo Nome",
+                location = "Nuova Sede",
+                notes = "Note Nuove",
+                networkMode = "STATIC",
+                staticIp = "10.0.0.1",
+                minLinkRate = "10G",
+                socketPrefix = "NEW"
+            )
+            dao.update(updatedClient)
 
-        // Assert - Verifica che il client sia stato aggiornato
-        dao.getAllClients().test {
-            val result = awaitItem()
-            assertEquals(1, result.size)
-            assertEquals("Nuovo Nome", result[0].companyName)
-            assertEquals("Nuova Sede", result[0].location)
-            assertEquals("Note Nuove", result[0].notes)
-            assertEquals("STATIC", result[0].networkMode)
-            assertEquals("10.0.0.1", result[0].staticIp)
-            assertEquals("10G", result[0].minLinkRate)
-            assertEquals("NEW", result[0].socketPrefix)
-            cancelAndIgnoreRemainingEvents()
+            // Assert - Verifica che il client sia stato aggiornato
+            dao.getAllClients().test {
+                val result = awaitItem()
+                assertEquals(1, result.size)
+                assertEquals("Nuovo Nome", result[0].companyName)
+                assertEquals("Nuova Sede", result[0].location)
+                assertEquals("Note Nuove", result[0].notes)
+                assertEquals("STATIC", result[0].networkMode)
+                assertEquals("10.0.0.1", result[0].staticIp)
+                assertEquals("10G", result[0].minLinkRate)
+                assertEquals("NEW", result[0].socketPrefix)
+                cancelAndIgnoreRemainingEvents()
+            }
         }
     }
 
@@ -165,8 +169,11 @@ class ClientDaoTest {
             cancelAndIgnoreRemainingEvents()
         }
 
-        // Act - Elimina il client
-        dao.delete(insertedClient!!)
+        assertNotNull(insertedClient)
+        insertedClient?.let { clientToDelete ->
+            // Act - Elimina il client
+            dao.delete(clientToDelete)
+        }
 
         // Assert - Verifica che getAllClients sia vuoto
         dao.getAllClients().test {
@@ -302,4 +309,3 @@ class ClientDaoTest {
         }
     }
 }
-
