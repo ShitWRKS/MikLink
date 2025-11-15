@@ -220,7 +220,11 @@ class PdfGenerator @Inject constructor(
         }
     }
 
-    private fun parseResults(json: String): ParsedResults? {
+    /**
+     * `internal` per test unitari.
+     * Parsa il JSON dei risultati del report in un oggetto strutturato.
+     */
+    internal fun parseResults(json: String): ParsedResults? {
         return try {
             moshi.adapter(ParsedResults::class.java).fromJson(json)
         } catch (e: Exception) {
@@ -557,7 +561,11 @@ class PdfGenerator @Inject constructor(
         canvas.drawLine(MARGIN, y, A4_WIDTH_PT - MARGIN, y, linePaint)
     }
 
-    private fun wrapText(text: String, maxWidth: Float, paint: Paint): List<String> {
+    /**
+     * `internal` per test unitari.
+     * Logica di text-wrapping manuale per il rendering su PDF.
+     */
+    internal fun wrapText(text: String, maxWidth: Float, paint: Paint): List<String> {
         val words = text.split(" ")
         val lines = mutableListOf<String>()
         var currentLine = ""

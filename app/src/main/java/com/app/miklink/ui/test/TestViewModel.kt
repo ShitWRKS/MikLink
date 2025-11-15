@@ -286,6 +286,7 @@ class TestViewModel @Inject constructor(
                 // 4) LLDP/CDP Discovery
                 if (profile.runLldp) {
                     addLog("Esecuzione discovery LLDP/CDP...")
+                    addLog("DEBUG: LLDP - Interface test: ${probe.testInterface}")
                     upsertSection(
                         TestSection(
                             category = TestSectionCategory.INFO,
@@ -298,8 +299,10 @@ class TestViewModel @Inject constructor(
                     when (val lldpResult = repository.getNeighborsForInterface(probe, probe.testInterface)) {
                         is UiState.Success -> {
                             val neighbors = lldpResult.data
+                            addLog("DEBUG: LLDP Success - Ricevuti ${neighbors.size} neighbor(s)")
                             if (neighbors.isNotEmpty()) {
                                 val neighbor = neighbors.first()
+                                addLog("DEBUG: LLDP - Identity: ${neighbor.identity}, Interface: ${neighbor.interfaceName}, Protocol: ${neighbor.discoveredBy}")
                                 addLog("LLDP/CDP: Rilevato '${neighbor.identity ?: "Unknown"}' su porta ${neighbor.interfaceName ?: "-"}")
                                 testResults["lldp"] = neighbor
                                 upsertSection(
@@ -316,7 +319,9 @@ class TestViewModel @Inject constructor(
                                         )
                                     )
                                 )
+                                addLog("DEBUG: LLDP - upsertSection chiamato con status=PASS e ${4} dettagli")
                             } else {
+                                addLog("DEBUG: LLDP - Lista neighbor vuota")
                                 addLog("LLDP/CDP: Nessun neighbor rilevato")
                                 upsertSection(
                                     TestSection(
@@ -330,6 +335,7 @@ class TestViewModel @Inject constructor(
                             }
                         }
                         is UiState.Error -> {
+                            addLog("DEBUG: LLDP Error - ${lldpResult.message}")
                             addLog("LLDP/CDP: FALLITO (${lldpResult.message})")
                             upsertSection(
                                 TestSection(
@@ -341,12 +347,19 @@ class TestViewModel @Inject constructor(
                                 )
                             )
                         }
-                        else -> {}
+                        is UiState.Loading -> {
+                            addLog("DEBUG: LLDP Loading - NON dovrebbe mai succedere qui!")
+                        }
+                        is UiState.Idle -> {
+                            addLog("DEBUG: LLDP Idle - NON dovrebbe mai succedere qui!")
+                        }
                     }
                 }
 
                 // 5) Ping Tests
                 if (profile.runPing) {
+                    // Flag per garantire la card anche nella schermata risultati
+                    testResults["ping_configured"] = true
                     val pingTargets = listOfNotNull(profile.pingTarget1, profile.pingTarget2, profile.pingTarget3).filter { it.isNotBlank() }
                     if (pingTargets.isEmpty()) {
                         addLog("Ping: SALTATO (nessun target configurato)")
@@ -360,6 +373,17 @@ class TestViewModel @Inject constructor(
                             )
                         )
                     } else {
+                        // Placeholder iniziale per mostrare subito la card
+                        upsertSection(
+                            TestSection(
+                                category = TestSectionCategory.TEST,
+                                type = TestSectionType.PING,
+                                title = "Ping",
+                                status = "INFO",
+                                details = listOf(TestDetail("Stato", "In corso..."))
+                            )
+                        )
+
                         addLog("Esecuzione Ping verso ${pingTargets.size} target...")
                         val pingDetails = mutableListOf<TestDetail>()
                         var allPingsPassed = true
@@ -412,6 +436,14 @@ class TestViewModel @Inject constructor(
                                     }
 
                                     pingDetails.addAll(pingDetailsList)
+
+                                    // Determina se questo specifico target ha avuto successo
+                                    val thisTargetPassed = try {
+                                        val numeric = packetLoss.filter { it.isDigit() || it == '.' }
+                                        if (numeric.isBlank()) false else (numeric.toDoubleOrNull() ?: Double.MAX_VALUE) <= 0.0
+                                    } catch (_: Exception) { false }
+
+                                    if (!thisTargetPassed) allPingsPassed = false
                                 }
                                 is UiState.Error -> {
                                     addLog("Ping $resolvedTarget: FALLITO (${pingResult.message})")
@@ -436,103 +468,6 @@ class TestViewModel @Inject constructor(
                     }
                 }
 
-                // 6) Traceroute (per profilo)
-                if (profile.runTraceroute) {
-                    val target = profile.tracerouteTarget?.takeIf { it.isNotBlank() }
-                    if (target == null) {
-                        // Mostra card SKIPPED se abilitato ma target mancante
-                        upsertSection(
-                            TestSection(
-                                category = TestSectionCategory.TEST,
-                                type = TestSectionType.TRACEROUTE,
-                                title = "Traceroute",
-                                status = "SKIPPED",
-                                details = listOf(TestDetail("Motivo", "Target non impostato"))
-                            )
-                        )
-                    } else {
-                        addLog("Esecuzione Traceroute verso $target ...")
-                        // Traceroute placeholder
-                        upsertSection(
-                            TestSection(
-                                category = TestSectionCategory.TEST,
-                                type = TestSectionType.TRACEROUTE,
-                                title = "Traceroute",
-                                status = "INFO",
-                                details = listOf(TestDetail("Stato", "In corso..."))
-                            )
-                        )
-                        val resolvedTarget = try {
-                            repository.resolveTargetIp(probe, target, probe.testInterface)
-                        } catch (e: Exception) {
-                            addLog("Traceroute: Risoluzione target fallita (${e.message})")
-                            upsertSection(
-                                TestSection(
-                                    category = TestSectionCategory.TEST,
-                                    type = TestSectionType.TRACEROUTE,
-                                    title = "Traceroute",
-                                    status = "FAIL",
-                                    details = listOf(TestDetail("Errore", "Risoluzione target fallita"))
-                                )
-                            )
-                            overallStatus = "FAIL"
-                            null
-                        }
-
-                        if (resolvedTarget != null && !resolvedTarget.equals("DHCP_GATEWAY", ignoreCase = true)) {
-                            when (val tr = repository.runTraceroute(probe, resolvedTarget, probe.testInterface, profile.tracerouteMaxHops, profile.tracerouteTimeoutMs)) {
-                                is UiState.Idle -> {
-                                    // Non dovrebbe mai accadere qui, ignora
-                                }
-                                is UiState.Success -> {
-                                    val hops = tr.data
-                                    val reached = hops.lastOrNull()?.host?.isNotBlank() == true
-                                    addLog("Traceroute: ${if (reached) "SUCCESSO" else "PARZIALE"} (hops=${hops.size})")
-                                    testResults["traceroute"] = hops
-                                    // Aggiorna sezione Traceroute con risultato
-                                    upsertSection(
-                                        TestSection(
-                                            category = TestSectionCategory.TEST,
-                                            type = TestSectionType.TRACEROUTE,
-                                            title = "Traceroute",
-                                            status = if (reached) "PASS" else "FAIL",
-                                            details = hops.mapIndexed { idx, h ->
-                                                val hopNum = h.hop ?: (idx + 1).toString()
-                                                TestDetail("Hop $hopNum", "${h.host ?: "*"}${h.avgRtt?.let { " ($it)" } ?: ""}")
-                                            }
-                                        )
-                                    )
-                                    if (!reached) overallStatus = "FAIL"
-                                }
-                                is UiState.Error -> {
-                                    addLog("Traceroute: FALLITO (${tr.message})")
-                                    overallStatus = "FAIL"
-                                    upsertSection(
-                                        TestSection(
-                                            category = TestSectionCategory.TEST,
-                                            type = TestSectionType.TRACEROUTE,
-                                            title = "Traceroute",
-                                            status = "FAIL",
-                                            details = listOf(TestDetail("Errore", tr.message))
-                                        )
-                                    )
-                                }
-                                UiState.Loading -> {}
-                            }
-                        } else if (resolvedTarget != null) {
-                            addLog("Traceroute: SALTATO (gateway DHCP non risolto)")
-                            upsertSection(
-                                TestSection(
-                                    category = TestSectionCategory.TEST,
-                                    type = TestSectionType.TRACEROUTE,
-                                    title = "Traceroute",
-                                    status = "SKIPPED",
-                                    details = listOf(TestDetail("Motivo", "Gateway DHCP non disponibile"))
-                                )
-                            )
-                        }
-                    }
-                }
 
             } catch (e: Exception) {
                 addLog("ERRORE IRREVERSIBILE: ${e.message}")
@@ -548,7 +483,11 @@ class TestViewModel @Inject constructor(
         }
     }
 
-    private fun isRateOk(rate: String?, min: String): Boolean {
+    /**
+     * Visibilità `internal` per permettere il test unitario diretto.
+     * Controlla se il rate fornito (post-parsing) supera la soglia minima del profilo.
+     */
+    internal fun isRateOk(rate: String?, min: String): Boolean {
         // Use RateParser to normalize both values to Mbps
         val actual = com.app.miklink.utils.RateParser.parseToMbps(rate)
         val threshold = com.app.miklink.utils.RateParser.parseToMbps(min)
@@ -572,9 +511,9 @@ class TestViewModel @Inject constructor(
         testResults: Map<String, Any>,
         notes: String?
     ) {
-        // Costruisci sezioni per UI
-        val built = buildSectionsFromResults(testResults)
-         _sections.value = built
+        // NON ricostruire le sezioni - le sezioni create con upsertSection durante il test
+        // sono GIÀ CORRETTE e rappresentano lo stato reale.
+        // Ricostruirle causa inconsistenze tra "test in corso" e "risultati finali".
 
         val type: Type = Types.newParameterizedType(Map::class.java, String::class.java, Any::class.java)
         val adapter: JsonAdapter<Map<String, Any>> = moshi.adapter(type)
@@ -594,102 +533,6 @@ class TestViewModel @Inject constructor(
         _uiState.value = UiState.Success(report)
     }
 
-    private fun buildSectionsFromResults(results: Map<String, Any>): List<TestSection> {
-         val list = mutableListOf<TestSection>()
-         // Network (INFO)
-        (results["network"])?.let { fb ->
-            val map = fb as? NetworkConfigFeedback
-             if (map != null) {
-                 list += TestSection(
-                     category = TestSectionCategory.INFO,
-                     type = TestSectionType.NETWORK,
-                     title = "Rete (Client Config)",
-                     status = if ((map.address ?: map.gateway) != null) "PASS" else "INFO",
-                     details = listOf(
-                         TestDetail("Modalità", map.mode),
-                         TestDetail("Interfaccia", map.interfaceName),
-                         TestDetail("Indirizzo", map.address ?: "-"),
-                         TestDetail("Gateway", map.gateway ?: "-"),
-                         TestDetail("DNS", map.dns ?: "-"),
-                         TestDetail("Messaggio", map.message)
-                     )
-                 )
-             }
-         }
-         // Link (TEST)
-        (results["link"])?.let { l ->
-            val link = l as? com.app.miklink.data.network.MonitorResponse
-            if (link != null) {
-                val pass = !link.status.contains("down", true)
-                list += TestSection(
-                    category = TestSectionCategory.TEST,
-                    type = TestSectionType.LINK,
-                    title = "Link",
-                    status = if (pass) "PASS" else "FAIL",
-                    details = listOf(
-                        TestDetail("Status", link.status),
-                        TestDetail("Rate", link.rate ?: "-")
-                    )
-                )
-            }
-        }
-        // LLDP (INFO)
-        (results["lldp"])?.let { n ->
-            val sw = n as? com.app.miklink.data.network.NeighborDetail
-            if (sw != null) {
-                list += TestSection(
-                    category = TestSectionCategory.INFO,
-                    type = TestSectionType.LLDP,
-                    title = "LLDP/CDP",
-                    status = "PASS",
-                    details = listOf(
-                        TestDetail("Identity", sw.identity ?: "-"),
-                        TestDetail("Porta", sw.interfaceName ?: "-"),
-                        TestDetail("Caps", sw.systemCaps ?: "-"),
-                        TestDetail("Protocollo", sw.discoveredBy ?: "-")
-                    )
-                )
-            }
-        }
-        // Ping (TEST)
-        val pingDetails = results.filter { it.key.startsWith("ping_") }.map { (k, v) ->
-            val pr = v as? com.app.miklink.data.network.PingResult
-            TestDetail(k.removePrefix("ping_"), pr?.avgRtt ?: "-")
-        }
-        if (pingDetails.isNotEmpty()) {
-            val ok = pingDetails.all { it.value.isNotBlank() && it.value != "-" }
-            list += TestSection(TestSectionCategory.TEST, TestSectionType.PING, "Ping", status = if (ok) "PASS" else "FAIL", details = pingDetails)
-        }
-        // Traceroute (TEST)
-        (results["traceroute"])?.let { tr ->
-            val hops = (tr as? List<*>)?.mapNotNull { it as? com.app.miklink.data.network.TracerouteHop } ?: emptyList()
-            val reached = hops.lastOrNull()?.host?.isNotBlank() == true
-            val hopDetails = if (hops.isNotEmpty()) {
-                hops.mapIndexed { idx, h ->
-                    val label = "Hop ${h.hop ?: (idx + 1).toString()}"
-                    val value = "${h.host ?: "*"}${h.avgRtt?.let { " ($it)" } ?: ""}"
-                    TestDetail(label, value)
-                }
-            } else emptyList()
-            list += TestSection(TestSectionCategory.TEST, TestSectionType.TRACEROUTE, "Traceroute", status = if (reached) "PASS" else if (hops.isNotEmpty()) "PARTIAL" else "FAIL", details = hopDetails)
-        }
-        // TDR (TEST)
-        (results["tdr"])?.let { t ->
-            val cbl = t as? com.app.miklink.data.network.CableTestResult
-            if (cbl != null) {
-                val pairs = cbl.cablePairs
-                 val pairDetails = pairs.mapIndexed { idx, p ->
-                    val pair = p["pair"] ?: "Pair ${idx + 1}"
-                    val status = p["status"] ?: "-"
-                    val lengthStr = (p["length"] ?: p["len"]) ?: ""
-                     val detail = if (lengthStr.isNotBlank()) "$status $lengthStr" else status
-                     TestDetail(pair, detail)
-                 }
-                 list += TestSection(TestSectionCategory.TEST, TestSectionType.TDR, "TDR (Cable-Test)", status = (cbl.status.ifBlank { "PASS" }).uppercase(), details = pairDetails)
-             }
-         }
-        return list
-    }
 
     fun saveReportToDb(report: Report) {
         viewModelScope.launch {

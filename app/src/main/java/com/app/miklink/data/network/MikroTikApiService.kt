@@ -99,21 +99,6 @@ data class PingResult(
     val ttl: String?
 )
 
-// Traceroute
-
-data class TracerouteRequest(
-    val address: String,
-    val `interface`: String? = null,
-    @Json(name = "max-hops") val maxHops: String = "30",
-    val timeout: String = "3000ms",
-    val duration: String = "40s"
-)
-
-data class TracerouteHop(
-    val hop: String? = null,
-    val host: String? = null,
-    @Json(name = "avg-rtt") val avgRtt: String? = null
-)
 
 interface MikroTikApiService {
 
@@ -165,13 +150,10 @@ interface MikroTikApiService {
 
     @GET("/rest/ip/neighbor")
     suspend fun getIpNeighbors(
-        @Query("query") query: String,
+        @Query("interface") interfaceName: String,
         @Query(".proplist") proplist: String = "identity,interface-name,system-caps-enabled,discovered-by,vlan-id,voice-vlan-id,poe-class"
     ): List<NeighborDetail>
 
     @POST("/rest/ping")
     suspend fun runPing(@Body request: PingRequest): List<PingResult>
-
-    @POST("/rest/tool/traceroute")
-    suspend fun runTraceroute(@Body request: TracerouteRequest): List<TracerouteHop>
 }

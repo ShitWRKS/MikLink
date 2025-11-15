@@ -1,6 +1,6 @@
 package com.app.miklink.ui.test
 
-enum class TestSectionType { NETWORK, LINK, LLDP, PING, TRACEROUTE, TDR }
+enum class TestSectionType { NETWORK, LINK, LLDP, PING, TDR }
 
 enum class TestSectionCategory { INFO, TEST }
 

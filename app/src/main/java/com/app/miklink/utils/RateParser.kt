@@ -11,12 +11,9 @@ object RateParser {
         val s = raw.trim().replace("\\s+".toRegex(), "").uppercase()
         return try {
             when {
-                s.endsWith("10G") || s.endsWith("10GB") || s.endsWith("10GBPS") || s == "10G" -> 10000
-                s.endsWith("1G") || s.endsWith("1GB") || s.endsWith("1GBPS") || s == "1G" -> 1000
-                s.endsWith("100M") || s.endsWith("100MB") || s.endsWith("100MBPS") || s == "100M" -> 100
-                s.endsWith("10M") || s.endsWith("10MB") || s.endsWith("10MBPS") || s == "10M" -> 10
+                // Check generic suffixes FIRST (before specific ones)
                 s.endsWith("GBPS") -> {
-                    // Numeric like 1Gbps or 2.5Gbps
+                    // Numeric like 1Gbps or 2.5Gbps or 0.001Gbps
                     val num = s.removeSuffix("GBPS").toDoubleOrNull()
                     if (num != null) (num * 1000).toInt() else 0
                 }
@@ -24,6 +21,11 @@ object RateParser {
                     val num = s.removeSuffix("MBPS").toDoubleOrNull()
                     if (num != null) num.toInt() else 0
                 }
+                // Now check specific values
+                s.endsWith("10G") || s.endsWith("10GB") || s == "10G" -> 10000
+                s.endsWith("1G") || s.endsWith("1GB") || s == "1G" -> 1000
+                s.endsWith("100M") || s.endsWith("100MB") || s == "100M" -> 100
+                s.endsWith("10M") || s.endsWith("10MB") || s == "10M" -> 10
                 s.endsWith("G") && s.length > 1 -> {
                     val num = s.removeSuffix("G").toDoubleOrNull()
                     if (num != null) (num * 1000).toInt() else 0

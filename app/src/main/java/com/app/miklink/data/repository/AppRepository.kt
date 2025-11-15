@@ -298,9 +298,33 @@ class AppRepository @Inject constructor(
         results.lastOrNull() ?: throw IllegalStateException("No link status returned")
     }
 
-    suspend fun getNeighborsForInterface(probe: ProbeConfig, interfaceName: String): UiState<List<NeighborDetail>> = safeApiCall {
-        val api = buildServiceFor(probe)
-        api.getIpNeighbors("interface=$interfaceName")
+    suspend fun getNeighborsForInterface(probe: ProbeConfig, interfaceName: String): UiState<List<NeighborDetail>> {
+        android.util.Log.d("LLDP_DEBUG", "=== LLDP Request Start ===")
+        android.util.Log.d("LLDP_DEBUG", "Probe: ${probe.name} @ ${probe.ipAddress}")
+        android.util.Log.d("LLDP_DEBUG", "Interface: $interfaceName")
+        android.util.Log.d("LLDP_DEBUG", "Query parameter: interface=$interfaceName (sintassi corretta)")
+
+        return try {
+            val api = buildServiceFor(probe)
+            val result = api.getIpNeighbors(interfaceName)
+
+            // Normalizza: Retrofit potrebbe restituire List vuota se nessun neighbor
+            val normalizedResult = result ?: emptyList()
+
+            android.util.Log.d("LLDP_DEBUG", "Response: ${normalizedResult.size} neighbor(s) found")
+            normalizedResult.forEachIndexed { index, neighbor ->
+                android.util.Log.d("LLDP_DEBUG", "  [$index] Identity: ${neighbor.identity}")
+                android.util.Log.d("LLDP_DEBUG", "       Interface: ${neighbor.interfaceName}")
+                android.util.Log.d("LLDP_DEBUG", "       Discovered by: ${neighbor.discoveredBy}")
+                android.util.Log.d("LLDP_DEBUG", "       Caps: ${neighbor.systemCaps}")
+            }
+            android.util.Log.d("LLDP_DEBUG", "=== LLDP Request End ===")
+
+            UiState.Success(normalizedResult)
+        } catch (e: Exception) {
+            android.util.Log.e("LLDP_DEBUG", "ERRORE LLDP: ${e.message}", e)
+            UiState.Error(e.message ?: "Errore sconosciuto LLDP/CDP")
+        }
     }
 
     suspend fun runPing(probe: ProbeConfig, target: String, interfaceName: String, count: Int = 4): UiState<List<PingResult>> = safeApiCall {
@@ -309,31 +333,9 @@ class AppRepository @Inject constructor(
             throw IllegalStateException("DHCP gateway not resolved for interface $interfaceName")
         }
         val api = buildServiceFor(probe)
-        val results = api.runPing(PingRequest(address = resolvedTarget, `interface` = interfaceName, count = count.toString()))
-
-        // Verifica che tutti i ping siano riusciti (packet-loss = "0")
-        val allSuccessful = results.all { it.packetLoss == "0" }
-        if (!allSuccessful) {
-            throw IllegalStateException("Some pings failed - packet loss detected")
-        }
-
-        results
+        api.runPing(PingRequest(address = resolvedTarget, `interface` = interfaceName, count = count.toString()))
     }
 
-    suspend fun runTraceroute(
-        probe: ProbeConfig,
-        target: String,
-        interfaceName: String,
-        maxHops: Int = 30,
-        timeoutMs: Int = 3000
-    ): UiState<List<TracerouteHop>> = safeApiCall {
-        val resolvedTarget = resolveTargetIp(probe, target, interfaceName)
-        if (resolvedTarget.equals("DHCP_GATEWAY", ignoreCase = true)) {
-            throw IllegalStateException("DHCP gateway not resolved for interface $interfaceName")
-        }
-        val api = buildServiceFor(probe)
-        api.runTraceroute(TracerouteRequest(address = resolvedTarget, `interface` = interfaceName, maxHops = maxHops.toString(), timeout = "${timeoutMs}ms"))
-    }
 
     // --- PROBE MONITORING ---
 
@@ -357,6 +359,11 @@ class AppRepository @Inject constructor(
                 }
             }
         }
+
+    // Convenience method to persist the single probe configuration
+    suspend fun saveProbe(probe: ProbeConfig) {
+        probeConfigDao.upsertSingle(probe)
+    }
 }
 
 // Simple ticker flow

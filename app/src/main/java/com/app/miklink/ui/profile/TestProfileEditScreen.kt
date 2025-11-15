@@ -35,10 +35,6 @@ fun TestProfileEditScreen(
     val pingTarget2 by viewModel.pingTarget2.collectAsStateWithLifecycle()
     val pingTarget3 by viewModel.pingTarget3.collectAsStateWithLifecycle()
     val pingCount by viewModel.pingCount.collectAsStateWithLifecycle()
-    val runTraceroute by viewModel.runTraceroute.collectAsStateWithLifecycle()
-    val tracerouteTarget by viewModel.tracerouteTarget.collectAsStateWithLifecycle()
-    val tracerouteMaxHops by viewModel.tracerouteMaxHops.collectAsStateWithLifecycle()
-    val tracerouteTimeoutMs by viewModel.tracerouteTimeoutMs.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -80,7 +76,6 @@ fun TestProfileEditScreen(
                 SwitchListItem(checked = runLinkStatus, onCheckedChange = { viewModel.runLinkStatus.value = it }, headlineText = "Run Link Status Test")
                 SwitchListItem(checked = runLldp, onCheckedChange = { viewModel.runLldp.value = it }, headlineText = "Run LLDP/CDP Neighbor Test")
                 SwitchListItem(checked = runPing, onCheckedChange = { viewModel.runPing.value = it }, headlineText = "Run Ping Test")
-                SwitchListItem(checked = runTraceroute, onCheckedChange = { viewModel.runTraceroute.value = it }, headlineText = "Run Traceroute")
             }
 
             if (runPing) {
@@ -100,19 +95,6 @@ fun TestProfileEditScreen(
                             supportingText = { Text("Numero di ping per ogni target (default: 4)") },
                             isError = pingCount.toIntOrNull()?.let { it < 1 || it > 20 } ?: (pingCount.isNotBlank())
                         )
-                    }
-                }
-            }
-
-            if (runTraceroute) {
-                item {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("Traceroute", style = MaterialTheme.typography.titleMedium)
-                        OutlinedTextField(value = tracerouteTarget, onValueChange = { viewModel.tracerouteTarget.value = it }, label = { Text("Target (IP/hostname o DHCP_GATEWAY)") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                            OutlinedTextField(value = tracerouteMaxHops, onValueChange = { viewModel.tracerouteMaxHops.value = it }, label = { Text("Max Hops") }, modifier = Modifier.weight(1f), singleLine = true)
-                            OutlinedTextField(value = tracerouteTimeoutMs, onValueChange = { viewModel.tracerouteTimeoutMs.value = it }, label = { Text("Timeout per hop (ms)") }, modifier = Modifier.weight(1f), singleLine = true)
-                        }
                     }
                 }
             }

@@ -11,6 +11,9 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import java.time.LocalDate
+import org.gradle.jvm.toolchain.JavaLanguageVersion
+import org.gradle.api.plugins.JavaPluginExtension
+import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 
 fun countFiles(glob: String): Int {
     val matcher = java.nio.file.FileSystems.getDefault().getPathMatcher("glob:$glob")
@@ -59,3 +62,47 @@ tasks.register("docsUpdateProjectState") {
         println("PROJECT_STATE_DOCUMENTATION.md aggiornato: data=$today, kt=$kotlinTotal, screens=$screens, vms=$viewModels, entities=$entities, daos=$daos, repos=$repositories")
     }
 }
+
+// Inserire questa sezione vicino alla configurazione globale (root / top-level)
+// Impone Java 21 per Kotlin compilation / toolchain dei subprojects
+subprojects {
+    // Se il subproject usa Kotlin, applica il jvmToolchain tramite l'estensione KotlinJvmProjectExtension
+    plugins.withType<org.jetbrains.kotlin.gradle.plugin.KotlinBasePluginWrapper> {
+        // Try Kotlin JVM extension (non-Android modules)
+        extensions.findByType(KotlinJvmProjectExtension::class.java)?.let { kext ->
+            kext.jvmToolchain {
+                languageVersion.set(JavaLanguageVersion.of(21))
+            }
+        }
+        // For Android modules the Kotlin Android extension type is not available at root script
+        // evaluation classpath; we rely on configuring Kotlin compile tasks below as a fallback.
+    }
+
+    // Applica Java toolchain a tutti i subprojects (compatibilità compilazione Java) usando JavaPluginExtension
+    plugins.withId("java") {
+        extensions.configure(JavaPluginExtension::class.java) {
+            toolchain {
+                languageVersion.set(JavaLanguageVersion.of(21))
+            }
+        }
+    }
+
+    // Assicura che il KotlinCompile generi bytecode targeting JVM 21
+    // Preferiamo impostare il toolchain sopra; mantenere un fallback compatibile per kotlinOptions
+    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+        // kotlinOptions è deprecato ma ancora compatibile su molte versioni del plugin.
+        // Lasciamo un fallback qui per compatibilità evitando errori di receiver.
+        try {
+            @Suppress("DEPRECATION")
+            this.kotlinOptions.jvmTarget = "21"
+        } catch (e: Exception) {
+            // best-effort, se la proprietà non è disponibile ignoriamo: il jvmToolchain già imposta il target
+        }
+    }
+}
+
+// NOTE: Avoid importing KotlinAndroidProjectExtension here because it's not available
+// on the buildscript classpath for the root project evaluation.
+
+// Nota: la configurazione subprojects per jvmToolchain è già presente e imposta Java 21.
+// Nessuna modifica aggiuntiva funzionale richiesta qui.

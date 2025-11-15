@@ -6,6 +6,21 @@ plugins {
     id("com.google.devtools.ksp")
 }
 
+import org.gradle.jvm.toolchain.JavaLanguageVersion
+
+// Imposta toolchain JVM per questo modulo (Java/Kotlin)
+kotlin {
+    jvmToolchain {
+        languageVersion.set(JavaLanguageVersion.of(21))
+    }
+}
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(21))
+    }
+}
+
 android {
     namespace = "com.app.miklink"
     compileSdk = 34
@@ -36,20 +51,23 @@ android {
     kotlinOptions {
         jvmTarget = "21"
     }
-    // Nota: Usando Java 25 ma target 21 per compatibilità Android
+
+    testOptions {
+        unitTests.all {
+            it.testLogging {
+                events("passed", "skipped", "failed")
+            }
+        }
+        unitTests {
+            isReturnDefaultValues = true
+        }
+    }
+
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
-    // Rimuovo java toolchain - usa JDK di Android Studio
-    /*
-    java {
-        toolchain {
-            languageVersion.set(JavaLanguageVersion.of(17))
-        }
-    }
-    */
 }
 
 dependencies {
@@ -90,6 +108,22 @@ dependencies {
     // Unit & Instrumentation test dependencies
     // Use version catalog entries for test dependencies
     testImplementation(libs.junit)
+    testImplementation(libs.mockk)
+    testImplementation(libs.coroutines.test)
+    testImplementation(libs.turbine)
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.robolectric)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.espresso.core)
+}
+
+// Disabilita KSP incremental come mitigazione per problemi di mappatura file su JVM recenti
+// (KSP supporta il passaggio di argomenti tramite l'estensione 'ksp')
+ksp {
+    arg("ksp.incremental", "false")
+}
+
+// Garantire che tutte le compilazioni Kotlin usino jvmTarget 21
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    kotlinOptions.jvmTarget = "21"
 }

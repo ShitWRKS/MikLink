@@ -14,6 +14,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import java.security.cert.X509Certificate
+import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManager
@@ -27,6 +28,7 @@ object NetworkModule {
     @Singleton
     fun provideMoshi(): Moshi {
         return Moshi.Builder()
+            .add(com.app.miklink.data.network.NeighborDetailListAdapter())
             .add(object {
                 @FromJson
                 fun fromJson(reader: com.squareup.moshi.JsonReader): Boolean {
@@ -75,8 +77,13 @@ object NetworkModule {
     ): OkHttpClient {
         val builder = OkHttpClient.Builder()
             .addInterceptor(loggingInterceptor)
+            // Timeout: massimo 60s per request come richiesto
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .callTimeout(60, TimeUnit.SECONDS)
 
-        // Trust-all SSL for self-signed MikroTik HTTPS
+        // Trust-all SSL per HTTPS self-signed dei MikroTik (se si usa https)
         val trustAllCerts = arrayOf<TrustManager>(createUnsafeTrustManager())
         val sslContext = SSLContext.getInstance("TLS")
         sslContext.init(null, trustAllCerts, java.security.SecureRandom())

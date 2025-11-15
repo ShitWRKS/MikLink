@@ -35,7 +35,12 @@ lifecycleRuntimeKtx = "2.8.3"
 # TESTING
 junit = "4.13.2"
 androidx-test-ext-junit = "1.1.5"
+androidx-test-core = "1.5.0"
 espresso = "3.5.1"
+mockk = "1.13.8"
+coroutines-test = "1.7.3"
+turbine = "1.0.0"
+robolectric = "4.11.1"
 
 [libraries]
 
@@ -83,7 +88,12 @@ moshi-kotlin-codegen = { group = "com.squareup.moshi", name = "moshi-kotlin-code
 # TESTING
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidx-test-ext-junit" }
+androidx-test-core = { group = "androidx.test", name = "core", version.ref = "androidx-test-core" }
 espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espresso" }
+mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
+coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines-test" }
+turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine" }
+robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }
