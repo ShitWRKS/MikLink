@@ -43,13 +43,17 @@ class AppRepository @Inject constructor(
 
     private val connectivityManager by lazy { context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager }
 
+    // NUOVO: Sonda unica (post-refactor)
+    val currentProbe: Flow<ProbeConfig?> = probeConfigDao.getSingleProbe()
+
     private suspend fun findWifiNetwork(): Network? = withContext(Dispatchers.IO) {
-        // Prefer active WIFI network; fall back scanning all networks
+        // Return active network only if it's WIFI
         val active = connectivityManager.activeNetwork
         val activeCaps = active?.let { connectivityManager.getNetworkCapabilities(it) }
-        if (activeCaps?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true) return@withContext active
-        connectivityManager.allNetworks.firstOrNull { net ->
-            connectivityManager.getNetworkCapabilities(net)?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
+        if (activeCaps?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true) {
+            active
+        } else {
+            null
         }
     }
 
@@ -105,8 +109,8 @@ class AppRepository @Inject constructor(
     internal suspend fun getDhcpGateway(probe: ProbeConfig, interfaceName: String): String? {
         return try {
             val api = buildServiceFor(probe)
-            api.getDhcpClientStatus(InterfaceNameRequest(interfaceName)).firstOrNull()?.gateway
-        } catch (e: Exception) {
+            api.getDhcpClientStatus(interfaceName).firstOrNull()?.gateway
+        } catch (_: Exception) {
             null
         }
     }
@@ -116,9 +120,9 @@ class AppRepository @Inject constructor(
             val isOnline = try {
                 val api = buildServiceFor(probe)
                 api.getSystemResource(ProplistRequest(listOf("board-name"))).isNotEmpty()
-            } catch (e: HttpException) {
+            } catch (_: HttpException) {
                 false
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 false
             }
             emit(isOnline)
@@ -129,10 +133,8 @@ class AppRepository @Inject constructor(
     suspend fun checkProbeConnection(probe: ProbeConfig): ProbeCheckResult = withContext(Dispatchers.IO) {
         try {
             val api = buildServiceFor(probe)
-            val resourceRequest = ProplistRequest(listOf("board-name"))
-            val interfaceRequest = ProplistRequest(listOf("name"))
-            val boardName = api.getSystemResource(resourceRequest).firstOrNull()?.boardName ?: "Unknown Board"
-            val interfaces = api.getEthernetInterfaces(interfaceRequest).map { it.name }
+            val boardName = api.getSystemResource(ProplistRequest(listOf("board-name"))).firstOrNull()?.boardName ?: "Unknown Board"
+            val interfaces = api.getEthernetInterfaces().map { it.name }
             ProbeCheckResult.Success(boardName, interfaces)
         } catch (e: Exception) {
             ProbeCheckResult.Error(e.message ?: "An unknown error occurred while connecting to the probe.")
@@ -161,42 +163,76 @@ class AppRepository @Inject constructor(
 
         // Helper: rimuovi IP statici su interfaccia
         suspend fun removeStaticAddressesOnInterface() {
-            val addresses = api.getIpAddresses(ProplistRequest(listOf(".id", "address", "interface")))
+            val addresses = api.getIpAddresses()
             addresses.filter { it.iface == iface }.forEach { entry ->
                 entry.id?.let { api.removeIpAddress(NumbersRequest(it)) }
             }
         }
         // Helper: rimuovi default route duplicate
         suspend fun removeDefaultRoutes() {
-            val routes = api.getRoutes(ProplistRequest(listOf(".id", "dst-address", "gateway")))
+            val routes = api.getRoutes()
             routes.filter { it.dstAddress == "0.0.0.0/0" }.forEach { r -> r.id?.let { api.removeRoute(NumbersRequest(it)) } }
         }
 
-        // Gestione DHCP/STATIC
-        val dhcps = api.getDhcpClientStatus(InterfaceNameRequest(iface))
-        val dhcpId = dhcps.firstOrNull()?.id
 
         if (effective.networkMode.equals("DHCP", true)) {
-            // DHCP: disable → enable → attendi bound
-            if (dhcpId != null) {
-                // Disable existing DHCP client first
-                api.disableDhcpClient(NumbersRequest(dhcpId))
-                delay(500) // Small delay
-                // Enable it again
-                api.enableDhcpClient(NumbersRequest(dhcpId))
+            // DHCP: verifica se già configurato e bound, altrimenti configura
+            val existingDhcp = api.getDhcpClientStatus(iface).firstOrNull()
+
+            // Se il client DHCP esiste ed è già bound, non fare nulla
+            if (existingDhcp != null &&
+                existingDhcp.disabled == "false" &&
+                existingDhcp.status?.equals("bound", ignoreCase = true) == true) {
+                // DHCP già configurato correttamente, ritorna lo stato attuale
+                return@safeApiCall NetworkConfigFeedback(
+                    mode = "DHCP",
+                    interfaceName = iface,
+                    address = existingDhcp.address,
+                    gateway = existingDhcp.gateway,
+                    dns = existingDhcp.dns,
+                    message = "DHCP già configurato e attivo"
+                )
+            }
+
+            // Altrimenti, configura il DHCP
+            if (existingDhcp != null) {
+                // Client esiste ma è disabilitato o non bound: riabilita
+                if (existingDhcp.disabled == "true") {
+                    api.enableDhcpClient(NumbersRequest(existingDhcp.id!!))
+                } else {
+                    // Client abilitato ma non bound: disable/enable per refresh
+                    api.disableDhcpClient(NumbersRequest(existingDhcp.id!!))
+                    delay(500)
+                    api.enableDhcpClient(NumbersRequest(existingDhcp.id!!))
+                }
             } else {
-                // Create new DHCP client
-                api.addDhcpClient(DhcpClientAdd(`interface` = iface))
+                // Client non esiste: crea
+                try {
+                    api.addDhcpClient(DhcpClientAdd(`interface` = iface))
+                } catch (e: Exception) {
+                    // Se il client esiste già (race condition), recuperalo e abilitalo
+                    if (e.message?.contains("already exists", ignoreCase = true) == true) {
+                        delay(500)
+                        val existingId = api.getDhcpClientStatus(iface).firstOrNull()?.id
+                        if (existingId != null) {
+                            api.enableDhcpClient(NumbersRequest(existingId))
+                        } else {
+                            throw e
+                        }
+                    } else {
+                        throw e
+                    }
+                }
             }
 
             // Attendi lease (max 6 secondi)
             var lease: DhcpClientStatus? = null
             repeat(6) {
-                val cur = api.getDhcpClientStatus(InterfaceNameRequest(iface)).firstOrNull()
+                val cur = api.getDhcpClientStatus(iface).firstOrNull()
                 if (cur?.status.equals("bound", true)) { lease = cur; return@repeat }
                 delay(1000)
             }
-            val bound = lease ?: api.getDhcpClientStatus(InterfaceNameRequest(iface)).firstOrNull()
+            val bound = lease ?: api.getDhcpClientStatus(iface).firstOrNull()
             NetworkConfigFeedback(
                 mode = "DHCP",
                 interfaceName = iface,
@@ -208,6 +244,7 @@ class AppRepository @Inject constructor(
         } else {
             // STATIC
             // Disabilita DHCP se presente
+            val dhcpId = api.getDhcpClientStatus(iface).firstOrNull()?.id
             if (dhcpId != null) api.disableDhcpClient(NumbersRequest(dhcpId))
             removeStaticAddressesOnInterface()
             removeDefaultRoutes()
@@ -237,12 +274,12 @@ class AppRepository @Inject constructor(
     suspend fun getCurrentInterfaceIpConfig(probe: ProbeConfig): UiState<NetworkConfigFeedback> = safeApiCall {
         val api = buildServiceFor(probe)
         val iface = probe.testInterface
-        val dhcp = api.getDhcpClientStatus(InterfaceNameRequest(iface)).firstOrNull()
+        val dhcp = api.getDhcpClientStatus(iface).firstOrNull()
         if (dhcp != null && dhcp.status?.equals("bound", true) == true) {
             NetworkConfigFeedback("DHCP", iface, dhcp.address, dhcp.gateway, dhcp.dns, "Lease attiva")
         } else {
-            val addr = api.getIpAddresses(ProplistRequest(listOf("address", "interface"))).firstOrNull { it.iface == iface }
-            val route = api.getRoutes(ProplistRequest(listOf("dst-address", "gateway"))).firstOrNull { it.dstAddress == "0.0.0.0/0" }
+            val addr = api.getIpAddresses().firstOrNull { it.iface == iface }
+            val route = api.getRoutes().firstOrNull { it.dstAddress == "0.0.0.0/0" }
             NetworkConfigFeedback("STATIC", iface, addr?.address, route?.gateway, null, "Statico rilevato")
         }
     }
@@ -251,30 +288,36 @@ class AppRepository @Inject constructor(
 
     suspend fun runCableTest(probe: ProbeConfig, interfaceName: String): UiState<CableTestResult> = safeApiCall {
         val api = buildServiceFor(probe)
-        api.runCableTest(CableTestRequest(interfaceName)).first()
+        val results = api.runCableTest(CableTestRequest(interfaceName))
+        results.lastOrNull() ?: throw IllegalStateException("No cable test results returned")
     }
 
     suspend fun getLinkStatus(probe: ProbeConfig, interfaceName: String): UiState<MonitorResponse> = safeApiCall {
         val api = buildServiceFor(probe)
-        api.getLinkStatus(MonitorRequest(numbers = interfaceName, once = true)).first()
+        val results = api.getLinkStatus(MonitorRequest(numbers = interfaceName, once = true))
+        results.lastOrNull() ?: throw IllegalStateException("No link status returned")
     }
 
     suspend fun getNeighborsForInterface(probe: ProbeConfig, interfaceName: String): UiState<List<NeighborDetail>> = safeApiCall {
         val api = buildServiceFor(probe)
-        val request = NeighborRequest(
-            query = listOf("interface=$interfaceName"),
-            proplist = listOf("identity", "interface-name", "system-caps-enabled", "discovered-by", "vlan-id", "voice-vlan-id", "poe-class")
-        )
-        api.getIpNeighbors(request)
+        api.getIpNeighbors("interface=$interfaceName")
     }
 
-    suspend fun runPing(probe: ProbeConfig, target: String, interfaceName: String): UiState<PingResult> = safeApiCall {
+    suspend fun runPing(probe: ProbeConfig, target: String, interfaceName: String, count: Int = 4): UiState<List<PingResult>> = safeApiCall {
         val resolvedTarget = resolveTargetIp(probe, target, interfaceName)
         if (resolvedTarget.equals("DHCP_GATEWAY", ignoreCase = true)) {
             throw IllegalStateException("DHCP gateway not resolved for interface $interfaceName")
         }
         val api = buildServiceFor(probe)
-        api.runPing(PingRequest(address = resolvedTarget)).first()
+        val results = api.runPing(PingRequest(address = resolvedTarget, `interface` = interfaceName, count = count.toString()))
+
+        // Verifica che tutti i ping siano riusciti (packet-loss = "0")
+        val allSuccessful = results.all { it.packetLoss == "0" }
+        if (!allSuccessful) {
+            throw IllegalStateException("Some pings failed - packet loss detected")
+        }
+
+        results
     }
 
     suspend fun runTraceroute(
@@ -289,7 +332,7 @@ class AppRepository @Inject constructor(
             throw IllegalStateException("DHCP gateway not resolved for interface $interfaceName")
         }
         val api = buildServiceFor(probe)
-        api.runTraceroute(TracerouteRequest(address = resolvedTarget, maxHops = maxHops.toString(), timeout = "${timeoutMs}ms"))
+        api.runTraceroute(TracerouteRequest(address = resolvedTarget, `interface` = interfaceName, maxHops = maxHops.toString(), timeout = "${timeoutMs}ms"))
     }
 
     // --- PROBE MONITORING ---

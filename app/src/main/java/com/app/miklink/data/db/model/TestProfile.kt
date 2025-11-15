@@ -17,6 +17,7 @@ data class TestProfile(
     val pingTarget1: String? = null,
     val pingTarget2: String? = null,
     val pingTarget3: String? = null,
+    val pingCount: Int = 4, // NUOVO: numero ping per target (range 1-20)
     // Nuovi: Traceroute
     val runTraceroute: Boolean = false,
     val tracerouteTarget: String? = null, // IP/hostname o "DHCP_GATEWAY"

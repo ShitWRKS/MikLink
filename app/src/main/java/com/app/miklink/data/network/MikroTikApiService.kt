@@ -2,7 +2,9 @@ package com.app.miklink.data.network
 
 import com.squareup.moshi.Json
 import retrofit2.http.Body
+import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.Query
 
 // --- DTOs (Data Transfer Objects) ---
 
@@ -78,15 +80,33 @@ data class NeighborDetail(
 )
 
 
-data class PingRequest(val address: String, val count: String = "4")
-data class PingResult(@Json(name = "avg-rtt") val avgRtt: String?)
+data class PingRequest(
+    val address: String,
+    val `interface`: String? = null,
+    val count: String = "4"
+)
+data class PingResult(
+    @Json(name = "avg-rtt") val avgRtt: String?,
+    val host: String?,
+    @Json(name = "max-rtt") val maxRtt: String?,
+    @Json(name = "min-rtt") val minRtt: String?,
+    @Json(name = "packet-loss") val packetLoss: String?,
+    val received: String?,
+    val sent: String?,
+    val seq: String?,
+    val size: String?,
+    val time: String?,
+    val ttl: String?
+)
 
 // Traceroute
 
 data class TracerouteRequest(
     val address: String,
+    val `interface`: String? = null,
     @Json(name = "max-hops") val maxHops: String = "30",
-    val timeout: String = "3000ms"
+    val timeout: String = "3000ms",
+    val duration: String = "40s"
 )
 
 data class TracerouteHop(
@@ -98,14 +118,14 @@ data class TracerouteHop(
 interface MikroTikApiService {
 
     @POST("/rest/system/resource/print")
-    suspend fun getSystemResource(@Body request: ProplistRequest): List<SystemResource>
+    suspend fun getSystemResource(@Body request: ProplistRequest = ProplistRequest(listOf("board-name"))): List<SystemResource>
 
-    @POST("/rest/interface/ethernet/print")
-    suspend fun getEthernetInterfaces(@Body request: ProplistRequest): List<EthernetInterface>
+    @GET("/rest/interface/ethernet")
+    suspend fun getEthernetInterfaces(@Query(".proplist") proplist: String = "name"): List<EthernetInterface>
 
     // DHCP client management
-    @POST("/rest/ip/dhcp-client/print")
-    suspend fun getDhcpClientStatus(@Body request: InterfaceNameRequest): List<DhcpClientStatus>
+    @GET("/rest/ip/dhcp-client")
+    suspend fun getDhcpClientStatus(@Query("interface") interfaceName: String): List<DhcpClientStatus>
 
     @POST("/rest/ip/dhcp-client/add")
     suspend fun addDhcpClient(@Body request: DhcpClientAdd): Any
@@ -117,8 +137,8 @@ interface MikroTikApiService {
     suspend fun disableDhcpClient(@Body request: NumbersRequest): Any
 
     // IP address management
-    @POST("/rest/ip/address/print")
-    suspend fun getIpAddresses(@Body request: ProplistRequest): List<IpAddressEntry>
+    @GET("/rest/ip/address")
+    suspend fun getIpAddresses(@Query(".proplist") proplist: String = ".id,address,interface"): List<IpAddressEntry>
 
     @POST("/rest/ip/address/add")
     suspend fun addIpAddress(@Body request: IpAddressAdd): Any
@@ -127,8 +147,8 @@ interface MikroTikApiService {
     suspend fun removeIpAddress(@Body request: NumbersRequest): Any
 
     // Routes management
-    @POST("/rest/ip/route/print")
-    suspend fun getRoutes(@Body request: ProplistRequest): List<RouteEntry>
+    @GET("/rest/ip/route")
+    suspend fun getRoutes(@Query(".proplist") proplist: String = ".id,dst-address,gateway"): List<RouteEntry>
 
     @POST("/rest/ip/route/add")
     suspend fun addRoute(@Body request: RouteAdd): Any
@@ -143,8 +163,11 @@ interface MikroTikApiService {
     @POST("/rest/interface/ethernet/monitor")
     suspend fun getLinkStatus(@Body request: MonitorRequest): List<MonitorResponse>
 
-    @POST("/rest/ip/neighbor/print")
-    suspend fun getIpNeighbors(@Body request: NeighborRequest): List<NeighborDetail>
+    @GET("/rest/ip/neighbor")
+    suspend fun getIpNeighbors(
+        @Query("query") query: String,
+        @Query(".proplist") proplist: String = "identity,interface-name,system-caps-enabled,discovered-by,vlan-id,voice-vlan-id,poe-class"
+    ): List<NeighborDetail>
 
     @POST("/rest/ping")
     suspend fun runPing(@Body request: PingRequest): List<PingResult>

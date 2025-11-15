@@ -55,13 +55,6 @@ class TestViewModel @Inject constructor(
 
     // init { startTest() } // rimosso: l'avvio è manuale da UI
 
-    fun resetState() {
-        _log.value = emptyList()
-        _uiState.value = UiState.Idle
-        _sections.value = emptyList()
-        _isRunning.value = false
-        overrideClientNetwork = null
-    }
 
     fun startTest() {
         // Guard: evita doppio avvio se già in esecuzione
@@ -84,7 +77,7 @@ class TestViewModel @Inject constructor(
             // Decode URI-encoded socketName
             val socketName = try {
                 android.net.Uri.decode(socketNameRaw)
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 socketNameRaw
             }
 
@@ -388,16 +381,41 @@ class TestViewModel @Inject constructor(
                             }
 
                             addLog("Ping verso $resolvedTarget...")
-                            when (val pingResult = repository.runPing(probe, resolvedTarget, probe.testInterface)) {
+                            when (val pingResult = repository.runPing(probe, resolvedTarget, probe.testInterface, profile.pingCount)) {
                                 is UiState.Success -> {
-                                    val avgRtt = pingResult.data.avgRtt ?: "N/A"
-                                    addLog("Ping $resolvedTarget: SUCCESSO ($avgRtt)")
-                                    testResults["ping_$target"] = pingResult.data
-                                    pingDetails.add(TestDetail(target, avgRtt))
+                                    val pingResults = pingResult.data
+                                    // Calcola statistiche aggregate
+                                    val lastResult = pingResults.lastOrNull()
+                                    val avgRtt = lastResult?.avgRtt ?: "N/A"
+                                    val packetLoss = lastResult?.packetLoss ?: "N/A"
+
+                                    addLog("Ping $resolvedTarget: SUCCESSO (avg: $avgRtt, loss: $packetLoss%)")
+                                    testResults["ping_$target"] = pingResults
+
+                                    // Crea dettagli per ogni ping individuale
+                                    val pingDetailsList = mutableListOf<TestDetail>()
+                                    pingDetailsList.add(TestDetail("Target", "$target → $resolvedTarget"))
+                                    pingDetailsList.add(TestDetail("Pacchetti inviati", pingResults.size.toString()))
+                                    pingDetailsList.add(TestDetail("Packet Loss", "${packetLoss}%"))
+                                    pingDetailsList.add(TestDetail("Avg RTT", avgRtt))
+                                    pingDetailsList.add(TestDetail("Min RTT", lastResult?.minRtt ?: "N/A"))
+                                    pingDetailsList.add(TestDetail("Max RTT", lastResult?.maxRtt ?: "N/A"))
+                                    pingDetailsList.add(TestDetail("---", "Dettaglio ping individuali:"))
+
+                                    pingResults.forEach { ping ->
+                                        pingDetailsList.add(
+                                            TestDetail(
+                                                "Ping #${ping.seq ?: "?"}",
+                                                "time=${ping.time ?: "N/A"} ttl=${ping.ttl ?: "N/A"}"
+                                            )
+                                        )
+                                    }
+
+                                    pingDetails.addAll(pingDetailsList)
                                 }
                                 is UiState.Error -> {
                                     addLog("Ping $resolvedTarget: FALLITO (${pingResult.message})")
-                                    pingDetails.add(TestDetail(target, "FAIL"))
+                                    pingDetails.add(TestDetail(target, "FAIL: ${pingResult.message}"))
                                     allPingsPassed = false
                                 }
                                 else -> {}

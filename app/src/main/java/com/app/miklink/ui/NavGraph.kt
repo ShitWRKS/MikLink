@@ -11,8 +11,8 @@ import com.app.miklink.ui.client.ClientListScreen
 import com.app.miklink.ui.dashboard.DashboardScreen
 import com.app.miklink.ui.history.HistoryScreen
 import com.app.miklink.ui.history.ReportDetailScreen
+// import com.app.miklink.ui.probe.ProbeListScreen // DEPRECATO: sonda unica
 import com.app.miklink.ui.probe.ProbeEditScreen
-import com.app.miklink.ui.probe.ProbeListScreen
 import com.app.miklink.ui.profile.TestProfileEditScreen
 import com.app.miklink.ui.profile.TestProfileListScreen
 import com.app.miklink.ui.settings.SettingsScreen
@@ -52,8 +52,8 @@ fun NavGraph() {
         // Settings and Management Screens
         composable("settings") { SettingsScreen(navController) }
         
-        // Probe Routes
-        composable("probe_list") { ProbeListScreen(navController) }
+        // Probe Routes (DEPRECATO: multi-probe, mantenuto per compatibility)
+        // composable("probe_list") { ProbeListScreen(navController) }
         composable("probe_add") { ProbeEditScreen(navController) } // CRASH FIX
         composable(
             route = "probe_edit/{probeId}",

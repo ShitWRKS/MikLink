@@ -3,6 +3,7 @@ package com.app.miklink.di
 import android.content.Context
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.app.miklink.data.db.AppDatabase
 import com.app.miklink.data.db.model.TestProfile
@@ -22,6 +23,13 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
 
+    // Migrazione v7 → v8: aggiunta colonna pingCount a test_profiles
+    private val MIGRATION_7_8 = object : Migration(7, 8) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL("ALTER TABLE test_profiles ADD COLUMN pingCount INTEGER NOT NULL DEFAULT 4")
+        }
+    }
+
     @Provides
     @Singleton
     fun provideAppDatabase(
@@ -34,6 +42,7 @@ object DatabaseModule {
             AppDatabase::class.java,
             "miklink-db"
         )
+        .addMigrations(MIGRATION_7_8)
         .fallbackToDestructiveMigration()
         .addCallback(object : RoomDatabase.Callback() {
             override fun onCreate(db: SupportSQLiteDatabase) {

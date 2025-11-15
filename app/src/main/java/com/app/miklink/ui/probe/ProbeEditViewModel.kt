@@ -63,15 +63,33 @@ class ProbeEditViewModel @Inject constructor(
     }
 
     init {
-        if (isEditing) {
-            viewModelScope.launch {
+        viewModelScope.launch {
+            if (isEditing) {
+                // Editing existing probe (legacy multi-probe mode)
                 probeConfigDao.getProbeById(probeId).firstOrNull()?.let { probe ->
                     name.value = probe.name
                     ipAddress.value = probe.ipAddress
                     username.value = probe.username
                     password.value = probe.password
                     isHttps.value = probe.isHttps
+                    testInterface.value = probe.testInterface
                     _verificationState.value = VerificationState.Idle
+                }
+            } else {
+                // NUOVO: Carica sonda unica se esiste (navigazione da settings)
+                probeConfigDao.getSingleProbe().firstOrNull()?.let { probe ->
+                    name.value = probe.name
+                    ipAddress.value = probe.ipAddress
+                    username.value = probe.username
+                    password.value = probe.password
+                    isHttps.value = probe.isHttps
+                    testInterface.value = probe.testInterface
+                    _modelName.value = probe.modelName
+                    _tdrSupported.value = probe.tdrSupported
+                    _isOnline.value = probe.isOnline
+                    if (probe.modelName != null) {
+                        _verificationState.value = VerificationState.Success(probe.modelName, listOfNotNull(probe.testInterface))
+                    }
                 }
             }
         }
@@ -112,7 +130,7 @@ class ProbeEditViewModel @Inject constructor(
     fun onSaveClicked() {
         viewModelScope.launch {
             val probeToSave = ProbeConfig(
-                probeId = if (isEditing) probeId else 0,
+                probeId = if (isEditing) probeId else 1, // MODIFICATO: forza ID=1 per sonda unica
                 name = name.value,
                 ipAddress = ipAddress.value,
                 username = username.value,
@@ -123,7 +141,8 @@ class ProbeEditViewModel @Inject constructor(
                 modelName = _modelName.value,
                 tdrSupported = _tdrSupported.value
             )
-            probeConfigDao.insert(probeToSave)
+            // MODIFICATO: usa upsertSingle per sonda unica
+            probeConfigDao.upsertSingle(probeToSave)
             _isSaved.value = true
         }
     }

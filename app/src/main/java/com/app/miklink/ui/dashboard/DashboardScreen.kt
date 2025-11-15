@@ -44,20 +44,20 @@ fun DashboardScreen(
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
     val clients by viewModel.clients.collectAsStateWithLifecycle()
-    val probes by viewModel.probes.collectAsStateWithLifecycle()
+    val currentProbe by viewModel.currentProbe.collectAsStateWithLifecycle() // MODIFICATO
     val profiles by viewModel.profiles.collectAsStateWithLifecycle()
 
     val selectedClient by viewModel.selectedClient.collectAsStateWithLifecycle()
-    val selectedProbe by viewModel.selectedProbe.collectAsStateWithLifecycle()
+    // RIMOSSO: selectedProbe
     val selectedProfile by viewModel.selectedProfile.collectAsStateWithLifecycle()
     val socketName by viewModel.socketName.collectAsStateWithLifecycle()
     val isProbeOnline by viewModel.isProbeOnline.collectAsStateWithLifecycle()
 
-    val isTestButtonEnabled = selectedClient != null && selectedProbe != null &&
+    val isTestButtonEnabled = selectedClient != null && currentProbe != null &&
                             selectedProfile != null && socketName.isNotBlank()
 
     // Warning per sonda offline (non bloccante)
-    val showProbeOfflineWarning = selectedProbe != null && !isProbeOnline
+    val showProbeOfflineWarning = currentProbe != null && !isProbeOnline
 
     // Animazione pulsante quando pronto
     val infiniteTransition = rememberInfiniteTransition(label = "button_pulse")
@@ -113,7 +113,7 @@ fun DashboardScreen(
                         .navigationBarsPadding()
                 ) {
                     // Status chips
-                    AnimatedVisibility(visible = selectedClient != null || selectedProbe != null) {
+                    AnimatedVisibility(visible = selectedClient != null || currentProbe != null) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -127,10 +127,10 @@ fun DashboardScreen(
                                     color = MaterialTheme.colorScheme.primary
                                 )
                             }
-                            if (selectedProbe != null) {
+                            if (currentProbe != null) {
                                 StatusChip(
                                     icon = if (isProbeOnline) Icons.Default.CheckCircle else Icons.Default.Error,
-                                    label = selectedProbe!!.name,
+                                    label = currentProbe!!.name,
                                     color = if (isProbeOnline) Color(0xFF4CAF50) else Color(0xFFF44336)
                                 )
                             }
@@ -172,7 +172,7 @@ fun DashboardScreen(
                         onClick = {
                             val encodedSocket = Uri.encode(socketName)
                             navController.navigate(
-                                "test_execution/${selectedClient!!.clientId}/${selectedProbe!!.probeId}/${selectedProfile!!.profileId}/$encodedSocket"
+                                "test_execution/${selectedClient!!.clientId}/${currentProbe!!.probeId}/${selectedProfile!!.profileId}/$encodedSocket"
                             )
                         },
                         modifier = Modifier
@@ -270,31 +270,9 @@ fun DashboardScreen(
                 emptyMessage = "Nessun cliente configurato"
             )
 
-            // Probe selection
+            // Profile selection (numerazione aggiornata: 3→2)
             SelectionCard(
-                title = "2. Seleziona Sonda",
-                icon = Icons.Default.Router,
-                items = probes,
-                selectedItem = selectedProbe,
-                onItemSelected = { viewModel.selectedProbe.value = it },
-                itemToString = { it.name },
-                onManageClick = { navController.navigate("probe_list") },
-                emptyMessage = "Nessuna sonda configurata",
-                leadingIcon = if (selectedProbe != null) {
-                    {
-                        Box(
-                            modifier = Modifier
-                                .size(12.dp)
-                                .clip(CircleShape)
-                                .background(if (isProbeOnline) Color(0xFF4CAF50) else Color(0xFFF44336))
-                        )
-                    }
-                } else null
-            )
-
-            // Profile selection
-            SelectionCard(
-                title = "3. Seleziona Profilo Test",
+                title = "2. Seleziona Profilo Test",
                 icon = Icons.Default.Checklist,
                 items = profiles,
                 selectedItem = selectedProfile,
@@ -322,7 +300,7 @@ fun DashboardScreen(
                         )
                         Spacer(Modifier.width(12.dp))
                         Text(
-                            text = "4. Inserisci ID Presa",
+                            text = "3. Inserisci ID Presa",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )

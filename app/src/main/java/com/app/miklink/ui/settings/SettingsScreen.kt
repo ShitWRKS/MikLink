@@ -103,6 +103,21 @@ fun SettingsScreen(
             }
 
 
+            // Sezione Sonda (NUOVO)
+            SettingsSection(
+                title = "Sonda MikroTik",
+                icon = Icons.Default.Router,
+                iconColor = Color(0xFF2196F3)
+            ) {
+                SettingsCard(
+                    headline = "Configura Sonda",
+                    subtitle = "Gestisci la sonda di test",
+                    leadingIcon = Icons.Default.Router,
+                    iconColor = Color(0xFF2196F3),
+                    onClick = { navController.navigate("probe_edit/-1") }
+                )
+            }
+
             // Sezione Aspetto
             SettingsSection(
                 title = "Aspetto",

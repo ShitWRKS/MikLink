@@ -585,9 +585,64 @@ fun TestCompletedView(
             if (pingSec != null) {
                 TestSectionCard(title = pingSec.title, status = pingSec.status, icon = Icons.Default.Wifi, statusColor = Color(0xFF2196F3)) {
                     pingSec.details.forEach { d ->
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text(d.label)
-                            Text(d.value, fontWeight = FontWeight.Bold)
+                        when {
+                            d.label == "---" -> {
+                                // Separatore visivo
+                                Spacer(Modifier.height(8.dp))
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                                Spacer(Modifier.height(8.dp))
+                                Text(
+                                    d.value,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(Modifier.height(4.dp))
+                            }
+                            d.label.startsWith("Ping #") -> {
+                                // Dettaglio ping individuale con stile monospace
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 4.dp)
+                                        .background(
+                                            MaterialTheme.colorScheme.surfaceVariant,
+                                            RoundedCornerShape(4.dp)
+                                        )
+                                        .padding(8.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        d.label,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                    Text(
+                                        d.value,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontFamily = FontFamily.Monospace,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                            else -> {
+                                // Dettaglio normale
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        d.label,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Text(
+                                        d.value,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -678,26 +733,36 @@ private fun StatusChip(status: String) {
 
 @Composable
 private fun TestSectionCard(title: String, status: String, icon: ImageVector, statusColor: Color, content: @Composable ColumnScope.() -> Unit) {
-    val expanded = remember { mutableStateOf(false) }
+    var expanded by remember { mutableStateOf(false) }
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        onClick = { expanded = !expanded }
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
+        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+            // Header sempre visibile
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                Icon(icon, contentDescription = null, tint = statusColor)
-                Spacer(Modifier.width(8.dp))
-                Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                Icon(icon, contentDescription = null, tint = statusColor, modifier = Modifier.size(24.dp))
+                Spacer(Modifier.width(12.dp))
+                Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
                 StatusChip(status)
                 Spacer(Modifier.width(8.dp))
-                TextButton(onClick = { expanded.value = !expanded.value }) {
-                    Text(if (expanded.value) "Chiudi" else "Dettagli")
-                }
+                Icon(
+                    if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = if (expanded) "Comprimi" else "Espandi",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
-            if (expanded.value) {
-                Spacer(Modifier.height(8.dp))
-                content()
+
+            // Contenuto espandibile
+            AnimatedVisibility(visible = expanded) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Spacer(Modifier.height(12.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    Spacer(Modifier.height(12.dp))
+                    content()
+                }
             }
         }
     }

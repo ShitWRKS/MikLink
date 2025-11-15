@@ -31,4 +31,11 @@ interface ProbeConfigDao {
 
     @Query("SELECT * FROM probe_config WHERE probeId = :id")
     fun getProbeById(id: Long): Flow<ProbeConfig?>
+
+    // NUOVO: Sonda unica (post-refactor)
+    @Query("SELECT * FROM probe_config ORDER BY probeId ASC LIMIT 1")
+    fun getSingleProbe(): Flow<ProbeConfig?>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertSingle(probe: ProbeConfig)
 }

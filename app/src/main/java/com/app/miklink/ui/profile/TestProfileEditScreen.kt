@@ -34,6 +34,7 @@ fun TestProfileEditScreen(
     val pingTarget1 by viewModel.pingTarget1.collectAsStateWithLifecycle()
     val pingTarget2 by viewModel.pingTarget2.collectAsStateWithLifecycle()
     val pingTarget3 by viewModel.pingTarget3.collectAsStateWithLifecycle()
+    val pingCount by viewModel.pingCount.collectAsStateWithLifecycle()
     val runTraceroute by viewModel.runTraceroute.collectAsStateWithLifecycle()
     val tracerouteTarget by viewModel.tracerouteTarget.collectAsStateWithLifecycle()
     val tracerouteMaxHops by viewModel.tracerouteMaxHops.collectAsStateWithLifecycle()
@@ -89,6 +90,16 @@ fun TestProfileEditScreen(
                         OutlinedTextField(value = pingTarget1, onValueChange = { viewModel.pingTarget1.value = it }, label = { Text("Ping Target 1") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
                         OutlinedTextField(value = pingTarget2, onValueChange = { viewModel.pingTarget2.value = it }, label = { Text("Ping Target 2") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
                         OutlinedTextField(value = pingTarget3, onValueChange = { viewModel.pingTarget3.value = it }, label = { Text("Ping Target 3") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                        Spacer(Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = pingCount,
+                            onValueChange = { viewModel.pingCount.value = it },
+                            label = { Text("Ping Count (1-20)") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            supportingText = { Text("Numero di ping per ogni target (default: 4)") },
+                            isError = pingCount.toIntOrNull()?.let { it < 1 || it > 20 } ?: (pingCount.isNotBlank())
+                        )
                     }
                 }
             }

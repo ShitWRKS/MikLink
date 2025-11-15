@@ -34,6 +34,7 @@ class TestProfileViewModel @Inject constructor(
     val pingTarget1 = MutableStateFlow("")
     val pingTarget2 = MutableStateFlow("")
     val pingTarget3 = MutableStateFlow("")
+    val pingCount = MutableStateFlow("4") // NUOVO: count ping (1-20)
     // Traceroute fields
     val runTraceroute = MutableStateFlow(false)
     val tracerouteTarget = MutableStateFlow("")
@@ -56,6 +57,7 @@ class TestProfileViewModel @Inject constructor(
                     pingTarget1.value = profile.pingTarget1 ?: ""
                     pingTarget2.value = profile.pingTarget2 ?: ""
                     pingTarget3.value = profile.pingTarget3 ?: ""
+                    pingCount.value = profile.pingCount.toString()
                     runTraceroute.value = profile.runTraceroute
                     tracerouteTarget.value = profile.tracerouteTarget ?: ""
                     tracerouteMaxHops.value = profile.tracerouteMaxHops.toString()
@@ -78,6 +80,7 @@ class TestProfileViewModel @Inject constructor(
                 pingTarget1 = pingTarget1.value.takeIf { it.isNotBlank() },
                 pingTarget2 = pingTarget2.value.takeIf { it.isNotBlank() },
                 pingTarget3 = pingTarget3.value.takeIf { it.isNotBlank() },
+                pingCount = pingCount.value.toIntOrNull()?.coerceIn(1, 20) ?: 4, // validazione range
                 runTraceroute = runTraceroute.value,
                 tracerouteTarget = tracerouteTarget.value.takeIf { it.isNotBlank() },
                 tracerouteMaxHops = tracerouteMaxHops.value.toIntOrNull() ?: 30,

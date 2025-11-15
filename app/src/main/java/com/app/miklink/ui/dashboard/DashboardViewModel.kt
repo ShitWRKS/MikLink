@@ -13,14 +13,15 @@ import com.app.miklink.data.repository.AppRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.util.Locale
 import javax.inject.Inject
 
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
     clientDao: ClientDao,
-    probeConfigDao: ProbeConfigDao,
     testProfileDao: TestProfileDao,
-    private val reportDao: ReportDao, // Injected ReportDao
+    private val reportDao: ReportDao,
     private val repository: AppRepository
 ) : ViewModel() {
 
@@ -28,19 +29,20 @@ class DashboardViewModel @Inject constructor(
     val clients: StateFlow<List<Client>> = clientDao.getAllClients()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val probes: StateFlow<List<ProbeConfig>> = probeConfigDao.getAllProbes()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    // MODIFICATO: sonda unica invece di lista
+    val currentProbe: StateFlow<ProbeConfig?> = repository.currentProbe
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     val profiles: StateFlow<List<TestProfile>> = testProfileDao.getAllProfiles()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // User selections
     val selectedClient = MutableStateFlow<Client?>(null)
-    val selectedProbe = MutableStateFlow<ProbeConfig?>(null)
+    // RIMOSSO: val selectedProbe (ora usa currentProbe)
     val selectedProfile = MutableStateFlow<TestProfile?>(null)
     val socketName = MutableStateFlow("")
 
-    val isProbeOnline: StateFlow<Boolean> = selectedProbe.flatMapLatest { probe ->
+    val isProbeOnline: StateFlow<Boolean> = currentProbe.flatMapLatest { probe ->
         if (probe == null) {
             flowOf(false)
         } else {
@@ -66,7 +68,7 @@ class DashboardViewModel @Inject constructor(
                         lastNumber + 1
                     }
                     // Format with 3-digit padding
-                    socketName.value = "${client.socketPrefix}${String.format("%03d", nextNumber)}"
+                    socketName.value = "${client.socketPrefix}${String.format(Locale.US, "%03d", nextNumber)}"
                 } else {
                     socketName.value = ""
                 }
