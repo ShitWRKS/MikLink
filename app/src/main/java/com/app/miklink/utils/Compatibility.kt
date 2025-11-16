@@ -16,6 +16,11 @@ object Compatibility {
         "hEX", "hAP"
     )
 
+    // Keywords that indicate a model is likely NOT supported, even if it contains a supported prefix.
+    private val tdrUnsupportedKeywords = setOf(
+        "lite"
+    )
+
     /**
      * Checks if a given board name likely supports Cable Test (TDR).
      * This check is based on a predefined set of models and partial matches.
@@ -26,7 +31,12 @@ object Compatibility {
     fun isTdrSupported(boardName: String?): Boolean {
         if (boardName.isNullOrBlank()) return false
 
-        // Check if the board name contains any of the known TDR-supported model identifiers
+        // Check for unsupported keywords first.
+        if (tdrUnsupportedKeywords.any { keyword -> boardName.contains(keyword, ignoreCase = true) }) {
+            return false
+        }
+
+        // Check if the board name contains any of the known TDR-supported model identifiers.
         return tdrSupportedModels.any { model ->
             boardName.contains(model, ignoreCase = true)
         }

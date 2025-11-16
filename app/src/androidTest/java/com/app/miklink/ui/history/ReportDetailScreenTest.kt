@@ -49,7 +49,7 @@ class ReportDetailScreenTest {
         override val socketName = MutableStateFlow("")
         override val notes = MutableStateFlow("")
         override fun updateReportDetails() {}
-        override fun exportReportToPdf(uri: android.net.Uri) { _pdfStatus.value = "EXPORT" }
+        override fun exportReportToPdf() { _pdfStatus.value = "EXPORT" }
     }
 
     @Test

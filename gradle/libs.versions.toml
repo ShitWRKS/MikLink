@@ -70,6 +70,7 @@ hilt-navigation-compose = { module = "androidx.hilt:hilt-navigation-compose", ve
 room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
+room-testing = { module = "androidx.room:room-testing", version.ref = "room" }
 
 # Networking
 retrofit-core = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }

@@ -202,13 +202,7 @@ class TestViewModel @Inject constructor(
                                 // Chiudi test immediatamente
                                 _isRunning.value = false
                                 emitImmediateFail(
-                                    reportClient = client,
-                                    reportProbe = probe,
-                                    reportProfile = profile,
-                                    socketName = socketName,
-                                    overallStatus = overallStatus,
-                                    notes = "Test interrotto: NO LINK",
-                                    testResults = testResults
+                                    notes = "Test interrotto: NO LINK"
                                 )
                                 return@launch
                             }
@@ -233,13 +227,7 @@ class TestViewModel @Inject constructor(
                                 )
                                 _isRunning.value = false
                                 emitImmediateFail(
-                                    reportClient = client,
-                                    reportProbe = probe,
-                                    reportProfile = profile,
-                                    socketName = socketName,
-                                    overallStatus = overallStatus,
-                                    notes = "Test interrotto: Link DOWN",
-                                    testResults = testResults
+                                    notes = "Test interrotto: Link DOWN"
                                 )
                                 return@launch
                             }
@@ -282,13 +270,7 @@ class TestViewModel @Inject constructor(
                             // Stop immediato su errore link
                             _isRunning.value = false
                             emitImmediateFail(
-                                reportClient = client,
-                                reportProbe = probe,
-                                reportProfile = profile,
-                                socketName = socketName,
-                                overallStatus = overallStatus,
-                                notes = "Test interrotto: Errore stato link (${linkResult.message})",
-                                testResults = testResults
+                                notes = "Test interrotto: Errore stato link (${linkResult.message})"
                             )
                             return@launch
                         }
@@ -780,26 +762,7 @@ class TestViewModel @Inject constructor(
         _log.value = _log.value + message
     }
 
-    private fun emitImmediateFail(
-        reportClient: Client,
-        reportProbe: ProbeConfig,
-        reportProfile: TestProfile,
-        socketName: String,
-        overallStatus: String,
-        notes: String,
-        testResults: Map<String, Any>
-    ) {
-        // Emissione minimale sicura: evita serializzazione complessa in early-stop
-        val report = Report(
-            clientId = reportClient.clientId,
-            timestamp = System.currentTimeMillis(),
-            socketName = socketName,
-            notes = notes,
-            probeName = reportProbe.name,
-            profileName = reportProfile.profileName,
-            overallStatus = overallStatus,
-            resultsJson = "{}" // JSON minimale per early-stop
-        )
-        _uiState.value = UiState.Success(report)
+    private fun emitImmediateFail(notes: String) {
+        _uiState.value = UiState.Error(notes)
     }
 }

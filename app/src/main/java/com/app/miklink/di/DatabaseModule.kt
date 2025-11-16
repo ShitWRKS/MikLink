@@ -3,9 +3,9 @@ package com.app.miklink.di
 import android.content.Context
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.app.miklink.data.db.AppDatabase
+import com.app.miklink.data.db.Migrations
 import com.app.miklink.data.db.model.TestProfile
 import dagger.Module
 import dagger.Provides
@@ -23,29 +23,6 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
 
-    // Migrazione v7 → v8: aggiunta colonna pingCount a test_profiles
-    private val MIGRATION_7_8 = object : Migration(7, 8) {
-        override fun migrate(database: SupportSQLiteDatabase) {
-            database.execSQL("ALTER TABLE test_profiles ADD COLUMN pingCount INTEGER NOT NULL DEFAULT 4")
-        }
-    }
-
-    // Migrazione v8 → v9: aggiunta campi Speed Test a clients
-    private val MIGRATION_8_9 = object : Migration(8, 9) {
-        override fun migrate(database: SupportSQLiteDatabase) {
-            database.execSQL("ALTER TABLE clients ADD COLUMN speedTestServerAddress TEXT")
-            database.execSQL("ALTER TABLE clients ADD COLUMN speedTestServerUser TEXT")
-            database.execSQL("ALTER TABLE clients ADD COLUMN speedTestServerPassword TEXT")
-        }
-    }
-
-    // Migrazione v9 → v10: aggiunta flag runSpeedTest a test_profiles
-    private val MIGRATION_9_10 = object : Migration(9, 10) {
-        override fun migrate(database: SupportSQLiteDatabase) {
-            database.execSQL("ALTER TABLE test_profiles ADD COLUMN runSpeedTest INTEGER NOT NULL DEFAULT 0")
-        }
-    }
-
     @Provides
     @Singleton
     fun provideAppDatabase(
@@ -58,7 +35,7 @@ object DatabaseModule {
             AppDatabase::class.java,
             "miklink-db"
         )
-        .addMigrations(MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
+        .addMigrations(*Migrations.ALL_MIGRATIONS)
         .fallbackToDestructiveMigration()
         .addCallback(object : RoomDatabase.Callback() {
             override fun onCreate(db: SupportSQLiteDatabase) {

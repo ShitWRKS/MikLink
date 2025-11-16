@@ -19,12 +19,17 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import okhttp3.OkHttpClient
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import retrofit2.HttpException
 import retrofit2.Retrofit
+import java.net.ConnectException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 
 /**
  * Unit test per AppRepository
@@ -492,5 +497,278 @@ class AppRepositoryTest {
 
         // Assert
         coVerify(exactly = 1) { mockProbeConfigDao.upsertSingle(testProbe) }
+    }
+
+    // ========== Test per safeApiCall (Gestione Eccezioni di Rete) ==========
+
+    /**
+     * Test 9: safeApiCall gestisce SocketTimeoutException
+     * Verifica che il repository gestisca correttamente i timeout di rete
+     */
+    @Test
+    fun `test safeApiCall handles SocketTimeoutException`() = runTest {
+        // Arrange
+        val testProbe = ProbeConfig(
+            probeId = 1L,
+            name = "Test Probe",
+            ipAddress = "192.168.1.1",
+            username = "admin",
+            password = "password",
+            testInterface = "ether1",
+            isOnline = true,
+            modelName = "RB750",
+            tdrSupported = true,
+            isHttps = false
+        )
+
+        coEvery {
+            mockApiService.runPing(any())
+        } throws SocketTimeoutException("Connection timeout")
+
+        repository = createRepository()
+
+        // Act
+        val result = repository.runPing(
+            probe = testProbe,
+            target = "8.8.8.8",
+            interfaceName = "ether1",
+            count = 4
+        )
+
+        // Assert
+        assertTrue(result is UiState.Error)
+        val errorResult = result as UiState.Error
+        assertTrue(errorResult.message.contains("timeout", ignoreCase = true))
+    }
+
+    /**
+     * Test 10: safeApiCall gestisce HttpException (500)
+     * Verifica che il repository gestisca correttamente errori HTTP generici
+     */
+    @Test
+    fun `test safeApiCall handles HttpException with 500 error`() = runTest {
+        // Arrange
+        val testProbe = ProbeConfig(
+            probeId = 1L,
+            name = "Test Probe",
+            ipAddress = "192.168.1.1",
+            username = "admin",
+            password = "password",
+            testInterface = "ether1",
+            isOnline = true,
+            modelName = "RB750",
+            tdrSupported = true,
+            isHttps = false
+        )
+
+        val mockResponse = retrofit2.Response.error<String>(
+            500,
+            "Internal Server Error".toResponseBody(null)
+        )
+
+        val httpException = HttpException(mockResponse)
+
+        coEvery {
+            mockApiService.runPing(any())
+        } throws httpException
+
+        repository = createRepository()
+
+        // Act
+        val result = repository.runPing(
+            probe = testProbe,
+            target = "8.8.8.8",
+            interfaceName = "ether1",
+            count = 4
+        )
+
+        // Assert
+        assertTrue(result is UiState.Error)
+        val errorResult = result as UiState.Error
+        assertTrue(errorResult.message.isNotEmpty())
+    }
+
+    /**
+     * Test 11: safeApiCall gestisce ConnectException
+     * Verifica che il repository gestisca correttamente errori di connessione
+     */
+    @Test
+    fun `test safeApiCall handles ConnectException`() = runTest {
+        // Arrange
+        val testProbe = ProbeConfig(
+            probeId = 1L,
+            name = "Test Probe",
+            ipAddress = "192.168.1.1",
+            username = "admin",
+            password = "password",
+            testInterface = "ether1",
+            isOnline = true,
+            modelName = "RB750",
+            tdrSupported = true,
+            isHttps = false
+        )
+
+        coEvery {
+            mockApiService.runPing(any())
+        } throws ConnectException("Connection refused")
+
+        repository = createRepository()
+
+        // Act
+        val result = repository.runPing(
+            probe = testProbe,
+            target = "8.8.8.8",
+            interfaceName = "ether1",
+            count = 4
+        )
+
+        // Assert
+        assertTrue(result is UiState.Error)
+        val errorResult = result as UiState.Error
+        assertTrue(errorResult.message.contains("refused", ignoreCase = true))
+    }
+
+    /**
+     * Test 12: safeApiCall gestisce UnknownHostException
+     * Verifica che il repository gestisca correttamente errori di risoluzione DNS
+     */
+    @Test
+    fun `test safeApiCall handles UnknownHostException`() = runTest {
+        // Arrange
+        val testProbe = ProbeConfig(
+            probeId = 1L,
+            name = "Test Probe",
+            ipAddress = "192.168.1.1",
+            username = "admin",
+            password = "password",
+            testInterface = "ether1",
+            isOnline = true,
+            modelName = "RB750",
+            tdrSupported = true,
+            isHttps = false
+        )
+
+        coEvery {
+            mockApiService.runPing(any())
+        } throws UnknownHostException("Host not found")
+
+        repository = createRepository()
+
+        // Act
+        val result = repository.runPing(
+            probe = testProbe,
+            target = "8.8.8.8",
+            interfaceName = "ether1",
+            count = 4
+        )
+
+        // Assert
+        assertTrue(result is UiState.Error)
+        val errorResult = result as UiState.Error
+        assertTrue(errorResult.message.contains("not found", ignoreCase = true) || errorResult.message.contains("Host", ignoreCase = true))
+    }
+
+    /**
+     * Test 13: safeApiCall gestisce HttpException con 404
+     * Verifica che il repository gestisca correttamente errori HTTP 404
+     */
+    @Test
+    fun `test safeApiCall handles HttpException with 404 error`() = runTest {
+        // Arrange
+        val testProbe = ProbeConfig(
+            probeId = 1L,
+            name = "Test Probe",
+            ipAddress = "192.168.1.1",
+            username = "admin",
+            password = "password",
+            testInterface = "ether1",
+            isOnline = true,
+            modelName = "RB750",
+            tdrSupported = true,
+            isHttps = false
+        )
+
+        val mockResponse = retrofit2.Response.error<String>(
+            404,
+            "Not Found".toResponseBody(null)
+        )
+
+        val httpException = HttpException(mockResponse)
+
+        coEvery {
+            mockApiService.runPing(any())
+        } throws httpException
+
+        repository = createRepository()
+
+        // Act
+        val result = repository.runPing(
+            probe = testProbe,
+            target = "8.8.8.8",
+            interfaceName = "ether1",
+            count = 4
+        )
+
+        // Assert
+        assertTrue(result is UiState.Error)
+        val errorResult = result as UiState.Error
+        assertTrue(errorResult.message.isNotEmpty())
+    }
+
+    /**
+     * Test 14: safeApiCall ritorna Success per operazione riuscita
+     * Verifica che il repository gestisca correttamente chiamate API di successo
+     */
+    @Test
+    fun `test safeApiCall returns Success for successful API call`() = runTest {
+        // Arrange
+        val testProbe = ProbeConfig(
+            probeId = 1L,
+            name = "Test Probe",
+            ipAddress = "192.168.1.1",
+            username = "admin",
+            password = "password",
+            testInterface = "ether1",
+            isOnline = true,
+            modelName = "RB750",
+            tdrSupported = true,
+            isHttps = false
+        )
+
+        val expectedPingResults = listOf(
+            PingResult(
+                avgRtt = "10ms",
+                host = "8.8.8.8",
+                maxRtt = "15ms",
+                minRtt = "5ms",
+                packetLoss = "0",
+                received = "4",
+                sent = "4",
+                seq = "0",
+                size = "56",
+                time = "10ms",
+                ttl = "64"
+            )
+        )
+
+        coEvery {
+            mockApiService.runPing(any())
+        } returns expectedPingResults
+
+        repository = createRepository()
+
+        // Act
+        val result = repository.runPing(
+            probe = testProbe,
+            target = "8.8.8.8",
+            interfaceName = "ether1",
+            count = 4
+        )
+
+        // Assert
+        assertTrue(result is UiState.Success)
+        val successResult = result as UiState.Success
+        assertEquals(expectedPingResults, successResult.data)
+        assertEquals("10ms", successResult.data.first().avgRtt)
     }
 }

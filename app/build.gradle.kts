@@ -4,9 +4,15 @@ plugins {
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.hilt.gradle)
     id("com.google.devtools.ksp")
+    id("jacoco")
 }
 
+import org.gradle.api.tasks.testing.Test
+import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.gradle.jvm.toolchain.JavaLanguageVersion
+import org.gradle.kotlin.dsl.register
+import org.gradle.kotlin.dsl.withType
+import javax.inject.Inject
 
 // Imposta toolchain JVM per questo modulo (Java/Kotlin)
 kotlin {
@@ -36,6 +42,13 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+
+        // Room schema export per i test di migrazione
+        javaCompileOptions {
+            annotationProcessorOptions {
+                arguments["room.schemaLocation"] = "$projectDir/schemas"
+            }
+        }
     }
 
     buildTypes {
@@ -43,7 +56,11 @@ android {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
+        debug {
+            enableUnitTestCoverage = true
+        }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_21
@@ -57,6 +74,13 @@ android {
         }
         unitTests {
             isReturnDefaultValues = true
+        }
+    }
+
+    sourceSets {
+        // Include Room schema JSON files in androidTest assets
+        getByName("androidTest") {
+            assets.srcDirs("$projectDir/schemas")
         }
     }
 
@@ -112,6 +136,7 @@ dependencies {
     testImplementation(libs.robolectric)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.espresso.core)
+    androidTestImplementation(libs.room.testing)
     // Tracing required by newer androidx.test/platform for proper Espresso tracing
     androidTestImplementation(libs.androidx.tracing)
     androidTestImplementation(platform(libs.androidx.compose.bom))
@@ -132,6 +157,7 @@ configurations.all {
 // (KSP supporta il passaggio di argomenti tramite l'estensione 'ksp')
 ksp {
     arg("ksp.incremental", "false")
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 // Garantire che tutte le compilazioni Kotlin usino jvmTarget 21
@@ -139,4 +165,59 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
     }
+}
+
+// Jacoco Test Coverage Configuration
+tasks.register<JacocoReport>("jacocoTestReport") {
+    dependsOn(tasks.getByName("testDebugUnitTest"))
+    group = "Reporting"
+    description = "Generates Jacoco code coverage reports for the debug build."
+
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
+
+    val fileFilter = listOf(
+        // Android generated classes
+        "**/R.class",
+        "**/R$*.class",
+        "**/BuildConfig.*",
+        "**/Manifest*.*",
+        "**/*Test*.*",
+        "android/**/*.*",
+
+        // Hilt generated classes
+        "**/*_HiltModules*.*",
+        "**/Hilt_*.class",
+        "**/*_Factory.class",
+        "**/*_Provide*Factory.class",
+        "**/*_MembersInjector.class",
+        "**/Dagger*Component.class",
+        "**/Dagger*Component\$Builder.class",
+        "**/*Subcomponent\$Builder.class",
+
+        // UI, DI, and models
+        "**/ui/**",
+        "**/di/**",
+        "**/data/db/model/**"
+    )
+
+    val buildDir = layout.buildDirectory.get().asFile
+    val kotlinClasses = fileTree("$buildDir/tmp/kotlin-classes/debug") {
+        exclude(fileFilter)
+    }
+
+    classDirectories.setFrom(files(kotlinClasses))
+    sourceDirectories.setFrom(files("$projectDir/src/main/java"))
+    executionData.setFrom(fileTree(buildDir).include("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec"))
+}
+
+tasks.withType<Test> {
+    finalizedBy("jacocoTestReport")
+}
+
+// Disables ProfileInstaller for instrumentation tests, which can cause hangs.
+configurations.named("androidTestImplementation") {
+    exclude(group = "androidx.profileinstaller", module = "profileinstaller")
 }

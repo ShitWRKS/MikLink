@@ -186,10 +186,9 @@ class TestViewModelStartFlowTest {
 
         // Assert
         val final = viewModel.uiState.value
-        assertTrue(final is UiState.Success)
-        val report = (final as UiState.Success).data
-        assertEquals("FAIL", report.overallStatus)
-        assertTrue((report.notes ?: "").contains("NO LINK", ignoreCase = true))
+        assertTrue("Expected Error state on 'no-link'", final is UiState.Error)
+        val error = (final as UiState.Error).message
+        assertTrue("Error message should contain 'NO LINK'", error.contains("NO LINK", ignoreCase = true))
 
         // Verifica che la pipeline si sia interrotta: nessun ping o speed test
         coVerify(exactly = 0) { repository.runPing(any(), any(), any(), any()) }

@@ -326,7 +326,7 @@ dns = null,
                 }
 
                 // Filtrare risultati validi: con cable-pairs O con status positivo
-                val finalResult = results.lastOrNull {
+                val finalResult = results.lastOrNull { 
                     it.cablePairs != null || it.status.lowercase() in listOf("ok", "open", "link-ok", "running")
                 } ?: throw IllegalStateException("No valid cable test results found (no cable-pairs and no valid status)")
 
