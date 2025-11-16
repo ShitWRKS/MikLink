@@ -3,7 +3,6 @@ package com.app.miklink.ui.dashboard
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.app.miklink.data.db.dao.ClientDao
-import com.app.miklink.data.db.dao.ProbeConfigDao
 import com.app.miklink.data.db.dao.ReportDao
 import com.app.miklink.data.db.dao.TestProfileDao
 import com.app.miklink.data.db.model.Client

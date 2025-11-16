@@ -104,9 +104,6 @@ fun HistoryScreen(
                             expandedClientId = if (expandedClientId == clientData.client?.clientId) null
                             else clientData.client?.clientId
                         },
-                        onExportBatch = { clientReports ->
-                            // Export batch PDF for this client
-                        },
                         onReportEdit = { reportId ->
                             navController.navigate("report_detail/$reportId")
                         },
@@ -157,7 +154,6 @@ fun ClientReportsCard(
     clientData: ReportsByClient,
     isExpanded: Boolean,
     onToggleExpand: () -> Unit,
-    onExportBatch: (ReportsByClient) -> Unit,
     onReportEdit: (Long) -> Unit,
     onReportDelete: (Long) -> Unit,
     onReportRepeat: (Report) -> Unit,
@@ -212,15 +208,24 @@ fun ClientReportsCard(
                     }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Styled export icon: use same visual treatment as Settings (primary tint, no bg)
                     IconButton(onClick = {
                         exportBatchLauncher.launch("${clientData.client?.companyName ?: "Client"}_Reports.pdf")
                     }) {
-                        Icon(Icons.Default.PictureAsPdf, "Export all")
+                        Icon(
+                            Icons.Default.PictureAsPdf,
+                            contentDescription = "Export all",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(28.dp)
+                        )
                     }
+
+                    // Expand/collapse button: explicit tint for consistency
                     IconButton(onClick = onToggleExpand) {
                         Icon(
                             if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                            contentDescription = if (isExpanded) "Collapse" else "Expand"
+                            contentDescription = if (isExpanded) "Collapse" else "Expand",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }

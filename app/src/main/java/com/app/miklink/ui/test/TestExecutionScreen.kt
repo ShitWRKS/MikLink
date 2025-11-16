@@ -1,7 +1,6 @@
 package com.app.miklink.ui.test
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -30,6 +29,7 @@ import com.app.miklink.data.db.model.Report
 import com.app.miklink.ui.test.TestSectionCategory.*
 import com.app.miklink.ui.test.TestSectionType.*
 import com.app.miklink.utils.UiState
+import com.app.miklink.ui.common.TestSectionCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -148,17 +148,13 @@ fun TestExecutionScreen(
                             },
                             modifier = Modifier.weight(1f),
                             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 12.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (isFailed)
-                                    MaterialTheme.colorScheme.error
-                                else
-                                    Color(0xFF4CAF50)
-                            )
+                            colors = ButtonDefaults.buttonColors() // rimosso containerColor rosso per coerenza stilistica
                         ) {
                             Icon(
                                 if (isFailed) Icons.Default.Warning else Icons.Default.Check,
                                 contentDescription = null,
-                                modifier = Modifier.size(16.dp)
+                                modifier = Modifier.size(16.dp),
+                                tint = if (isFailed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
                             )
                             Spacer(Modifier.width(4.dp))
                             Text("SALVA", maxLines = 1, style = MaterialTheme.typography.labelMedium)
@@ -174,7 +170,14 @@ fun TestExecutionScreen(
         ) {
             when (val state = uiState) {
                 is UiState.Success -> {
-                    TestCompletedView(report = state.data, sections = sections, log = log, showRawLog = showRawLog, onToggleRawLog = { showRawLog = !showRawLog })
+                    TestCompletedView(
+                        report = state.data,
+                        sections = sections,
+                        log = log,
+                        showRawLog = showRawLog,
+                        onToggleRawLog = { showRawLog = !showRawLog },
+                        modifier = Modifier.fillMaxSize()
+                    )
                 }
                 is UiState.Loading -> {
                     if (isRunning) {
@@ -337,21 +340,24 @@ fun TestInProgressView(
                             TDR -> Icons.Default.Cable to MaterialTheme.colorScheme.primary
                             else -> Icons.Default.Info to MaterialTheme.colorScheme.onSurfaceVariant
                         }
+                        // Passiamo i dettagli della sezione così com'erano (persistiti dal ViewModel)
                         TestSectionCard(title = section.title, status = section.status, icon = icon, statusColor = color) {
                             if (section.type == PING) {
-                                // Badge Packet Loss
-                                val lossText = section.details.firstOrNull { it.label == "Packet Loss" }?.value ?: "-"
-                                val isZeroLoss = lossText.trim().startsWith("0")
-                                val chipBg = if (isZeroLoss) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.errorContainer
-                                val chipFg = if (isZeroLoss) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onErrorContainer
-                                Surface(color = chipBg, shape = RoundedCornerShape(12.dp)) {
-                                    Row(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(if (isZeroLoss) Icons.Default.CheckCircle else Icons.Default.Error, contentDescription = null, tint = chipFg, modifier = Modifier.size(14.dp))
-                                        Spacer(Modifier.width(6.dp))
-                                        Text(text = "LOSS ${lossText}", color = chipFg, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                                // Mostra il chip LOSS solo se esiste un valore significativo (non '-' e non vuoto)
+                                val lossText = section.details.firstOrNull { it.label == "Packet Loss" }?.value ?: ""
+                                if (lossText.isNotBlank() && lossText != "-" && lossText.any { it.isDigit() }) {
+                                    val isZeroLoss = lossText.trim().startsWith("0")
+                                    val chipBg = if (isZeroLoss) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.errorContainer
+                                    val chipFg = if (isZeroLoss) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onErrorContainer
+                                    Surface(color = chipBg, shape = RoundedCornerShape(12.dp)) {
+                                        Row(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(if (isZeroLoss) Icons.Default.CheckCircle else Icons.Default.Error, contentDescription = null, tint = chipFg, modifier = Modifier.size(14.dp))
+                                            Spacer(Modifier.width(6.dp))
+                                            Text(text = "LOSS ${lossText}", color = chipFg, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                                        }
                                     }
+                                    Spacer(Modifier.height(8.dp))
                                 }
-                                Spacer(Modifier.height(8.dp))
                             }
                             // Dettagli generici + stile speciale per Ping rows
                             section.details.forEach { d ->
@@ -433,134 +439,151 @@ fun TestCompletedView(
     val resultColor = if (isPassed) Color(0xFF4CAF50) else Color(0xFFF44336)
     val backgroundColor = resultColor.copy(alpha = 0.1f)
 
-    Column(
-        modifier = modifier.padding(16.dp)
+    LazyColumn(
+        modifier = modifier,
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Header risultato
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = backgroundColor
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+        item {
+            // Header risultato
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = backgroundColor
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(80.dp)
-                        .clip(CircleShape)
-                        .background(resultColor),
-                    contentAlignment = Alignment.Center
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Icon(
-                        if (isPassed) Icons.Default.CheckCircle else Icons.Default.Cancel,
-                        contentDescription = null,
-                        modifier = Modifier.size(48.dp),
-                        tint = Color.White
+                    Box(
+                        modifier = Modifier
+                            .size(80.dp)
+                            .clip(CircleShape)
+                            .background(resultColor),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            if (isPassed) Icons.Default.CheckCircle else Icons.Default.Cancel,
+                            contentDescription = null,
+                            modifier = Modifier.size(48.dp),
+                            tint = Color.White
+                        )
+                    }
+
+                    Spacer(Modifier.height(16.dp))
+
+                    Text(
+                        text = if (isPassed) "TEST SUPERATO" else "TEST FALLITO",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = resultColor
                     )
-                }
 
-                Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(8.dp))
 
-                Text(
-                    text = if (isPassed) "TEST SUPERATO" else "TEST FALLITO",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = resultColor
-                )
-
-                Spacer(Modifier.height(8.dp))
-
-                Text(
-                    text = if (isPassed)
-                        "Tutti i test sono stati completati con successo"
-                    else
-                        "Alcuni test hanno rilevato problemi",
-                    style = MaterialTheme.typography.bodyMedium,
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Spacer(Modifier.height(16.dp))
-
-                // Statistiche rapide
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    StatChip(
-                        label = "Presa",
-                        value = report.socketName ?: "N/A",
-                        icon = Icons.Default.PowerInput
+                    Text(
+                        text = if (isPassed)
+                            "Tutti i test sono stati completati con successo"
+                        else
+                            "Alcuni test hanno rilevato problemi",
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+
+                    Spacer(Modifier.height(16.dp))
+
+                    // Statistiche rapide
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        StatChip(
+                            label = "Presa",
+                            value = report.socketName ?: "N/A",
+                            icon = Icons.Default.PowerInput
+                        )
+                    }
                 }
             }
         }
 
-        Spacer(Modifier.height(16.dp))
-
-        // Toggle log grezzi / sections
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Dettagli Test",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-            TextButton(onClick = onToggleRawLog) {
-                Icon(if (showRawLog) Icons.Default.VisibilityOff else Icons.Default.Code, contentDescription = null)
-                Spacer(Modifier.width(6.dp))
-                Text(if (showRawLog) "Nascondi log" else "Mostra log", style = MaterialTheme.typography.bodySmall)
+        item {
+            // Toggle log grezzi / sections
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Dettagli Test",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                TextButton(onClick = onToggleRawLog) {
+                    Icon(if (showRawLog) Icons.Default.VisibilityOff else Icons.Default.Code, contentDescription = null)
+                    Spacer(Modifier.width(6.dp))
+                    Text(if (showRawLog) "Nascondi log" else "Mostra log", style = MaterialTheme.typography.bodySmall)
+                }
             }
         }
 
-        Spacer(Modifier.height(8.dp))
-
-        // If no sections available OR showRawLog, fallback to raw log
         if (sections.isEmpty() || showRawLog) {
-            RawLogsPane(log = log, modifier = Modifier.fillMaxWidth().heightIn(min = 120.dp))
-             return
+            item {
+                RawLogsPane(log = log, modifier = Modifier.fillMaxWidth().heightIn(min = 160.dp))
+            }
+            return@LazyColumn
         }
 
-        // Render INFO sections first (NETWORK, LLDP)
         val infoSections = sections.filter { it.category == INFO }
         val testSections = sections.filter { it.category == TEST }
 
-        Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            // Network info card
-            infoSections.filter { it.type == NETWORK }.forEach { section ->
-                TestSectionCard(title = section.title, status = section.status, icon = Icons.Default.SettingsEthernet, statusColor = MaterialTheme.colorScheme.primary) {
-                    section.details.forEach { d ->
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text(d.label)
-                            Text(d.value, fontWeight = FontWeight.Bold)
-                        }
+        // Network info card
+        items(infoSections.filter { it.type == NETWORK }) { section ->
+            TestSectionCard(
+                title = section.title,
+                status = section.status,
+                icon = Icons.Default.SettingsEthernet,
+                statusColor = MaterialTheme.colorScheme.primary
+            ) {
+                section.details.forEach { d ->
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(d.label)
+                        Text(d.value, fontWeight = FontWeight.Bold)
                     }
                 }
             }
+        }
 
-            // LLDP card
-            infoSections.filter { it.type == LLDP }.forEach { section ->
-                TestSectionCard(title = section.title, status = section.status, icon = Icons.Default.Devices, statusColor = MaterialTheme.colorScheme.secondary) {
-                    section.details.forEach { d ->
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text(d.label)
-                            Text(d.value, fontWeight = FontWeight.Bold)
-                        }
+        // LLDP card
+        items(infoSections.filter { it.type == LLDP }) { section ->
+            TestSectionCard(
+                title = section.title,
+                status = section.status,
+                icon = Icons.Default.Devices,
+                statusColor = MaterialTheme.colorScheme.secondary
+            ) {
+                section.details.forEach { d ->
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(d.label)
+                        Text(d.value, fontWeight = FontWeight.Bold)
                     }
                 }
             }
+        }
 
-            // Test cards in fixed order: Link, Ping, Traceroute, TDR
+        // Link card (single, fixed order)
+        item {
             val linkSec = testSections.find { it.type == LINK }
             if (linkSec != null) {
-                TestSectionCard(title = linkSec.title, status = linkSec.status, icon = Icons.Default.Link, statusColor = MaterialTheme.colorScheme.tertiary) {
+                TestSectionCard(
+                    title = linkSec.title,
+                    status = linkSec.status,
+                    icon = Icons.Default.Link,
+                    statusColor = MaterialTheme.colorScheme.tertiary
+                ) {
                     linkSec.details.forEach { d ->
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text(d.label)
@@ -569,14 +592,40 @@ fun TestCompletedView(
                     }
                 }
             }
+        }
 
+        // Ping card (single, fixed order)
+        item {
             val pingSec = testSections.find { it.type == PING }
             if (pingSec != null) {
-                TestSectionCard(title = pingSec.title, status = pingSec.status, icon = Icons.Default.Wifi, statusColor = Color(0xFF2196F3)) {
+                val expandByDefault = !pingSec.status.equals("PASS", ignoreCase = true)
+                TestSectionCard(
+                    title = pingSec.title,
+                    status = pingSec.status,
+                    icon = Icons.Default.Wifi,
+                    statusColor = Color(0xFF2196F3),
+                    initialExpanded = expandByDefault
+                ) {
+                    // Chip di sintesi Packet Loss (se presente e significativo)
+                    val lossText = pingSec.details.firstOrNull { it.label == "Packet Loss" }?.value ?: ""
+                    if (lossText.isNotBlank() && lossText != "-" && lossText.any { it.isDigit() }) {
+                        val isZeroLoss = lossText.trim().startsWith("0")
+                        val chipBg = if (isZeroLoss) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.errorContainer
+                        val chipFg = if (isZeroLoss) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onErrorContainer
+                        Surface(color = chipBg, shape = RoundedCornerShape(12.dp)) {
+                            Row(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Icon(if (isZeroLoss) Icons.Default.CheckCircle else Icons.Default.Error, contentDescription = null, tint = chipFg, modifier = Modifier.size(14.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text(text = "LOSS ${lossText}", color = chipFg, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                        Spacer(Modifier.height(8.dp))
+                    }
+
+                    // Dettagli ping con stile
                     pingSec.details.forEach { d ->
                         when {
                             d.label == "---" -> {
-                                // Separatore visivo
                                 Spacer(Modifier.height(8.dp))
                                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                                 Spacer(Modifier.height(8.dp))
@@ -589,7 +638,6 @@ fun TestCompletedView(
                                 Spacer(Modifier.height(4.dp))
                             }
                             d.label.startsWith("Ping #") -> {
-                                // Dettaglio ping individuale con stile monospace
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -615,7 +663,6 @@ fun TestCompletedView(
                                 }
                             }
                             else -> {
-                                // Dettaglio normale
                                 Row(
                                     modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
                                     horizontalArrangement = Arrangement.SpaceBetween
@@ -636,11 +683,18 @@ fun TestCompletedView(
                     }
                 }
             }
+        }
 
-
+        // TDR card (single, fixed order)
+        item {
             val tdrSec = testSections.find { it.type == TDR }
             if (tdrSec != null) {
-                TestSectionCard(title = tdrSec.title, status = tdrSec.status, icon = Icons.Default.Cable, statusColor = MaterialTheme.colorScheme.primary) {
+                TestSectionCard(
+                    title = tdrSec.title,
+                    status = tdrSec.status,
+                    icon = Icons.Default.Cable,
+                    statusColor = MaterialTheme.colorScheme.primary
+                ) {
                     tdrSec.details.forEach { d ->
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text(d.label)
@@ -686,58 +740,6 @@ fun StatChip(
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.Bold
                 )
-            }
-        }
-    }
-}
-
-@Composable
-private fun StatusChip(status: String) {
-    val (bg, fg, ic) = when (status.uppercase()) {
-        "PASS" -> Triple(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.onPrimaryContainer, Icons.Default.Check)
-        "FAIL" -> Triple(MaterialTheme.colorScheme.errorContainer, MaterialTheme.colorScheme.onErrorContainer, Icons.Default.Close)
-        "PARTIAL", "INFO" -> Triple(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.onSurfaceVariant, Icons.Default.Info)
-        "SKIPPED" -> Triple(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.onSurfaceVariant, Icons.Default.SkipNext)
-        else -> Triple(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.onSurfaceVariant, Icons.Default.Info)
-    }
-    Surface(color = bg, shape = RoundedCornerShape(12.dp)) {
-        Row(modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(ic, contentDescription = null, tint = fg, modifier = Modifier.size(14.dp))
-            Spacer(Modifier.width(4.dp))
-            Text(status.uppercase(), color = fg, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-        }
-    }
-}
-
-@Composable
-private fun TestSectionCard(title: String, status: String, icon: ImageVector, statusColor: Color, content: @Composable ColumnScope.() -> Unit) {
-    var expanded by remember { mutableStateOf(false) }
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        onClick = { expanded = !expanded }
-    ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                Icon(icon, contentDescription = null, tint = statusColor, modifier = Modifier.size(24.dp))
-                Spacer(Modifier.width(12.dp))
-                Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-                StatusChip(status)
-                Spacer(Modifier.width(8.dp))
-                Icon(
-                    if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                    contentDescription = if (expanded) "Comprimi" else "Espandi",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            AnimatedVisibility(visible = expanded) {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Spacer(Modifier.height(12.dp))
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                    Spacer(Modifier.height(12.dp))
-                    content()
-                }
             }
         }
     }

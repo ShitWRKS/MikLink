@@ -1,12 +1,12 @@
 [versions]
 
 # KOTLIN
-kotlin = "2.0.0"
-ksp = "2.0.0-1.0.21"
+kotlin = "2.1.0"
+ksp = "2.1.0-1.0.29"
 
 # ANDROID
-androidGradlePlugin = "8.4.1"
-android-compileSdk = "35"
+androidGradlePlugin = "8.13.0"
+android-compileSdk = "36"
 android-minSdk = "26"
 
 # COMPOSE
@@ -42,6 +42,7 @@ androidx-test-core = "1.6.1"
 androidx-test-ext-junit = "1.2.1"
 espresso = "3.6.1"
 robolectric = "4.13"
+androidx-tracing = "1.1.0"
 
 
 [libraries]
@@ -91,7 +92,7 @@ espresso-core = { group = "androidx.test.espresso", name = "espresso-core", vers
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 androidx-compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4", version.ref = "androidx-compose-ui-test" }
 androidx-compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
-
+androidx-tracing = { module = "androidx.tracing:tracing", version.ref = "androidx-tracing" }
 
 [plugins]
 

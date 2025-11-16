@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ListAlt
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -115,6 +116,15 @@ fun SettingsScreen(
                     leadingIcon = Icons.Default.Router,
                     iconColor = Color(0xFF2196F3),
                     onClick = { navController.navigate("probe_edit/-1") }
+                )
+
+                // Nuova voce: Gestisci Profili
+                SettingsCard(
+                    headline = "Gestisci Profili",
+                    subtitle = "Crea, modifica o elimina profili di test",
+                    leadingIcon = Icons.AutoMirrored.Filled.ListAlt,
+                    iconColor = Color(0xFF2196F3),
+                    onClick = { navController.navigate("profile_list") }
                 )
             }
 

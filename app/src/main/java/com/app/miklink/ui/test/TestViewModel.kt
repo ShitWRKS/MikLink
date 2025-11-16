@@ -37,6 +37,10 @@ class TestViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<UiState<Report>>(UiState.Idle)
     val uiState = _uiState.asStateFlow()
 
+    // Persistenza dettagli ping: non vengono resettati al completamento del test
+    private val _pingDetails = MutableStateFlow<List<TestDetail>?>(null)
+    val pingDetails: StateFlow<List<TestDetail>?> = _pingDetails.asStateFlow()
+
     // Override per-singolo-test: se non nullo, verrà usato in applyClientNetworkConfig
     var overrideClientNetwork: Client? = null
 
@@ -67,6 +71,9 @@ class TestViewModel @Inject constructor(
             _uiState.value = UiState.Loading
             _sections.value = emptyList()
             _isRunning.value = true
+
+            // Reset ping details at test start (we will repopulate durante il test)
+            _pingDetails.value = null
 
             // Read SavedStateHandle defensively: Nav may pass path segments as Strings
             val clientId: Long = (savedStateHandle.get<Long>("clientId") ?: savedStateHandle.get<String>("clientId")?.toLongOrNull() ?: -1L)
@@ -455,6 +462,10 @@ class TestViewModel @Inject constructor(
                         }
 
                         val pingStatus = if (allPingsPassed && pingDetails.isNotEmpty()) "PASS" else if (pingDetails.isEmpty()) "SKIPPED" else "FAIL"
+
+                        // Salva i dettagli ping nello stato dedicato prima di upsertSection per persistenza
+                        _pingDetails.value = pingDetails.toList()
+
                         upsertSection(
                             TestSection(
                                 category = TestSectionCategory.TEST,

@@ -23,12 +23,12 @@ java {
 
 android {
     namespace = "com.app.miklink"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.app.miklink"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 
@@ -45,7 +45,7 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_21
+        sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_21
     }
 
@@ -112,10 +112,20 @@ dependencies {
     testImplementation(libs.robolectric)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.espresso.core)
+    // Tracing required by newer androidx.test/platform for proper Espresso tracing
+    androidTestImplementation(libs.androidx.tracing)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     // Compose UI test dipendenze dirette
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+}
+
+// Forza una versione compatibile di androidx.tracing per evitare NoSuchMethodError durante instrumented tests
+configurations.all {
+    resolutionStrategy {
+        // force tracing 1.1.0 which è compatibile con androidx.test/espresso
+        force("androidx.tracing:tracing:1.1.0")
+    }
 }
 
 // Disabilita KSP incremental come mitigazione per problemi di mappatura file su JVM recenti

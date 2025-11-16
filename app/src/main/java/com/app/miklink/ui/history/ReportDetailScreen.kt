@@ -70,9 +70,15 @@ fun ReportDetailScreen(
                         val fileName = "report_${report?.reportId ?: ""}.pdf"
                         createDocumentLauncher.launch(fileName)
                     }) {
-                        Icon(Icons.Default.PictureAsPdf, contentDescription = "Export PDF")
+                        // Use same visual treatment as Settings top icon (primary tint, no extra bg)
+                        Icon(Icons.Default.PictureAsPdf, contentDescription = "Export PDF", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
                     }
                 }
+                ,
+                // Match Settings TopAppBar appearance
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.3f)
+                )
             )
         }
     ) { padding ->
@@ -89,8 +95,8 @@ fun ReportDetailScreen(
                     }
                 }
                 when (selectedTabIndex) {
-                    0 -> SummaryTab(report = currentReport, results = parsedResults)
-                    1 -> PhysicalLayerTab(results = parsedResults)
+                    0 -> SummaryTab(results = parsedResults)
+                    1 -> PhysicalLayerTab()
                     2 -> EditTab(viewModel = viewModel)
                 }
             }
@@ -99,7 +105,7 @@ fun ReportDetailScreen(
 }
 
 @Composable
-fun SummaryTab(report: com.app.miklink.data.db.model.Report, results: ParsedResults?) {
+fun SummaryTab(results: ParsedResults?) {
     // Nuova UI con card espandibili riutilizzate
     if (results == null) {
         Text("Nessun risultato parsato", modifier = Modifier.padding(16.dp))
@@ -237,7 +243,7 @@ fun SummaryTab(report: com.app.miklink.data.db.model.Report, results: ParsedResu
 }
 
 @Composable
-fun PhysicalLayerTab(results: ParsedResults?) {
+fun PhysicalLayerTab() {
     // Display TDR results
     Text("Physical Layer Tab Content")
 }
@@ -276,6 +282,11 @@ fun ReportDetailScreen(
             TopAppBar(
                 title = { Text("Report #${report?.reportId}") },
                 navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null) } }
+                ,
+                // Make consistent with Settings top bar
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.3f)
+                )
             )
         }
     ) { padding ->
@@ -288,8 +299,8 @@ fun ReportDetailScreen(
                     tabs.forEachIndexed { index, title -> Tab(selected = index == selectedTabIndex, onClick = { selectedTabIndex = index }, text = { Text(title) }) }
                 }
                 when (selectedTabIndex) {
-                    0 -> SummaryTab(report = currentReport, results = parsedResults)
-                    1 -> PhysicalLayerTab(results = parsedResults)
+                    0 -> SummaryTab(results = parsedResults)
+                    1 -> PhysicalLayerTab()
                     2 -> EditTabFake(stateProvider)
                 }
             }

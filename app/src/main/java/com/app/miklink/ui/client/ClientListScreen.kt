@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,11 +42,24 @@ fun ClientListScreen(
     val createProjectReportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/pdf")
     ) { uri: Uri? ->
-        uri?.let { 
+        uri?.let {
             selectedClientIdForExport?.let { clientId ->
                 viewModel.exportProjectReportToPdf(clientId, it)
                 selectedClientIdForExport = null
             }
+        }
+    }
+
+    val fabContent: @Composable () -> Unit = {
+        if (clients.isNotEmpty()) {
+            ExtendedFloatingActionButton(
+                onClick = { navController.navigate("client_add") },
+                icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                text = { Text("NUOVO CLIENTE") },
+                containerColor = Color(0xFF4CAF50)
+            )
+        } else {
+            Spacer(modifier = Modifier.size(0.dp))
         }
     }
 
@@ -76,14 +90,7 @@ fun ClientListScreen(
                 )
             )
         },
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = { navController.navigate("client_add") },
-                icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text("NUOVO CLIENTE") },
-                containerColor = Color(0xFF4CAF50)
-            )
-        }
+        floatingActionButton = fabContent
     ) { paddingValues ->
         if (clients.isEmpty()) {
             // Empty state
