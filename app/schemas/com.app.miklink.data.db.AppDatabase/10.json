@@ -1,0 +1,358 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 10,
+    "identityHash": "a304cd1247bc1ea6664f7371b65aa9b7",
+    "entities": [
+      {
+        "tableName": "clients",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`clientId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `companyName` TEXT NOT NULL, `location` TEXT, `notes` TEXT, `networkMode` TEXT NOT NULL, `staticIp` TEXT, `staticSubnet` TEXT, `staticGateway` TEXT, `staticCidr` TEXT, `minLinkRate` TEXT NOT NULL, `socketPrefix` TEXT NOT NULL, `nextIdNumber` INTEGER NOT NULL, `lastFloor` TEXT, `lastRoom` TEXT, `speedTestServerAddress` TEXT, `speedTestServerUser` TEXT, `speedTestServerPassword` TEXT)",
+        "fields": [
+          {
+            "fieldPath": "clientId",
+            "columnName": "clientId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "companyName",
+            "columnName": "companyName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "location",
+            "columnName": "location",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "notes",
+            "columnName": "notes",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "networkMode",
+            "columnName": "networkMode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "staticIp",
+            "columnName": "staticIp",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "staticSubnet",
+            "columnName": "staticSubnet",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "staticGateway",
+            "columnName": "staticGateway",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "staticCidr",
+            "columnName": "staticCidr",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "minLinkRate",
+            "columnName": "minLinkRate",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "socketPrefix",
+            "columnName": "socketPrefix",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nextIdNumber",
+            "columnName": "nextIdNumber",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastFloor",
+            "columnName": "lastFloor",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "lastRoom",
+            "columnName": "lastRoom",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "speedTestServerAddress",
+            "columnName": "speedTestServerAddress",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "speedTestServerUser",
+            "columnName": "speedTestServerUser",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "speedTestServerPassword",
+            "columnName": "speedTestServerPassword",
+            "affinity": "TEXT",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "clientId"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "probe_config",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`probeId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `ipAddress` TEXT NOT NULL, `username` TEXT NOT NULL, `password` TEXT NOT NULL, `testInterface` TEXT NOT NULL, `isOnline` INTEGER NOT NULL, `modelName` TEXT, `tdrSupported` INTEGER NOT NULL, `isHttps` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "probeId",
+            "columnName": "probeId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ipAddress",
+            "columnName": "ipAddress",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "username",
+            "columnName": "username",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "password",
+            "columnName": "password",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "testInterface",
+            "columnName": "testInterface",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isOnline",
+            "columnName": "isOnline",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "modelName",
+            "columnName": "modelName",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "tdrSupported",
+            "columnName": "tdrSupported",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isHttps",
+            "columnName": "isHttps",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "probeId"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "test_profiles",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`profileId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `profileName` TEXT NOT NULL, `profileDescription` TEXT, `runTdr` INTEGER NOT NULL, `runLinkStatus` INTEGER NOT NULL, `runLldp` INTEGER NOT NULL, `runPing` INTEGER NOT NULL, `pingTarget1` TEXT, `pingTarget2` TEXT, `pingTarget3` TEXT, `pingCount` INTEGER NOT NULL, `runSpeedTest` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "profileId",
+            "columnName": "profileId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "profileName",
+            "columnName": "profileName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "profileDescription",
+            "columnName": "profileDescription",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "runTdr",
+            "columnName": "runTdr",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "runLinkStatus",
+            "columnName": "runLinkStatus",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "runLldp",
+            "columnName": "runLldp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "runPing",
+            "columnName": "runPing",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pingTarget1",
+            "columnName": "pingTarget1",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "pingTarget2",
+            "columnName": "pingTarget2",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "pingTarget3",
+            "columnName": "pingTarget3",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "pingCount",
+            "columnName": "pingCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "runSpeedTest",
+            "columnName": "runSpeedTest",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "profileId"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "test_reports",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`reportId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `clientId` INTEGER, `timestamp` INTEGER NOT NULL, `socketName` TEXT, `notes` TEXT, `probeName` TEXT, `profileName` TEXT, `overallStatus` TEXT NOT NULL, `resultsJson` TEXT NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "reportId",
+            "columnName": "reportId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "clientId",
+            "columnName": "clientId",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "timestamp",
+            "columnName": "timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "socketName",
+            "columnName": "socketName",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "notes",
+            "columnName": "notes",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "probeName",
+            "columnName": "probeName",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "profileName",
+            "columnName": "profileName",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "overallStatus",
+            "columnName": "overallStatus",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "resultsJson",
+            "columnName": "resultsJson",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "reportId"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      }
+    ],
+    "views": [],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'a304cd1247bc1ea6664f7371b65aa9b7')"
+    ]
+  }
+}
