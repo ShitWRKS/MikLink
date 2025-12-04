@@ -89,6 +89,7 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+    buildToolsVersion = "36.1.0"
 }
 
 dependencies {

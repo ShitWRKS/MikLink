@@ -5,10 +5,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -32,6 +36,8 @@ fun ProbeEditScreen(
     if (isSaved) {
         LaunchedEffect(Unit) { navController.popBackStack() }
     }
+
+    var passwordVisible by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -69,7 +75,24 @@ fun ProbeEditScreen(
             OutlinedTextField(value = name, onValueChange = { viewModel.name.value = it }, label = { Text("Probe Name") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
             OutlinedTextField(value = ipAddress, onValueChange = { viewModel.ipAddress.value = it }, label = { Text("IP Address") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
             OutlinedTextField(value = username, onValueChange = { viewModel.username.value = it }, label = { Text("Username") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
-            OutlinedTextField(value = password, onValueChange = { viewModel.password.value = it }, label = { Text("Password") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+            OutlinedTextField(
+                value = password,
+                onValueChange = { viewModel.password.value = it },
+                label = { Text("Password") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                trailingIcon = {
+                    val image = if (passwordVisible)
+                        Icons.Filled.Visibility
+                    else Icons.Filled.VisibilityOff
+                    val description = if (passwordVisible) "Hide password" else "Show password"
+
+                    IconButton(onClick = {passwordVisible = !passwordVisible}){
+                        Icon(imageVector  = image, description)
+                    }
+                }
+            )
 
             ListItem(
                 headlineContent = { Text("Use HTTPS (SSL)") },

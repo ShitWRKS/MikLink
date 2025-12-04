@@ -5,7 +5,7 @@ kotlin = "2.1.0"
 ksp = "2.1.0-1.0.29"
 
 # ANDROID
-androidGradlePlugin = "8.13.0"
+androidGradlePlugin = "8.13.1"
 android-compileSdk = "36"
 android-minSdk = "26"
 
