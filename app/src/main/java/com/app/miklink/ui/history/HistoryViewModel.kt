@@ -7,6 +7,7 @@ import com.app.miklink.data.db.dao.ReportDao
 import com.app.miklink.data.db.model.Client
 import com.app.miklink.data.db.model.Report
 import com.app.miklink.data.pdf.PdfGenerator
+import com.app.miklink.data.pdf.PdfGeneratorIText
 import com.app.miklink.ui.history.model.ReportsByClient
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -19,7 +20,8 @@ import android.print.PrintDocumentAdapter
 class HistoryViewModel @Inject constructor(
     private val reportDao: ReportDao,
     private val clientDao: ClientDao,
-    private val pdfGenerator: PdfGenerator
+    private val pdfGenerator: PdfGenerator,
+    private val pdfGeneratorIText: PdfGeneratorIText
 ) : ViewModel() {
 
     val reports: StateFlow<List<Report>> = reportDao.getAllReports()
@@ -96,4 +98,17 @@ class HistoryViewModel @Inject constructor(
 
     suspend fun createPrintAdapter(context: android.content.Context, html: String, jobName: String): PrintDocumentAdapter =
         pdfGenerator.createPrintAdapter(context, html, jobName)
+
+    /**
+     * Generate PDF using iText 7 for client reports from history.
+     */
+    suspend fun generatePdfWithITextForClient(clientReports: ReportsByClient): java.io.File? {
+        val clientName = clientReports.client?.companyName?.replace(" ", "_") ?: "Client"
+        val date = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.getDefault()).format(java.util.Date())
+        val title = "${clientName}_Reports_${date}"
+        
+        return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            pdfGeneratorIText.generatePdfReport(clientReports.reports, clientReports.client, title)
+        }
+    }
 }

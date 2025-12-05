@@ -355,76 +355,138 @@
 
 <body>
     <header class="header clearfix">
-        <div class="header-left">
-            <h1>Certificazione Rete</h1>
-            <div class="subtitle">Report di collaudo infrastruttura</div>
-        </div>
-        <div class="header-right">
-            <div class="doc-number">DOC #{{REPORT_ID}}</div>
-            <div class="date">{{REPORT_DATE}}</div>
-        </div>
-    </header>
+        float: right;
+        font-weight: 600;
+        color: #666;
+        }
 
-    <div class="info-row clearfix">
-        <div class="info-card">
-            <div class="card-title">👤 Cliente</div>
-            <div class="card-main">{{CLIENT_NAME}}</div>
-            <div class="detail-row"><span class="label">Sede:</span><span class="value">{{CLIENT_LOCATION}}</span></div>
-            <div class="detail-row"><span class="label">Modalità:</span><span class="value">{{NETWORK_MODE}}</span>
-            </div>
-            <div class="detail-row"><span class="label">Link minimo:</span><span class="value">{{MIN_LINK_RATE}}</span>
-            </div>
-        </div>
-        <div class="info-card">
-            <div class="card-title">📡 Sonda di Test</div>
-            <div class="card-main">{{PROBE_NAME}}</div>
-            <div class="detail-row"><span class="label">Modello:</span><span class="value">{{PROBE_MODEL}}</span></div>
-            <div class="detail-row"><span class="label">Interfaccia:</span><span
-                    class="value">{{PROBE_INTERFACE}}</span></div>
-            <div class="detail-row"><span class="label">Profilo test:</span><span class="value">{{TEST_PROFILE}}</span>
-            </div>
-        </div>
-    </div>
+        @media print {
+        @page {
+        margin: 15mm;
+        size: A4;
+        }
 
-    <section class="summary-section">
-        <div class="section-title">📊 Riepilogo Test</div>
-        <div class="summary-row clearfix">
-            <div class="stat-card total">
-                <div class="stat-value">{{TOTAL_TESTS}}</div>
-                <div class="stat-label">Totali</div>
-            </div>
-            <div class="stat-card passed">
-                <div class="stat-value">{{PASSED_TESTS}}</div>
-                <div class="stat-label">Superati</div>
-            </div>
-            <div class="stat-card failed">
-                <div class="stat-value">{{FAILED_TESTS}}</div>
-                <div class="stat-label">Falliti</div>
+        body {
+        padding: 0;
+        margin: 0;
+        }
+
+        .stat-card,
+        .info-card {
+        page-break-inside: avoid;
+        }
+
+        .header {
+        position: relative;
+        }
+
+        .footer {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: white;
+        padding-top: 10px;
+        border-top: 1px solid #e0e0e0;
+        page-break-inside: avoid;
+        }
+
+        /* Table handling - best effort with WebView limitations */
+        thead {
+        display: table-header-group;
+        }
+
+        tr {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        }
+
+        td,
+        th {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        }
+        }
+        </style>
+        </head>
+
+        <body>
+            <header class="header clearfix">
+                <div class="header-left">
+                    <h1>Certificazione Rete</h1>
+                    <div class="subtitle">Report di collaudo infrastruttura</div>
+                </div>
+                <div class="header-right">
+                    <div class="doc-number">DOC #{{REPORT_ID}}</div>
+                    <div class="date">{{REPORT_DATE}}</div>
+                </div>
+            </header>
+
+            <div class="info-row clearfix">
+                <div class="info-card">
+                    <div class="card-title">👤 Cliente</div>
+                    <div class="card-main">{{CLIENT_NAME}}</div>
+                    <div class="detail-row"><span class="label">Sede:</span><span
+                            class="value">{{CLIENT_LOCATION}}</span></div>
+                    <div class="detail-row"><span class="label">Modalità:</span><span
+                            class="value">{{NETWORK_MODE}}</span>
+                    </div>
+                    <div class="detail-row"><span class="label">Link minimo:</span><span
+                            class="value">{{MIN_LINK_RATE}}</span>
+                    </div>
+                </div>
+                <div class="info-card">
+                    <div class="card-title">📡 Sonda di Test</div>
+                    <div class="card-main">{{PROBE_NAME}}</div>
+                    <div class="detail-row"><span class="label">Modello:</span><span
+                            class="value">{{PROBE_MODEL}}</span></div>
+                    <div class="detail-row"><span class="label">Interfaccia:</span><span
+                            class="value">{{PROBE_INTERFACE}}</span></div>
+                    <div class="detail-row"><span class="label">Profilo test:</span><span
+                            class="value">{{TEST_PROFILE}}</span>
+                    </div>
+                </div>
             </div>
 
-        </div>
-    </section>
+            <section class="summary-section">
+                <div class="section-title">📊 Riepilogo Test</div>
+                <div class="summary-row clearfix">
+                    <div class="stat-card total">
+                        <div class="stat-value">{{TOTAL_TESTS}}</div>
+                        <div class="stat-label">Totali</div>
+                    </div>
+                    <div class="stat-card passed">
+                        <div class="stat-value">{{PASSED_TESTS}}</div>
+                        <div class="stat-label">Superati</div>
+                    </div>
+                    <div class="stat-card failed">
+                        <div class="stat-value">{{FAILED_TESTS}}</div>
+                        <div class="stat-label">Falliti</div>
+                    </div>
 
-    <section class="results-section">
-        <div class="section-title">📋 Dettaglio Test</div>
-        <table>
-            <thead>
-                <tr>{{TABLE_HEADERS}}</tr>
-            </thead>
-            <tbody>
-                {{TABLE_ROWS}}
-            </tbody>
-        </table>
-    </section>
+                </div>
+            </section>
 
-    <footer class="footer">
-        {{FOOTER_WARNING}}
-        {{CLIENT_NOTES}}
-        <div class="footer-meta clearfix">
-            <span class="generated">Generato il {{GENERATION_TIMESTAMP}}</span>
-            <span class="branding">MikLink • Certificazione Reti</span>
-        </div>
-    </footer>
-</body>
+            <section class="results-section">
+                <div class="section-title">📋 Dettaglio Test</div>
+                <table>
+                    <thead>
+                        <tr>{{TABLE_HEADERS}}</tr>
+                    </thead>
+                    <tbody>
+                        {{TABLE_ROWS}}
+                    </tbody>
+                </table>
+            </section>
+
+            <footer class="footer">
+                {{FOOTER_WARNING}}
+                {{CLIENT_NOTES}}
+                <div class="footer-meta clearfix">
+                    <span class="generated">Generato il {{GENERATION_TIMESTAMP}}</span>
+                    <span class="branding">MikLink • Certificazione Reti</span>
+                </div>
+            </footer>
+        </body>
 
 </html>

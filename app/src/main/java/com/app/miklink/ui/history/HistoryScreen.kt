@@ -193,14 +193,39 @@ fun HistoryScreen(
                         },
                         onExportAll = {
                             coroutineScope.launch {
-                                val html = viewModel.generateHtmlForClientReports(clientData)
-                                val clientName = clientData.client?.companyName?.replace(" ", "_") ?: "Client"
-                                val date = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.getDefault()).format(java.util.Date())
-                                
-                                pdfJobName = "${clientName}_Reports_${date}"
-                                pdfHtmlToPrint = html
-                                
-                                snackbarHostState.showSnackbar("Preparazione PDF in corso...")
+                                try {
+                                    snackbarHostState.showSnackbar("Generazione PDF in corso...")
+                                    
+                                    // Use iText to generate PDF directly
+                                    val pdfFile = viewModel.generatePdfWithITextForClient(clientData)
+                                    
+                                    if (pdfFile != null && pdfFile.exists() && pdfFile.length() > 0) {
+                                        // Open PDF with default viewer
+                                        val uri = androidx.core.content.FileProvider.getUriForFile(
+                                            context,
+                                            "${context.packageName}.fileprovider",
+                                            pdfFile
+                                        )
+                                        
+                                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                                            setDataAndType(uri, "application/pdf")
+                                            addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                            addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                                        }
+                                        
+                                        try {
+                                            context.startActivity(intent)
+                                            snackbarHostState.showSnackbar("PDF generato con successo!")
+                                        } catch (e: android.content.ActivityNotFoundException) {
+                                            snackbarHostState.showSnackbar("Nessun visualizzatore PDF trovato")
+                                        }
+                                    } else {
+                                        snackbarHostState.showSnackbar("Nessun dato da esportare")
+                                    }
+                                } catch (e: Exception) {
+                                    android.util.Log.e("HistoryPDF", "Error generating PDF with iText", e)
+                                    snackbarHostState.showSnackbar("Errore generazione PDF: ${e.message}")
+                                }
                             }
                         },
                         viewModel = viewModel

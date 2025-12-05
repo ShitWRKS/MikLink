@@ -127,6 +127,10 @@ dependencies {
     implementation(libs.moshi.core)
     implementation(libs.moshi.kotlin)
 
+    // iText 7 - PDF Generation (AGPL v3)
+    implementation("com.itextpdf:kernel:8.0.3")
+    implementation("com.itextpdf:layout:8.0.3")  
+    implementation("com.itextpdf:io:8.0.3")
     // Unit & Instrumentation test dependencies
     // Use version catalog entries for test dependencies
     testImplementation(libs.junit)
