@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 10,
-    "identityHash": "a304cd1247bc1ea6664f7371b65aa9b7",
+    "identityHash": "ee75e69c3d8f631fdca005716aec383e",
     "entities": [
       {
         "tableName": "clients",
@@ -122,18 +122,12 @@
       },
       {
         "tableName": "probe_config",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`probeId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `ipAddress` TEXT NOT NULL, `username` TEXT NOT NULL, `password` TEXT NOT NULL, `testInterface` TEXT NOT NULL, `isOnline` INTEGER NOT NULL, `modelName` TEXT, `tdrSupported` INTEGER NOT NULL, `isHttps` INTEGER NOT NULL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`probeId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `ipAddress` TEXT NOT NULL, `username` TEXT NOT NULL, `password` TEXT NOT NULL, `testInterface` TEXT NOT NULL, `isOnline` INTEGER NOT NULL, `modelName` TEXT, `tdrSupported` INTEGER NOT NULL, `isHttps` INTEGER NOT NULL)",
         "fields": [
           {
             "fieldPath": "probeId",
             "columnName": "probeId",
             "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "name",
-            "columnName": "name",
-            "affinity": "TEXT",
             "notNull": true
           },
           {
@@ -352,7 +346,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'a304cd1247bc1ea6664f7371b65aa9b7')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'ee75e69c3d8f631fdca005716aec383e')"
     ]
   }
 }

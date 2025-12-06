@@ -49,7 +49,6 @@ class ProbeConfigDaoTest {
         // Arrange
         val probe = ProbeConfig(
             probeId = 1L,
-            name = "Test Probe",
             ipAddress = "192.168.1.1",
             username = "admin",
             password = "password",
@@ -67,7 +66,7 @@ class ProbeConfigDaoTest {
         dao.getSingleProbe().test {
             val result = awaitItem()
             assertEquals(probe.probeId, result?.probeId)
-            assertEquals(probe.name, result?.name)
+            // name column removed; do not assert on name
             assertEquals(probe.ipAddress, result?.ipAddress)
             assertEquals(probe.username, result?.username)
             assertEquals(probe.testInterface, result?.testInterface)
@@ -85,7 +84,6 @@ class ProbeConfigDaoTest {
         // Arrange - Inserisce una sonda iniziale
         val originalProbe = ProbeConfig(
             probeId = 1L,
-            name = "Original Probe",
             ipAddress = "192.168.1.100",
             username = "admin",
             password = "oldpass",
@@ -100,7 +98,6 @@ class ProbeConfigDaoTest {
         // Act - Aggiorna la stessa sonda (stesso probeId)
         val updatedProbe = ProbeConfig(
             probeId = 1L,
-            name = "Updated Probe",
             ipAddress = "192.168.1.200",
             username = "newadmin",
             password = "newpass",
@@ -116,7 +113,7 @@ class ProbeConfigDaoTest {
         dao.getSingleProbe().test {
             val result = awaitItem()
             assertEquals(1L, result?.probeId)
-            assertEquals("Updated Probe", result?.name)
+            // name column removed; do not assert on name
             assertEquals("192.168.1.200", result?.ipAddress)
             assertEquals("newadmin", result?.username)
             assertEquals("ether2", result?.testInterface)
@@ -137,7 +134,6 @@ class ProbeConfigDaoTest {
         // Arrange
         val probe = ProbeConfig(
             probeId = 5L,
-            name = "Test Probe",
             ipAddress = "10.0.0.1",
             username = "user",
             password = "pass",
@@ -153,7 +149,7 @@ class ProbeConfigDaoTest {
         dao.getSingleProbe().test {
             val result = awaitItem()
             assertEquals(probe.probeId, result?.probeId)
-            assertEquals(probe.name, result?.name)
+            // name column removed; no assertion
             assertEquals(probe.ipAddress, result?.ipAddress)
             assertEquals(probe.testInterface, result?.testInterface)
             assertEquals(probe.modelName, result?.modelName)
@@ -186,7 +182,6 @@ class ProbeConfigDaoTest {
         // Arrange - Inserisce più sonde
         val probe1 = ProbeConfig(
             probeId = 1L,
-            name = "First Probe",
             ipAddress = "192.168.1.1",
             username = "admin1",
             password = "pass1",
@@ -198,7 +193,6 @@ class ProbeConfigDaoTest {
         )
         val probe2 = ProbeConfig(
             probeId = 2L,
-            name = "Second Probe",
             ipAddress = "192.168.1.2",
             username = "admin2",
             password = "pass2",
@@ -216,7 +210,7 @@ class ProbeConfigDaoTest {
         dao.getSingleProbe().test {
             val result = awaitItem()
             assertEquals(1L, result?.probeId)
-            assertEquals("First Probe", result?.name)
+            // name column removed; no assertion
             cancelAndIgnoreRemainingEvents()
         }
     }

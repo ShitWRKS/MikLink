@@ -50,8 +50,8 @@ class ProbeEditViewModelTest {
     // Test Data
     private val mockProbe = ProbeConfig(
         probeId = 1L,
-        name = "Test Probe",
         ipAddress = "192.168.88.1",
+        
         username = "admin",
         password = "password123",
         isHttps = false,
@@ -92,8 +92,7 @@ class ProbeEditViewModelTest {
         // When: ViewModel is created
         viewModel = ProbeEditViewModel(probeConfigDao, appRepository, savedStateHandle)
 
-        // Then: State fields should match the probe data
-        assertEquals("Test Probe", viewModel.name.value)
+        // Then: State fields should match the probe data (name removed from model)
         assertEquals("192.168.88.1", viewModel.ipAddress.value)
         assertEquals("admin", viewModel.username.value)
         assertEquals("password123", viewModel.password.value)
@@ -124,8 +123,7 @@ class ProbeEditViewModelTest {
         // When: ViewModel is created
         viewModel = ProbeEditViewModel(probeConfigDao, appRepository, savedStateHandle)
 
-        // Then: State fields should have default values
-        assertEquals("", viewModel.name.value)
+        // Then: State fields should have default values (name removed from model)
         assertEquals("", viewModel.ipAddress.value)
         assertEquals("admin", viewModel.username.value)
         assertEquals("", viewModel.password.value)
@@ -159,7 +157,6 @@ class ProbeEditViewModelTest {
             probeConfigDao.upsertSingle(
                 match {
                     it.probeId == 1L &&
-                    it.name == "Sonda" &&
                     it.ipAddress == "10.0.0.1" &&
                     it.username == "testuser" &&
                     it.password == "testpass" &&
@@ -188,7 +185,7 @@ class ProbeEditViewModelTest {
         // Then: upsertSingle should be called with probeId = 5
         coVerify {
             probeConfigDao.upsertSingle(
-                match { it.probeId == 5L && it.name == "Sonda" }
+                match { it.probeId == 5L }
             )
         }
     }

@@ -125,7 +125,6 @@ class AppRepositoryTest {
         // Arrange
         val testProbe = ProbeConfig(
             probeId = 1L,
-            name = "Test Probe",
             ipAddress = "192.168.1.1",
             username = "admin",
             password = "password",
@@ -147,7 +146,7 @@ class AppRepositoryTest {
             val result = awaitItem()
             assertEquals(testProbe, result)
             assertEquals(1L, result?.probeId)
-            assertEquals("Test Probe", result?.name)
+            // name column removed; no assertion on name
             assertEquals("192.168.1.1", result?.ipAddress)
             cancelAndIgnoreRemainingEvents()
         }
@@ -182,7 +181,6 @@ class AppRepositoryTest {
         // Arrange
         val testProbe = ProbeConfig(
             probeId = 1L,
-            name = "Test Probe",
             ipAddress = "192.168.1.1",
             username = "admin",
             password = "password",
@@ -263,7 +261,6 @@ class AppRepositoryTest {
         // Arrange
         val testProbe = ProbeConfig(
             probeId = 1L,
-            name = "Test Probe",
             ipAddress = "192.168.1.1",
             username = "admin",
             password = "password",
@@ -341,7 +338,6 @@ class AppRepositoryTest {
         // Arrange
         val testProbe = ProbeConfig(
             probeId = 1L,
-            name = "Test Probe",
             ipAddress = "192.168.1.1",
             username = "admin",
             password = "password",
@@ -384,7 +380,6 @@ class AppRepositoryTest {
         // Arrange
         val testProbe = ProbeConfig(
             probeId = 1L,
-            name = "Test Probe",
             ipAddress = "192.168.1.1",
             username = "admin",
             password = "password",
@@ -439,7 +434,6 @@ class AppRepositoryTest {
         // Arrange
         val testProbe = ProbeConfig(
             probeId = 1L,
-            name = "Test Probe",
             ipAddress = "192.168.1.1",
             username = "admin",
             password = "password",
@@ -477,7 +471,6 @@ class AppRepositoryTest {
         // Arrange
         val testProbe = ProbeConfig(
             probeId = 42L,
-            name = "Save Probe",
             ipAddress = "10.0.0.10",
             username = "u",
             password = "p",
@@ -510,7 +503,6 @@ class AppRepositoryTest {
         // Arrange
         val testProbe = ProbeConfig(
             probeId = 1L,
-            name = "Test Probe",
             ipAddress = "192.168.1.1",
             username = "admin",
             password = "password",
@@ -550,7 +542,6 @@ class AppRepositoryTest {
         // Arrange
         val testProbe = ProbeConfig(
             probeId = 1L,
-            name = "Test Probe",
             ipAddress = "192.168.1.1",
             username = "admin",
             password = "password",
@@ -597,7 +588,6 @@ class AppRepositoryTest {
         // Arrange
         val testProbe = ProbeConfig(
             probeId = 1L,
-            name = "Test Probe",
             ipAddress = "192.168.1.1",
             username = "admin",
             password = "password",
@@ -637,7 +627,6 @@ class AppRepositoryTest {
         // Arrange
         val testProbe = ProbeConfig(
             probeId = 1L,
-            name = "Test Probe",
             ipAddress = "192.168.1.1",
             username = "admin",
             password = "password",
@@ -677,7 +666,6 @@ class AppRepositoryTest {
         // Arrange
         val testProbe = ProbeConfig(
             probeId = 1L,
-            name = "Test Probe",
             ipAddress = "192.168.1.1",
             username = "admin",
             password = "password",
@@ -724,7 +712,6 @@ class AppRepositoryTest {
         // Arrange
         val testProbe = ProbeConfig(
             probeId = 1L,
-            name = "Test Probe",
             ipAddress = "192.168.1.1",
             username = "admin",
             password = "password",

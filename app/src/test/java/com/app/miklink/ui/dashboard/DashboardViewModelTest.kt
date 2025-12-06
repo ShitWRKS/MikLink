@@ -77,7 +77,6 @@ class DashboardViewModelTest {
         // Arrange
         val onlineProbe = ProbeConfig(
             probeId = 1L,
-            name = "Test Probe",
             ipAddress = "192.168.1.1",
             username = "admin",
             password = "pass",
@@ -109,7 +108,7 @@ class DashboardViewModelTest {
             val probeValue = awaitItem()
             assertEquals(onlineProbe, probeValue)
             assertEquals(1L, probeValue?.probeId)
-            assertEquals("Test Probe", probeValue?.name)
+            // name removed from ProbeConfig; omit name assertion
             assertEquals(true, probeValue?.isOnline)
             cancelAndIgnoreRemainingEvents()
         }
@@ -131,7 +130,6 @@ class DashboardViewModelTest {
         // Arrange
         val offlineProbe = ProbeConfig(
             probeId = 2L,
-            name = "Offline Probe",
             ipAddress = "192.168.1.2",
             username = "admin",
             password = "pass",
@@ -163,7 +161,7 @@ class DashboardViewModelTest {
             val probeValue = awaitItem()
             assertEquals(offlineProbe, probeValue)
             assertEquals(2L, probeValue?.probeId)
-            assertEquals("Offline Probe", probeValue?.name)
+            // name removed from ProbeConfig; omit name assertion
             assertEquals(false, probeValue?.isOnline)
             cancelAndIgnoreRemainingEvents()
         }
@@ -318,10 +316,10 @@ class DashboardViewModelTest {
 
         // Report esistenti: 1, 2, 4, 5 (il #3 è stato eliminato)
         val existingReports = listOf(
-            Report(reportId = 1, clientId = 3L, timestamp = 1000, socketName = "TOR001", notes = null, probeName = "Probe", profileName = "Profile", overallStatus = "PASS", resultsJson = "{}"),
-            Report(reportId = 2, clientId = 3L, timestamp = 2000, socketName = "TOR002", notes = null, probeName = "Probe", profileName = "Profile", overallStatus = "PASS", resultsJson = "{}"),
-            Report(reportId = 4, clientId = 3L, timestamp = 4000, socketName = "TOR004", notes = null, probeName = "Probe", profileName = "Profile", overallStatus = "PASS", resultsJson = "{}"),
-            Report(reportId = 5, clientId = 3L, timestamp = 5000, socketName = "TOR005", notes = null, probeName = "Probe", profileName = "Profile", overallStatus = "PASS", resultsJson = "{}")
+            Report(reportId = 1, clientId = 3L, timestamp = 1000, socketName = "TOR001", notes = null, probeName = "Sonda", profileName = "Profile", overallStatus = "PASS", resultsJson = "{}"),
+            Report(reportId = 2, clientId = 3L, timestamp = 2000, socketName = "TOR002", notes = null, probeName = "Sonda", profileName = "Profile", overallStatus = "PASS", resultsJson = "{}"),
+            Report(reportId = 4, clientId = 3L, timestamp = 4000, socketName = "TOR004", notes = null, probeName = "Sonda", profileName = "Profile", overallStatus = "PASS", resultsJson = "{}"),
+            Report(reportId = 5, clientId = 3L, timestamp = 5000, socketName = "TOR005", notes = null, probeName = "Sonda", profileName = "Profile", overallStatus = "PASS", resultsJson = "{}")
         )
 
         every { mockRepository.currentProbe } returns flowOf(null)
@@ -412,10 +410,10 @@ class DashboardViewModelTest {
 
         // Report esistenti: 1, 2, 4, 5 (il #3 è stato eliminato)
         val existingReports = listOf(
-            Report(reportId = 1, clientId = 5L, timestamp = 1000, socketName = "PAL001", notes = null, probeName = "Probe", profileName = "Profile", overallStatus = "PASS", resultsJson = "{}"),
-            Report(reportId = 2, clientId = 5L, timestamp = 2000, socketName = "PAL002", notes = null, probeName = "Probe", profileName = "Profile", overallStatus = "PASS", resultsJson = "{}"),
-            Report(reportId = 4, clientId = 5L, timestamp = 4000, socketName = "PAL004", notes = null, probeName = "Probe", profileName = "Profile", overallStatus = "PASS", resultsJson = "{}"),
-            Report(reportId = 5, clientId = 5L, timestamp = 5000, socketName = "PAL005", notes = null, probeName = "Probe", profileName = "Profile", overallStatus = "PASS", resultsJson = "{}")
+            Report(reportId = 1, clientId = 5L, timestamp = 1000, socketName = "PAL001", notes = null, probeName = "Sonda", profileName = "Profile", overallStatus = "PASS", resultsJson = "{}"),
+            Report(reportId = 2, clientId = 5L, timestamp = 2000, socketName = "PAL002", notes = null, probeName = "Sonda", profileName = "Profile", overallStatus = "PASS", resultsJson = "{}"),
+            Report(reportId = 4, clientId = 5L, timestamp = 4000, socketName = "PAL004", notes = null, probeName = "Sonda", profileName = "Profile", overallStatus = "PASS", resultsJson = "{}"),
+            Report(reportId = 5, clientId = 5L, timestamp = 5000, socketName = "PAL005", notes = null, probeName = "Sonda", profileName = "Profile", overallStatus = "PASS", resultsJson = "{}")
         )
 
         every { mockRepository.currentProbe } returns flowOf(null)
@@ -463,10 +461,10 @@ class DashboardViewModelTest {
 
         // Report esistenti: 1, 4, 5, 7 (gap: 2, 3, 6)
         val existingReports = listOf(
-            Report(reportId = 1, clientId = 6L, timestamp = 1000, socketName = "FIR001", notes = null, probeName = "Probe", profileName = "Profile", overallStatus = "PASS", resultsJson = "{}"),
-            Report(reportId = 4, clientId = 6L, timestamp = 4000, socketName = "FIR004", notes = null, probeName = "Probe", profileName = "Profile", overallStatus = "PASS", resultsJson = "{}"),
-            Report(reportId = 5, clientId = 6L, timestamp = 5000, socketName = "FIR005", notes = null, probeName = "Probe", profileName = "Profile", overallStatus = "PASS", resultsJson = "{}"),
-            Report(reportId = 7, clientId = 6L, timestamp = 7000, socketName = "FIR007", notes = null, probeName = "Probe", profileName = "Profile", overallStatus = "PASS", resultsJson = "{}")
+            Report(reportId = 1, clientId = 6L, timestamp = 1000, socketName = "FIR001", notes = null, probeName = "Sonda", profileName = "Profile", overallStatus = "PASS", resultsJson = "{}"),
+            Report(reportId = 4, clientId = 6L, timestamp = 4000, socketName = "FIR004", notes = null, probeName = "Sonda", profileName = "Profile", overallStatus = "PASS", resultsJson = "{}"),
+            Report(reportId = 5, clientId = 6L, timestamp = 5000, socketName = "FIR005", notes = null, probeName = "Sonda", profileName = "Profile", overallStatus = "PASS", resultsJson = "{}"),
+            Report(reportId = 7, clientId = 6L, timestamp = 7000, socketName = "FIR007", notes = null, probeName = "Sonda", profileName = "Profile", overallStatus = "PASS", resultsJson = "{}")
         )
 
         every { mockRepository.currentProbe } returns flowOf(null)
@@ -514,11 +512,11 @@ class DashboardViewModelTest {
 
         // Report esistenti: 1, 2, 3, 4, 5 (nessun gap)
         val existingReports = listOf(
-            Report(reportId = 1, clientId = 7L, timestamp = 1000, socketName = "BOL001", notes = null, probeName = "Probe", profileName = "Profile", overallStatus = "PASS", resultsJson = "{}"),
-            Report(reportId = 2, clientId = 7L, timestamp = 2000, socketName = "BOL002", notes = null, probeName = "Probe", profileName = "Profile", overallStatus = "PASS", resultsJson = "{}"),
-            Report(reportId = 3, clientId = 7L, timestamp = 3000, socketName = "BOL003", notes = null, probeName = "Probe", profileName = "Profile", overallStatus = "PASS", resultsJson = "{}"),
-            Report(reportId = 4, clientId = 7L, timestamp = 4000, socketName = "BOL004", notes = null, probeName = "Probe", profileName = "Profile", overallStatus = "PASS", resultsJson = "{}"),
-            Report(reportId = 5, clientId = 7L, timestamp = 5000, socketName = "BOL005", notes = null, probeName = "Probe", profileName = "Profile", overallStatus = "PASS", resultsJson = "{}")
+            Report(reportId = 1, clientId = 7L, timestamp = 1000, socketName = "BOL001", notes = null, probeName = "Sonda", profileName = "Profile", overallStatus = "PASS", resultsJson = "{}"),
+            Report(reportId = 2, clientId = 7L, timestamp = 2000, socketName = "BOL002", notes = null, probeName = "Sonda", profileName = "Profile", overallStatus = "PASS", resultsJson = "{}"),
+            Report(reportId = 3, clientId = 7L, timestamp = 3000, socketName = "BOL003", notes = null, probeName = "Sonda", profileName = "Profile", overallStatus = "PASS", resultsJson = "{}"),
+            Report(reportId = 4, clientId = 7L, timestamp = 4000, socketName = "BOL004", notes = null, probeName = "Sonda", profileName = "Profile", overallStatus = "PASS", resultsJson = "{}"),
+            Report(reportId = 5, clientId = 7L, timestamp = 5000, socketName = "BOL005", notes = null, probeName = "Sonda", profileName = "Profile", overallStatus = "PASS", resultsJson = "{}")
         )
 
         every { mockRepository.currentProbe } returns flowOf(null)

@@ -32,6 +32,19 @@ object Migrations {
         }
     }
 
+    // Migrazione v10 -> v11: rimozione colonna 'name' dalla tabella probe_config
+    // Room non supporta DROP COLUMN, quindi creiamo una nuova tabella senza la colonna,
+    // copiamo i dati, cancelliamo la vecchia tabella e rinominiamo la nuova
+    val MIGRATION_10_11 = object : Migration(10, 11) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL("CREATE TABLE IF NOT EXISTS probe_config_new (probeId INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, ipAddress TEXT NOT NULL, username TEXT NOT NULL, password TEXT NOT NULL, testInterface TEXT NOT NULL, isOnline INTEGER NOT NULL, modelName TEXT, tdrSupported INTEGER NOT NULL, isHttps INTEGER NOT NULL DEFAULT 0)")
+            // Copy: because previous table had 'name' column, map remaining columns
+            database.execSQL("INSERT INTO probe_config_new (probeId, ipAddress, username, password, testInterface, isOnline, modelName, tdrSupported, isHttps) SELECT probeId, ipAddress, username, password, testInterface, isOnline, modelName, tdrSupported, isHttps FROM probe_config")
+            database.execSQL("DROP TABLE probe_config")
+            database.execSQL("ALTER TABLE probe_config_new RENAME TO probe_config")
+        }
+    }
+
     /**
      * Array di tutte le migrazioni in ordine.
      * Utile per aggiungere tutte le migrazioni al database.
@@ -39,7 +52,8 @@ object Migrations {
     val ALL_MIGRATIONS = arrayOf(
         MIGRATION_7_8,
         MIGRATION_8_9,
-        MIGRATION_9_10
+        MIGRATION_9_10,
+        MIGRATION_10_11
     )
 }
 

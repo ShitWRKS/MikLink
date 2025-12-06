@@ -301,7 +301,8 @@ dns = null,
 
     suspend fun runCableTest(probe: ProbeConfig, interfaceName: String): UiState<CableTestResult> {
         android.util.Log.d("TDR_DEBUG", "=== Cable-Test Request Start ===")
-        android.util.Log.d("TDR_DEBUG", "Probe: ${probe.name} @ ${probe.ipAddress}")
+        // Probe.name removed — use generic label with IP for logs
+        android.util.Log.d("TDR_DEBUG", "Sonda @ ${probe.ipAddress}")
         android.util.Log.d("TDR_DEBUG", "Interface: $interfaceName")
         android.util.Log.d("TDR_DEBUG", "TDR Supported: ${probe.tdrSupported}")
 
@@ -363,7 +364,7 @@ dns = null,
 
     suspend fun getNeighborsForInterface(probe: ProbeConfig, interfaceName: String): UiState<List<NeighborDetail>> {
         android.util.Log.d("LLDP_DEBUG", "=== LLDP Request Start ===")
-        android.util.Log.d("LLDP_DEBUG", "Probe: ${probe.name} @ ${probe.ipAddress}")
+            android.util.Log.d("LLDP_DEBUG", "Sonda @ ${probe.ipAddress}")
         android.util.Log.d("LLDP_DEBUG", "Interface: $interfaceName")
         android.util.Log.d("LLDP_DEBUG", "Query parameter: interface=$interfaceName (sintassi corretta)")
 
@@ -459,7 +460,7 @@ dns = null,
                             val result = api.getSystemResource(ProplistRequest(listOf("board-name")))
                             result.isNotEmpty()
                         } catch (e: Exception) {
-                            android.util.Log.w("AppRepository", "Probe '${probe.name}' offline: ${e.message}")
+                            android.util.Log.w("AppRepository", "Sonda @ ${probe.ipAddress} offline: ${e.message}")
                             false
                         }
                         ProbeStatusInfo(probe, isOnline)

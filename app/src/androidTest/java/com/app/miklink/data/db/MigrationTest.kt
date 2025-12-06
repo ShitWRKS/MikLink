@@ -114,9 +114,10 @@ class MigrationTest {
         // 4. Esegui MIGRATION_9_10 (aggiunge runSpeedTest a test_profiles)
         db = helper.runMigrationsAndValidate(
             TEST_DB,
-            10,
+            11,
             true,
-            Migrations.MIGRATION_9_10
+            Migrations.MIGRATION_9_10,
+            Migrations.MIGRATION_10_11
         )
 
         // Verifica che il profilo di test abbia la nuova colonna runSpeedTest
@@ -161,11 +162,12 @@ class MigrationTest {
         // Applica TUTTE le migrazioni in un'unica operazione
         db = helper.runMigrationsAndValidate(
             TEST_DB,
-            10,
+            11,
             true,
             Migrations.MIGRATION_7_8,
             Migrations.MIGRATION_8_9,
-            Migrations.MIGRATION_9_10
+            Migrations.MIGRATION_9_10,
+            Migrations.MIGRATION_10_11
         )
 
         // Verifica che tutte le colonne esistano

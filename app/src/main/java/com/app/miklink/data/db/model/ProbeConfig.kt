@@ -7,7 +7,6 @@ import androidx.room.PrimaryKey
 data class ProbeConfig(
     @PrimaryKey(autoGenerate = true)
     val probeId: Long = 0,
-    val name: String,
     val ipAddress: String,
     val username: String,
     val password: String,

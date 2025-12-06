@@ -740,7 +740,8 @@ class TestViewModel @Inject constructor(
             timestamp = System.currentTimeMillis(),
             socketName = socketName,
             notes = notes,
-            probeName = reportProbe.name,
+            // probe.name removed — use generic label for reports
+            probeName = "Sonda",
             profileName = reportProfile.profileName,
             overallStatus = overallStatus,
             resultsJson = resultsJson

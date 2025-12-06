@@ -89,7 +89,6 @@ class TestViewModelStartFlowTest {
         )
         val probe = ProbeConfig(
             probeId = 2L,
-            name = "Probe-01",
             ipAddress = "192.168.88.1",
             username = "admin",
             password = "pass",
