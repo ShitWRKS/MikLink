@@ -7,8 +7,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.app.miklink.data.db.dao.ClientDao
 import com.app.miklink.data.db.dao.ReportDao
+import com.app.miklink.data.db.dao.TestProfileDao
 import com.app.miklink.data.db.model.Report
+import com.app.miklink.data.db.model.TestProfile
 import com.app.miklink.data.pdf.PdfGenerator
+import com.app.miklink.data.pdf.PdfGeneratorIText
 import com.app.miklink.ui.history.model.ParsedResults
 import com.squareup.moshi.Moshi
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -21,7 +24,9 @@ import javax.inject.Inject
 class ReportDetailViewModel @Inject constructor(
     private val reportDao: ReportDao,
     private val clientDao: ClientDao,
-    private val pdfGenerator: PdfGenerator, // Injected dependency
+    private val profileDao: TestProfileDao,
+    private val pdfGenerator: PdfGenerator, // For legacy HTML generation
+    private val pdfGeneratorIText: PdfGeneratorIText, // For new single-test PDF
     private val moshi: Moshi,
     savedStateHandle: SavedStateHandle
 ) : ViewModel(), ReportDetailScreenStateProvider {
@@ -40,6 +45,9 @@ class ReportDetailViewModel @Inject constructor(
     private val _clientName = MutableStateFlow("")
     val clientName: StateFlow<String> = _clientName.asStateFlow()
 
+    private val _profile = MutableStateFlow<TestProfile?>(null)
+    val profile: StateFlow<TestProfile?> = _profile.asStateFlow()
+
     private val _pdfStatus = MutableStateFlow("")
     override val pdfStatus: StateFlow<String> = _pdfStatus.asStateFlow()
 
@@ -57,6 +65,13 @@ class ReportDetailViewModel @Inject constructor(
                         _clientName.value = client?.companyName ?: "Unknown Client"
                     } ?: run {
                         _clientName.value = "Unknown Client"
+                    }
+                    
+                    // Load profile
+                    currentReport.profileName?.let { profileName ->
+                        _profile.value = profileDao.getProfileByName(profileName).firstOrNull()
+                    } ?: run {
+                        _profile.value = null
                     }
                 }
             }
@@ -86,6 +101,26 @@ class ReportDetailViewModel @Inject constructor(
         val clientName = client?.companyName?.replace(" ", "_") ?: "Client"
         val date = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.getDefault()).format(java.util.Date(currentReport.timestamp))
         return "${clientName}-${date}-${currentReport.reportId}"
+    }
+    
+    // Generate PDF File for single test using iText
+    suspend fun generatePdfFileForCurrentReport(): java.io.File? {
+        val currentReport = report.value ?: return null
+        val client = currentReport.clientId?.let { it -> clientDao.getClientById(it).firstOrNull() }
+        val currentProfile = profile.value
+        val title = getProposedFilename()
+        
+        return try {
+            pdfGeneratorIText.generateSingleTestPdf(
+                report = currentReport,
+                client = client,
+                profile = currentProfile,
+                reportTitle = title
+            )
+        } catch (e: Exception) {
+            android.util.Log.e("ReportDetailVM", "Error generating PDF", e)
+            null
+        }
     }
 
     suspend fun createPrintAdapter(context: Context, html: String, jobName: String): PrintDocumentAdapter =

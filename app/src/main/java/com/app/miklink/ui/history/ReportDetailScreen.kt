@@ -143,25 +143,36 @@ fun ReportDetailScreen(
                 },
                 actions = {
                     IconButton(onClick = {
-                        val activity = context as? Activity
-                        if (activity == null) {
-                            coroutineScope.launch { snackbarHostState.showSnackbar("Errore: Activity non disponibile") }
-                            return@IconButton
-                        }
-                        
                         coroutineScope.launch {
-                            // 1. Generate HTML
-                            val html = viewModel.generateHtmlForCurrentReport()
-                            if (html.isNullOrBlank()) {
-                                snackbarHostState.showSnackbar("Errore: impossibile generare l'HTML")
-                                return@launch
+                            try {
+                                val pdfFile = viewModel.generatePdfFileForCurrentReport()
+                                if (pdfFile != null && pdfFile.exists() && pdfFile.length() > 0) {
+                                    // Open PDF with default viewer
+                                    val uri = androidx.core.content.FileProvider.getUriForFile(
+                                        context,
+                                        "${context.packageName}.fileprovider",
+                                        pdfFile
+                                    )
+                                    
+                                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                                        setDataAndType(uri, "application/pdf")
+                                        addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                        addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    }
+                                    
+                                    try {
+                                        context.startActivity(intent)
+                                        snackbarHostState.showSnackbar("PDF generato con successo!")
+                                    } catch (e: android.content.ActivityNotFoundException) {
+                                        snackbarHostState.showSnackbar("Nessun visualizzatore PDF trovato")
+                                    }
+                                } else {
+                                    snackbarHostState.showSnackbar("Errore nella generazione del PDF")
+                                }
+                            } catch (e: Exception) {
+                                android.util.Log.e("ReportDetail", "PDF export error", e)
+                                snackbarHostState.showSnackbar("Errore: ${e.message}")
                             }
-                            
-                            // 2. Set state to trigger WebView loading and printing
-                            pdfJobName = viewModel.getProposedFilename()
-                            pdfHtmlToPrint = html
-                            
-                            snackbarHostState.showSnackbar("Preparazione PDF in corso...")
                         }
                     }) {
                         // Use same visual treatment as Settings top icon (primary tint, no extra bg)
@@ -214,7 +225,7 @@ fun ReportDetailScreen(
                     )
                 }
                 
-                // ACTIONS SECTION - Repeat, Delete, Export
+                // ACTIONS SECTION - Repeat, Delete
                 item {
                     ActionsSection(
                         onRepeat = {
@@ -222,19 +233,6 @@ fun ReportDetailScreen(
                         },
                         onDelete = {
                             // TODO: Implement delete with confirmation
-                        },
-                        onExport = {
-                            val activity = context as? Activity
-                            if (activity != null) {
-                                coroutineScope.launch {
-                                    val html = viewModel.generateHtmlForCurrentReport()
-                                    if (!html.isNullOrBlank()) {
-                                        pdfJobName = viewModel.getProposedFilename()
-                                        pdfHtmlToPrint = html
-                                        snackbarHostState.showSnackbar("Preparazione PDF...")
-                                    }
-                                }
-                            }
                         }
                     )
                 }
@@ -562,8 +560,7 @@ fun EditSection(
 @Composable
 fun ActionsSection(
     onRepeat: () -> Unit,
-    onDelete: () -> Unit,
-    onExport: () -> Unit
+    onDelete: () -> Unit
 ) {
     OutlinedCard(modifier = Modifier.fillMaxWidth()) {
         Column(
@@ -578,7 +575,7 @@ fun ActionsSection(
             
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 // 1. Elimina
                 OutlinedButton(
@@ -590,33 +587,25 @@ fun ActionsSection(
                 ) {
                     Icon(
                         Icons.Default.Delete, 
-                        contentDescription = "Elimina",
-                        modifier = Modifier.size(24.dp)
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
                     )
+                    Spacer(Modifier.width(8.dp))
+                    Text("Elimina")
                 }
                 
-                // 2. PDF
+                // 2. Ripeti
                 Button(
-                    onClick = onExport,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Icon(
-                        Icons.Default.PictureAsPdf, 
-                        contentDescription = "Esporta PDF",
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-                
-                // 3. Ripeti
-                OutlinedButton(
                     onClick = onRepeat,
                     modifier = Modifier.weight(1f)
                 ) {
                     Icon(
                         Icons.Default.Refresh, 
-                        contentDescription = "Ripeti Test",
-                        modifier = Modifier.size(24.dp)
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
                     )
+                    Spacer(Modifier.width(8.dp))
+                    Text("Ripeti Test")
                 }
             }
         }

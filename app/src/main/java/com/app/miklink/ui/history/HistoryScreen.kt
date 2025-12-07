@@ -356,6 +356,40 @@ fun HistoryScreen(
                                 }
                             }
                         },
+                        onExportSingleReport = { report ->
+                            coroutineScope.launch {
+                                try {
+                                    snackbarHostState.showSnackbar("Generazione PDF...")
+                                    val pdfFile = viewModel.generatePdfForSingleReport(report)
+                                    
+                                    if (pdfFile != null && pdfFile.exists() && pdfFile.length() > 0) {
+                                        val uri = androidx.core.content.FileProvider.getUriForFile(
+                                            context,
+                                            "${context.packageName}.fileprovider",
+                                            pdfFile
+                                        )
+                                        
+                                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                                            setDataAndType(uri, "application/pdf")
+                                            addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                            addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                                        }
+                                        
+                                        try {
+                                            context.startActivity(intent)
+                                            snackbarHostState.showSnackbar("PDF generato!")
+                                        } catch (e: android.content.ActivityNotFoundException) {
+                                            snackbarHostState.showSnackbar("Nessun visualizzatore PDF trovato")
+                                        }
+                                    } else {
+                                        snackbarHostState.showSnackbar("Errore generazione PDF")
+                                    }
+                                } catch (e: Exception) {
+                                    android.util.Log.e("HistoryPDF", "Error generating single PDF", e)
+                                    snackbarHostState.showSnackbar("Errore: ${e.message}")
+                                }
+                            }
+                        },
                         viewModel = viewModel
                     )
                 }
@@ -529,6 +563,7 @@ fun ClientReportsCard(
     onReportDelete: (Long) -> Unit,
     onReportRepeat: (Report) -> Unit,
     onExportAll: () -> Unit,
+    onExportSingleReport: (Report) -> Unit = {},
     viewModel: HistoryViewModel
 ) {
     Card(
@@ -634,7 +669,8 @@ fun ClientReportsCard(
                             report = report,
                             onEdit = { onReportEdit(report.reportId) },
                             onDelete = { onReportDelete(report.reportId) },
-                            onRepeat = { onReportRepeat(report) }
+                            onRepeat = { onReportRepeat(report) },
+                            onExportPdf = { onExportSingleReport(report) }
                         )
                         HorizontalDivider()
                     }

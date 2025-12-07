@@ -150,6 +150,29 @@ class HistoryViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Generate PDF using iText 7 for a single report.
+     */
+    suspend fun generatePdfForSingleReport(report: Report): java.io.File? {
+        // Find client for this report
+        val client = report.clientId?.let { clientId ->
+            clientDao.getClientById(clientId).first()
+        }
+        
+        // Find profile for this report
+        val profile = report.profileName?.let { profileName ->
+            profileDao.getProfileByName(profileName).first()
+        }
+        
+        val clientName = client?.companyName?.replace(" ", "_") ?: "Client"
+        val date = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.getDefault()).format(java.util.Date(report.timestamp))
+        val title = "${clientName}-${date}-${report.reportId}"
+        
+        return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            pdfGeneratorIText.generateSingleTestPdf(report, client, profile, title)
+        }
+    }
+
     fun updateSearchQuery(query: String) {
         _searchQuery.value = query
     }
