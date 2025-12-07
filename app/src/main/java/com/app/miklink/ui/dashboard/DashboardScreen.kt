@@ -148,12 +148,12 @@ fun DashboardScreen(
                                 )
                             }
                             currentProbe?.let { probe ->
-                                // Show a generic probe label instead of a specific name
-                                StatusBadge(
-                                    text = "Sonda",
-                                    color = if (isProbeOnline) Color(0xFF4CAF50) else Color(0xFFF44336),
-                                    icon = if (isProbeOnline) Icons.Default.CheckCircle else Icons.Default.Error
-                                )
+                                    // Show a generic probe label instead of a specific name
+                                    StatusBadge(
+                                        text = "Sonda",
+                                        color = if (isProbeOnline) com.app.miklink.ui.theme.TechGreen else com.app.miklink.ui.theme.TechRed,
+                                        icon = if (isProbeOnline) Icons.Default.CheckCircle else Icons.Default.Error
+                                    )
                             }
                         }
                     }

@@ -27,6 +27,9 @@ import androidx.compose.runtime.*
 import androidx.compose.foundation.selection.selectable
 import com.app.miklink.data.repository.IdNumberingStrategy
 import com.app.miklink.data.repository.ThemeConfig
+import com.app.miklink.ui.theme.isLightChain
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -92,13 +95,13 @@ fun SettingsScreen(
             SettingsSection(
                 title = "Sonda MikroTik",
                 icon = Icons.Default.Router,
-                iconColor = Color(0xFF2196F3)
+                iconColor = MaterialTheme.colorScheme.primary
             ) {
                 SettingsCard(
                     headline = "Configura Sonda",
                     subtitle = "Gestisci la sonda di test",
                     leadingIcon = Icons.Default.Router,
-                    iconColor = Color(0xFF2196F3),
+                    iconColor = MaterialTheme.colorScheme.primary,
                     onClick = { navController.navigate("probe_edit/-1") }
                 )
             }
@@ -107,13 +110,13 @@ fun SettingsScreen(
             SettingsSection(
                 title = "Gestione Dati",
                 icon = Icons.Default.Storage,
-                iconColor = Color(0xFF9C27B0)
+                iconColor = MaterialTheme.colorScheme.primary
             ) {
                 SettingsCard(
                     headline = "Gestisci Profili",
                     subtitle = "Crea, modifica o elimina profili di test",
                     leadingIcon = Icons.AutoMirrored.Filled.ListAlt,
-                    iconColor = Color(0xFF9C27B0),
+                    iconColor = MaterialTheme.colorScheme.primary,
                     onClick = { navController.navigate("profile_list") }
                 )
 
@@ -121,7 +124,7 @@ fun SettingsScreen(
                     headline = "Gestisci Clienti",
                     subtitle = "Aggiungi o modifica anagrafica clienti",
                     leadingIcon = Icons.Default.Business,
-                    iconColor = Color(0xFF9C27B0),
+                    iconColor = MaterialTheme.colorScheme.primary,
                     onClick = { navController.navigate("client_list") }
                 )
             }
@@ -130,13 +133,13 @@ fun SettingsScreen(
             SettingsSection(
                 title = "Aspetto",
                 icon = Icons.Default.Palette,
-                iconColor = Color(0xFFFF9800)
+                iconColor = MaterialTheme.colorScheme.primary
             ) {
                 SettingsCard(
                     headline = "Tema",
                     subtitle = "Chiaro, Scuro o Auto",
                     leadingIcon = Icons.Default.DarkMode,
-                    iconColor = Color(0xFFFF9800),
+                    iconColor = MaterialTheme.colorScheme.primary,
                     onClick = { showThemeDialog = true },
                     trailingContent = {
                         Surface(
@@ -156,13 +159,13 @@ fun SettingsScreen(
             SettingsSection(
                 title = "Numerazione ID",
                 icon = Icons.Default.Tag,
-                iconColor = Color(0xFF4CAF50)
+                iconColor = MaterialTheme.colorScheme.primary
             ) {
                 SettingsCard(
                     headline = "Strategia Numerazione",
                     subtitle = "Incremento continuo o riuso ID",
                     leadingIcon = Icons.Default.Numbers,
-                    iconColor = Color(0xFF4CAF50),
+                    iconColor = MaterialTheme.colorScheme.primary,
                     onClick = { showIdStrategyDialog = true },
                     trailingContent = {
                         Surface(
@@ -182,13 +185,13 @@ fun SettingsScreen(
             SettingsSection(
                 title = "Modalità di Filtraggio",
                 icon = Icons.Default.Tune,
-                iconColor = Color(0xFF3F51B5)
+                iconColor = MaterialTheme.colorScheme.primary
             ) {
                 SettingsCard(
                     headline = "Filtraggio CDP/LLDP",
                     subtitle = "Seleziona la modalità di filtraggio",
                     leadingIcon = Icons.Default.FilterList,
-                    iconColor = Color(0xFF3F51B5),
+                    iconColor = MaterialTheme.colorScheme.primary,
                     onClick = { /* TODO: Implement Filtering Mode Selector */ },
                     trailingContent = {
                         Surface(
@@ -209,7 +212,7 @@ fun SettingsScreen(
             SettingsSection(
                 title = "Informazioni",
                 icon = Icons.Default.Info,
-                iconColor = Color(0xFF607D8B)
+                iconColor = MaterialTheme.colorScheme.secondary
             ) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -234,46 +237,14 @@ fun SettingsScreen(
     }
 
     if (showThemeDialog) {
-        AlertDialog(
-            onDismissRequest = { showThemeDialog = false },
-            title = { Text("Seleziona Tema") },
-            text = {
-                Column {
-                    ThemeConfig.entries.forEach { theme ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    viewModel.updateTheme(theme)
-                                    showThemeDialog = false
-                                }
-                                .padding(vertical = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            RadioButton(
-                                selected = (themeConfig == theme),
-                                onClick = {
-                                    viewModel.updateTheme(theme)
-                                    showThemeDialog = false
-                                }
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = when (theme) {
-                                    ThemeConfig.FOLLOW_SYSTEM -> "Automatico (Sistema)"
-                                    ThemeConfig.LIGHT -> "Chiaro"
-                                    ThemeConfig.DARK -> "Scuro"
-                                },
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showThemeDialog = false }) {
-                    Text("Annulla")
-                }
+        ThemeSelectionDialog(
+            currentConfig = themeConfig,
+            currentPalette = viewModel.customPalette.collectAsStateWithLifecycle().value,
+            onDismiss = { showThemeDialog = false },
+            onSave = { config, primary, secondary, background, content ->
+                viewModel.updateTheme(config)
+                viewModel.updateCustomPalette(primary, secondary, background, content)
+                showThemeDialog = false
             }
         )
     }
@@ -448,5 +419,166 @@ fun InfoRow(label: String, value: String) {
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Medium
         )
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun ThemeSelectionDialog(
+    currentConfig: ThemeConfig,
+    currentPalette: com.app.miklink.data.repository.UserPreferencesRepository.CustomPalette,
+    onDismiss: () -> Unit,
+    onSave: (ThemeConfig, Int?, Int?, Int?, Int?) -> Unit
+) {
+    var selectedConfig by remember { mutableStateOf(currentConfig) }
+    var primaryColor by remember { mutableStateOf(currentPalette.primary) }
+    var secondaryColor by remember { mutableStateOf(currentPalette.secondary) }
+    var backgroundColor by remember { mutableStateOf(currentPalette.background) }
+    var customContentColor by remember { mutableStateOf(currentPalette.content) }
+
+    // Presets
+    data class Preset(val name: String, val primary: Int, val secondary: Int, val background: Int? = null, val content: Int? = null)
+    val presets = listOf(
+        Preset("Inspired", 0xFF37474F.toInt(), 0xFF0066CC.toInt()), // Changed Secondary to Blue to avoid Red
+        Preset("Classic Blue", 0xFF0066CC.toInt(), 0xFF004C99.toInt()),
+        Preset("Alarm Orange", 0xFFEF6C00.toInt(), 0xFFE65100.toInt(), 0xFF121212.toInt(), 0xFFFFFFFF.toInt())
+    )
+
+    // Common Colors for Grid (Removed Reds/Greens)
+    val colors = listOf(
+        0xFF37474F, 0xFF0066CC, 0xFFEF6C00, // Presets
+        0xFF7B1FA2, 0xFF512DA8, 0xFF303F9F, // Purples/Pinks
+        0xFF0288D1, 0xFF0097A7, 0xFF00796B, // Blues
+        0xFFAFB42B, 0xFFFBC02D, 0xFFFFA000, 0xFFF57C00, // Yellows/Oranges
+        0xFF5D4037, 0xFF616161, 0xFF455A64, 0xFFFFFFFF, 0xFF000000  // Greys + White/Black for Content
+    ).map { it.toInt() }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = { onSave(selectedConfig, primaryColor, secondaryColor, backgroundColor, customContentColor) }) {
+                Text("Applica")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Annulla")
+            }
+        },
+        title = { Text("Personalizza Tema") },
+        text = {
+            Column(
+                modifier = Modifier
+                    .verticalScroll(rememberScrollState())
+                    .fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Mode Selector
+                Column {
+                    Text("Modalità", style = MaterialTheme.typography.labelMedium)
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                        ThemeConfig.entries.forEach { config ->
+                            FilterChip(
+                                selected = selectedConfig == config,
+                                onClick = { selectedConfig = config },
+                                label = { 
+                                    Text(when(config) {
+                                        ThemeConfig.FOLLOW_SYSTEM -> "Auto"
+                                        ThemeConfig.LIGHT -> "Light"
+                                        ThemeConfig.DARK -> "Dark"
+                                    })
+                                }
+                            )
+                        }
+                    }
+                }
+
+                HorizontalDivider()
+
+                // Presets
+                Column {
+                    Text("Presets", style = MaterialTheme.typography.labelMedium)
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        presets.forEach { preset ->
+                            SuggestionChip(
+                                onClick = {
+                                    primaryColor = preset.primary
+                                    secondaryColor = preset.secondary
+                                    backgroundColor = preset.background
+                                    customContentColor = preset.content
+                                },
+                                label = { Text(preset.name) },
+                                icon = {
+                                    Box(
+                                        Modifier
+                                            .size(12.dp)
+                                            .clip(CircleShape)
+                                            .background(Color(preset.primary))
+                                    )
+                                }
+                            )
+                        }
+                    }
+                }
+
+                HorizontalDivider()
+
+                // Custom Colors
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("Colori Personalizzati", style = MaterialTheme.typography.labelMedium)
+                    
+                    // Primary Picker
+                    ColorPickerRow("Primario", colors, primaryColor) { primaryColor = it }
+                    
+                    // Secondary Picker
+                    ColorPickerRow("Secondario", colors, secondaryColor) { secondaryColor = it }
+
+                    // Background Picker
+                    ColorPickerRow("Sfondo (Opzionale)", colors, backgroundColor) { 
+                        backgroundColor = if (backgroundColor == it) null else it 
+                    }
+                    
+                    // Content Picker
+                    ColorPickerRow("Testo/Icone (Opzionale)", colors, customContentColor) { 
+                        customContentColor = if (customContentColor == it) null else it 
+                    }
+                }
+            }
+        }
+    )
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun ColorPickerRow(label: String, colors: List<Int>, selectedColor: Int?, onSelect: (Int) -> Unit) {
+    Column {
+        Text(label, style = MaterialTheme.typography.bodySmall)
+        Spacer(Modifier.height(4.dp))
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            colors.forEach { colorInt ->
+                val color = Color(colorInt)
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .background(color)
+                        .clickable { onSelect(colorInt) }
+                        .then(
+                            if (selectedColor == colorInt) Modifier.background(Color.White.copy(alpha = 0.5f)) else Modifier
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (selectedColor == colorInt) {
+                        Icon(Icons.Default.Check, null, tint = if (isLightChain(color)) Color.Black else Color.White, modifier = Modifier.size(16.dp))
+                    }
+                }
+            }
+        }
     }
 }

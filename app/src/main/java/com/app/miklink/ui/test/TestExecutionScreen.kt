@@ -522,7 +522,7 @@ fun TestCompletedView(
     modifier: Modifier = Modifier
 ) {
     val isPassed = report.overallStatus == "PASS"
-    val resultColor = if (isPassed) Color(0xFF4CAF50) else Color(0xFFF44336)
+    val resultColor = if (isPassed) com.app.miklink.ui.theme.TechGreen else com.app.miklink.ui.theme.TechRed
     val backgroundColor = resultColor.copy(alpha = 0.1f)
 
     LazyColumn(

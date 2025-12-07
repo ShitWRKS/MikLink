@@ -104,6 +104,7 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.compose.material.icons.extended)
+    implementation(libs.material)
 
     // Navigation
     implementation(libs.navigation.compose)
@@ -126,6 +127,10 @@ dependencies {
     implementation(libs.okhttp.logging.interceptor)
     implementation(libs.moshi.core)
     implementation(libs.moshi.kotlin)
+
+    // Image Loading (Coil)
+    implementation(libs.coil.compose)
+    implementation(libs.coil.gif)
 
     // iText 7 - PDF Generation (AGPL v3)
     implementation(libs.itext.kernel)

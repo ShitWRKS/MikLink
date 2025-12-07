@@ -29,6 +29,9 @@ class MainActivity : ComponentActivity() {
             val themeConfig by userPreferencesRepository.themeConfig.collectAsStateWithLifecycle(
                 initialValue = ThemeConfig.FOLLOW_SYSTEM
             )
+            val customPalette by userPreferencesRepository.customPalette.collectAsStateWithLifecycle(
+                initialValue = UserPreferencesRepository.CustomPalette()
+            )
 
             val isDarkTheme = when (themeConfig) {
                 ThemeConfig.LIGHT -> false
@@ -36,7 +39,13 @@ class MainActivity : ComponentActivity() {
                 ThemeConfig.FOLLOW_SYSTEM -> isSystemInDarkTheme()
             }
 
-            MikLinkTheme(darkTheme = isDarkTheme) {
+            MikLinkTheme(
+                darkTheme = isDarkTheme,
+                customPrimaryInfo = customPalette.primary,
+                customSecondaryInfo = customPalette.secondary,
+                customBackgroundInfo = customPalette.background,
+                customContentInfo = customPalette.content
+            ) {
                 NavGraph()
             }
         }

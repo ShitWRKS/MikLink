@@ -45,6 +45,37 @@ class UserPreferencesRepository @Inject constructor(
             }
         }
 
+    private val CUSTOM_PRIMARY_KEY = androidx.datastore.preferences.core.intPreferencesKey("custom_primary_color")
+    private val CUSTOM_SECONDARY_KEY = androidx.datastore.preferences.core.intPreferencesKey("custom_secondary_color")
+    private val CUSTOM_BACKGROUND_KEY = androidx.datastore.preferences.core.intPreferencesKey("custom_background_color")
+    private val CUSTOM_CONTENT_KEY = androidx.datastore.preferences.core.intPreferencesKey("custom_content_color")
+
+    data class CustomPalette(
+        val primary: Int? = null,
+        val secondary: Int? = null,
+        val background: Int? = null,
+        val content: Int? = null
+    )
+
+    val customPalette: Flow<CustomPalette> = dataStore.data
+        .map { preferences ->
+            CustomPalette(
+                primary = preferences[CUSTOM_PRIMARY_KEY],
+                secondary = preferences[CUSTOM_SECONDARY_KEY],
+                background = preferences[CUSTOM_BACKGROUND_KEY],
+                content = preferences[CUSTOM_CONTENT_KEY]
+            )
+        }
+
+    suspend fun setCustomPalette(primary: Int?, secondary: Int?, background: Int?, content: Int? = null) {
+        dataStore.edit { preferences ->
+            if (primary != null) preferences[CUSTOM_PRIMARY_KEY] = primary else preferences.remove(CUSTOM_PRIMARY_KEY)
+            if (secondary != null) preferences[CUSTOM_SECONDARY_KEY] = secondary else preferences.remove(CUSTOM_SECONDARY_KEY)
+            if (background != null) preferences[CUSTOM_BACKGROUND_KEY] = background else preferences.remove(CUSTOM_BACKGROUND_KEY)
+            if (content != null) preferences[CUSTOM_CONTENT_KEY] = content else preferences.remove(CUSTOM_CONTENT_KEY)
+        }
+    }
+
     suspend fun setTheme(themeConfig: ThemeConfig) {
         dataStore.edit { preferences ->
             preferences[THEME_KEY] = themeConfig.name

@@ -35,6 +35,13 @@ class SettingsViewModel @Inject constructor(
             initialValue = ThemeConfig.FOLLOW_SYSTEM
         )
 
+    val customPalette = userPreferencesRepository.customPalette
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = UserPreferencesRepository.CustomPalette()
+        )
+
     val idNumberingStrategy = userPreferencesRepository.idNumberingStrategy
         .stateIn(
             scope = viewModelScope,
@@ -51,6 +58,12 @@ class SettingsViewModel @Inject constructor(
     fun updateIdNumberingStrategy(strategy: IdNumberingStrategy) {
         viewModelScope.launch {
             userPreferencesRepository.setIdNumberingStrategy(strategy)
+        }
+    }
+
+    fun updateCustomPalette(primary: Int?, secondary: Int?, background: Int?, content: Int? = null) {
+        viewModelScope.launch {
+            userPreferencesRepository.setCustomPalette(primary, secondary, background, content)
         }
     }
 
