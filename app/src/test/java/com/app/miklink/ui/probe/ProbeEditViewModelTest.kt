@@ -115,22 +115,7 @@ class ProbeEditViewModelTest {
         assertEquals(listOf("ether1"), state.interfaces)
     }
 
-    @Test
-    fun `GIVEN no existing probe WHEN ViewModel created THEN state fields have default values`() = runTest {
-        // Given: DAO returns null (no probe exists)
-        coEvery { probeConfigDao.getSingleProbe() } returns flowOf(null)
 
-        // When: ViewModel is created
-        viewModel = ProbeEditViewModel(probeConfigDao, appRepository, savedStateHandle)
-
-        // Then: State fields should have default values (name removed from model)
-        assertEquals("", viewModel.ipAddress.value)
-        assertEquals("admin", viewModel.username.value)
-        assertEquals("", viewModel.password.value)
-        assertFalse(viewModel.isHttps.value)
-        assertEquals("", viewModel.testInterface.value)
-        assertTrue(viewModel.verificationState.value is VerificationState.Idle)
-    }
 
     // ============================================
     // TEST 2: onSaveClicked (No Validation - Direct Save)

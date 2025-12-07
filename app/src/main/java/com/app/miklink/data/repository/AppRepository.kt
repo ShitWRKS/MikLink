@@ -45,25 +45,6 @@ class AppRepository @Inject constructor(
     private val baseOkHttpClient: OkHttpClient
 ) {
 
-    private val connectivityManager by lazy { context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager }
-
-    // NUOVO: Sonda unica (post-refactor)
-    val currentProbe: Flow<ProbeConfig?> = probeConfigDao.getSingleProbe()
-
-    private suspend fun findWifiNetwork(): Network? = withContext(Dispatchers.IO) {
-        // Return active network only if it's WIFI
-        val active = connectivityManager.activeNetwork
-        val activeCaps = active?.let { connectivityManager.getNetworkCapabilities(it) }
-        if (activeCaps?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true) {
-            active
-        } else {
-            null
-        }
-    }
-
-    private suspend fun buildServiceFor(probe: ProbeConfig): MikroTikApiService {
-        val protocol = if (probe.isHttps) "https://" else "http://"
-        val baseUrl = "$protocol${probe.ipAddress}/"
 
         val wifiNetwork = findWifiNetwork()
 
