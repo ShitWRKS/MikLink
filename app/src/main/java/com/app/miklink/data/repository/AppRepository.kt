@@ -242,7 +242,7 @@ class AppRepository @Inject constructor(
             var lease: DhcpClientStatus? = null
             repeat(6) {
                 val cur = api.getDhcpClientStatus(iface).firstOrNull()
-                if (cur?.status.equals("bound", true)) { lease = cur; return@repeat }
+                if (cur?.status?.equals("bound", true) == true) { lease = cur; return@repeat }
                 delay(1000)
             }
             val bound = lease ?: api.getDhcpClientStatus(iface).firstOrNull()
@@ -284,6 +284,7 @@ dns = null,
         }
     }
 
+    @Suppress("unused") // public API kept for completeness / future use
     suspend fun getCurrentInterfaceIpConfig(probe: ProbeConfig): UiState<NetworkConfigFeedback> = safeApiCall {
         val api = buildServiceFor(probe)
         val iface = probe.testInterface
@@ -373,7 +374,7 @@ dns = null,
             val result = api.getIpNeighbors(interfaceName)
 
             // Normalizza: Retrofit potrebbe restituire List vuota se nessun neighbor
-            val normalizedResult = result ?: emptyList()
+            val normalizedResult = result
 
             android.util.Log.d("LLDP_DEBUG", "Response: ${normalizedResult.size} neighbor(s) found")
             normalizedResult.forEachIndexed { index, neighbor ->
@@ -436,9 +437,9 @@ dns = null,
             }
         } catch (e: HttpException) {
             UiState.Error("Errore HTTP: ${e.message() ?: e.message}")
-        } catch (e: SocketTimeoutException) {
+        } catch (_: SocketTimeoutException) {
             UiState.Error("Server non raggiungibile (Timeout).")
-        } catch (e: ConnectException) {
+        } catch (_: ConnectException) {
             UiState.Error("Impossibile connettersi al server.")
         } catch (e: Exception) {
             UiState.Error("Errore sconosciuto: ${e.message}")
@@ -484,4 +485,4 @@ private fun tickerFlow(periodMs: Long): Flow<Unit> = flow {
 }
 
 // Probe status monitoring
-data class ProbeStatusInfo(val probe: com.app.miklink.data.db.model.ProbeConfig, val isOnline: Boolean)
+data class ProbeStatusInfo(val probe: ProbeConfig, val isOnline: Boolean)

@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 10,
-    "identityHash": "ee75e69c3d8f631fdca005716aec383e",
+    "identityHash": "dcff3e8484a8c8c4950e81fbd466d6a8",
     "entities": [
       {
         "tableName": "clients",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`clientId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `companyName` TEXT NOT NULL, `location` TEXT, `notes` TEXT, `networkMode` TEXT NOT NULL, `staticIp` TEXT, `staticSubnet` TEXT, `staticGateway` TEXT, `staticCidr` TEXT, `minLinkRate` TEXT NOT NULL, `socketPrefix` TEXT NOT NULL, `nextIdNumber` INTEGER NOT NULL, `lastFloor` TEXT, `lastRoom` TEXT, `speedTestServerAddress` TEXT, `speedTestServerUser` TEXT, `speedTestServerPassword` TEXT)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`clientId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `companyName` TEXT NOT NULL, `location` TEXT, `notes` TEXT, `networkMode` TEXT NOT NULL, `staticIp` TEXT, `staticSubnet` TEXT, `staticGateway` TEXT, `staticCidr` TEXT, `minLinkRate` TEXT NOT NULL, `socketPrefix` TEXT NOT NULL, `socketSuffix` TEXT NOT NULL, `socketSeparator` TEXT NOT NULL, `socketNumberPadding` INTEGER NOT NULL, `nextIdNumber` INTEGER NOT NULL, `lastFloor` TEXT, `lastRoom` TEXT, `speedTestServerAddress` TEXT, `speedTestServerUser` TEXT, `speedTestServerPassword` TEXT)",
         "fields": [
           {
             "fieldPath": "clientId",
@@ -72,6 +72,24 @@
             "fieldPath": "socketPrefix",
             "columnName": "socketPrefix",
             "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "socketSuffix",
+            "columnName": "socketSuffix",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "socketSeparator",
+            "columnName": "socketSeparator",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "socketNumberPadding",
+            "columnName": "socketNumberPadding",
+            "affinity": "INTEGER",
             "notNull": true
           },
           {
@@ -346,7 +364,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'ee75e69c3d8f631fdca005716aec383e')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'dcff3e8484a8c8c4950e81fbd466d6a8')"
     ]
   }
 }

@@ -11,24 +11,24 @@ object Migrations {
 
     // Migrazione v7 → v8: aggiunta colonna pingCount a test_profiles
     val MIGRATION_7_8 = object : Migration(7, 8) {
-        override fun migrate(database: SupportSQLiteDatabase) {
-            database.execSQL("ALTER TABLE test_profiles ADD COLUMN pingCount INTEGER NOT NULL DEFAULT 4")
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE test_profiles ADD COLUMN pingCount INTEGER NOT NULL DEFAULT 4")
         }
     }
 
     // Migrazione v8 → v9: aggiunta campi Speed Test a clients
     val MIGRATION_8_9 = object : Migration(8, 9) {
-        override fun migrate(database: SupportSQLiteDatabase) {
-            database.execSQL("ALTER TABLE clients ADD COLUMN speedTestServerAddress TEXT")
-            database.execSQL("ALTER TABLE clients ADD COLUMN speedTestServerUser TEXT")
-            database.execSQL("ALTER TABLE clients ADD COLUMN speedTestServerPassword TEXT")
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE clients ADD COLUMN speedTestServerAddress TEXT")
+            db.execSQL("ALTER TABLE clients ADD COLUMN speedTestServerUser TEXT")
+            db.execSQL("ALTER TABLE clients ADD COLUMN speedTestServerPassword TEXT")
         }
     }
 
     // Migrazione v9 → v10: aggiunta flag runSpeedTest a test_profiles
     val MIGRATION_9_10 = object : Migration(9, 10) {
-        override fun migrate(database: SupportSQLiteDatabase) {
-            database.execSQL("ALTER TABLE test_profiles ADD COLUMN runSpeedTest INTEGER NOT NULL DEFAULT 0")
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE test_profiles ADD COLUMN runSpeedTest INTEGER NOT NULL DEFAULT 0")
         }
     }
 
@@ -36,12 +36,22 @@ object Migrations {
     // Room non supporta DROP COLUMN, quindi creiamo una nuova tabella senza la colonna,
     // copiamo i dati, cancelliamo la vecchia tabella e rinominiamo la nuova
     val MIGRATION_10_11 = object : Migration(10, 11) {
-        override fun migrate(database: SupportSQLiteDatabase) {
-            database.execSQL("CREATE TABLE IF NOT EXISTS probe_config_new (probeId INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, ipAddress TEXT NOT NULL, username TEXT NOT NULL, password TEXT NOT NULL, testInterface TEXT NOT NULL, isOnline INTEGER NOT NULL, modelName TEXT, tdrSupported INTEGER NOT NULL, isHttps INTEGER NOT NULL DEFAULT 0)")
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("CREATE TABLE IF NOT EXISTS probe_config_new (probeId INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, ipAddress TEXT NOT NULL, username TEXT NOT NULL, password TEXT NOT NULL, testInterface TEXT NOT NULL, isOnline INTEGER NOT NULL, modelName TEXT, tdrSupported INTEGER NOT NULL, isHttps INTEGER NOT NULL DEFAULT 0)")
             // Copy: because previous table had 'name' column, map remaining columns
-            database.execSQL("INSERT INTO probe_config_new (probeId, ipAddress, username, password, testInterface, isOnline, modelName, tdrSupported, isHttps) SELECT probeId, ipAddress, username, password, testInterface, isOnline, modelName, tdrSupported, isHttps FROM probe_config")
-            database.execSQL("DROP TABLE probe_config")
-            database.execSQL("ALTER TABLE probe_config_new RENAME TO probe_config")
+            db.execSQL("INSERT INTO probe_config_new (probeId, ipAddress, username, password, testInterface, isOnline, modelName, tdrSupported, isHttps) SELECT probeId, ipAddress, username, password, testInterface, isOnline, modelName, tdrSupported, isHttps FROM probe_config")
+            db.execSQL("DROP TABLE probe_config")
+            db.execSQL("ALTER TABLE probe_config_new RENAME TO probe_config")
+        }
+    }
+
+    // Migrazione v11 -> v12: aggiunta campi socketSuffix, socketSeparator, socketNumberPadding a clients
+    val MIGRATION_11_12 = object : Migration(11, 12) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            // Aggiungiamo colonne con valori di default per mantenere la compatibilità
+            db.execSQL("ALTER TABLE clients ADD COLUMN socketSuffix TEXT NOT NULL DEFAULT ''")
+            db.execSQL("ALTER TABLE clients ADD COLUMN socketSeparator TEXT NOT NULL DEFAULT '-'")
+            db.execSQL("ALTER TABLE clients ADD COLUMN socketNumberPadding INTEGER NOT NULL DEFAULT 1")
         }
     }
 
@@ -54,6 +64,7 @@ object Migrations {
         MIGRATION_8_9,
         MIGRATION_9_10,
         MIGRATION_10_11
+        ,MIGRATION_11_12
     )
 }
 

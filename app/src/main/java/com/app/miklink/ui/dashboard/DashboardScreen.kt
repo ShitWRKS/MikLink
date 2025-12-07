@@ -90,7 +90,7 @@ fun DashboardScreen(
                             tint = MaterialTheme.colorScheme.primary
                         )
                         Spacer(Modifier.width(12.dp))
-                        Text("Dashboard", fontWeight = FontWeight.Bold)
+                        Text("MikLink", fontWeight = FontWeight.Bold)
                     }
                 },
                 actions = {
@@ -231,6 +231,7 @@ fun DashboardScreen(
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             // 1. Client Selection
+            SectionHeader(title = "Cliente", icon = Icons.Default.Business)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -256,6 +257,7 @@ fun DashboardScreen(
             }
 
             // 2. Profile Selection
+            SectionHeader(title = "Profilo", icon = Icons.Default.Speed)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -281,7 +283,7 @@ fun DashboardScreen(
             }
 
             // 3. Socket ID
-            SectionHeader(title = "3. Identificativo Presa", icon = Icons.Default.PowerInput)
+            SectionHeader(title = "Socket ID", icon = Icons.Default.PowerInput)
             
             OutlinedTextField(
                 value = socketName,
@@ -455,8 +457,7 @@ private fun SelectionCard(
 ) {
     Card(
         modifier = modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
+            .fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected) 
@@ -469,7 +470,10 @@ private fun SelectionCard(
         else null
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(

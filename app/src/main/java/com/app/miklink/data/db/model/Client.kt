@@ -19,6 +19,10 @@ data class Client(
     // Nuovo: soglia minima link per PASS ("10M","100M","1G","10G")
     val minLinkRate: String = "1G",
     val socketPrefix: String = "",
+    // Nuovi campi per formattazione ID presa
+    val socketSuffix: String = "",
+    val socketSeparator: String = "-",
+    val socketNumberPadding: Int = 1,
     val nextIdNumber: Int = 1,
     val lastFloor: String? = null,
     val lastRoom: String? = null,

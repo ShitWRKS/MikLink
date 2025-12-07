@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 11,
-    "identityHash": "18a8f3195ef6896ec372b2b56ec6f774",
+    "identityHash": "dcff3e8484a8c8c4950e81fbd466d6a8",
     "entities": [
       {
         "tableName": "clients",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`clientId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `companyName` TEXT NOT NULL, `location` TEXT, `notes` TEXT, `networkMode` TEXT NOT NULL, `staticIp` TEXT, `staticSubnet` TEXT, `staticGateway` TEXT, `staticCidr` TEXT, `minLinkRate` TEXT NOT NULL, `socketPrefix` TEXT NOT NULL, `nextIdNumber` INTEGER NOT NULL, `lastFloor` TEXT, `lastRoom` TEXT, `speedTestServerAddress` TEXT, `speedTestServerUser` TEXT, `speedTestServerPassword` TEXT)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`clientId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `companyName` TEXT NOT NULL, `location` TEXT, `notes` TEXT, `networkMode` TEXT NOT NULL, `staticIp` TEXT, `staticSubnet` TEXT, `staticGateway` TEXT, `staticCidr` TEXT, `minLinkRate` TEXT NOT NULL, `socketPrefix` TEXT NOT NULL, `socketSuffix` TEXT NOT NULL, `socketSeparator` TEXT NOT NULL, `socketNumberPadding` INTEGER NOT NULL, `nextIdNumber` INTEGER NOT NULL, `lastFloor` TEXT, `lastRoom` TEXT, `speedTestServerAddress` TEXT, `speedTestServerUser` TEXT, `speedTestServerPassword` TEXT)",
         "fields": [
           {
             "fieldPath": "clientId",
@@ -75,6 +75,24 @@
             "notNull": true
           },
           {
+            "fieldPath": "socketSuffix",
+            "columnName": "socketSuffix",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "socketSeparator",
+            "columnName": "socketSeparator",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "socketNumberPadding",
+            "columnName": "socketNumberPadding",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
             "fieldPath": "nextIdNumber",
             "columnName": "nextIdNumber",
             "affinity": "INTEGER",
@@ -122,18 +140,12 @@
       },
       {
         "tableName": "probe_config",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`probeId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `ipAddress` TEXT NOT NULL, `username` TEXT NOT NULL, `password` TEXT NOT NULL, `testInterface` TEXT NOT NULL, `isOnline` INTEGER NOT NULL, `modelName` TEXT, `tdrSupported` INTEGER NOT NULL, `isHttps` INTEGER NOT NULL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`probeId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `ipAddress` TEXT NOT NULL, `username` TEXT NOT NULL, `password` TEXT NOT NULL, `testInterface` TEXT NOT NULL, `isOnline` INTEGER NOT NULL, `modelName` TEXT, `tdrSupported` INTEGER NOT NULL, `isHttps` INTEGER NOT NULL)",
         "fields": [
           {
             "fieldPath": "probeId",
             "columnName": "probeId",
             "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "name",
-            "columnName": "name",
-            "affinity": "TEXT",
             "notNull": true
           },
           {
@@ -345,43 +357,14 @@
             "reportId"
           ]
         },
-        "indices": [
-          {
-            "name": "index_test_reports_clientId",
-            "unique": false,
-            "columnNames": [
-              "clientId"
-            ],
-            "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_test_reports_clientId` ON `${TABLE_NAME}` (`clientId`)"
-          },
-          {
-            "name": "index_test_reports_timestamp",
-            "unique": false,
-            "columnNames": [
-              "timestamp"
-            ],
-            "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_test_reports_timestamp` ON `${TABLE_NAME}` (`timestamp`)"
-          },
-          {
-            "name": "index_test_reports_clientId_timestamp",
-            "unique": false,
-            "columnNames": [
-              "clientId",
-              "timestamp"
-            ],
-            "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_test_reports_clientId_timestamp` ON `${TABLE_NAME}` (`clientId`, `timestamp`)"
-          }
-        ],
+        "indices": [],
         "foreignKeys": []
       }
     ],
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '18a8f3195ef6896ec372b2b56ec6f774')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'dcff3e8484a8c8c4950e81fbd466d6a8')"
     ]
   }
 }

@@ -36,6 +36,10 @@ class ClientEditViewModel @Inject constructor(
     val minLinkRate = MutableStateFlow("1G")
 
     val socketPrefix = MutableStateFlow("")
+    // Nuovi campi per ID presa
+    val socketSuffix = MutableStateFlow("")
+    val socketSeparator = MutableStateFlow("-")
+    val socketNumberPadding = MutableStateFlow(1)
     val lastFloor = MutableStateFlow("")
     val lastRoom = MutableStateFlow("")
 
@@ -61,6 +65,9 @@ class ClientEditViewModel @Inject constructor(
                     staticCidr.value = client.staticCidr ?: ""
                     minLinkRate.value = client.minLinkRate
                     socketPrefix.value = client.socketPrefix
+                        socketSuffix.value = client.socketSuffix
+                        socketSeparator.value = client.socketSeparator
+                        socketNumberPadding.value = client.socketNumberPadding
                     lastFloor.value = client.lastFloor ?: ""
                     lastRoom.value = client.lastRoom ?: ""
                     // Speed Test
@@ -88,6 +95,9 @@ class ClientEditViewModel @Inject constructor(
                 staticCidr = staticCidr.value.takeIf { it.isNotBlank() && networkMode.value == NetworkMode.STATIC },
                 minLinkRate = minLinkRate.value,
                 socketPrefix = socketPrefix.value,
+                socketSuffix = socketSuffix.value,
+                socketSeparator = socketSeparator.value,
+                socketNumberPadding = socketNumberPadding.value,
                 nextIdNumber = originalClient?.nextIdNumber ?: 1,
                 speedTestServerAddress = speedTestServerAddress.value.takeIf { it.isNotBlank() },
                 speedTestServerUser = speedTestServerUser.value.takeIf { it.isNotBlank() },

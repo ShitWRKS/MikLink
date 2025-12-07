@@ -117,7 +117,7 @@ dependencies {
     implementation(libs.room.runtime)
     ksp(libs.room.compiler)
     implementation(libs.room.ktx)
-    implementation("androidx.datastore:datastore-preferences:1.0.0")
+    implementation(libs.androidx.datastore.preferences)
     // Networking
     implementation(libs.retrofit.core)
     implementation(libs.retrofit.converter.moshi)
@@ -128,9 +128,9 @@ dependencies {
     implementation(libs.moshi.kotlin)
 
     // iText 7 - PDF Generation (AGPL v3)
-    implementation("com.itextpdf:kernel:8.0.3")
-    implementation("com.itextpdf:layout:8.0.3")  
-    implementation("com.itextpdf:io:8.0.3")
+    implementation(libs.itext.kernel)
+    implementation(libs.itext.layout)
+    implementation(libs.itext.io)
     // Unit & Instrumentation test dependencies
     // Use version catalog entries for test dependencies
     testImplementation(libs.junit)

@@ -32,11 +32,18 @@ import com.app.miklink.data.repository.ThemeConfig
 @Composable
 fun SettingsScreen(
     navController: NavController,
-    viewModel: SettingsViewModel = hiltViewModel()  // <-- aggiungi questo parametro
+    viewModel: SettingsViewModel = hiltViewModel()
 ) {
-    val themeConfig by viewModel.themeConfig.collectAsStateWithLifecycle()  // <-- aggiungi
-    val idNumberingStrategy by viewModel.idNumberingStrategy.collectAsStateWithLifecycle()  // <-- aggiungi
-    var showThemeDialog by remember { mutableStateOf(false) }  // <-- aggiungi
+    val themeConfig by viewModel.themeConfig.collectAsStateWithLifecycle()
+    val idNumberingStrategy by viewModel.idNumberingStrategy.collectAsStateWithLifecycle()
+    
+    var showThemeDialog by remember { mutableStateOf(false) }
+
+    val themeLabel = when (themeConfig) {
+        ThemeConfig.FOLLOW_SYSTEM -> "Auto"
+        ThemeConfig.LIGHT -> "Chiaro"
+        ThemeConfig.DARK -> "Scuro"
+    }
 
     Scaffold(
         topBar = {
@@ -110,14 +117,14 @@ fun SettingsScreen(
                     subtitle = "Chiaro, Scuro o Auto",
                     leadingIcon = Icons.Default.DarkMode,
                     iconColor = Color(0xFFFF9800),
-                    onClick = { /* TODO: Implement Theme Selector */ },
+                    onClick = { showThemeDialog = true },
                     trailingContent = {
                         Surface(
                             shape = RoundedCornerShape(12.dp),
                             color = MaterialTheme.colorScheme.secondaryContainer
                         ) {
                             Text(
-                                text = "Auto",
+                                text = themeLabel,
                                 style = MaterialTheme.typography.labelSmall,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                             )
@@ -254,6 +261,51 @@ SettingsSection(
             // Spacer finale
             Spacer(Modifier.height(16.dp))
         }
+    }
+
+    if (showThemeDialog) {
+        AlertDialog(
+            onDismissRequest = { showThemeDialog = false },
+            title = { Text("Seleziona Tema") },
+            text = {
+                Column {
+                    ThemeConfig.entries.forEach { theme ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    viewModel.updateTheme(theme)
+                                    showThemeDialog = false
+                                }
+                                .padding(vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = (themeConfig == theme),
+                                onClick = {
+                                    viewModel.updateTheme(theme)
+                                    showThemeDialog = false
+                                }
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = when (theme) {
+                                    ThemeConfig.FOLLOW_SYSTEM -> "Automatico (Sistema)"
+                                    ThemeConfig.LIGHT -> "Chiaro"
+                                    ThemeConfig.DARK -> "Scuro"
+                                },
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showThemeDialog = false }) {
+                    Text("Annulla")
+                }
+            }
+        )
     }
 }
 

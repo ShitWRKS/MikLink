@@ -38,11 +38,15 @@ class TestViewModel @Inject constructor(
     val uiState = _uiState.asStateFlow()
 
     // Persistenza dettagli ping: non vengono resettati al completamento del test
+    @Suppress("unused") // exposed to UI (composables) — not read inside this file
     private val _pingDetails = MutableStateFlow<List<TestDetail>?>(null)
+    @Suppress("unused") // observed by UI; keep public for composables
     val pingDetails: StateFlow<List<TestDetail>?> = _pingDetails.asStateFlow()
 
     // Speed Test state
+    @Suppress("unused") // observed by UI; keep public for composables
     private val _speedTestState = MutableStateFlow<UiState<SpeedTestResult>>(UiState.Idle)
+    @Suppress("unused")
     val speedTestState: StateFlow<UiState<SpeedTestResult>> = _speedTestState.asStateFlow()
 
     // Override per-singolo-test: se non nullo, verrà usato in applyClientNetworkConfig
@@ -658,8 +662,8 @@ class TestViewModel @Inject constructor(
             addLog("--- TEST COMPLETATO ---")
             _isRunning.value = false
             finalizeAndEmit(
-                reportClient = client, reportProbe = probe, reportProfile = profile, socketName = socketName,
-                overallStatus = overallStatus, testResults = testResults, notes = null
+                reportClient = client, reportProfile = profile, socketName = socketName,
+                overallStatus = overallStatus, testResults = testResults
             )
         }
     }
@@ -685,12 +689,11 @@ class TestViewModel @Inject constructor(
 
     private fun finalizeAndEmit(
         reportClient: Client,
-        reportProbe: ProbeConfig,
         reportProfile: TestProfile,
         socketName: String,
         overallStatus: String,
         testResults: Map<String, Any>,
-        notes: String?
+        notes: String? = null
     ) {
         // NON ricostruire le sezioni - le sezioni create con upsertSection durante il test
         // sono GIÀ CORRETTE e rappresentano lo stato reale.

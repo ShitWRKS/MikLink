@@ -1,6 +1,5 @@
 package com.app.miklink.ui.history
 
-import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.*
 import androidx.navigation.compose.rememberNavController

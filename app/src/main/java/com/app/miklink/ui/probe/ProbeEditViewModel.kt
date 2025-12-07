@@ -7,7 +7,6 @@ import com.app.miklink.data.db.dao.ProbeConfigDao
 import com.app.miklink.data.db.model.ProbeConfig
 import com.app.miklink.data.repository.AppRepository
 import com.app.miklink.data.repository.ProbeCheckResult
-import com.app.miklink.utils.Compatibility
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
