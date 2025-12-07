@@ -34,6 +34,8 @@ import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.launch
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.draw.alpha
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,6 +51,11 @@ fun HistoryScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
+
+    // Search and filter state
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val filterStatus by viewModel.filterStatus.collectAsStateWithLifecycle()
+    var searchText by remember { mutableStateOf("") }
 
     LaunchedEffect(pdfStatus) {
         if (pdfStatus.isNotBlank()) {
@@ -125,17 +132,87 @@ fun HistoryScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            TopAppBar(
-                title = { Text("Test History") },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
+            Column {
+                TopAppBar(
+                    title = { Text("Test History") },
+                    navigationIcon = {
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro")
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                    )
                 )
-            )
+                
+                // Search bar
+                OutlinedTextField(
+                    value = searchText,
+                    onValueChange = { 
+                        searchText = it
+                        viewModel.updateSearchQuery(it)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    placeholder = { Text("Cerca per presa, cliente...") },
+                    leadingIcon = {
+                        Icon(Icons.Default.Search, contentDescription = "Search")
+                    },
+                    trailingIcon = {
+                        if (searchText.isNotEmpty()) {
+                            IconButton(onClick = { 
+                                searchText = ""
+                                viewModel.updateSearchQuery("")
+                            }) {
+                                Icon(Icons.Default.Close, contentDescription = "Clear")
+                            }
+                        }
+                    },
+                    singleLine = true
+                )
+                
+                // Filter chips
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FilterChip(
+                        selected = filterStatus == FilterStatus.ALL,
+                        onClick = { viewModel.updateFilterStatus(FilterStatus.ALL) },
+                        label = { Text("Tutti") },
+                        leadingIcon = if (filterStatus == FilterStatus.ALL) {
+                            { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                        } else null
+                    )
+                    FilterChip(
+                        selected = filterStatus == FilterStatus.PASS,
+                        onClick = { viewModel.updateFilterStatus(FilterStatus.PASS) },
+                        label = { Text("Solo PASS") },
+                        leadingIcon = if (filterStatus == FilterStatus.PASS) {
+                            { Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                        } else null,
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = androidx.compose.ui.graphics.Color(0xFF4CAF50).copy(alpha = 0.2f),
+                            selectedLabelColor = androidx.compose.ui.graphics.Color(0xFF4CAF50)
+                        )
+                    )
+                    FilterChip(
+                        selected = filterStatus == FilterStatus.FAIL,
+                        onClick = { viewModel.updateFilterStatus(FilterStatus.FAIL) },
+                        label = { Text("Solo FAIL") },
+                        leadingIcon = if (filterStatus == FilterStatus.FAIL) {
+                            { Icon(Icons.Default.Cancel, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                        } else null,
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = androidx.compose.ui.graphics.Color(0xFFF44336).copy(alpha = 0.2f),
+                            selectedLabelColor = androidx.compose.ui.graphics.Color(0xFFF44336)
+                        )
+                    )
+                }
+            }
         }
     ) { padding ->
         if (reportsByClient.isEmpty()) {
@@ -145,25 +222,70 @@ fun HistoryScreen(
                     .padding(padding),
                 contentAlignment = Alignment.Center
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        Icons.Default.History,
-                        contentDescription = null,
-                        modifier = Modifier.size(64.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(Modifier.height(16.dp))
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(24.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(80.dp)
+                            .background(
+                                MaterialTheme.colorScheme.primaryContainer,
+                                CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.History,
+                            contentDescription = null,
+                            modifier = Modifier.size(40.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Spacer(Modifier.height(24.dp))
                     Text(
-                        "No test reports yet",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        "Nessun Report di Test",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold
                     )
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        "Run your first test to see reports here",
-                        style = MaterialTheme.typography.bodyMedium,
+                        "Inizia un test per vedere i risultati qui",
+                        style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    Spacer(Modifier.height(32.dp))
+                    
+                    Card(
+                        modifier = Modifier.fillMaxWidth(0.85f),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        )
+                    ) {
+                        Column(modifier = Modifier.padding(20.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("💡", style = MaterialTheme.typography.titleLarge)
+                                Spacer(Modifier.width(8.dp))
+                                Text("Suggerimenti", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                            }
+                            Spacer(Modifier.height(16.dp))
+                            Row { Text("•  ", style = MaterialTheme.typography.bodyMedium); Text("Vai alla Dashboard per avviare un nuovo test", style = MaterialTheme.typography.bodyMedium) }
+                            Spacer(Modifier.height(8.dp))
+                            Row { Text("•  ", style = MaterialTheme.typography.bodyMedium); Text("I report vengono salvati automaticamente", style = MaterialTheme.typography.bodyMedium) }
+                            Spacer(Modifier.height(8.dp))
+                            Row { Text("•  ", style = MaterialTheme.typography.bodyMedium); Text("Puoi esportarli in PDF per condividerli", style = MaterialTheme.typography.bodyMedium) }
+                        }
+                    }
+                    
+                    Spacer(Modifier.height(24.dp))
+                    Button(
+                        onClick = { navController.navigate("dashboard") },
+                        modifier = Modifier.fillMaxWidth(0.6f)
+                    ) {
+                        Icon(Icons.Default.Home, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Vai alla Dashboard")
+                    }
                 }
             }
         } else {
@@ -171,8 +293,8 @@ fun HistoryScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                contentPadding = PaddingValues(12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(reportsByClient, key = { it.client?.clientId ?: -1 }) { clientData ->
                     ClientReportsCard(
@@ -284,7 +406,7 @@ fun ClientReportsCard(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -294,8 +416,8 @@ fun ClientReportsCard(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
-                    Spacer(Modifier.height(4.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Spacer(Modifier.height(2.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                         Badge(
                             containerColor = MaterialTheme.colorScheme.secondaryContainer
                         ) {
@@ -303,16 +425,46 @@ fun ClientReportsCard(
                         }
                         if (clientData.passedTests > 0) {
                             Badge(
-                                containerColor = MaterialTheme.colorScheme.primaryContainer
+                                containerColor = androidx.compose.ui.graphics.Color(0xFF4CAF50).copy(alpha = 0.2f)
                             ) {
-                                Text("✓ ${clientData.passedTests}")
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        Icons.Default.CheckCircle,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(14.dp),
+                                        tint = androidx.compose.ui.graphics.Color(0xFF4CAF50)
+                                    )
+                                    Text(
+                                        "${clientData.passedTests}",
+                                        color = androidx.compose.ui.graphics.Color(0xFF4CAF50),
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
                             }
                         }
                         if (clientData.failedTests > 0) {
                             Badge(
-                                containerColor = MaterialTheme.colorScheme.errorContainer
+                                containerColor = androidx.compose.ui.graphics.Color(0xFFF44336).copy(alpha = 0.2f)
                             ) {
-                                Text("✗ ${clientData.failedTests}")
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        Icons.Default.Cancel,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(14.dp),
+                                        tint = androidx.compose.ui.graphics.Color(0xFFF44336)
+                                    )
+                                    Text(
+                                        "${clientData.failedTests}",
+                                        color = androidx.compose.ui.graphics.Color(0xFFF44336),
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
                             }
                         }
                     }
@@ -363,51 +515,121 @@ fun ReportListItem(
     report: Report,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
-    onRepeat: () -> Unit
+    onRepeat: () -> Unit,
+    onExportPdf: () -> Unit = {}
 ) {
+    var showMenu by remember { mutableStateOf(false) }
+    
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = 12.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = report.socketName ?: "Unnamed Socket",
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
             )
             Spacer(Modifier.height(4.dp))
             Text(
-                text = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+                text = SimpleDateFormat("d MMM, HH:mm", Locale.ITALIAN)
                     .format(Date(report.timestamp)),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
-        Badge(
-            containerColor = if (report.overallStatus == "PASS")
-                MaterialTheme.colorScheme.primaryContainer
+        Spacer(Modifier.width(8.dp))
+
+        // Enhanced Pass/Fail badge
+        Surface(
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+            color = if (report.overallStatus == "PASS")
+                androidx.compose.ui.graphics.Color(0xFF4CAF50)
             else
-                MaterialTheme.colorScheme.errorContainer
+                androidx.compose.ui.graphics.Color(0xFFF44336),
+            modifier = Modifier.padding(end = 8.dp)
         ) {
-            Text(
-                report.overallStatus,
-                fontWeight = FontWeight.Bold
-            )
+            Row(
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Icon(
+                    imageVector = if (report.overallStatus == "PASS") Icons.Default.CheckCircle else Icons.Default.Cancel,
+                    contentDescription = null,
+                    tint = androidx.compose.ui.graphics.Color.White,
+                    modifier = Modifier.size(14.dp)
+                )
+                Text(
+                    report.overallStatus,
+                    fontWeight = FontWeight.Bold,
+                    color = androidx.compose.ui.graphics.Color.White,
+                    style = MaterialTheme.typography.labelMedium
+                )
+            }
         }
 
-        Row {
-            IconButton(onClick = onEdit) {
-                Icon(Icons.Default.Edit, "Edit report", tint = MaterialTheme.colorScheme.primary)
-            }
-            IconButton(onClick = onDelete) {
-                Icon(Icons.Default.Delete, "Delete report", tint = MaterialTheme.colorScheme.error)
+        // Action buttons: PDF, Repeat, Overflow menu
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onExportPdf) {
+                Icon(
+                    Icons.Default.PictureAsPdf,
+                    "Export PDF",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp)
+                )
             }
             IconButton(onClick = onRepeat) {
-                Icon(Icons.Default.Refresh, "Repeat test", tint = MaterialTheme.colorScheme.secondary)
+                Icon(
+                    Icons.Default.Refresh,
+                    "Repeat test",
+                    tint = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            
+            // Overflow menu
+            Box {
+                IconButton(onClick = { showMenu = true }) {
+                    Icon(
+                        Icons.Default.MoreVert,
+                        "More options",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                DropdownMenu(
+                    expanded = showMenu,
+                    onDismissRequest = { showMenu = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Visualizza Dettagli") },
+                        onClick = {
+                            onEdit()
+                            showMenu = false
+                        },
+                        leadingIcon = {
+                            Icon(Icons.Default.Visibility, contentDescription = null)
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Elimina", color = MaterialTheme.colorScheme.error) },
+                        onClick = {
+                            onDelete()
+                            showMenu = false
+                        },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Default.Delete,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    )
+                }
             }
         }
     }

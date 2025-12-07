@@ -36,15 +36,50 @@ class HistoryViewModel @Inject constructor(
     private val _pdfStatus = MutableStateFlow("")
     val pdfStatus = _pdfStatus.asStateFlow()
 
+    // Search and Filter state
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery = _searchQuery.asStateFlow()
+
+    private val _filterStatus = MutableStateFlow<FilterStatus>(FilterStatus.ALL)
+    val filterStatus = _filterStatus.asStateFlow()
+
     init {
-        // Group reports by client
+        // Group reports by client with search and filter
         viewModelScope.launch {
             combine(
                 reportDao.getAllReports(),
-                clientDao.getAllClients()
-            ) { reports, clients ->
+                clientDao.getAllClients(),
+                _searchQuery,
+                _filterStatus
+            ) { reports, clients, query, status ->
                 val clientMap = clients.associateBy { it.clientId }
-                reports.groupBy { it.clientId }
+                
+                // Apply filters
+                val filteredReports = reports.filter { report ->
+                    // Status filter
+                    val matchesStatus = when (status) {
+                        FilterStatus.ALL -> true
+                        FilterStatus.PASS -> report.overallStatus == "PASS"
+                        FilterStatus.FAIL -> report.overallStatus == "FAIL"
+                    }
+                    
+                    // Search filter
+                    val matchesSearch = if (query.isBlank()) {
+                        true
+                    } else {
+                        val lowerQuery = query.lowercase()
+                        val socketMatch = report.socketName?.lowercase()?.contains(lowerQuery) ?: false
+                        val clientMatch = report.clientId?.let { 
+                            clientMap[it]?.companyName?.lowercase()?.contains(lowerQuery) 
+                        } ?: false
+                        val notesMatch = report.notes?.lowercase()?.contains(lowerQuery) ?: false
+                        socketMatch || clientMatch || notesMatch
+                    }
+                    
+                    matchesStatus && matchesSearch
+                }
+                
+                filteredReports.groupBy { it.clientId }
                     .map { (clientId, clientReports) ->
                         ReportsByClient(
                             client = clientId?.let { clientMap[it] },
@@ -111,4 +146,16 @@ class HistoryViewModel @Inject constructor(
             pdfGeneratorIText.generatePdfReport(clientReports.reports, clientReports.client, title)
         }
     }
+
+    fun updateSearchQuery(query: String) {
+        _searchQuery.value = query
+    }
+
+    fun updateFilterStatus(status: FilterStatus) {
+        _filterStatus.value = status
+    }
+}
+
+enum class FilterStatus {
+    ALL, PASS, FAIL
 }
