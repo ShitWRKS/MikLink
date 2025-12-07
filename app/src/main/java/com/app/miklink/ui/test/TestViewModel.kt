@@ -9,6 +9,8 @@ import com.app.miklink.data.network.dto.SpeedTestResult
 import com.app.miklink.data.repository.AppRepository
 import com.app.miklink.utils.UiState
 import com.app.miklink.utils.normalizeTime
+import com.app.miklink.utils.normalizeLinkSpeed
+import com.app.miklink.utils.normalizeLinkStatus
 import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
@@ -183,7 +185,10 @@ class TestViewModel @Inject constructor(
                     when (val linkResult = repository.getLinkStatus(probe, probe.testInterface)) {
                         is UiState.Success -> {
                             val data = linkResult.data
-                            addLog("Stato Link: ${data.status} @ ${data.rate ?: "?"}")
+                            val displayStatus = normalizeLinkStatus(data.status)
+                            val displaySpeed = normalizeLinkSpeed(data.rate)
+                            
+                            addLog("Stato Link: $displayStatus @ $displaySpeed")
                             testResults["link"] = data
 
                             // FAIL immediato: stato no-link (Layer1) → interrompi pipeline
@@ -200,8 +205,8 @@ class TestViewModel @Inject constructor(
                                         title = "Link",
                                         status = "FAIL",
                                         details = listOf(
-                                            TestDetail("Status", data.status),
-                                            TestDetail("Rate", data.rate ?: "-")
+                                            TestDetail("Status", displayStatus),
+                                            TestDetail("Rate", displaySpeed)
                                         )
                                     )
                                 )
@@ -226,8 +231,8 @@ class TestViewModel @Inject constructor(
                                         title = "Link",
                                         status = "FAIL",
                                         details = listOf(
-                                            TestDetail("Status", data.status),
-                                            TestDetail("Rate", data.rate ?: "-")
+                                            TestDetail("Status", displayStatus),
+                                            TestDetail("Rate", displaySpeed)
                                         )
                                     )
                                 )
@@ -255,8 +260,8 @@ class TestViewModel @Inject constructor(
                                     title = "Link",
                                     status = if (linkPass) "PASS" else "FAIL",
                                     details = listOf(
-                                        TestDetail("Status", data.status),
-                                        TestDetail("Rate", data.rate ?: "-")
+                                        TestDetail("Status", displayStatus),
+                                        TestDetail("Rate", displaySpeed)
                                     )
                                 )
                             )

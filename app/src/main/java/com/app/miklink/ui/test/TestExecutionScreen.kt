@@ -83,9 +83,9 @@ fun TestExecutionScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            CenterAlignedTopAppBar(
                 title = {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
                         if (isRunning) {
                             Icon(Icons.Default.HourglassEmpty, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                             Spacer(Modifier.width(8.dp))
@@ -118,7 +118,7 @@ fun TestExecutionScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro")
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = when {
                         isRunning -> MaterialTheme.colorScheme.primaryContainer
                         uiState is UiState.Success && (uiState as UiState.Success<Report>).data.overallStatus == "PASS" -> Color(0xFF4CAF50).copy(alpha = 0.2f)

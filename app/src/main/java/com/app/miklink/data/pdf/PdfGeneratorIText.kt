@@ -6,6 +6,8 @@ import com.app.miklink.data.db.model.Report
 import com.app.miklink.data.db.model.TestProfile
 import com.app.miklink.ui.history.model.ParsedResults
 import com.app.miklink.utils.normalizeTime
+import com.app.miklink.utils.normalizeLinkSpeed
+import com.app.miklink.utils.normalizeLinkStatus
 import com.itextpdf.io.font.constants.StandardFonts
 import com.itextpdf.kernel.colors.ColorConstants
 import com.itextpdf.kernel.colors.DeviceRgb
@@ -46,6 +48,7 @@ class PdfGeneratorIText @Inject constructor(
         val ping: Boolean,
         val tdr: Boolean,
         val speed: Boolean,
+        val linkSpeed: Boolean,
         val neighbor: Boolean,
         val showCpuWarning: Boolean
     )
@@ -254,8 +257,13 @@ class PdfGeneratorIText @Inject constructor(
         if (hasLink) {
             parsed?.link?.forEach { (key, value) ->
                 if (value.isNotBlank() && value != "-") {
+                    val normalizedValue = when(key.lowercase()) {
+                        "status" -> normalizeLinkStatus(value)
+                        "speed", "rate" -> normalizeLinkSpeed(value)
+                        else -> value
+                    }
                     table.addCell(createInfoLabelCell(key))
-                    table.addCell(createInfoValueCell(value))
+                    table.addCell(createInfoValueCell(normalizedValue))
                 }
             }
         }
@@ -733,6 +741,7 @@ class PdfGeneratorIText @Inject constructor(
         var hasPing = false
         var hasTdr = false
         var hasSpeed = false
+        var hasLinkSpeed = false
         var hasNeighbor = false
         var cpuWarn = false
 
@@ -741,6 +750,12 @@ class PdfGeneratorIText @Inject constructor(
             if (!hasPing) hasPing = (parsed?.ping?.isNotEmpty() == true)
             if (!hasTdr) hasTdr = (parsed?.tdr?.isNotEmpty() == true)
             if (!hasSpeed) hasSpeed = (parsed?.speedTest != null)
+
+            // Check link speed availability
+            if (!hasLinkSpeed) {
+                val rate = parsed?.link?.get("rate") ?: parsed?.link?.get("speed")
+                hasLinkSpeed = !rate.isNullOrBlank() && rate != "-"
+            }
             
             // Check if neighbor (LLDP) has meaningful data
             if (!hasNeighbor) {
@@ -760,12 +775,13 @@ class PdfGeneratorIText @Inject constructor(
                 }
             }
         }
-        return ColumnFlags(ping = hasPing, tdr = hasTdr, speed = hasSpeed, neighbor = hasNeighbor, showCpuWarning = cpuWarn)
+        return ColumnFlags(ping = hasPing, tdr = hasTdr, speed = hasSpeed, linkSpeed = hasLinkSpeed, neighbor = hasNeighbor, showCpuWarning = cpuWarn)
     }
 
     private fun buildColumnWidths(flags: ColumnFlags): FloatArray {
         val widths = mutableListOf(12f, 18f, 12f) // Presa, Data/Ora, Stato
-        if (flags.neighbor) widths.add(20f)  // Neighbor only if has data
+        if (flags.linkSpeed) widths.add(12f) // Link Speed
+        if (flags.neighbor) widths.add(18f)  // Neighbor only if has data (reduced slightly to fit)
         if (flags.ping) widths.add(15f)
         if (flags.tdr) widths.add(10f)
         if (flags.speed) widths.add(18f)
@@ -777,6 +793,7 @@ class PdfGeneratorIText @Inject constructor(
             add("Presa")
             add("Data/Ora")
             add("Stato")
+            if (flags.linkSpeed) add("Link Speed")
             if (flags.neighbor) add("Neighbor")  // Conditional
             if (flags.ping) add("Ping")
             if (flags.tdr) add("TDR")
@@ -817,6 +834,13 @@ class PdfGeneratorIText @Inject constructor(
 
         // Stato (with colored badge)
         table.addCell(createStatusCell(report.overallStatus))
+
+        // Link Speed
+        if (flags.linkSpeed) {
+            val rate = parsed?.link?.get("rate") ?: parsed?.link?.get("speed")
+            val displayRate = normalizeLinkSpeed(rate)
+            table.addCell(createDataCell(displayRate, bgColor, TextAlignment.CENTER))
+        }
 
         // Neighbor (conditional - only if flags.neighbor is true)
         if (flags.neighbor) {

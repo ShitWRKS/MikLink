@@ -83,20 +83,33 @@ fun DashboardScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.clickable { navController.navigateDashboard() }
                     ) {
+                        // Logo dell'app invece dell'icona Dashboard
                         Icon(
-                            Icons.Default.Dashboard,
-                            contentDescription = null,
-                            modifier = Modifier.size(24.dp),
-                            tint = MaterialTheme.colorScheme.primary
+                            painter = androidx.compose.ui.res.painterResource(id = com.app.miklink.R.drawable.logo),
+                            contentDescription = "MikLink Logo",
+                            modifier = Modifier.size(32.dp),
+                            tint = Color.Unspecified // Usa i colori originali del logo se possibile, o rimuovi tint se è un drawable colorato
                         )
                         Spacer(Modifier.width(12.dp))
                         Text("MikLink", fontWeight = FontWeight.Bold)
                     }
                 },
                 actions = {
-                    IconButton(onClick = { navController.navigate("history") }) {
-                        Icon(Icons.Default.History, contentDescription = "Storico")
+                    // Tasto Report più evidente
+                    FilledTonalButton(
+                        onClick = { navController.navigate("history") },
+                        modifier = Modifier.padding(end = 8.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Description, 
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text("REPORT", fontWeight = FontWeight.Bold)
                     }
+
                     IconButton(onClick = { navController.navigate("settings") }) {
                         Icon(Icons.Default.Settings, contentDescription = "Impostazioni")
                     }

@@ -223,7 +223,7 @@ fun SettingsScreen(
                         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                         InfoRow("Build", "Debug")
                         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                        InfoRow("Developed by", "MikLink Team")
+                        InfoRow("Developed by", "Shitworks mostly with Vibe Coding")
                     }
                 }
             }

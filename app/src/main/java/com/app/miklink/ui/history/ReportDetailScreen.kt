@@ -29,6 +29,8 @@ import com.app.miklink.ui.common.TestSectionCard
 import com.app.miklink.ui.history.model.ParsedResults
 import com.app.miklink.data.db.model.Report
 import com.app.miklink.utils.normalizeTime
+import com.app.miklink.utils.normalizeLinkSpeed
+import com.app.miklink.utils.normalizeLinkStatus
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -328,7 +330,7 @@ fun HeroSection(report: Report, results: ParsedResults?) {
                 val linkSpeed = results?.link?.get("speed")
                 QuickStatItem(
                     label = "Speed",
-                    value = linkSpeed ?: "N/A",
+                    value = normalizeLinkSpeed(linkSpeed),
                     icon = Icons.Default.Link
                 )
             }
@@ -384,7 +386,12 @@ fun NetworkInfoSection(results: ParsedResults?) {
                 )
                 Spacer(Modifier.height(8.dp))
                 linkMap.forEach { (key, value) ->
-                    InfoRow(label = key, value = value)
+                    val normalizedValue = when(key.lowercase()) {
+                        "status" -> normalizeLinkStatus(value)
+                        "speed" -> normalizeLinkSpeed(value)
+                        else -> value
+                    }
+                    InfoRow(label = key, value = normalizedValue)
                 }
                 Spacer(Modifier.height(16.dp))
             }
