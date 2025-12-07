@@ -55,6 +55,7 @@ fun NavGraph() {
 
         // Settings and Management Screens
         composable("settings") { SettingsScreen(navController) }
+        composable("pdf_settings") { com.app.miklink.ui.settings.PdfSettingsScreen(navController) }
         
         // Probe Routes (DEPRECATO: multi-probe, mantenuto per compatibility)
         // composable("probe_list") { ProbeListScreen(navController) }

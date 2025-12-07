@@ -78,633 +78,121 @@ class PdfGeneratorIText @Inject constructor(
         }
     }
 
+    /**
+     * Generate PDF report from list of reports and client data.
+     * Returns a File object pointing to the generated PDF in cache directory.
+     */
+    private val helper = PdfDocumentHelper()
 
     /**
      * Generate PDF report from list of reports and client data.
      * Returns a File object pointing to the generated PDF in cache directory.
      */
     fun generatePdfReport(
-        reports: List<Report>,
+        rawReports: List<Report>,
         client: Client?,
-        reportTitle: String
-    ): File {
-        val outputFile = File(context.cacheDir, "$reportTitle.pdf")
-        val writer = PdfWriter(FileOutputStream(outputFile))
-        val pdfDoc = PdfDocument(writer)
-        
-        // Add page event handler for page numbers
-        pdfDoc.addEventHandler(com.itextpdf.kernel.events.PdfDocumentEvent.END_PAGE, PageNumberEventHandler())
-        
-        val document = Document(pdfDoc, PageSize.A4)
+        config: PdfExportConfig
+    ): File? {
+        val filteredReports = if (config.includeEmptyTests) {
+            rawReports
+        } else {
+            rawReports.filter { it.overallStatus != "SKIPPED" && it.resultsJson.length > 10 }
+        }
 
-        // Set document margins (extra bottom for footer)
-        document.setMargins(40f, 40f, 60f, 40f)
+        if (filteredReports.isEmpty()) return null
 
-        // Add document sections
-        addDocumentHeader(document, client, reports.firstOrNull())
-        addClientInfoRow(document, client)
-        addSummaryStats(document, reports)
-        addResultsTable(document, reports)
-        addFooter(document, client, reports)
+        val fileName = "${config.title}.pdf"
+        val file = File(context.cacheDir, fileName)
 
-        document.close()
-        return outputFile
+        try {
+            val writer = com.itextpdf.kernel.pdf.PdfWriter(FileOutputStream(file))
+            val pdf = com.itextpdf.kernel.pdf.PdfDocument(writer)
+            
+            val pageSize = if (config.orientation == PdfPageOrientation.PORTRAIT) 
+                com.itextpdf.kernel.geom.PageSize.A4 
+            else 
+                com.itextpdf.kernel.geom.PageSize.A4.rotate()
+                
+            val document = Document(pdf, pageSize)
+            document.setMargins(20f, 20f, 60f, 20f) // Increased bottom margin for footer
+
+            // Add Header/Footer Event Handler (Page Numbers)
+            pdf.addEventHandler(com.itextpdf.kernel.events.PdfDocumentEvent.END_PAGE, PdfDocumentHelper.PageNumberEventHandler())
+
+            // 1. Load Logo
+            var logoData: com.itextpdf.io.image.ImageData? = null
+            try {
+                // Try to load specific branding logo
+                val logoId = context.resources.getIdentifier("logo_miklink_black", "drawable", context.packageName)
+                val resId = if (logoId != 0) logoId else com.app.miklink.R.mipmap.ic_launcher
+                
+                val bitmap = android.graphics.BitmapFactory.decodeResource(context.resources, resId)
+                val stream = java.io.ByteArrayOutputStream()
+                bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, stream)
+                logoData = com.itextpdf.io.image.ImageDataFactory.create(stream.toByteArray())
+            } catch (e: Exception) {
+                // Ignore logo load error
+            }
+
+            // 2. Header (Client Info & Logo)
+            helper.addHeader(document, client?.companyName, config.title, logoData)
+
+            // 3. Results Table
+            addResultsTable(document, filteredReports, config)
+
+            // 4. Footer (Signatures, Notes, Warnings) - Fixed at bottom of last page
+            val showCpuWarning = filteredReports.any { r ->
+                 val parsed = parseResults(r.resultsJson)
+                 parsed?.speedTest?.let { st ->
+                     val probe = listOf(
+                         st.status, st.ping, st.jitter, st.loss, st.tcpDownload, st.tcpUpload, st.udpDownload, st.udpUpload, st.warning
+                     ).joinToString(" ") { it ?: "" }
+                     probe.contains("local-cpu-load:100%", ignoreCase = true) ||
+                     probe.contains("remote-cpu-load:100%", ignoreCase = true)
+                 } == true
+            }
+            
+            val footerTable = helper.createFooterTable(client?.notes, showCpuWarning, config)
+            val pageNum = pdf.numberOfPages
+            val pageParams = pdf.getPage(pageNum).pageSize
+            val bottomMargin = 20f
+            
+            footerTable.setFixedPosition(pageNum, pageParams.left + 20f, pageParams.bottom + bottomMargin, pageParams.width - 40f)
+            document.add(footerTable)
+
+            document.close()
+            return file
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return null
+        }
     }
 
     /**
-     * Generate detailed PDF for a single test report.
-     * Includes Hero section, conditional Network Info, Test Results, Profile settings.
+     * Generate a PDF for a single test report.
+     * Delegates to generatePdfReport with a default configuration.
      */
     fun generateSingleTestPdf(
         report: Report,
         client: Client?,
         profile: TestProfile?,
         reportTitle: String
-    ): File {
-        val outputFile = File(context.cacheDir, "$reportTitle.pdf")
-        val writer = PdfWriter(FileOutputStream(outputFile))
-        val pdfDoc = PdfDocument(writer)
-        
-        // Add page event handler for page numbers
-        pdfDoc.addEventHandler(com.itextpdf.kernel.events.PdfDocumentEvent.END_PAGE, PageNumberEventHandler())
-        
-        val document = Document(pdfDoc, PageSize.A4)
-        document.setMargins(30f, 30f, 50f, 30f)
-        
-        val parsed = parseResults(report.resultsJson)
-        
-        // Document sections
-        addSingleTestDocumentHeader(document, client, report)
-        addSingleTestHeroSection(document, report, parsed)
-        addNetworkInfoSection(document, parsed)
-        addTestResultsDetailSection(document, parsed)
-        addTestProfileSection(document, profile)
-        addSingleTestNotesSection(document, report)
-        addSingleTestFooter(document, client)
-        
-        document.close()
-        return outputFile
-    }
-
-    private fun addSingleTestDocumentHeader(document: Document, client: Client?, report: Report) {
-        val df = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-        
-        // Title: Single Test Report
-        val titlePara = Paragraph("Report di Collaudo - Singola Presa")
-            .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD))
-            .setFontSize(18f)
-            .setFontColor(DeviceRgb(17, 17, 17))
-            .setTextAlignment(TextAlignment.CENTER)
-            .setMarginBottom(8f)
-        document.add(titlePara)
-        
-        // Client and Socket prominence
-        val clientSocketTable = Table(2)
-            .setWidth(UnitValue.createPercentValue(100f))
-            .setMarginBottom(4f)
-        
-        // Client name (left)
-        clientSocketTable.addCell(Cell()
-            .add(Paragraph()
-                .add(com.itextpdf.layout.element.Text("Cliente: ")
-                    .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA))
-                    .setFontSize(10f)
-                    .setFontColor(DeviceRgb(102, 102, 102)))
-                .add(com.itextpdf.layout.element.Text(client?.companyName ?: "N/A")
-                    .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD))
-                    .setFontSize(12f)
-                    .setFontColor(DeviceRgb(17, 17, 17))))
-            .setBorder(com.itextpdf.layout.borders.Border.NO_BORDER)
-            .setTextAlignment(TextAlignment.LEFT))
-        
-        // Socket name (right)
-        clientSocketTable.addCell(Cell()
-            .add(Paragraph()
-                .add(com.itextpdf.layout.element.Text("Presa: ")
-                    .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA))
-                    .setFontSize(10f)
-                    .setFontColor(DeviceRgb(102, 102, 102)))
-                .add(com.itextpdf.layout.element.Text(report.socketName ?: "N/A")
-                    .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD))
-                    .setFontSize(12f)
-                    .setFontColor(DeviceRgb(17, 17, 17))))
-            .setBorder(com.itextpdf.layout.borders.Border.NO_BORDER)
-            .setTextAlignment(TextAlignment.RIGHT))
-        
-        document.add(clientSocketTable)
-        
-        // Doc info and date
-        val infoTable = Table(2)
-            .setWidth(UnitValue.createPercentValue(100f))
-            .setMarginBottom(12f)
-        
-        infoTable.addCell(Cell()
-            .add(Paragraph("DOC #${report.reportId}")
-                .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA))
-                .setFontSize(9f)
-                .setFontColor(DeviceRgb(153, 153, 153)))
-            .setBorder(com.itextpdf.layout.borders.Border.NO_BORDER)
-            .setTextAlignment(TextAlignment.LEFT))
-        
-        infoTable.addCell(Cell()
-            .add(Paragraph(df.format(Date()))
-                .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA))
-                .setFontSize(9f)
-                .setFontColor(DeviceRgb(153, 153, 153)))
-            .setBorder(com.itextpdf.layout.borders.Border.NO_BORDER)
-            .setTextAlignment(TextAlignment.RIGHT))
-        
-        document.add(infoTable)
-        
-        // Separator
-        addSeparator(document)
-    }
-
-    private fun addSingleTestHeroSection(document: Document, report: Report, parsed: ParsedResults?) {
-        val isPassed = report.overallStatus.equals("PASS", ignoreCase = true)
-        
-        // Large status badge centered - SQUARE design with consistent border
-        val badgeTable = Table(1).setWidth(UnitValue.createPercentValue(100f))
-        val badgeCell = Cell()
-            .add(Paragraph(report.overallStatus.uppercase())
-                .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD))
-                .setFontSize(24f)
-                .setFontColor(if (isPassed) DeviceRgb(46, 125, 50) else DeviceRgb(198, 40, 40)))
-            .setBackgroundColor(if (isPassed) DeviceRgb(232, 245, 233) else DeviceRgb(255, 235, 238))
-            .setBorder(SolidBorder(if (isPassed) DeviceRgb(76, 175, 80) else DeviceRgb(244, 67, 54), 2f))
-            .setPadding(12f)
-            .setTextAlignment(TextAlignment.CENTER)
-        badgeTable.addCell(badgeCell)
-        document.add(badgeTable.setMarginBottom(12f))
-        
-        addSeparator(document)
-    }
-
-    private fun addNetworkInfoSection(document: Document, parsed: ParsedResults?) {
-        val hasLink = parsed?.link != null && parsed.link.isNotEmpty()
-        val hasLldp = parsed?.lldp?.isNotEmpty() == true
-        
-        if (!hasLink && !hasLldp) return
-        
-        document.add(Paragraph("📡 Network Information")
-            .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD))
-            .setFontSize(11f)
-            .setMarginBottom(6f))
-        
-        val table = Table(2).setWidth(UnitValue.createPercentValue(100f))
-        
-        // Link info
-        if (hasLink) {
-            parsed?.link?.forEach { (key, value) ->
-                if (value.isNotBlank() && value != "-") {
-                    val normalizedValue = when(key.lowercase()) {
-                        "status" -> normalizeLinkStatus(value)
-                        "speed", "rate" -> normalizeLinkSpeed(value)
-                        else -> value
-                    }
-                    table.addCell(createInfoLabelCell(key))
-                    table.addCell(createInfoValueCell(normalizedValue))
-                }
-            }
-        }
-        
-        // LLDP info
-        if (hasLldp) {
-            parsed?.lldp?.forEachIndexed { index, neighbor ->
-                if (index > 0) {
-                    // Separator between neighbors
-                    table.addCell(Cell(1, 2)
-                        .add(Paragraph("───").setTextAlignment(TextAlignment.CENTER).setFontSize(8f))
-                        .setBorder(com.itextpdf.layout.borders.Border.NO_BORDER)
-                        .setPadding(4f))
-                }
-                
-                if (!neighbor.identity.isNullOrBlank()) {
-                    table.addCell(createInfoLabelCell("Neighbor"))
-                    table.addCell(createInfoValueCell(neighbor.identity!!))
-                }
-                if (!neighbor.interfaceName.isNullOrBlank()) {
-                    table.addCell(createInfoLabelCell("Interface"))
-                    table.addCell(createInfoValueCell(neighbor.interfaceName!!))
-                }
-                if (!neighbor.systemCaps.isNullOrBlank()) {
-                    table.addCell(createInfoLabelCell("Capabilities"))
-                    table.addCell(createInfoValueCell(neighbor.systemCaps!!))
-                }
-                neighbor.vlanId?.let {
-                    if (it.isNotBlank()) {
-                        table.addCell(createInfoLabelCell("VLAN"))
-                        table.addCell(createInfoValueCell(it))
-                    }
-                }
-            }
-        }
-        
-        document.add(table.setMarginBottom(16f))
-        addSeparator(document)
-    }
-
-    private fun addTestResultsDetailSection(document: Document, parsed: ParsedResults?) {
-        val hasPing = parsed?.ping?.isNotEmpty() == true
-        val hasTdr = parsed?.tdr?.isNotEmpty() == true
-        
-        if (!hasPing && !hasTdr) return
-        
-        document.add(Paragraph("📊 Test Results")
-            .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD))
-            .setFontSize(11f)
-            .setMarginBottom(6f))
-        
-        val table = Table(2).setWidth(UnitValue.createPercentValue(100f))
-        
-        // Ping results - CONDENSED
-        if (hasPing) {
-            val summary = parsed?.ping?.lastOrNull()
-            table.addCell(createSectionHeaderCell("Ping Test", 2))
-            
-            // RTT in one line: Min / Avg / Max
-            if (!summary?.minRtt.isNullOrBlank() || !summary?.avgRtt.isNullOrBlank() || !summary?.maxRtt.isNullOrBlank()) {
-                table.addCell(createInfoLabelCell("RTT"))
-                val rttParts = listOfNotNull(
-                    summary?.minRtt?.let { "min ${normalizeTime(it)}" },
-                    summary?.avgRtt?.let { "avg ${normalizeTime(it)}" },
-                    summary?.maxRtt?.let { "max ${normalizeTime(it)}" }
-                ).joinToString(" / ")
-                table.addCell(createInfoValueCell(rttParts))
-            }
-            
-            // Packet Loss
-            if (!summary?.packetLoss.isNullOrBlank()) {
-                table.addCell(createInfoLabelCell("Packet Loss"))
-                table.addCell(createInfoValueCell("${summary?.packetLoss}%"))
-            }
-        }
-        
-        // TDR results
-        if (hasTdr) {
-            if (hasPing) {
-                table.addCell(Cell(1, 2)
-                    .add(Paragraph("───").setTextAlignment(TextAlignment.CENTER).setFontSize(8f))
-                    .setBorder(com.itextpdf.layout.borders.Border.NO_BORDER)
-                    .setPadding(2f))
-            }
-            
-            table.addCell(createSectionHeaderCell("Cable Test (TDR)", 2))
-            parsed?.tdr?.forEach { tdr ->
-                table.addCell(createInfoLabelCell("Status"))
-                val statusCell = Cell()
-                    .add(Paragraph(tdr.status)
-                        .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD))
-                        .setFontSize(10f)
-                        .setFontColor(
-                            if (tdr.status.contains("ok", ignoreCase = true))
-                                DeviceRgb(46, 125, 50)
-                            else
-                                DeviceRgb(198, 40, 40)
-                        ))
-                    .setBorder(com.itextpdf.layout.borders.Border.NO_BORDER)
-                    .setPadding(6f)
-                table.addCell(statusCell)
-            }
-        }
-        
-        document.add(table.setMarginBottom(10f))
-        addSeparator(document)
-    }
-
-    private fun addTestProfileSection(document: Document, profile: TestProfile?) {
-        if (profile == null) return
-        
-        document.add(Paragraph("⚙️ Test Configuration")
-            .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD))
-            .setFontSize(11f)
-            .setMarginBottom(6f))
-        
-        val table = Table(2).setWidth(UnitValue.createPercentValue(100f))
-        
-        table.addCell(createInfoLabelCell("Profile"))
-        table.addCell(createInfoValueCell(profile.profileName))
-        
-        if (!profile.profileDescription.isNullOrBlank()) {
-            table.addCell(createInfoLabelCell("Description"))
-            table.addCell(createInfoValueCell(profile.profileDescription!!))
-        }
-        
-        // Tests enabled
-        val testsEnabled = buildList {
-            if (profile.runTdr) add("TDR")
-            if (profile.runLinkStatus) add("Link Status")
-            if (profile.runLldp) add("LLDP")
-            if (profile.runPing) add("Ping")
-            if (profile.runSpeedTest) add("Speed Test")
-        }.joinToString(", ")
-        
-        if (testsEnabled.isNotBlank()) {
-            table.addCell(createInfoLabelCell("Tests Enabled"))
-            table.addCell(createInfoValueCell(testsEnabled))
-        }
-        
-        // Ping configuration
-        if (profile.runPing) {
-            val targets = listOfNotNull(
-                profile.pingTarget1,
-                profile.pingTarget2,
-                profile.pingTarget3
-            ).filter { it.isNotBlank() }.joinToString(", ")
-            
-            if (targets.isNotBlank()) {
-                table.addCell(createInfoLabelCell("Ping Targets"))
-                table.addCell(createInfoValueCell(targets))
-                table.addCell(createInfoLabelCell("Ping Count"))
-                table.addCell(createInfoValueCell(profile.pingCount.toString()))
-            }
-        }
-        
-        document.add(table.setMarginBottom(16f))
-        addSeparator(document)
-    }
-
-    private fun addProbeInfoSection(document: Document, parsed: ParsedResults?, report: Report) {
-        val lldpInfo = parsed?.lldp?.firstOrNull()
-        val hasProbeInfo = !report.probeName.isNullOrBlank() || lldpInfo != null
-        
-        if (!hasProbeInfo) return
-        
-        document.add(Paragraph("🔧 Probe Information")
-            .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD))
-            .setFontSize(12f)
-            .setMarginBottom(8f))
-        
-        val table = Table(2).setWidth(UnitValue.createPercentValue(100f))
-        
-        if (!report.probeName.isNullOrBlank()) {
-            table.addCell(createInfoLabelCell("Probe Name"))
-            table.addCell(createInfoValueCell(report.probeName!!))
-        }
-        
-        lldpInfo?.let { info ->
-            if (!info.systemDescription.isNullOrBlank()) {
-                table.addCell(createInfoLabelCell("Model"))
-                table.addCell(createInfoValueCell(info.systemDescription!!))
-            }
-            if (!info.portId.isNullOrBlank() || !info.interfaceName.isNullOrBlank()) {
-                table.addCell(createInfoLabelCell("Interface"))
-                table.addCell(createInfoValueCell(info.portId ?: info.interfaceName ?: "-"))
-            }
-        }
-        
-        document.add(table.setMarginBottom(16f))
-        addSeparator(document)
-    }
-
-    private fun addSingleTestNotesSection(document: Document, report: Report) {
-        if (report.notes.isNullOrBlank()) return
-        
-        document.add(Paragraph("📝 Notes")
-            .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD))
-            .setFontSize(11f)
-            .setMarginBottom(6f))
-        
-        val notesCell = Cell()
-            .add(Paragraph(report.notes!!)
-                .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA))
-                .setFontSize(11f)
-                .setFontColor(DeviceRgb(68, 68, 68)))
-            .setBackgroundColor(DeviceRgb(248, 249, 250))
-            .setBorder(SolidBorder(DeviceRgb(224, 224, 224), 1f))
-            .setPadding(10f)
-        
-        val notesTable = Table(1).setWidth(UnitValue.createPercentValue(100f)).addCell(notesCell)
-        document.add(notesTable.setMarginBottom(8f))
-    }
-
-    private fun addSingleTestFooter(document: Document, client: Client?) {
-        val df = SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault())
-        val footer = Paragraph()
-            .add("Generato il ${df.format(Date())}  •  MikLink • Certificazione Reti")
-            .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA))
-            .setFontSize(10f)
-            .setFontColor(DeviceRgb(153, 153, 153))
-            .setTextAlignment(TextAlignment.CENTER)
-            .setMarginTop(16f)
-        document.add(footer)
-    }
-
-    // Helper methods for consistent styling
-    private fun createInfoLabelCell(label: String): Cell {
-        return Cell()
-            .add(Paragraph(label)
-                .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA))
-                .setFontSize(10f)
-                .setFontColor(DeviceRgb(102, 102, 102)))
-            .setBackgroundColor(DeviceRgb(250, 250, 250))
-            .setBorder(SolidBorder(DeviceRgb(238, 238, 238), 0.5f))
-            .setPadding(8f)
-    }
-
-    private fun createInfoValueCell(value: String): Cell {
-        return Cell()
-            .add(Paragraph(value)
-                .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD))
-                .setFontSize(10f)
-                .setFontColor(DeviceRgb(17, 17, 17)))
-            .setBorder(SolidBorder(DeviceRgb(238, 238, 238), 0.5f))
-            .setPadding(8f)
-    }
-
-    private fun createSectionHeaderCell(title: String, colspan: Int): Cell {
-        return Cell(1, colspan)
-            .add(Paragraph(title)
-                .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD))
-                .setFontSize(11f)
-                .setFontColor(DeviceRgb(33, 150, 243)))
-            .setBackgroundColor(DeviceRgb(227, 242, 253))
-            .setBorder(SolidBorder(DeviceRgb(33, 150, 243), 1f))
-            .setPadding(6f)
-    }
-
-    private fun addSeparator(document: Document) {
-        val separator = com.itextpdf.layout.element.LineSeparator(
-            com.itextpdf.kernel.pdf.canvas.draw.SolidLine().apply {
-                color = DeviceRgb(200, 200, 200)
-            }
+    ): File? {
+        val config = PdfExportConfig(
+            title = reportTitle,
+            includeEmptyTests = true,
+            columns = ExportColumn.values().toList(),
+            showSignatures = true,
+            signatureLeftLabel = "Tecnico",
+            signatureRightLabel = "Cliente",
+            orientation = PdfPageOrientation.PORTRAIT // Default for single is Portrait usually better
         )
-        separator.setMarginBottom(10f)
-        document.add(separator)
-    }
-
-    private fun addDocumentHeader(document: Document, client: Client?, firstReport: Report?) {
-        val df = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-        
-        // Header table: Title on left, Doc info on right
-        val headerTable = Table(floatArrayOf(3f, 2f))
-            .setWidth(UnitValue.createPercentValue(100f))
-        
-        // Left cell: Title and subtitle
-        val leftCell = Cell()
-            .add(Paragraph("Collaudo Rete")
-                .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD))
-                .setFontSize(22f)
-                .setMarginBottom(2f))
-            .add(Paragraph("Report di collaudo infrastruttura")
-                .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA))
-                .setFontSize(12f)
-                .setFontColor(DeviceRgb(102, 102, 102)))
-            .setBorder(com.itextpdf.layout.borders.Border.NO_BORDER)
-            .setVerticalAlignment(VerticalAlignment.MIDDLE)
-        
-        // Right cell: Doc info
-        val rightCell = Cell()
-            .add(Paragraph("DOC #${firstReport?.reportId ?: "N/A"}")
-                .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA))
-                .setFontSize(10f)
-                .setFontColor(DeviceRgb(153, 153, 153))
-                .setTextAlignment(TextAlignment.RIGHT))
-            .add(Paragraph(df.format(Date()))
-                .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA))
-                .setFontSize(10f)
-                .setFontColor(DeviceRgb(153, 153, 153))
-                .setTextAlignment(TextAlignment.RIGHT))
-            .setBorder(com.itextpdf.layout.borders.Border.NO_BORDER)
-            .setVerticalAlignment(VerticalAlignment.MIDDLE)
-        
-        headerTable.addCell(leftCell)
-        headerTable.addCell(rightCell)
-        document.add(headerTable.setMarginBottom(12f))
-        
-        // Gray separator line
-        val separator = com.itextpdf.layout.element.LineSeparator(
-            com.itextpdf.kernel.pdf.canvas.draw.SolidLine().apply {
-                color = DeviceRgb(200, 200, 200)
-            }
-        )
-        separator.setMarginBottom(16f)
-        document.add(separator)
-    }
-
-    private fun addClientInfoRow(document: Document, client: Client?) {
-        // Client name prominently
-        val clientPara = Paragraph()
-            .add(com.itextpdf.layout.element.Text("Cliente: ")
-                .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA))
-                .setFontSize(11f)
-                .setFontColor(DeviceRgb(102, 102, 102)))
-            .add(com.itextpdf.layout.element.Text(client?.companyName ?: "N/A")
-                .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD))
-                .setFontSize(14f)
-                .setFontColor(DeviceRgb(17, 17, 17)))
-        
-        // Additional info only if present
-        val hasLocation = !client?.location.isNullOrBlank() && client?.location != "-"
-        val hasNetworkMode = !client?.networkMode.isNullOrBlank()
-        
-        if (hasLocation) {
-            clientPara.add(com.itextpdf.layout.element.Text("  •  Sede: ")
-                .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA))
-                .setFontSize(11f)
-                .setFontColor(DeviceRgb(102, 102, 102)))
-            clientPara.add(com.itextpdf.layout.element.Text(client?.location ?: "")
-                .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA))
-                .setFontSize(11f)
-                .setFontColor(DeviceRgb(17, 17, 17)))
-        }
-        
-        if (hasNetworkMode) {
-            clientPara.add(com.itextpdf.layout.element.Text("  •  Modalità: ")
-                .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA))
-                .setFontSize(11f)
-                .setFontColor(DeviceRgb(102, 102, 102)))
-            clientPara.add(com.itextpdf.layout.element.Text(client?.networkMode ?: "")
-                .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA))
-                .setFontSize(11f)
-                .setFontColor(DeviceRgb(17, 17, 17)))
-        }
-        
-        clientPara.setMarginBottom(12f)
-        document.add(clientPara)
-        
-        // Gray separator line
-        val separator = com.itextpdf.layout.element.LineSeparator(
-            com.itextpdf.kernel.pdf.canvas.draw.SolidLine().apply {
-                color = DeviceRgb(200, 200, 200)
-            }
-        )
-        separator.setMarginBottom(16f)
-        document.add(separator)
-    }
-
-    private fun addSummaryStats(document: Document, reports: List<Report>) {
-        val total = reports.size
-        val passed = reports.count { it.overallStatus.equals("PASS", ignoreCase = true) }
-        val failed = total - passed
-
-        // Inline badges using a simple table
-        val badgesTable = Table(floatArrayOf(1f, 0.2f, 1f, 0.2f, 1f, 2f))
-            .setWidth(UnitValue.createPercentValue(100f))
-            .setMarginBottom(16f)
-        
-        // Badge: Totali  
-        badgesTable.addCell(Cell()
-            .add(Paragraph("$total Totali")
-                .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD))
-                .setFontSize(11f)
-                .setFontColor(DeviceRgb(33, 150, 243))
-                .setTextAlignment(TextAlignment.CENTER))
-            .setBackgroundColor(DeviceRgb(227, 242, 253))
-            .setBorder(SolidBorder(DeviceRgb(33, 150, 243), 1f))
-            .setBorderRadius(com.itextpdf.layout.properties.BorderRadius(6f))
-            .setPadding(8f)
-            .setVerticalAlignment(VerticalAlignment.MIDDLE))
-        
-        // Spacer
-        badgesTable.addCell(Cell().setBorder(com.itextpdf.layout.borders.Border.NO_BORDER))
-        
-        // Badge: Superati
-        badgesTable.addCell(Cell()
-            .add(Paragraph("$passed Superati")
-                .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD))
-                .setFontSize(11f)
-                .setFontColor(DeviceRgb(46, 125, 50))
-                .setTextAlignment(TextAlignment.CENTER))
-            .setBackgroundColor(DeviceRgb(232, 245, 233))
-            .setBorder(SolidBorder(DeviceRgb(76, 175, 80), 1f))
-            .setBorderRadius(com.itextpdf.layout.properties.BorderRadius(6f))
-            .setPadding(8f)
-            .setVerticalAlignment(VerticalAlignment.MIDDLE))
-        
-        // Spacer
-        badgesTable.addCell(Cell().setBorder(com.itextpdf.layout.borders.Border.NO_BORDER))
-        
-        // Badge: Falliti
-        badgesTable.addCell(Cell()
-            .add(Paragraph("$failed Falliti")
-                .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD))
-                .setFontSize(11f)
-                .setFontColor(DeviceRgb(198, 40, 40))
-                .setTextAlignment(TextAlignment.CENTER))
-            .setBackgroundColor(DeviceRgb(255, 235, 238))
-            .setBorder(SolidBorder(DeviceRgb(244, 67, 54), 1f))
-            .setBorderRadius(com.itextpdf.layout.properties.BorderRadius(6f))
-            .setPadding(8f)
-            .setVerticalAlignment(VerticalAlignment.MIDDLE))
-        
-        // Empty filler cell
-        badgesTable.addCell(Cell().setBorder(com.itextpdf.layout.borders.Border.NO_BORDER))
-        
-        document.add(badgesTable)
-        
-        // Gray separator before table
-        val separator = com.itextpdf.layout.element.LineSeparator(
-            com.itextpdf.kernel.pdf.canvas.draw.SolidLine().apply {
-                color = DeviceRgb(200, 200, 200)
-            }
-        )
-        separator.setMarginBottom(16f)
-        document.add(separator)
+        return generatePdfReport(listOf(report), client, config)
     }
 
 
-    private fun addResultsTable(document: Document, reports: List<Report>) {
+
+    private fun addResultsTable(document: Document, reports: List<Report>, config: PdfExportConfig) {
         // Section title
         document.add(Paragraph("📋 Dettaglio Test")
             .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD))
@@ -712,97 +200,55 @@ class PdfGeneratorIText @Inject constructor(
             .setFontColor(DeviceRgb(102, 102, 102))
             .setMarginBottom(12f))
 
-        // Analyze which columns to show
-        val flags = scanColumnsAndCpu(reports)
+        if (reports.isEmpty()) {
+            document.add(Paragraph("Nessun test presente nel report.")
+                .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA_OBLIQUE))
+                .setFontSize(10f)
+                .setFontColor(DeviceRgb(150, 150, 150)))
+            return
+        }
 
-        // Calculate column widths
-        val columnWidths = buildColumnWidths(flags)
+        // Filter columns if hideEmptyColumns is enabled
+        val activeColumns = if (config.hideEmptyColumns) {
+            config.columns.filter { col ->
+                // Keep column if AT LEAST ONE report has data for it
+                reports.any { report -> hasDataForColumn(report, col) }
+            }
+        } else {
+            config.columns
+        }
+
+        if (activeColumns.isEmpty()) {
+             document.add(Paragraph("Nessuna colonna selezionata o dati non disponibili.")
+                .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA_OBLIQUE))
+                .setFontSize(10f))
+             return
+        }
+
+        // Calculate column widths dynamically based on activeColumns
+        // Base Unit for relative width.
+        // LinkSpeed=12, Neighbor=18, Ping=15, TDR=10, Speed=18
+        // Socket=12, Date=18, Status=12
+        val widthMap = mapOf(
+            ExportColumn.SOCKET to 12f,
+            ExportColumn.DATE to 18f,
+            ExportColumn.STATUS to 12f,
+            ExportColumn.LINK_SPEED to 12f,
+            ExportColumn.NEIGHBOR to 18f,
+            ExportColumn.PING to 15f,
+            ExportColumn.TDR to 10f,
+            ExportColumn.SPEED_TEST to 18f
+        )
+        
+        val columnWidths = activeColumns.map { widthMap[it] ?: 10f }.toFloatArray()
+        
         val table = Table(UnitValue.createPercentArray(columnWidths))
             .setWidth(UnitValue.createPercentValue(100f))
 
         // Add header
-        addTableHeader(table, flags)
-
-        // Add rows
-        val sortedReports = reports.sortedBy { it.timestamp }
-        sortedReports.forEachIndexed { index, report ->
-            addTableRow(table, report, flags, index)
-
-            // Flush every 50 rows to optimize memory
-            if (table.numberOfRows % 50 == 0) {
-                table.flush()
-            }
-        }
-
-        document.add(table)
-    }
-
-    private fun scanColumnsAndCpu(reports: List<Report>): ColumnFlags {
-        var hasPing = false
-        var hasTdr = false
-        var hasSpeed = false
-        var hasLinkSpeed = false
-        var hasNeighbor = false
-        var cpuWarn = false
-
-        reports.forEach { r ->
-            val parsed = parseResults(r.resultsJson)
-            if (!hasPing) hasPing = (parsed?.ping?.isNotEmpty() == true)
-            if (!hasTdr) hasTdr = (parsed?.tdr?.isNotEmpty() == true)
-            if (!hasSpeed) hasSpeed = (parsed?.speedTest != null)
-
-            // Check link speed availability
-            if (!hasLinkSpeed) {
-                val rate = parsed?.link?.get("rate") ?: parsed?.link?.get("speed")
-                hasLinkSpeed = !rate.isNullOrBlank() && rate != "-"
-            }
-            
-            // Check if neighbor (LLDP) has meaningful data
-            if (!hasNeighbor) {
-                val neighbor = parsed?.lldp?.firstOrNull()?.let { n ->
-                    listOfNotNull(n.identity, n.interfaceName).joinToString(" / ")
-                }
-                hasNeighbor = !neighbor.isNullOrBlank() && neighbor != "-"
-            }
-
-            parsed?.speedTest?.let { st ->
-                val probe = listOf(
-                    st.status, st.ping, st.jitter, st.loss, st.tcpDownload, st.tcpUpload, st.udpDownload, st.udpUpload, st.warning
-                ).joinToString(" ") { it ?: "" }
-                if (!cpuWarn) {
-                    cpuWarn = probe.contains("local-cpu-load:100%", ignoreCase = true) ||
-                            probe.contains("remote-cpu-load:100%", ignoreCase = true)
-                }
-            }
-        }
-        return ColumnFlags(ping = hasPing, tdr = hasTdr, speed = hasSpeed, linkSpeed = hasLinkSpeed, neighbor = hasNeighbor, showCpuWarning = cpuWarn)
-    }
-
-    private fun buildColumnWidths(flags: ColumnFlags): FloatArray {
-        val widths = mutableListOf(12f, 18f, 12f) // Presa, Data/Ora, Stato
-        if (flags.linkSpeed) widths.add(12f) // Link Speed
-        if (flags.neighbor) widths.add(18f)  // Neighbor only if has data (reduced slightly to fit)
-        if (flags.ping) widths.add(15f)
-        if (flags.tdr) widths.add(10f)
-        if (flags.speed) widths.add(18f)
-        return widths.toFloatArray()
-    }
-
-    private fun addTableHeader(table: Table, flags: ColumnFlags) {
-        val headers = buildList {
-            add("Presa")
-            add("Data/Ora")
-            add("Stato")
-            if (flags.linkSpeed) add("Link Speed")
-            if (flags.neighbor) add("Neighbor")  // Conditional
-            if (flags.ping) add("Ping")
-            if (flags.tdr) add("TDR")
-            if (flags.speed) add("Speed Test")
-        }
-
-        headers.forEach { headerText ->
+        activeColumns.forEach { col ->
             val cell = Cell()
-                .add(Paragraph(headerText)
+                .add(Paragraph(col.label)
                     .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD))
                     .setFontSize(9f)
                     .setTextAlignment(TextAlignment.CENTER))
@@ -812,165 +258,92 @@ class PdfGeneratorIText @Inject constructor(
                 .setVerticalAlignment(VerticalAlignment.MIDDLE)
             table.addHeaderCell(cell)
         }
-    }
 
-    private fun addTableRow(
-        table: Table,
-        report: Report,
-        flags: ColumnFlags,
-        index: Int
-    ) {
-        val parsed = parseResults(report.resultsJson)
-        val df = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+        // Add rows
+        val sortedReports = reports.sortedBy { it.timestamp }
+        sortedReports.forEachIndexed { index, report ->
+            val parsed = parseResults(report.resultsJson)
+            val df = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+            val bgColor = if (index % 2 == 0) DeviceRgb(255, 255, 255) else DeviceRgb(250, 250, 250)
 
-        // Background color alternating
-        val bgColor = if (index % 2 == 0) DeviceRgb(255, 255, 255) else DeviceRgb(250, 250, 250)
-
-        // Presa (centered)
-        table.addCell(createDataCell(report.socketName ?: "-", bgColor, TextAlignment.CENTER))
-
-        // Data/Ora (left-aligned)
-        table.addCell(createDataCell(df.format(Date(report.timestamp)), bgColor, TextAlignment.LEFT))
-
-        // Stato (with colored badge)
-        table.addCell(createStatusCell(report.overallStatus))
-
-        // Link Speed
-        if (flags.linkSpeed) {
-            val rate = parsed?.link?.get("rate") ?: parsed?.link?.get("speed")
-            val displayRate = normalizeLinkSpeed(rate)
-            table.addCell(createDataCell(displayRate, bgColor, TextAlignment.CENTER))
-        }
-
-        // Neighbor (conditional - only if flags.neighbor is true)
-        if (flags.neighbor) {
-            val neighbor = parsed?.lldp?.firstOrNull()?.let { n ->
-                listOfNotNull(n.identity, n.interfaceName).joinToString(" / ")
-            } ?: "-"
-            table.addCell(createDataCell(neighbor, bgColor, TextAlignment.CENTER))
-        }
-
-        // Dynamic columns
-        if (flags.ping) {
-            val pingValue = parsed?.ping?.lastOrNull()?.let { p ->
-                buildString {
-                    if (!p.avgRtt.isNullOrBlank()) append("avg ${p.avgRtt}")
-                    if (!p.packetLoss.isNullOrBlank()) {
-                        if (isNotEmpty()) append(" • ")
-                        append("loss ${p.packetLoss}%")
+            activeColumns.forEach { col ->
+                when (col) {
+                    ExportColumn.SOCKET -> table.addCell(helper.createDataCell(report.socketName ?: "-", bgColor, TextAlignment.CENTER))
+                    ExportColumn.DATE -> table.addCell(helper.createDataCell(df.format(Date(report.timestamp)), bgColor, TextAlignment.CENTER))
+                    ExportColumn.STATUS -> table.addCell(helper.createStatusCell(report.overallStatus))
+                    ExportColumn.LINK_SPEED -> {
+                        val rate = parsed?.link?.get("rate") ?: parsed?.link?.get("speed")
+                        table.addCell(helper.createDataCell(normalizeLinkSpeed(rate), bgColor, TextAlignment.CENTER))
+                    }
+                    ExportColumn.NEIGHBOR -> {
+                        val neighbor = parsed?.lldp?.firstOrNull()?.let { n ->
+                            listOfNotNull(n.identity, n.interfaceName).joinToString(" / ")
+                        } ?: "-"
+                        table.addCell(helper.createDataCell(neighbor, bgColor, TextAlignment.CENTER))
+                    }
+                    ExportColumn.PING -> {
+                        val pingValue = parsed?.ping?.lastOrNull()?.let { p ->
+                            buildString {
+                                if (!p.avgRtt.isNullOrBlank()) append("avg ${p.avgRtt}")
+                                if (!p.packetLoss.isNullOrBlank()) {
+                                    if (isNotEmpty()) append(" • ")
+                                    append("loss ${p.packetLoss}%")
+                                }
+                            }
+                        } ?: "-"
+                        table.addCell(helper.createDataCell(pingValue, bgColor, TextAlignment.CENTER))
+                    }
+                    ExportColumn.TDR -> {
+                        val tdrValue = parsed?.tdr?.firstOrNull()?.status ?: "-"
+                        table.addCell(helper.createDataCell(tdrValue, bgColor, TextAlignment.CENTER))
+                    }
+                    ExportColumn.SPEED_TEST -> {
+                        val speedValue = parsed?.speedTest?.let { st ->
+                            val down = cleanCpuStrings(st.tcpDownload)
+                            val up = cleanCpuStrings(st.tcpUpload)
+                            listOfNotNull(
+                                if (down.isNotBlank()) down else null,
+                                if (up.isNotBlank()) up else null
+                            ).joinToString(" / ")
+                        } ?: "-"
+                        table.addCell(helper.createDataCell(speedValue, bgColor, TextAlignment.CENTER))
                     }
                 }
-            } ?: "-"
-            table.addCell(createDataCell(pingValue, bgColor, TextAlignment.CENTER))
+            }
+
+            // Flush every 50 rows
+            if (table.numberOfRows % 50 == 0) {
+                table.flush()
+            }
         }
 
-        if (flags.tdr) {
-            val tdrValue = parsed?.tdr?.firstOrNull()?.status ?: "-"
-            table.addCell(createDataCell(tdrValue, bgColor, TextAlignment.CENTER))
-        }
+        document.add(table)
+    }
 
-        if (flags.speed) {
-            val speedValue = parsed?.speedTest?.let { st ->
-                val down = cleanCpuStrings(st.tcpDownload)
-                val up = cleanCpuStrings(st.tcpUpload)
-                listOfNotNull(
-                    if (down.isNotBlank()) down else null,
-                    if (up.isNotBlank()) up else null
-                ).joinToString(" / ")
-            } ?: "-"
-            table.addCell(createDataCell(speedValue, bgColor, TextAlignment.CENTER))
+    private fun hasDataForColumn(report: Report, col: ExportColumn): Boolean {
+        // Socket, Date, Status always have data (or are metadata)
+        if (col == ExportColumn.SOCKET || col == ExportColumn.DATE || col == ExportColumn.STATUS) return true
+        
+        val parsed = parseResults(report.resultsJson) ?: return false
+        
+        return when (col) {
+            ExportColumn.LINK_SPEED -> {
+                val rate = parsed.link?.get("rate") ?: parsed.link?.get("speed")
+                !rate.isNullOrBlank()
+            }
+            ExportColumn.NEIGHBOR -> !parsed.lldp.isNullOrEmpty()
+            ExportColumn.PING -> !parsed.ping.isNullOrEmpty()
+            ExportColumn.TDR -> !parsed.tdr.isNullOrEmpty()
+            ExportColumn.SPEED_TEST -> parsed.speedTest != null && 
+                (!parsed.speedTest.tcpDownload.isNullOrBlank() || !parsed.speedTest.tcpUpload.isNullOrBlank())
+            else -> true
         }
     }
 
-    private fun createDataCell(content: String, bgColor: DeviceRgb, alignment: TextAlignment = TextAlignment.CENTER): Cell {
-        return Cell()
-            .add(Paragraph(content)
-                .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA))
-                .setFontSize(10f)
-                .setFontColor(DeviceRgb(51, 51, 51))
-                .setTextAlignment(alignment))
-            .setBackgroundColor(bgColor)
-            .setBorder(SolidBorder(DeviceRgb(238, 238, 238), 0.5f))
-            .setPadding(10f)
-            .setVerticalAlignment(VerticalAlignment.MIDDLE)
-    }
 
-    private fun createStatusCell(status: String): Cell {
-        val isPassed = status.equals("PASS", ignoreCase = true)
-
-        return Cell()
-            .add(Paragraph(status.uppercase())
-                .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD))
-                .setFontSize(9f)
-                .setFontColor(
-                    if (isPassed) DeviceRgb(46, 125, 50)
-                    else DeviceRgb(198, 40, 40)
-                ))
-            .setBackgroundColor(
-                if (isPassed) DeviceRgb(232, 245, 233)
-                else DeviceRgb(255, 235, 238)
-            )
-            .setBorder(SolidBorder(DeviceRgb(238, 238, 238), 0.5f))
-            .setPadding(6f)
-            .setTextAlignment(TextAlignment.CENTER)
-            .setVerticalAlignment(VerticalAlignment.MIDDLE)
-    }
-
-    private fun addFooter(document: Document, client: Client?, reports: List<Report>) {
-        val flags = scanColumnsAndCpu(reports)
-
-        // CPU Warning if needed
-        if (flags.showCpuWarning) {
-            val warning = Paragraph("⚠️ Rilevato carico CPU 100% (locale/remota) durante alcuni Speed Test. I valori potrebbero essere sottostimati.")
-                .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA))
-                .setFontSize(11f)
-                .setFontColor(DeviceRgb(230, 81, 0))
-                .setBackgroundColor(DeviceRgb(255, 248, 225))
-                .setBorder(SolidBorder(DeviceRgb(255, 213, 79), 1f))
-                .setPadding(10f)
-                .setMarginTop(12f)
-                .setMarginBottom(12f)
-            document.add(warning)
-        }
-
-        // Client notes if present
-        if (!client?.notes.isNullOrBlank()) {
-            val notesSection = Paragraph()
-            notesSection.add(Paragraph("Note Cliente")
-                .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD))
-                .setFontSize(9f)
-                .setFontColor(DeviceRgb(102, 102, 102))
-                .setMarginBottom(4f))
-            notesSection.add(Paragraph(client.notes ?: "")
-                .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA))
-                .setFontSize(11f)
-                .setFontColor(DeviceRgb(68, 68, 68)))
-
-            val notesCell = Cell()
-                .add(notesSection)
-                .setBackgroundColor(DeviceRgb(248, 249, 250))
-                .setBorder(SolidBorder(DeviceRgb(224, 224, 224), 1f))
-                .setPadding(10f)
-                .setMarginTop(12f)
-                .setMarginBottom(12f)
-
-            val notesTable = Table(floatArrayOf(1f))
-                .setWidth(UnitValue.createPercentValue(100f))
-                .addCell(notesCell)
-            document.add(notesTable)
-        }
-
-        // Generation timestamp
-        val df = SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault())
-        val footer = Paragraph()
-            .add("Generato il ${df.format(Date())}  •  MikLink • Certificazione Reti")
-            .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA))
-            .setFontSize(10f)
-            .setFontColor(DeviceRgb(153, 153, 153))
-            .setTextAlignment(TextAlignment.CENTER)
-            .setMarginTop(16f)
-        document.add(footer)
-    }
+    
+    // Removed old scanColumnsAndCpu, buildColumnWidths, addTableHeader, addTableRow relying on Flags - replaced by config driven ones above.
+    // Helper used by createDataCell is kept below.
 
     private fun cleanCpuStrings(input: String?): String {
         if (input.isNullOrBlank()) return ""

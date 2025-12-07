@@ -49,6 +49,8 @@ fun HistoryScreen(
 
     var expandedClientId by remember { mutableStateOf<Long?>(null) }
     var showDeleteDialog by remember { mutableStateOf<Long?>(null) }
+    var showExportDialog by remember { mutableStateOf<ReportsByClient?>(null) }
+    
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -61,78 +63,15 @@ fun HistoryScreen(
     // Repeat test confirmation
     var showRepeatDialog by remember { mutableStateOf(false) }
     var pendingRepeatReport by remember { mutableStateOf<Report?>(null) }
+    
+    // Single Report Export Dialog Context
+    var singleExportContext by remember { mutableStateOf<Pair<Report, String>?>(null) } // Report, ClientName
 
     LaunchedEffect(pdfStatus) {
         if (pdfStatus.isNotBlank()) {
             snackbarHostState.showSnackbar(pdfStatus)
         }
     }
-
-    // State for PDF printing
-    var pdfHtmlToPrint by remember { mutableStateOf<String?>(null) }
-    var pdfJobName by remember { mutableStateOf("") }
-    
-    // Keep reference to WebView for explicit control
-    val webViewRef = remember { mutableStateOf<android.webkit.WebView?>(null) }
-
-    // Load content when pdfHtmlToPrint changes
-    LaunchedEffect(pdfHtmlToPrint) {
-        webViewRef.value?.let { webView ->
-            webView.tag = pdfJobName
-            if (pdfHtmlToPrint != null) {
-                android.util.Log.d("HistoryPDF", "LaunchedEffect loading HTML, length=${pdfHtmlToPrint!!.length}")
-                webView.loadDataWithBaseURL("http://localhost/", pdfHtmlToPrint!!, "text/html", "UTF-8", null)
-            }
-        }
-    }
-
-    // Invisible WebView for printing - Always attached to prevent renderer crash
-    AndroidView(
-        factory = { ctx ->
-            android.webkit.WebView(ctx).apply {
-                settings.javaScriptEnabled = false
-                settings.domStorageEnabled = true
-                // Disable hardware acceleration to prevent crashes on some devices
-                setLayerType(android.view.View.LAYER_TYPE_SOFTWARE, null)
-                
-                webViewClient = object : android.webkit.WebViewClient() {
-                    override fun onPageFinished(view: android.webkit.WebView?, url: String?) {
-                        super.onPageFinished(view, url)
-                        android.util.Log.d("HistoryPDF", "onPageFinished url=$url, hasContent=${pdfHtmlToPrint != null}")
-                        // Only print if we have content and URL indicates loaded content (not blank)
-                        if (pdfHtmlToPrint != null && url?.startsWith("http") == true) {
-                            val printManager = ctx.getSystemService(Context.PRINT_SERVICE) as? PrintManager
-                            if (printManager != null) {
-                                val jobName = view?.tag as? String ?: "History_Report"
-                                val adapter = createPrintDocumentAdapter(jobName)
-                                
-                                val wrappedAdapter = object : PrintDocumentAdapter() {
-                                    override fun onLayout(oldAttributes: PrintAttributes?, newAttributes: PrintAttributes?, cancellationSignal: CancellationSignal?, callback: LayoutResultCallback?, extras: Bundle?) {
-                                        adapter.onLayout(oldAttributes, newAttributes, cancellationSignal, callback, extras)
-                                    }
-                                    override fun onWrite(pages: Array<out PageRange>?, destination: ParcelFileDescriptor?, cancellationSignal: CancellationSignal?, callback: WriteResultCallback?) {
-                                        adapter.onWrite(pages, destination, cancellationSignal, callback)
-                                    }
-                                    override fun onFinish() {
-                                        adapter.onFinish()
-                                        // Cleanup: Clear content and reset state
-                                        pdfHtmlToPrint = null
-                                        view?.loadUrl("about:blank")
-                                    }
-                                }
-                                
-                                printManager.print(jobName, wrappedAdapter, PrintAttributes.Builder().build())
-                            }
-                        }
-                    }
-                }
-                
-                // Store reference
-                webViewRef.value = this
-            }
-        },
-        modifier = Modifier.size(1.dp).alpha(0f)
-    )
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -320,75 +259,12 @@ fun HistoryScreen(
                             showRepeatDialog = true
                         },
                         onExportAll = {
-                            coroutineScope.launch {
-                                try {
-                                    snackbarHostState.showSnackbar("Generazione PDF in corso...")
-                                    
-                                    // Use iText to generate PDF directly
-                                    val pdfFile = viewModel.generatePdfWithITextForClient(clientData)
-                                    
-                                    if (pdfFile != null && pdfFile.exists() && pdfFile.length() > 0) {
-                                        // Open PDF with default viewer
-                                        val uri = androidx.core.content.FileProvider.getUriForFile(
-                                            context,
-                                            "${context.packageName}.fileprovider",
-                                            pdfFile
-                                        )
-                                        
-                                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
-                                            setDataAndType(uri, "application/pdf")
-                                            addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                            addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-                                        }
-                                        
-                                        try {
-                                            context.startActivity(intent)
-                                            snackbarHostState.showSnackbar("PDF generato con successo!")
-                                        } catch (e: android.content.ActivityNotFoundException) {
-                                            snackbarHostState.showSnackbar("Nessun visualizzatore PDF trovato")
-                                        }
-                                    } else {
-                                        snackbarHostState.showSnackbar("Nessun dato da esportare")
-                                    }
-                                } catch (e: Exception) {
-                                    android.util.Log.e("HistoryPDF", "Error generating PDF with iText", e)
-                                    snackbarHostState.showSnackbar("Errore generazione PDF: ${e.message}")
-                                }
-                            }
+                            // Show the configuration dialog instead of immediate export
+                            showExportDialog = clientData
                         },
                         onExportSingleReport = { report ->
-                            coroutineScope.launch {
-                                try {
-                                    snackbarHostState.showSnackbar("Generazione PDF...")
-                                    val pdfFile = viewModel.generatePdfForSingleReport(report)
-                                    
-                                    if (pdfFile != null && pdfFile.exists() && pdfFile.length() > 0) {
-                                        val uri = androidx.core.content.FileProvider.getUriForFile(
-                                            context,
-                                            "${context.packageName}.fileprovider",
-                                            pdfFile
-                                        )
-                                        
-                                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
-                                            setDataAndType(uri, "application/pdf")
-                                            addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                            addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-                                        }
-                                        
-                                        try {
-                                            context.startActivity(intent)
-                                            snackbarHostState.showSnackbar("PDF generato!")
-                                        } catch (e: android.content.ActivityNotFoundException) {
-                                            snackbarHostState.showSnackbar("Nessun visualizzatore PDF trovato")
-                                        }
-                                    } else {
-                                        snackbarHostState.showSnackbar("Errore generazione PDF")
-                                    }
-                                } catch (e: Exception) {
-                                    android.util.Log.e("HistoryPDF", "Error generating single PDF", e)
-                                    snackbarHostState.showSnackbar("Errore: ${e.message}")
-                                }
-                            }
+                            val clientName = clientData.client?.companyName ?: "Report"
+                            singleExportContext = report to clientName
                         },
                         viewModel = viewModel
                     )
@@ -419,6 +295,98 @@ fun HistoryScreen(
                 dismissButton = {
                     TextButton(onClick = { showDeleteDialog = null }) {
                         Text("Cancel")
+                    }
+                }
+            )
+        }
+        
+    val pdfReportTitle by viewModel.pdfReportTitle.collectAsStateWithLifecycle()
+    val pdfHideEmptyColumns by viewModel.pdfHideEmptyColumns.collectAsStateWithLifecycle()
+
+    // ... inside Scaffold ...
+        
+        // Export Configuration Dialog (Client Level)
+        showExportDialog?.let { clientData ->
+            PdfExportDialog(
+                clientName = clientData.client?.companyName ?: "Report",
+                globalReportTitle = pdfReportTitle,
+                globalHideEmptyColumns = pdfHideEmptyColumns,
+                onDismiss = { showExportDialog = null },
+                onConfirm = { config ->
+                    showExportDialog = null
+                    coroutineScope.launch {
+                        try {
+                            snackbarHostState.showSnackbar("Generazione PDF Client...")
+                            
+                            val pdfFile = viewModel.generatePdfWithITextForClient(clientData, config)
+                            
+                            if (pdfFile != null && pdfFile.exists() && pdfFile.length() > 0) {
+                                val uri = androidx.core.content.FileProvider.getUriForFile(
+                                    context,
+                                    "${context.packageName}.fileprovider",
+                                    pdfFile
+                                )
+                                
+                                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                                    setDataAndType(uri, "application/pdf")
+                                    addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                    addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                                }
+                                
+                                try {
+                                    context.startActivity(intent)
+                                    snackbarHostState.showSnackbar("PDF esportato con successo!")
+                                } catch (e: android.content.ActivityNotFoundException) {
+                                    snackbarHostState.showSnackbar("Nessun app per PDF trovata")
+                                }
+                            } else {
+                                snackbarHostState.showSnackbar("Nessun file generato")
+                            }
+                        } catch (e: Exception) {
+                            android.util.Log.e("HistoryPDF", "Export Error", e)
+                            snackbarHostState.showSnackbar("Errore Export: ${e.message}")
+                        }
+                    }
+                }
+            )
+        }
+        
+        // Export Configuration Dialog (Single Report)
+        singleExportContext?.let { (report, clientName) ->
+            PdfExportDialog(
+                clientName = clientName,
+                onDismiss = { singleExportContext = null },
+                onConfirm = { config ->
+                    singleExportContext = null
+                    coroutineScope.launch {
+                        try {
+                            snackbarHostState.showSnackbar("Generazione PDF Singolo...")
+                            val pdfFile = viewModel.generatePdfForSingleReport(report, config)
+                            
+                            if (pdfFile != null && pdfFile.exists() && pdfFile.length() > 0) {
+                                val uri = androidx.core.content.FileProvider.getUriForFile(
+                                    context,
+                                    "${context.packageName}.fileprovider",
+                                    pdfFile
+                                )
+                                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                                    setDataAndType(uri, "application/pdf")
+                                    addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                    addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                                }
+                                try {
+                                    context.startActivity(intent)
+                                    snackbarHostState.showSnackbar("PDF generato!")
+                                } catch (e: android.content.ActivityNotFoundException) {
+                                    snackbarHostState.showSnackbar("Nessun visualizzatore PDF trovato")
+                                }
+                            } else {
+                                snackbarHostState.showSnackbar("Errore generazione PDF")
+                            }
+                        } catch (e: Exception) {
+                             android.util.Log.e("HistoryPDF", "Error generating single PDF", e)
+                             snackbarHostState.showSnackbar("Errore: ${e.message}")
+                        }
                     }
                 }
             )

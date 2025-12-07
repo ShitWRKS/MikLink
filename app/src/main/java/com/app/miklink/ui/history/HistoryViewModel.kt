@@ -6,7 +6,6 @@ import com.app.miklink.data.db.dao.ClientDao
 import com.app.miklink.data.db.dao.ReportDao
 import com.app.miklink.data.db.model.Client
 import com.app.miklink.data.db.model.Report
-import com.app.miklink.data.pdf.PdfGenerator
 import com.app.miklink.data.pdf.PdfGeneratorIText
 import com.app.miklink.ui.history.model.ReportsByClient
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -14,18 +13,29 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import android.print.PrintDocumentAdapter
 import kotlinx.coroutines.withContext
 
 @HiltViewModel
 class HistoryViewModel @Inject constructor(
     private val reportDao: ReportDao,
     private val clientDao: ClientDao,
-    private val pdfGenerator: PdfGenerator,
     private val pdfGeneratorIText: PdfGeneratorIText,
     private val probeDao: com.app.miklink.data.db.dao.ProbeConfigDao,
-    private val profileDao: com.app.miklink.data.db.dao.TestProfileDao
+    private val profileDao: com.app.miklink.data.db.dao.TestProfileDao,
+    private val userPreferencesRepository: com.app.miklink.data.repository.UserPreferencesRepository
 ) : ViewModel() {
+
+    val pdfIncludeEmptyTests = userPreferencesRepository.pdfIncludeEmptyTests
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    val pdfSelectedColumns = userPreferencesRepository.pdfSelectedColumns
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
+
+    val pdfReportTitle = userPreferencesRepository.pdfReportTitle
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "Collaudo Cablaggio di Rete")
+
+    val pdfHideEmptyColumns = userPreferencesRepository.pdfHideEmptyColumns
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     val reports: StateFlow<List<Report>> = reportDao.getAllReports()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -124,52 +134,32 @@ class HistoryViewModel @Inject constructor(
         }
     }
 
-    // Nuove API per la stampa dalla UI
-    fun generateHtmlForClientReports(clientReports: ReportsByClient): String {
-        // Generate a filename/title for the PDF
-        val clientName = clientReports.client?.companyName?.replace(" ", "_") ?: "Client"
-        val date = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.getDefault()).format(java.util.Date())
-        val title = "${clientName}_Reports_${date}"
-        
-        return pdfGenerator.generateHtmlFromReports(clientReports.reports, clientReports.client, title)
-    }
-
-    suspend fun createPrintAdapter(context: android.content.Context, html: String, jobName: String): PrintDocumentAdapter =
-        pdfGenerator.createPrintAdapter(context, html, jobName)
-
     /**
      * Generate PDF using iText 7 for client reports from history.
      */
-    suspend fun generatePdfWithITextForClient(clientReports: ReportsByClient): java.io.File? {
-        val clientName = clientReports.client?.companyName?.replace(" ", "_") ?: "Client"
-        val date = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.getDefault()).format(java.util.Date())
-        val title = "${clientName}_Reports_${date}"
-        
+    suspend fun generatePdfWithITextForClient(
+        clientReports: ReportsByClient,
+        config: com.app.miklink.data.pdf.PdfExportConfig
+    ): java.io.File? {
         return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-            pdfGeneratorIText.generatePdfReport(clientReports.reports, clientReports.client, title)
+            pdfGeneratorIText.generatePdfReport(clientReports.reports, clientReports.client, config)
         }
     }
 
     /**
-     * Generate PDF using iText 7 for a single report.
+     * Generate PDF using iText 7 for a single report with custom config.
      */
-    suspend fun generatePdfForSingleReport(report: Report): java.io.File? {
+    suspend fun generatePdfForSingleReport(
+        report: Report,
+        config: com.app.miklink.data.pdf.PdfExportConfig
+    ): java.io.File? {
         // Find client for this report
         val client = report.clientId?.let { clientId ->
             clientDao.getClientById(clientId).first()
         }
         
-        // Find profile for this report
-        val profile = report.profileName?.let { profileName ->
-            profileDao.getProfileByName(profileName).first()
-        }
-        
-        val clientName = client?.companyName?.replace(" ", "_") ?: "Client"
-        val date = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.getDefault()).format(java.util.Date(report.timestamp))
-        val title = "${clientName}-${date}-${report.reportId}"
-        
         return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-            pdfGeneratorIText.generateSingleTestPdf(report, client, profile, title)
+            pdfGeneratorIText.generatePdfReport(listOf(report), client, config)
         }
     }
 

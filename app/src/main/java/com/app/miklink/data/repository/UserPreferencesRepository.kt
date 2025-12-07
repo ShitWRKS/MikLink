@@ -82,9 +82,58 @@ class UserPreferencesRepository @Inject constructor(
         }
     }
 
+    private val PDF_INCLUDE_EMPTY_TESTS_KEY = androidx.datastore.preferences.core.booleanPreferencesKey("pdf_include_empty_tests")
+    private val PDF_SELECTED_COLUMNS_KEY = androidx.datastore.preferences.core.stringSetPreferencesKey("pdf_selected_columns")
+
+    val pdfIncludeEmptyTests: Flow<Boolean> = dataStore.data
+        .map { preferences ->
+            preferences[PDF_INCLUDE_EMPTY_TESTS_KEY] ?: true
+        }
+
+    val pdfSelectedColumns: Flow<Set<String>> = dataStore.data
+        .map { preferences ->
+            preferences[PDF_SELECTED_COLUMNS_KEY] ?: emptySet()
+        }
+
+    suspend fun setPdfIncludeEmptyTests(include: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[PDF_INCLUDE_EMPTY_TESTS_KEY] = include
+        }
+    }
+
+    suspend fun setPdfSelectedColumns(columns: Set<String>) {
+        dataStore.edit { preferences ->
+            preferences[PDF_SELECTED_COLUMNS_KEY] = columns
+        }
+    }
+
     suspend fun setIdNumberingStrategy(strategy: IdNumberingStrategy) {
         dataStore.edit { preferences ->
             preferences[ID_NUMBERING_STRATEGY_KEY] = strategy.name
+        }
+    }
+    private val PDF_REPORT_TITLE_KEY = stringPreferencesKey("pdf_report_title")
+    private val PDF_HIDE_EMPTY_COLUMNS_KEY = androidx.datastore.preferences.core.booleanPreferencesKey("pdf_hide_empty_columns")
+
+    val pdfReportTitle: Flow<String> = dataStore.data
+        .map { preferences ->
+            preferences[PDF_REPORT_TITLE_KEY] ?: "Collaudo Cablaggio di Rete"
+        }
+
+    val pdfHideEmptyColumns: Flow<Boolean> = dataStore.data
+        .map { preferences ->
+            preferences[PDF_HIDE_EMPTY_COLUMNS_KEY] ?: false
+        }
+
+    suspend fun setPdfReportTitle(title: String) {
+        dataStore.edit { preferences ->
+            preferences[PDF_REPORT_TITLE_KEY] = title
+        }
+    }
+
+    suspend fun setPdfHideEmptyColumns(hide: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[PDF_HIDE_EMPTY_COLUMNS_KEY] = hide
         }
     }
 }

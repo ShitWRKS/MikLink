@@ -1,7 +1,6 @@
 package com.app.miklink.ui.history
 
-import android.content.Context
-import android.print.PrintDocumentAdapter
+
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -10,7 +9,7 @@ import com.app.miklink.data.db.dao.ReportDao
 import com.app.miklink.data.db.dao.TestProfileDao
 import com.app.miklink.data.db.model.Report
 import com.app.miklink.data.db.model.TestProfile
-import com.app.miklink.data.pdf.PdfGenerator
+
 import com.app.miklink.data.pdf.PdfGeneratorIText
 import com.app.miklink.ui.history.model.ParsedResults
 import com.squareup.moshi.Moshi
@@ -25,11 +24,24 @@ class ReportDetailViewModel @Inject constructor(
     private val reportDao: ReportDao,
     private val clientDao: ClientDao,
     private val profileDao: TestProfileDao,
-    private val pdfGenerator: PdfGenerator, // For legacy HTML generation
+
     private val pdfGeneratorIText: PdfGeneratorIText, // For new single-test PDF
     private val moshi: Moshi,
+    private val userPreferencesRepository: com.app.miklink.data.repository.UserPreferencesRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel(), ReportDetailScreenStateProvider {
+
+    val pdfIncludeEmptyTests = userPreferencesRepository.pdfIncludeEmptyTests
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    val pdfSelectedColumns = userPreferencesRepository.pdfSelectedColumns
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
+
+    val pdfReportTitle = userPreferencesRepository.pdfReportTitle
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "Collaudo Cablaggio di Rete")
+
+    val pdfHideEmptyColumns = userPreferencesRepository.pdfHideEmptyColumns
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     private val reportId: Long = savedStateHandle.get<Long>("reportId") ?: -1L
 
@@ -87,13 +99,7 @@ class ReportDetailViewModel @Inject constructor(
         }
     }
 
-    // Sospeso: recupera client e costruisce HTML
-    suspend fun generateHtmlForCurrentReport(): String? {
-        val currentReport = report.value ?: return null
-        val client = currentReport.clientId?.let { id -> clientDao.getClientById(id).firstOrNull() }
-        val title = getProposedFilename()
-        return pdfGenerator.generateHtmlFromReports(listOf(currentReport), client, title)
-    }
+
 
     suspend fun getProposedFilename(): String {
         val currentReport = report.value ?: return "MikLink_Report"
@@ -103,19 +109,16 @@ class ReportDetailViewModel @Inject constructor(
         return "${clientName}-${date}-${currentReport.reportId}"
     }
     
-    // Generate PDF File for single test using iText
-    suspend fun generatePdfFileForCurrentReport(): java.io.File? {
+    // Generate PDF File for single test using iText with Config
+    suspend fun generatePdfWithIText(config: com.app.miklink.data.pdf.PdfExportConfig): java.io.File? {
         val currentReport = report.value ?: return null
         val client = currentReport.clientId?.let { it -> clientDao.getClientById(it).firstOrNull() }
-        val currentProfile = profile.value
-        val title = getProposedFilename()
         
         return try {
-            pdfGeneratorIText.generateSingleTestPdf(
-                report = currentReport,
+            pdfGeneratorIText.generatePdfReport(
+                rawReports = listOf(currentReport),
                 client = client,
-                profile = currentProfile,
-                reportTitle = title
+                config = config
             )
         } catch (e: Exception) {
             android.util.Log.e("ReportDetailVM", "Error generating PDF", e)
@@ -123,8 +126,7 @@ class ReportDetailViewModel @Inject constructor(
         }
     }
 
-    suspend fun createPrintAdapter(context: Context, html: String, jobName: String): PrintDocumentAdapter =
-        pdfGenerator.createPrintAdapter(context, html, jobName)
+
 
     override fun exportReportToPdf() {
         // No-op: la stampa è demandata alla UI

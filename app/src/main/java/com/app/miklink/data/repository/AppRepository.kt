@@ -44,8 +44,19 @@ class AppRepository @Inject constructor(
     private val retrofitBuilder: Retrofit.Builder,
     private val baseOkHttpClient: OkHttpClient
 ) {
+    val currentProbe: Flow<ProbeConfig?> = probeConfigDao.getSingleProbe()
 
 
+    private fun findWifiNetwork(): Network? {
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        return connectivityManager.allNetworks.firstOrNull { network ->
+            val caps = connectivityManager.getNetworkCapabilities(network)
+            caps?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
+        }
+    }
+
+    private fun buildServiceFor(probe: ProbeConfig): MikroTikApiService {
+        val baseUrl = "http://${probe.ipAddress}/rest/"
         val wifiNetwork = findWifiNetwork()
 
         val authInterceptor = okhttp3.Interceptor { chain ->

@@ -155,6 +155,23 @@ fun SettingsScreen(
                     }
                 )
             }
+
+            
+            // Sezione Report PDF
+            SettingsSection(
+                title = "Report PDF",
+                icon = Icons.Default.PictureAsPdf,
+                iconColor = MaterialTheme.colorScheme.primary
+            ) {
+                SettingsCard(
+                    headline = "Preferenze Rapporto PDF",
+                    subtitle = "Configura colonne, titoli e opzioni di stampa",
+                    leadingIcon = Icons.Default.SettingsApplications,
+                    iconColor = MaterialTheme.colorScheme.primary,
+                    onClick = { navController.navigate("pdf_settings") }
+                )
+            }
+
             // Sezione Numerazione ID
             SettingsSection(
                 title = "Numerazione ID",
