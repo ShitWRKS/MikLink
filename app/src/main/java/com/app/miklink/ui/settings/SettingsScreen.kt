@@ -38,11 +38,17 @@ fun SettingsScreen(
     val idNumberingStrategy by viewModel.idNumberingStrategy.collectAsStateWithLifecycle()
     
     var showThemeDialog by remember { mutableStateOf(false) }
+    var showIdStrategyDialog by remember { mutableStateOf(false) }
 
     val themeLabel = when (themeConfig) {
         ThemeConfig.FOLLOW_SYSTEM -> "Auto"
         ThemeConfig.LIGHT -> "Chiaro"
         ThemeConfig.DARK -> "Scuro"
+    }
+
+    val idStrategyLabel = when (idNumberingStrategy) {
+        IdNumberingStrategy.CONTINUOUS_INCREMENT -> "Continuo"
+        IdNumberingStrategy.FILL_GAPS -> "Riempi Buchi"
     }
 
     Scaffold(
@@ -82,7 +88,7 @@ fun SettingsScreen(
             // Header card removed by request: 'Configurazione App'
 
 
-            // Sezione Sonda (NUOVO)
+            // Sezione Sonda
             SettingsSection(
                 title = "Sonda MikroTik",
                 icon = Icons.Default.Router,
@@ -95,14 +101,28 @@ fun SettingsScreen(
                     iconColor = Color(0xFF2196F3),
                     onClick = { navController.navigate("probe_edit/-1") }
                 )
+            }
 
-                // Nuova voce: Gestisci Profili
+            // Sezione Gestione Dati
+            SettingsSection(
+                title = "Gestione Dati",
+                icon = Icons.Default.Storage,
+                iconColor = Color(0xFF9C27B0)
+            ) {
                 SettingsCard(
                     headline = "Gestisci Profili",
                     subtitle = "Crea, modifica o elimina profili di test",
                     leadingIcon = Icons.AutoMirrored.Filled.ListAlt,
-                    iconColor = Color(0xFF2196F3),
+                    iconColor = Color(0xFF9C27B0),
                     onClick = { navController.navigate("profile_list") }
+                )
+
+                SettingsCard(
+                    headline = "Gestisci Clienti",
+                    subtitle = "Aggiungi o modifica anagrafica clienti",
+                    leadingIcon = Icons.Default.Business,
+                    iconColor = Color(0xFF9C27B0),
+                    onClick = { navController.navigate("client_list") }
                 )
             }
 
@@ -132,82 +152,32 @@ fun SettingsScreen(
                     }
                 )
             }
-// Sezione Numerazione ID Test
-SettingsSection(
-    title = "Numerazione ID Test",
-    icon = Icons.Default.Tag,
-    iconColor = Color(0xFF4CAF50)
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .selectable(
-                        selected = (idNumberingStrategy == IdNumberingStrategy.CONTINUOUS_INCREMENT),
-                        onClick = { viewModel.updateIdNumberingStrategy(IdNumberingStrategy.CONTINUOUS_INCREMENT) }
-                    )
-                    .padding(12.dp),
-                verticalAlignment = Alignment.CenterVertically
+            // Sezione Numerazione ID
+            SettingsSection(
+                title = "Numerazione ID",
+                icon = Icons.Default.Tag,
+                iconColor = Color(0xFF4CAF50)
             ) {
-                RadioButton(
-                    selected = (idNumberingStrategy == IdNumberingStrategy.CONTINUOUS_INCREMENT),
-                    onClick = { viewModel.updateIdNumberingStrategy(IdNumberingStrategy.CONTINUOUS_INCREMENT) }
+                SettingsCard(
+                    headline = "Strategia Numerazione",
+                    subtitle = "Incremento continuo o riuso ID",
+                    leadingIcon = Icons.Default.Numbers,
+                    iconColor = Color(0xFF4CAF50),
+                    onClick = { showIdStrategyDialog = true },
+                    trailingContent = {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.secondaryContainer
+                        ) {
+                            Text(
+                                text = idStrategyLabel,
+                                style = MaterialTheme.typography.labelSmall,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
+                    }
                 )
-                Spacer(modifier = Modifier.width(12.dp))
-                Column {
-                    Text(
-                        "Incremento Continuo",
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Text(
-                        "Gli ID continuano sempre ad incrementare (consigliato)",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
             }
-
-            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .selectable(
-                        selected = (idNumberingStrategy == IdNumberingStrategy.FILL_GAPS),
-                        onClick = { viewModel.updateIdNumberingStrategy(IdNumberingStrategy.FILL_GAPS) }
-                    )
-                    .padding(12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                RadioButton(
-                    selected = (idNumberingStrategy == IdNumberingStrategy.FILL_GAPS),
-                    onClick = { viewModel.updateIdNumberingStrategy(IdNumberingStrategy.FILL_GAPS) }
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Column {
-                    Text(
-                        "Riempi Buchi",
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Text(
-                        "Riutilizza gli ID dei test eliminati",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        }
-    }
-}
             // Sezione Modalità di Filtraggio
             SettingsSection(
                 title = "Modalità di Filtraggio",
@@ -302,6 +272,61 @@ SettingsSection(
             },
             confirmButton = {
                 TextButton(onClick = { showThemeDialog = false }) {
+                    Text("Annulla")
+                }
+            }
+        )
+    }
+
+    if (showIdStrategyDialog) {
+        AlertDialog(
+            onDismissRequest = { showIdStrategyDialog = false },
+            title = { Text("Strategia Numerazione ID") },
+            text = {
+                Column {
+                    IdNumberingStrategy.entries.forEach { strategy ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    viewModel.updateIdNumberingStrategy(strategy)
+                                    showIdStrategyDialog = false
+                                }
+                                .padding(vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = (idNumberingStrategy == strategy),
+                                onClick = {
+                                    viewModel.updateIdNumberingStrategy(strategy)
+                                    showIdStrategyDialog = false
+                                }
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column {
+                                Text(
+                                    text = when (strategy) {
+                                        IdNumberingStrategy.CONTINUOUS_INCREMENT -> "Incremento Continuo"
+                                        IdNumberingStrategy.FILL_GAPS -> "Riempi Buchi"
+                                    },
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Text(
+                                    text = when (strategy) {
+                                        IdNumberingStrategy.CONTINUOUS_INCREMENT -> "Gli ID continuano sempre ad incrementare (consigliato)"
+                                        IdNumberingStrategy.FILL_GAPS -> "Riutilizza gli ID dei test eliminati"
+                                    },
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showIdStrategyDialog = false }) {
                     Text("Annulla")
                 }
             }

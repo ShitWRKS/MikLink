@@ -22,7 +22,7 @@ class ProbeEditViewModel @Inject constructor(
     private val probeId: Long = savedStateHandle.get<Long>("probeId") ?: -1L
 
     val ipAddress = MutableStateFlow("")
-    val username = MutableStateFlow("admin")
+    val username = MutableStateFlow("")
     val password = MutableStateFlow("")
     val isHttps = MutableStateFlow(false)
     val testInterface = MutableStateFlow("")
