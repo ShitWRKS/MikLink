@@ -1,3 +1,169 @@
 <resources>
     <string name="app_name">MikLink</string>
+
+    <!-- General -->
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="save">Save</string>
+    <string name="delete">Delete</string>
+    <string name="edit">Edit</string>
+    <string name="manage">Manage</string>
+    <string name="close">Close</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+    <string name="back">Back</string>
+    <string name="error">Error</string>
+    <string name="success">Success</string>
+    <string name="no_data">No data available</string>
+
+    <string name="settings_category_general">General</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_language_desc">Change app language</string>
+
+    <string name="collapse">Collapse</string>
+    <string name="expand">Expand</string>
+    <string name="more_options">More options</string>
+
+    <!-- Errors (Repository) -->
+    <string name="error_unknown">An unknown error occurred</string>
+    <string name="error_probe_connection_unknown">An unknown error occurred while connecting to the probe.</string>
+    <string name="error_static_cidr_missing">CIDR address missing</string>
+    <string name="error_static_gateway_missing">Gateway missing for static config</string>
+    <string name="error_cable_test_timeout">Timeout during cable-test (>%1$ds). Command may take longer on this model.</string>
+    <string name="error_cable_test_unsupported">Cable-Test not supported by this MikroTik hardware</string>
+    <string name="error_cable_test_invalid">Invalid cable-test request: %1$s</string>
+    <string name="error_http_generic">HTTP Error %1$d: %2$s</string>
+    <string name="error_cable_test_generic">Cable-test error: %1$s</string>
+    <string name="error_lldp_unknown">Unknown LLDP/CDP error</string>
+    <string name="error_speedtest_no_server">Speed test server address not configured.</string>
+    <string name="error_speedtest_empty_response">Empty response from server.</string>
+    <string name="error_speedtest_400">Error 400: Invalid request. (Check parameters)</string>
+    <string name="error_speedtest_401">Error 401: Incorrect username or password.</string>
+    <string name="error_api_generic">API Error: %1$d %2$s</string>
+    <string name="error_http_generic_msg">HTTP Error: %1$s</string>
+    <string name="error_server_unreachable">Server unreachable (Timeout).</string>
+    <string name="error_connection_failed">Unable to connect to server.</string>
+    <string name="error_unknown_with_msg">Unknown error: %1$s</string>
+
+    <!-- Status Messages (Repository) -->
+    <string name="status_dhcp_configured">DHCP configured and active</string>
+    <string name="status_dhcp_lease_active">DHCP lease acquired</string>
+    <string name="status_dhcp_not_bound">DHCP not bound (check DHCP server)</string>
+    <string name="status_static_configured">Static address configured</string>
+    <string name="status_lease_active">Lease active</string>
+    <string name="status_static_detected">Static detected</string>
+
+    <!-- Dashboard -->
+    <string name="dashboard_title">MikLink</string>
+    <string name="dashboard_btn_report">REPORT</string>
+    <string name="dashboard_btn_settings">Settings</string>
+    <string name="dashboard_btn_start_test">START TEST</string>
+    <string name="dashboard_btn_configure_test">CONFIGURE TEST</string>
+    <string name="dashboard_section_client">Client</string>
+    <string name="dashboard_select_client">Select Client</string>
+    <string name="dashboard_click_to_select">Click to select</string>
+    <string name="dashboard_search_client">Search client...</string>
+    <string name="dashboard_no_clients_found">No clients found</string>
+    <string name="dashboard_section_profile">Profile</string>
+    <string name="dashboard_select_profile">Select Profile</string>
+    <string name="dashboard_no_profiles">No profiles configured</string>
+    <string name="dashboard_section_socket">Socket ID</string>
+    <string name="dashboard_socket_label">Socket ID</string>
+    <string name="dashboard_socket_placeholder">E.g. Office 1, Meeting Room</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_category_probe">MikroTik Probe</string>
+    <string name="settings_configure_probe">Configure Probe</string>
+    <string name="settings_configure_probe_desc">Manage the test probe</string>
+    <string name="settings_polling_interval">Probe Update Interval</string>
+    <string name="settings_polling_impact">Impact on network traffic and battery</string>
+    <string name="settings_glow_intensity">Glow Effect Intensity</string>
+    <string name="settings_glow_visibility">Dashboard colored background visibility</string>
+    <string name="settings_category_data">Data Management</string>
+    <string name="settings_manage_profiles">Manage Profiles</string>
+    <string name="settings_manage_profiles_desc">Add or remove test profiles</string>
+    <string name="settings_manage_clients">Manage Clients</string>
+    <string name="settings_manage_clients_desc">Manage customer registry</string>
+    <string name="settings_category_appearance">Appearance</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_theme_auto">Auto (System)</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_dark">Dark</string>
+    <string name="settings_custom_colors">Custom Colors</string>
+    <string name="settings_custom_colors_desc">Choose a color palette</string>
+    <string name="settings_category_pdf">PDF Report</string>
+    <string name="settings_pdf_preferences">PDF Report Preferences</string>
+    <string name="settings_pdf_preferences_desc">Customize default titles and options</string>
+    <string name="settings_id_numbering">ID Numbering</string>
+    <string name="settings_id_strategy">Numbering Strategy</string>
+    <string name="settings_category_info">Information</string>
+    <string name="settings_version">Version</string>
+    <string name="settings_build">Build</string>
+    <string name="settings_developer">Developed by Shitworks mostly with Vibe Coding</string>
+
+    <!-- History -->
+    <string name="history_title">Test History</string>
+    <string name="history_search_placeholder">Search by socket, client...</string>
+    <string name="history_filter_all">All</string>
+    <string name="history_filter_pass">PASS Only</string>
+    <string name="history_filter_fail">FAIL Only</string>
+    <string name="history_no_reports">No Test Reports</string>
+    <string name="history_start_test_hint">Start a test to see results here</string>
+    <string name="history_tips_title">Tips</string>
+    <string name="history_tip_1">Go to Dashboard to start a new test</string>
+    <string name="history_tip_2">Reports are saved automatically</string>
+    <string name="history_tip_3">You can export them to PDF to share</string>
+    <string name="history_btn_dashboard">Go to Dashboard</string>
+    <string name="history_delete_title">Delete Report?</string>
+    <string name="history_delete_message">This action cannot be undone. The report will be permanently deleted.</string>
+    
+    <string name="history_repeat_title">Repeat test?</string>
+    <string name="history_repeat_message">You are about to repeat the test for:</string>
+    <string name="history_repeat_socket">Socket: %1$s</string>
+    <string name="history_repeat_action_q">What do you want to do?</string>
+    <string name="history_repeat_replace_desc">Replace: delete previous test and create new one</string>
+    <string name="history_repeat_new_desc">New Test: keep both tests</string>
+    <string name="history_repeat_warning">Make sure you are at the same socket and verify cable connection.</string>
+    <string name="history_btn_replace">Replace</string>
+    <string name="history_btn_new_test">New Test</string>
+    <string name="history_repeat_error">Could not repeat test: profile or probe not found</string>
+
+    <string name="history_exporting_client">Generating Client PDF...</string>
+    <string name="history_exporting_single">Generating Single PDF...</string>
+    <string name="history_export_success">PDF exported successfully!</string>
+    <string name="history_no_pdf_app">No PDF app found to view the file</string>
+    <string name="history_no_pdf_viewer">No PDF viewer found</string>
+    <string name="history_no_file_generated">No file generated</string>
+    <string name="history_pdf_generated">PDF generated!</string>
+    <string name="history_pdf_generation_error">Error generating PDF</string>
+    <string name="history_error_prefix">Error: %1$s</string>
+    
+    <string name="history_export_all">Export all</string>
+    <string name="history_export_pdf">Export PDF</string>
+    <string name="history_repeat_test">Repeat test</string>
+    <string name="unknown_client">Unknown Client</string>
+    <string name="unnamed_socket">Unnamed Socket</string>
+
+    <!-- PDF Dialog -->
+    <string name="pdf_export_title">Export PDF</string>
+    <string name="pdf_export_confirm">Generate PDF report for %1$s?</string>
+    <string name="pdf_override_prefs">Override Preferences</string>
+    <string name="pdf_report_title">Report Title</string>
+    <string name="pdf_orientation">Page Orientation</string>
+    <string name="pdf_orientation_portrait">Portrait</string>
+    <string name="pdf_orientation_landscape">Landscape</string>
+    <string name="pdf_signatures">Signatures</string>
+    <string name="pdf_sig_left_label">Left Label</string>
+    <string name="pdf_sig_right_label">Right Label</string>
+    <string name="pdf_btn_export">Export PDF</string>
+    <string name="pdf_default_title">Structured Cabling Test</string>
+    <string name="pdf_default_sig_left">Tester</string>
+    <string name="pdf_default_sig_right">Electrician</string>
+
+    <!-- Test Status -->
+    <string name="status_pass">PASS</string>
+    <string name="status_fail">FAIL</string>
+    <string name="test_passed">TEST PASSED</string>
+    <string name="test_failed">TEST FAILED</string>
 </resources>

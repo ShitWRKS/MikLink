@@ -17,6 +17,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.draw.scale
 import com.app.miklink.data.pdf.ExportColumn
 import com.app.miklink.data.pdf.PdfExportConfig
+import androidx.compose.ui.res.stringResource
+import com.app.miklink.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -25,7 +27,7 @@ fun PdfExportDialog(
     clientName: String,
     globalIncludeEmpty: Boolean = true,
     globalColumns: Set<String> = ExportColumn.values().map { it.name }.toSet(),
-    globalReportTitle: String = "Collaudo Cablaggio di Rete",
+    globalReportTitle: String = stringResource(R.string.pdf_default_title),
     globalHideEmptyColumns: Boolean = false,
     onDismiss: () -> Unit,
     onConfirm: (PdfExportConfig) -> Unit
@@ -33,15 +35,19 @@ fun PdfExportDialog(
     var reportTitle by remember { mutableStateOf(globalReportTitle) }
     
     var showSignatures by remember { mutableStateOf(true) }
-    var signatureLeftLabel by remember { mutableStateOf("Collaudatore") }
-    var signatureRightLabel by remember { mutableStateOf("Elettricista") }
+    
+    val defaultSigLeft = stringResource(R.string.pdf_default_sig_left)
+    val defaultSigRight = stringResource(R.string.pdf_default_sig_right)
+    
+    var signatureLeftLabel by remember { mutableStateOf(defaultSigLeft) }
+    var signatureRightLabel by remember { mutableStateOf(defaultSigRight) }
     var selectedOrientation by remember { mutableStateOf(com.app.miklink.data.pdf.PdfPageOrientation.PORTRAIT) }
     
     var isExpanded by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Esporta PDF") },
+        title = { Text(stringResource(R.string.pdf_export_title)) },
         text = {
             Column(
                 modifier = Modifier
@@ -50,7 +56,7 @@ fun PdfExportDialog(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    text = "Genera report PDF per $clientName?",
+                    text = stringResource(R.string.pdf_export_confirm, clientName),
                     style = MaterialTheme.typography.bodyLarge
                 )
                 
@@ -71,7 +77,7 @@ fun PdfExportDialog(
                                 Icon(Icons.Default.Tune, null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
                                 Spacer(Modifier.width(8.dp))
                                 Text(
-                                    "Override Preferenze",
+                                    stringResource(R.string.pdf_override_prefs),
                                     style = MaterialTheme.typography.labelLarge,
                                     color = MaterialTheme.colorScheme.primary,
                                     fontWeight = FontWeight.Bold
@@ -91,7 +97,7 @@ fun PdfExportDialog(
                                 OutlinedTextField(
                                     value = reportTitle,
                                     onValueChange = { reportTitle = it },
-                                    label = { Text("Titolo Report") },
+                                    label = { Text(stringResource(R.string.pdf_report_title)) },
                                     modifier = Modifier.fillMaxWidth(),
                                     singleLine = true
                                 )
@@ -100,19 +106,19 @@ fun PdfExportDialog(
 
                                 // Page Orientation
                                 Column {
-                                    Text("Orientamento Pagina", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                                    Text(stringResource(R.string.pdf_orientation), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         RadioButton(
                                             selected = selectedOrientation == com.app.miklink.data.pdf.PdfPageOrientation.PORTRAIT,
                                             onClick = { selectedOrientation = com.app.miklink.data.pdf.PdfPageOrientation.PORTRAIT }
                                         )
-                                        Text("Portrait", style = MaterialTheme.typography.bodyMedium)
+                                        Text(stringResource(R.string.pdf_orientation_portrait), style = MaterialTheme.typography.bodyMedium)
                                         Spacer(Modifier.width(16.dp))
                                         RadioButton(
                                             selected = selectedOrientation == com.app.miklink.data.pdf.PdfPageOrientation.LANDSCAPE,
                                             onClick = { selectedOrientation = com.app.miklink.data.pdf.PdfPageOrientation.LANDSCAPE }
                                         )
-                                        Text("Landscape", style = MaterialTheme.typography.bodyMedium)
+                                        Text(stringResource(R.string.pdf_orientation_landscape), style = MaterialTheme.typography.bodyMedium)
                                     }
                                 }
 
@@ -121,7 +127,7 @@ fun PdfExportDialog(
                                 // Signatures
                                 Column {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text("Firme", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.weight(1f))
+                                        Text(stringResource(R.string.pdf_signatures), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.weight(1f))
                                         Switch(
                                             checked = showSignatures,
                                             onCheckedChange = { showSignatures = it },
@@ -135,14 +141,14 @@ fun PdfExportDialog(
                                             OutlinedTextField(
                                                 value = signatureLeftLabel,
                                                 onValueChange = { signatureLeftLabel = it },
-                                                label = { Text("Sx") },
+                                                label = { Text(stringResource(R.string.pdf_sig_left_label)) },
                                                 modifier = Modifier.weight(1f),
                                                 singleLine = true
                                             )
                                             OutlinedTextField(
                                                 value = signatureRightLabel,
                                                 onValueChange = { signatureRightLabel = it },
-                                                label = { Text("Dx") },
+                                                label = { Text(stringResource(R.string.pdf_sig_right_label)) },
                                                 modifier = Modifier.weight(1f),
                                                 singleLine = true
                                             )
@@ -173,12 +179,12 @@ fun PdfExportDialog(
                     onConfirm(config)
                 }
             ) {
-                Text("Esporta PDF")
+                Text(stringResource(R.string.pdf_btn_export))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Annulla")
+                Text(stringResource(R.string.cancel))
             }
         }
     )

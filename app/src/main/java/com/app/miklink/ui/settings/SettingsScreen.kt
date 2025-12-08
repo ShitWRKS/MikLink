@@ -76,6 +76,46 @@ fun SettingsScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro")
                     }
                 },
+                actions = {
+                    var showLanguageMenu by remember { mutableStateOf(false) }
+                    val currentLocales = androidx.core.os.LocaleListCompat.getAdjustedDefault()
+                    val currentLang = if (currentLocales.size() > 0) currentLocales.get(0)?.language else "en"
+                    
+                    val flagIcon = if (currentLang == "it") "🇮🇹" else "🇬🇧"
+
+                    Box {
+                        TextButton(onClick = { showLanguageMenu = true }) {
+                            Text(
+                                text = flagIcon,
+                                style = MaterialTheme.typography.headlineMedium
+                            )
+                        }
+                        
+                        DropdownMenu(
+                            expanded = showLanguageMenu,
+                            onDismissRequest = { showLanguageMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("English 🇬🇧") },
+                                onClick = {
+                                    androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(
+                                        androidx.core.os.LocaleListCompat.forLanguageTags("en")
+                                    )
+                                    showLanguageMenu = false
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Italiano 🇮🇹") },
+                                onClick = {
+                                    androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(
+                                        androidx.core.os.LocaleListCompat.forLanguageTags("it")
+                                    )
+                                    showLanguageMenu = false
+                                }
+                            )
+                        }
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.3f)
                 )
@@ -91,6 +131,11 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Header card removed by request: 'Configurazione App'
+            
+            // Header card removed by request: 'Configurazione App'
+
+
+            // Sezione Sonda
 
 
             // Sezione Sonda

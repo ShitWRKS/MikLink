@@ -42,6 +42,7 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+        resourceConfigurations += listOf("en", "it")
 
         // Room schema export per i test di migrazione
         javaCompileOptions {

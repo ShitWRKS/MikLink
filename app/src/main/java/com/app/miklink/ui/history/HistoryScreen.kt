@@ -38,6 +38,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.clickable
 
+import androidx.compose.ui.res.stringResource
+import com.app.miklink.R
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HistoryScreen(
@@ -78,10 +81,10 @@ fun HistoryScreen(
         topBar = {
             Column {
                 TopAppBar(
-                    title = { Text("Test History") },
+                    title = { Text(stringResource(R.string.history_title)) },
                     navigationIcon = {
                         IconButton(onClick = { navController.popBackStack() }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
@@ -99,7 +102,7 @@ fun HistoryScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 8.dp),
-                    placeholder = { Text("Cerca per presa, cliente...") },
+                    placeholder = { Text(stringResource(R.string.history_search_placeholder)) },
                     leadingIcon = {
                         Icon(Icons.Default.Search, contentDescription = "Search")
                     },
@@ -126,7 +129,7 @@ fun HistoryScreen(
                     FilterChip(
                         selected = filterStatus == FilterStatus.ALL,
                         onClick = { viewModel.updateFilterStatus(FilterStatus.ALL) },
-                        label = { Text("Tutti") },
+                        label = { Text(stringResource(R.string.history_filter_all)) },
                         leadingIcon = if (filterStatus == FilterStatus.ALL) {
                             { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
                         } else null
@@ -134,7 +137,7 @@ fun HistoryScreen(
                     FilterChip(
                         selected = filterStatus == FilterStatus.PASS,
                         onClick = { viewModel.updateFilterStatus(FilterStatus.PASS) },
-                        label = { Text("Solo PASS") },
+                        label = { Text(stringResource(R.string.history_filter_pass)) },
                         leadingIcon = if (filterStatus == FilterStatus.PASS) {
                             { Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp)) }
                         } else null,
@@ -146,7 +149,7 @@ fun HistoryScreen(
                     FilterChip(
                         selected = filterStatus == FilterStatus.FAIL,
                         onClick = { viewModel.updateFilterStatus(FilterStatus.FAIL) },
-                        label = { Text("Solo FAIL") },
+                        label = { Text(stringResource(R.string.history_filter_fail)) },
                         leadingIcon = if (filterStatus == FilterStatus.FAIL) {
                             { Icon(Icons.Default.Cancel, contentDescription = null, modifier = Modifier.size(18.dp)) }
                         } else null,
@@ -188,13 +191,13 @@ fun HistoryScreen(
                     }
                     Spacer(Modifier.height(24.dp))
                     Text(
-                        "Nessun Report di Test",
+                        stringResource(R.string.history_no_reports),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        "Inizia un test per vedere i risultati qui",
+                        stringResource(R.string.history_start_test_hint),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -210,14 +213,14 @@ fun HistoryScreen(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text("💡", style = MaterialTheme.typography.titleLarge)
                                 Spacer(Modifier.width(8.dp))
-                                Text("Suggerimenti", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                                Text(stringResource(R.string.history_tips_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                             }
                             Spacer(Modifier.height(16.dp))
-                            Row { Text("•  ", style = MaterialTheme.typography.bodyMedium); Text("Vai alla Dashboard per avviare un nuovo test", style = MaterialTheme.typography.bodyMedium) }
+                            Row { Text("•  ", style = MaterialTheme.typography.bodyMedium); Text(stringResource(R.string.history_tip_1), style = MaterialTheme.typography.bodyMedium) }
                             Spacer(Modifier.height(8.dp))
-                            Row { Text("•  ", style = MaterialTheme.typography.bodyMedium); Text("I report vengono salvati automaticamente", style = MaterialTheme.typography.bodyMedium) }
+                            Row { Text("•  ", style = MaterialTheme.typography.bodyMedium); Text(stringResource(R.string.history_tip_2), style = MaterialTheme.typography.bodyMedium) }
                             Spacer(Modifier.height(8.dp))
-                            Row { Text("•  ", style = MaterialTheme.typography.bodyMedium); Text("Puoi esportarli in PDF per condividerli", style = MaterialTheme.typography.bodyMedium) }
+                            Row { Text("•  ", style = MaterialTheme.typography.bodyMedium); Text(stringResource(R.string.history_tip_3), style = MaterialTheme.typography.bodyMedium) }
                         }
                     }
                     
@@ -228,7 +231,7 @@ fun HistoryScreen(
                     ) {
                         Icon(Icons.Default.Home, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Vai alla Dashboard")
+                        Text(stringResource(R.string.history_btn_dashboard))
                     }
                 }
             }
@@ -277,8 +280,8 @@ fun HistoryScreen(
             AlertDialog(
                 onDismissRequest = { showDeleteDialog = null },
                 icon = { Icon(Icons.Default.Delete, contentDescription = null) },
-                title = { Text("Delete Report?") },
-                text = { Text("This action cannot be undone. The report will be permanently deleted.") },
+                title = { Text(stringResource(R.string.history_delete_title)) },
+                text = { Text(stringResource(R.string.history_delete_message)) },
                 confirmButton = {
                     TextButton(
                         onClick = {
@@ -289,12 +292,12 @@ fun HistoryScreen(
                             contentColor = MaterialTheme.colorScheme.error
                         )
                     ) {
-                        Text("Delete")
+                        Text(stringResource(R.string.delete))
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showDeleteDialog = null }) {
-                        Text("Cancel")
+                        Text(stringResource(R.string.cancel))
                     }
                 }
             )
@@ -316,7 +319,7 @@ fun HistoryScreen(
                     showExportDialog = null
                     coroutineScope.launch {
                         try {
-                            snackbarHostState.showSnackbar("Generazione PDF Client...")
+                            snackbarHostState.showSnackbar(context.getString(R.string.history_exporting_client))
                             
                             val pdfFile = viewModel.generatePdfWithITextForClient(clientData, config)
                             
@@ -335,16 +338,16 @@ fun HistoryScreen(
                                 
                                 try {
                                     context.startActivity(intent)
-                                    snackbarHostState.showSnackbar("PDF esportato con successo!")
+                                    snackbarHostState.showSnackbar(context.getString(R.string.history_export_success))
                                 } catch (e: android.content.ActivityNotFoundException) {
-                                    snackbarHostState.showSnackbar("Nessun app per PDF trovata")
+                                    snackbarHostState.showSnackbar(context.getString(R.string.history_no_pdf_app))
                                 }
                             } else {
-                                snackbarHostState.showSnackbar("Nessun file generato")
+                                snackbarHostState.showSnackbar(context.getString(R.string.history_no_file_generated))
                             }
                         } catch (e: Exception) {
                             android.util.Log.e("HistoryPDF", "Export Error", e)
-                            snackbarHostState.showSnackbar("Errore Export: ${e.message}")
+                            snackbarHostState.showSnackbar(context.getString(R.string.history_error_prefix, e.message ?: ""))
                         }
                     }
                 }
@@ -360,7 +363,7 @@ fun HistoryScreen(
                     singleExportContext = null
                     coroutineScope.launch {
                         try {
-                            snackbarHostState.showSnackbar("Generazione PDF Singolo...")
+                            snackbarHostState.showSnackbar(context.getString(R.string.history_exporting_single))
                             val pdfFile = viewModel.generatePdfForSingleReport(report, config)
                             
                             if (pdfFile != null && pdfFile.exists() && pdfFile.length() > 0) {
@@ -376,16 +379,16 @@ fun HistoryScreen(
                                 }
                                 try {
                                     context.startActivity(intent)
-                                    snackbarHostState.showSnackbar("PDF generato!")
+                                    snackbarHostState.showSnackbar(context.getString(R.string.history_pdf_generated))
                                 } catch (e: android.content.ActivityNotFoundException) {
-                                    snackbarHostState.showSnackbar("Nessun visualizzatore PDF trovato")
+                                    snackbarHostState.showSnackbar(context.getString(R.string.history_no_pdf_viewer))
                                 }
                             } else {
-                                snackbarHostState.showSnackbar("Errore generazione PDF")
+                                snackbarHostState.showSnackbar(context.getString(R.string.history_pdf_generation_error))
                             }
                         } catch (e: Exception) {
                              android.util.Log.e("HistoryPDF", "Error generating single PDF", e)
-                             snackbarHostState.showSnackbar("Errore: ${e.message}")
+                             snackbarHostState.showSnackbar(context.getString(R.string.history_error_prefix, e.message ?: ""))
                         }
                     }
                 }
@@ -410,7 +413,7 @@ fun HistoryScreen(
             },
             title = {
                 Text(
-                    "Ripetere il test?",
+                    stringResource(R.string.history_repeat_title),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
@@ -418,35 +421,35 @@ fun HistoryScreen(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        "Stai per ripetere il test per:",
+                        stringResource(R.string.history_repeat_message),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        "Presa: ${pendingRepeatReport?.socketName ?: "N/A"}",
+                        stringResource(R.string.history_repeat_socket, pendingRepeatReport?.socketName ?: "N/A"),
                         style = MaterialTheme.typography.bodyMedium
                     )
                     
                     Spacer(Modifier.height(8.dp))
                     
                     Text(
-                        "Cosa vuoi fare?",
+                        stringResource(R.string.history_repeat_action_q),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        "\u2022 Sostituisci: elimina il test precedente e crea uno nuovo",
+                        stringResource(R.string.history_repeat_replace_desc),
                         style = MaterialTheme.typography.bodySmall
                     )
                     Text(
-                        "\u2022 Nuovo Test: mantieni entrambi i test",
+                        stringResource(R.string.history_repeat_new_desc),
                         style = MaterialTheme.typography.bodySmall
                     )
                     
                     Spacer(Modifier.height(8.dp))
                     
                     Text(
-                        "Assicurati di riposizionarti sulla stessa presa e verificare la connessione del cavo.",
+                        stringResource(R.string.history_repeat_warning),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -475,7 +478,7 @@ fun HistoryScreen(
                             }
                         }
                     ) {
-                        Text("Nuovo Test")
+                        Text(stringResource(R.string.history_btn_new_test))
                     }
                     
                     // Sostituisci button (preferred choice, primary color) - RIGHT
@@ -496,7 +499,7 @@ fun HistoryScreen(
                                         navController.navigate(route)
                                     } else {
                                         snackbarHostState.showSnackbar(
-                                            "Impossibile ripetere il test: profilo o sonda non trovati"
+                                            context.getString(R.string.history_repeat_error)
                                         )
                                     }
                                 }
@@ -506,7 +509,7 @@ fun HistoryScreen(
                             containerColor = MaterialTheme.colorScheme.primary
                         )
                     ) {
-                        Text("Sostituisci")
+                        Text(stringResource(R.string.history_btn_replace))
                     }
                 }
             },
@@ -515,7 +518,7 @@ fun HistoryScreen(
                     showRepeatDialog = false
                     pendingRepeatReport = null
                 }) {
-                    Text("Annulla")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
@@ -549,7 +552,7 @@ fun ClientReportsCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = clientData.client?.companyName ?: "Unknown Client",
+                        text = clientData.client?.companyName ?: stringResource(R.string.unknown_client),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -611,7 +614,7 @@ fun ClientReportsCard(
                     IconButton(onClick = { onExportAll() }) {
                         Icon(
                             Icons.Default.PictureAsPdf,
-                            contentDescription = "Export all",
+                            contentDescription = stringResource(R.string.history_export_all),
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(28.dp)
                         )
@@ -621,7 +624,7 @@ fun ClientReportsCard(
                     IconButton(onClick = onToggleExpand) {
                         Icon(
                             if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                            contentDescription = if (isExpanded) "Collapse" else "Expand",
+                            contentDescription = if (isExpanded) stringResource(R.string.collapse) else stringResource(R.string.expand),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -668,7 +671,7 @@ fun ReportListItem(
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = report.socketName ?: "Unnamed Socket",
+                text = report.socketName ?: stringResource(R.string.unnamed_socket),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold
             )
@@ -717,7 +720,7 @@ fun ReportListItem(
             IconButton(onClick = onExportPdf) {
                 Icon(
                     Icons.Default.PictureAsPdf,
-                    "Export PDF",
+                    stringResource(R.string.history_export_pdf),
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(24.dp)
                 )
@@ -725,7 +728,7 @@ fun ReportListItem(
             IconButton(onClick = onRepeat) {
                 Icon(
                     Icons.Default.Refresh,
-                    "Repeat test",
+                    stringResource(R.string.history_repeat_test),
                     tint = MaterialTheme.colorScheme.secondary,
                     modifier = Modifier.size(24.dp)
                 )
@@ -737,7 +740,7 @@ fun ReportListItem(
                 IconButton(onClick = { showMenu = true }) {
                     Icon(
                         Icons.Default.MoreVert,
-                        "More options",
+                        stringResource(R.string.more_options),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -746,7 +749,7 @@ fun ReportListItem(
                     onDismissRequest = { showMenu = false }
                 ) {
                     DropdownMenuItem(
-                        text = { Text("Elimina", color = MaterialTheme.colorScheme.error) },
+                        text = { Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error) },
                         onClick = {
                             onDelete()
                             showMenu = false

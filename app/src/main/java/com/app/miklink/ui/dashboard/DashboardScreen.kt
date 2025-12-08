@@ -40,6 +40,9 @@ import com.app.miklink.ui.components.StatusBadge
 import com.app.miklink.ui.navigateDashboard
 import com.app.miklink.ui.theme.Spacing
 
+import androidx.compose.ui.res.stringResource
+import com.app.miklink.R
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
@@ -105,7 +108,7 @@ fun DashboardScreen(
                             tint = Color.Unspecified 
                         )
                         Spacer(Modifier.width(12.dp))
-                        Text("MikLink", fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.dashboard_title), fontWeight = FontWeight.Bold)
                     }
                 },
                 actions = {
@@ -121,11 +124,11 @@ fun DashboardScreen(
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(Modifier.width(8.dp))
-                        Text("REPORT", fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.dashboard_btn_report), fontWeight = FontWeight.Bold)
                     }
 
                     IconButton(onClick = { navController.navigate("settings") }) {
-                        Icon(Icons.Default.Settings, contentDescription = "Impostazioni")
+                        Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.dashboard_btn_settings))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -201,7 +204,7 @@ fun DashboardScreen(
                         )
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            text = if (isTestButtonEnabled) "AVVIA TEST" else "CONFIGURA TEST",
+                            text = if (isTestButtonEnabled) stringResource(R.string.dashboard_btn_start_test) else stringResource(R.string.dashboard_btn_configure_test),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
@@ -239,15 +242,15 @@ fun DashboardScreen(
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
             // 1. Client Selection
-            SectionHeader(title = "Cliente", icon = Icons.Default.Business)
+            SectionHeader(title = stringResource(R.string.dashboard_section_client), icon = Icons.Default.Business)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 SelectionCard(
-                    title = selectedClient?.companyName ?: "Seleziona Cliente",
-                    subtitle = selectedClient?.location ?: "Clicca per selezionare",
+                    title = selectedClient?.companyName ?: stringResource(R.string.dashboard_select_client),
+                    subtitle = selectedClient?.location ?: stringResource(R.string.dashboard_click_to_select),
                     icon = Icons.Default.Business,
                     isSelected = selectedClient != null,
                     onClick = { showClientSheet = true },
@@ -255,9 +258,9 @@ fun DashboardScreen(
                 )
                 
                 IconButton(onClick = { navController.navigate("client_list") }) {
-                    Icon(
+                        Icon(
                         Icons.Default.Edit,
-                        contentDescription = "Gestisci Clienti",
+                        contentDescription = stringResource(R.string.settings_manage_clients),
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(24.dp)
                     )
@@ -265,15 +268,15 @@ fun DashboardScreen(
             }
 
             // 2. Profile Selection
-            SectionHeader(title = "Profilo", icon = Icons.Default.Speed)
+            SectionHeader(title = stringResource(R.string.dashboard_section_profile), icon = Icons.Default.Speed)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 SelectionCard(
-                    title = selectedProfile?.profileName ?: "Seleziona Profilo",
-                    subtitle = selectedProfile?.profileDescription ?: "Clicca per selezionare",
+                    title = selectedProfile?.profileName ?: stringResource(R.string.dashboard_select_profile),
+                    subtitle = selectedProfile?.profileDescription ?: stringResource(R.string.dashboard_click_to_select),
                     icon = Icons.Default.Speed,
                     isSelected = selectedProfile != null,
                     onClick = { showProfileSheet = true },
@@ -283,7 +286,7 @@ fun DashboardScreen(
                 IconButton(onClick = { navController.navigate("profile_list") }) {
                     Icon(
                         Icons.Default.Edit,
-                        contentDescription = "Gestisci Profili",
+                        contentDescription = stringResource(R.string.settings_manage_profiles),
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(24.dp)
                     )
@@ -291,13 +294,13 @@ fun DashboardScreen(
             }
 
             // 3. Socket ID
-            SectionHeader(title = "Socket ID", icon = Icons.Default.PowerInput)
+            SectionHeader(title = stringResource(R.string.dashboard_section_socket), icon = Icons.Default.PowerInput)
             
             OutlinedTextField(
                 value = socketName,
                 onValueChange = { viewModel.socketName.value = it },
-                label = { Text("ID Presa") },
-                placeholder = { Text("Es. Ufficio 1, Sala Riunioni") },
+                label = { Text(stringResource(R.string.dashboard_socket_label)) },
+                placeholder = { Text(stringResource(R.string.dashboard_socket_placeholder)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 leadingIcon = {
@@ -332,7 +335,7 @@ fun DashboardScreen(
 
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    "Seleziona Cliente",
+                    stringResource(R.string.dashboard_select_client),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(bottom = 16.dp)
@@ -341,7 +344,7 @@ fun DashboardScreen(
                 ModernSearchBar(
                     query = searchQuery,
                     onQueryChange = { searchQuery = it },
-                    placeholder = "Cerca cliente...",
+                    placeholder = stringResource(R.string.dashboard_search_client),
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
 
@@ -364,7 +367,7 @@ fun DashboardScreen(
                     if (filteredClients.isEmpty()) {
                         item {
                             Text(
-                                "Nessun cliente trovato",
+                                stringResource(R.string.dashboard_no_clients_found),
                                 modifier = Modifier.padding(16.dp),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -383,7 +386,7 @@ fun DashboardScreen(
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    "Seleziona Profilo",
+                    stringResource(R.string.dashboard_select_profile),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(bottom = 16.dp)
@@ -408,7 +411,7 @@ fun DashboardScreen(
                     if (profiles.isEmpty()) {
                         item {
                             Text(
-                                "Nessun profilo configurato",
+                                stringResource(R.string.dashboard_no_profiles),
                                 modifier = Modifier.padding(16.dp),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -449,7 +452,7 @@ private fun SectionHeader(
         
         if (onManageClick != null) {
             TextButton(onClick = onManageClick) {
-                Text("GESTISCI")
+                Text(stringResource(R.string.manage).uppercase())
             }
         }
     }
