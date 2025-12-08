@@ -119,6 +119,32 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    val dashboardGlowIntensity = userPreferencesRepository.dashboardGlowIntensity
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = 0.5f
+        )
+
+    fun updateDashboardGlowIntensity(intensity: Float) {
+        viewModelScope.launch {
+            userPreferencesRepository.setDashboardGlowIntensity(intensity)
+        }
+    }
+
+    val probePollingInterval = userPreferencesRepository.probePollingInterval
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = 5000L
+        )
+
+    fun updateProbePollingInterval(interval: Long) {
+        viewModelScope.launch {
+            userPreferencesRepository.setProbePollingInterval(interval)
+        }
+    }
+
     suspend fun exportConfig(): String {
         return backupRepository.exportConfigToJson()
     }

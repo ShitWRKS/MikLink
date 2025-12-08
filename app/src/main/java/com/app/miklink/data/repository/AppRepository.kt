@@ -42,7 +42,8 @@ class AppRepository @Inject constructor(
     val testProfileDao: TestProfileDao,
     val reportDao: ReportDao,
     private val retrofitBuilder: Retrofit.Builder,
-    private val baseOkHttpClient: OkHttpClient
+    private val baseOkHttpClient: OkHttpClient,
+    private val userPreferencesRepository: UserPreferencesRepository
 ) {
     val currentProbe: Flow<ProbeConfig?> = probeConfigDao.getSingleProbe()
 
@@ -111,20 +112,23 @@ class AppRepository @Inject constructor(
         }
     }
 
-    fun observeProbeStatus(probe: ProbeConfig): Flow<Boolean> = flow {
-        while (true) {
-            val isOnline = try {
-                val api = buildServiceFor(probe)
-                api.getSystemResource(ProplistRequest(listOf("board-name"))).isNotEmpty()
-            } catch (_: HttpException) {
-                false
-            } catch (_: Exception) {
-                false
+    fun observeProbeStatus(probe: ProbeConfig): Flow<Boolean> = userPreferencesRepository.probePollingInterval
+        .flatMapLatest { interval ->
+            flow {
+                while (true) {
+                    val isOnline = try {
+                        val api = buildServiceFor(probe)
+                        api.getSystemResource(ProplistRequest(listOf("board-name"))).isNotEmpty()
+                    } catch (_: HttpException) {
+                        false
+                    } catch (_: Exception) {
+                        false
+                    }
+                    emit(isOnline)
+                    delay(interval)
+                }
             }
-            emit(isOnline)
-            delay(15000)
         }
-    }
 
     suspend fun checkProbeConnection(probe: ProbeConfig): ProbeCheckResult = withContext(Dispatchers.IO) {
         try {
@@ -443,9 +447,11 @@ dns = null,
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     fun observeAllProbesWithStatus(): Flow<List<ProbeStatusInfo>> =
-        probeConfigDao.getAllProbes().flatMapLatest { probes ->
+        combine(probeConfigDao.getAllProbes(), userPreferencesRepository.probePollingInterval) { probes, interval ->
+            Pair(probes, interval)
+        }.flatMapLatest { (probes, interval) ->
             if (probes.isEmpty()) return@flatMapLatest flowOf(emptyList())
-            tickerFlow(10_000L).map {
+            tickerFlow(interval).map {
                 withContext(Dispatchers.IO) {
                     probes.map { probe ->
                         val isOnline = try {

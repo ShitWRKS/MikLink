@@ -40,6 +40,8 @@ import android.os.CancellationSignal
 import android.os.ParcelFileDescriptor
 import android.print.PageRange
 import kotlinx.coroutines.launch
+import androidx.compose.animation.core.*
+import androidx.compose.ui.draw.scale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -213,13 +215,26 @@ fun HeroSection(report: Report, results: ParsedResults?) {
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Large Status Badge
+            val infiniteTransition = rememberInfiniteTransition(label = "status_pulse")
+            val scale by infiniteTransition.animateFloat(
+                initialValue = 1f,
+                targetValue = 1.1f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(1000, easing = FastOutSlowInEasing),
+                    repeatMode = RepeatMode.Reverse
+                ),
+                label = "scale"
+            )
+
             Surface(
                 shape = androidx.compose.foundation.shape.CircleShape,
                 color = if (report.overallStatus == "PASS")
                     androidx.compose.ui.graphics.Color(0xFF4CAF50)
                 else
                     androidx.compose.ui.graphics.Color(0xFFF44336),
-                modifier = Modifier.size(80.dp)
+                modifier = Modifier
+                    .size(80.dp)
+                    .scale(scale)
             ) {
                 Box(contentAlignment = androidx.compose.ui.Alignment.Center) {
                     Icon(

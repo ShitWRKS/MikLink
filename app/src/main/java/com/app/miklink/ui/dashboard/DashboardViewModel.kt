@@ -60,6 +60,13 @@ class DashboardViewModel @Inject constructor(
     private val idNumberingStrategy = userPreferencesRepository.idNumberingStrategy
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), IdNumberingStrategy.CONTINUOUS_INCREMENT)
 
+    val dashboardGlowIntensity = userPreferencesRepository.dashboardGlowIntensity
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = 0.5f
+        )
+
     init {
         // Combina selectedClient e idNumberingStrategy per calcolare socketName
         viewModelScope.launch {

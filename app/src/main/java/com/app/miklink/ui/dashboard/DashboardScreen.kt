@@ -2,6 +2,7 @@ package com.app.miklink.ui.dashboard
 
 import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -26,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -52,11 +54,22 @@ fun DashboardScreen(
     val selectedProfile by viewModel.selectedProfile.collectAsStateWithLifecycle()
     val socketName by viewModel.socketName.collectAsStateWithLifecycle()
     val isProbeOnline by viewModel.isProbeOnline.collectAsStateWithLifecycle()
+    val glowIntensity by viewModel.dashboardGlowIntensity.collectAsStateWithLifecycle()
 
     val isTestButtonEnabled = selectedClient != null && currentProbe != null &&
                             selectedProfile != null && socketName.isNotBlank()
 
-    val showProbeOfflineWarning = currentProbe != null && !isProbeOnline
+
+    // Ambient Glow Colors
+    val targetGlowColor = if (currentProbe == null) {
+        MaterialTheme.colorScheme.primary.copy(alpha = 0.05f) // Default subtle glow
+    } else if (isProbeOnline) {
+        com.app.miklink.ui.theme.TechGreen.copy(alpha = glowIntensity) // Online Green Glow with dynamic alpha
+    } else {
+        com.app.miklink.ui.theme.TechRed.copy(alpha = glowIntensity) // Offline Red Glow with dynamic alpha
+    }
+
+    val glowColor by animateColorAsState(targetValue = targetGlowColor, label = "glow_color", animationSpec = tween(1000))
 
     // Sheet State
     var showClientSheet by remember { mutableStateOf(false) }
@@ -77,6 +90,7 @@ fun DashboardScreen(
 
     Scaffold(
         topBar = {
+            // Updated TopAppBar to be transparent to show glow
             TopAppBar(
                 title = {
                     Row(
@@ -88,7 +102,7 @@ fun DashboardScreen(
                             painter = androidx.compose.ui.res.painterResource(id = com.app.miklink.R.drawable.logo),
                             contentDescription = "MikLink Logo",
                             modifier = Modifier.size(32.dp),
-                            tint = Color.Unspecified // Usa i colori originali del logo se possibile, o rimuovi tint se è un drawable colorato
+                            tint = Color.Unspecified 
                         )
                         Spacer(Modifier.width(12.dp))
                         Text("MikLink", fontWeight = FontWeight.Bold)
@@ -115,7 +129,7 @@ fun DashboardScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
+                    containerColor = Color.Transparent, // Transparent for glow
                     titleContentColor = MaterialTheme.colorScheme.onBackground,
                     actionIconContentColor = MaterialTheme.colorScheme.onBackground
                 )
@@ -132,8 +146,8 @@ fun DashboardScreen(
                         .padding(16.dp)
                         .navigationBarsPadding()
                 ) {
-                    // Status Badges
-                    AnimatedVisibility(visible = selectedClient != null || currentProbe != null) {
+                    // Status Badges (Removed Sonda Badge)
+                    AnimatedVisibility(visible = selectedClient != null) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -145,45 +159,6 @@ fun DashboardScreen(
                                     text = client.companyName,
                                     color = MaterialTheme.colorScheme.primary,
                                     icon = Icons.Default.Business
-                                )
-                            }
-                            currentProbe?.let { probe ->
-                                    // Show a generic probe label instead of a specific name
-                                    StatusBadge(
-                                        text = "Sonda",
-                                        color = if (isProbeOnline) com.app.miklink.ui.theme.TechGreen else com.app.miklink.ui.theme.TechRed,
-                                        icon = if (isProbeOnline) Icons.Default.CheckCircle else Icons.Default.Error
-                                    )
-                            }
-                        }
-                    }
-
-                    // Warning for offline probe
-                    AnimatedVisibility(visible = showProbeOfflineWarning) {
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 8.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer
-                            ),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(12.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    Icons.Default.Warning,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.error,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(Modifier.width(8.dp))
-                                Text(
-                                    text = "Sonda offline: il test potrebbe fallire",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onErrorContainer
                                 )
                             }
                         }
@@ -235,14 +210,34 @@ fun DashboardScreen(
             }
         }
     ) { padding ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+                .background(MaterialTheme.colorScheme.background) // Base background
         ) {
+            // Ambient Glow Layer
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(300.dp) // Glow covers top part
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                glowColor,
+                                Color.Transparent
+                            )
+                        )
+                    )
+            )
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp)
+            ) {
             // 1. Client Selection
             SectionHeader(title = "Cliente", icon = Icons.Default.Business)
             Row(
@@ -318,6 +313,7 @@ fun DashboardScreen(
             Spacer(Modifier.height(32.dp))
         }
     }
+}
 
     // Client Bottom Sheet
     if (showClientSheet) {

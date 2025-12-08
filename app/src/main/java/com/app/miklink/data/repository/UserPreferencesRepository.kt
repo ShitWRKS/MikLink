@@ -136,4 +136,28 @@ class UserPreferencesRepository @Inject constructor(
             preferences[PDF_HIDE_EMPTY_COLUMNS_KEY] = hide
         }
     }
+    private val DASHBOARD_GLOW_INTENSITY_KEY = androidx.datastore.preferences.core.floatPreferencesKey("dashboard_glow_intensity")
+
+    val dashboardGlowIntensity: Flow<Float> = dataStore.data
+        .map { preferences ->
+            preferences[DASHBOARD_GLOW_INTENSITY_KEY] ?: 0.5f // Default Intensity 50%
+        }
+
+    suspend fun setDashboardGlowIntensity(intensity: Float) {
+        dataStore.edit { preferences ->
+            preferences[DASHBOARD_GLOW_INTENSITY_KEY] = intensity
+        }
+    }
+    private val PROBE_POLLING_INTERVAL_KEY = androidx.datastore.preferences.core.longPreferencesKey("probe_polling_interval")
+
+    val probePollingInterval: Flow<Long> = dataStore.data
+        .map { preferences ->
+            preferences[PROBE_POLLING_INTERVAL_KEY] ?: 5000L // Default 5s
+        }
+
+    suspend fun setProbePollingInterval(interval: Long) {
+        dataStore.edit { preferences ->
+            preferences[PROBE_POLLING_INTERVAL_KEY] = interval
+        }
+    }
 }

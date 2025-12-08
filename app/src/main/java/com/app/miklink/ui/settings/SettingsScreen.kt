@@ -25,6 +25,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.*
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.ui.res.stringResource
+import com.app.miklink.R
 import com.app.miklink.data.repository.IdNumberingStrategy
 import com.app.miklink.data.repository.ThemeConfig
 import com.app.miklink.ui.theme.isLightChain
@@ -66,7 +68,7 @@ fun SettingsScreen(
                             tint = MaterialTheme.colorScheme.primary
                         )
                         Spacer(Modifier.width(12.dp))
-                        Text("Impostazioni", fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.settings_title), fontWeight = FontWeight.Bold)
                     }
                 },
                 navigationIcon = {
@@ -93,36 +95,109 @@ fun SettingsScreen(
 
             // Sezione Sonda
             SettingsSection(
-                title = "Sonda MikroTik",
+                title = stringResource(R.string.settings_category_probe),
                 icon = Icons.Default.Router,
                 iconColor = MaterialTheme.colorScheme.primary
             ) {
                 SettingsCard(
-                    headline = "Configura Sonda",
-                    subtitle = "Gestisci la sonda di test",
+                    headline = stringResource(R.string.settings_configure_probe),
+                    subtitle = stringResource(R.string.settings_configure_probe_desc),
                     leadingIcon = Icons.Default.Router,
                     iconColor = MaterialTheme.colorScheme.primary,
                     onClick = { navController.navigate("probe_edit/-1") }
                 )
+
+                // Polling Interval
+                val pollingInterval by viewModel.probePollingInterval.collectAsStateWithLifecycle()
+                val seconds = pollingInterval / 1000f
+                Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)) {
+                     Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(R.string.settings_polling_interval),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = stringResource(R.string.settings_polling_impact),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Text(
+                            text = "${seconds.toInt()}s",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Slider(
+                        value = seconds,
+                        onValueChange = { viewModel.updateProbePollingInterval((it * 1000).toLong()) },
+                        valueRange = 2f..30f,
+                        steps = 27, // 1s increments (30-2 = 28 steps? 2,3...30 = 29 values -> 28 steps)
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                // Dashboard Glow Intensity (Moved here)
+                val glowIntensity by viewModel.dashboardGlowIntensity.collectAsStateWithLifecycle()
+                Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(R.string.settings_glow_intensity),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = stringResource(R.string.settings_glow_visibility),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Text(
+                            text = "${(glowIntensity * 100).toInt()}%",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Slider(
+                        value = glowIntensity,
+                        onValueChange = { viewModel.updateDashboardGlowIntensity(it) },
+                        valueRange = 0f..1f,
+                        steps = 19, // 5% increments
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             }
 
             // Sezione Gestione Dati
             SettingsSection(
-                title = "Gestione Dati",
+                title = stringResource(R.string.settings_category_data),
                 icon = Icons.Default.Storage,
                 iconColor = MaterialTheme.colorScheme.primary
             ) {
                 SettingsCard(
-                    headline = "Gestisci Profili",
-                    subtitle = "Crea, modifica o elimina profili di test",
+                    headline = stringResource(R.string.settings_manage_profiles),
+                    subtitle = stringResource(R.string.settings_manage_profiles_desc),
                     leadingIcon = Icons.AutoMirrored.Filled.ListAlt,
                     iconColor = MaterialTheme.colorScheme.primary,
                     onClick = { navController.navigate("profile_list") }
                 )
 
                 SettingsCard(
-                    headline = "Gestisci Clienti",
-                    subtitle = "Aggiungi o modifica anagrafica clienti",
+                    headline = stringResource(R.string.settings_manage_clients),
+                    subtitle = stringResource(R.string.settings_manage_clients_desc),
                     leadingIcon = Icons.Default.Business,
                     iconColor = MaterialTheme.colorScheme.primary,
                     onClick = { navController.navigate("client_list") }
@@ -131,12 +206,12 @@ fun SettingsScreen(
 
             // Sezione Aspetto
             SettingsSection(
-                title = "Aspetto",
+                title = stringResource(R.string.settings_category_appearance),
                 icon = Icons.Default.Palette,
                 iconColor = MaterialTheme.colorScheme.primary
             ) {
                 SettingsCard(
-                    headline = "Tema",
+                    headline = stringResource(R.string.settings_theme),
                     subtitle = "Chiaro, Scuro o Auto",
                     leadingIcon = Icons.Default.DarkMode,
                     iconColor = MaterialTheme.colorScheme.primary,
@@ -159,13 +234,13 @@ fun SettingsScreen(
             
             // Sezione Report PDF
             SettingsSection(
-                title = "Report PDF",
+                title = stringResource(R.string.settings_category_pdf),
                 icon = Icons.Default.PictureAsPdf,
                 iconColor = MaterialTheme.colorScheme.primary
             ) {
                 SettingsCard(
-                    headline = "Preferenze Rapporto PDF",
-                    subtitle = "Configura colonne, titoli e opzioni di stampa",
+                    headline = stringResource(R.string.settings_pdf_preferences),
+                    subtitle = stringResource(R.string.settings_pdf_preferences_desc),
                     leadingIcon = Icons.Default.SettingsApplications,
                     iconColor = MaterialTheme.colorScheme.primary,
                     onClick = { navController.navigate("pdf_settings") }
@@ -174,12 +249,12 @@ fun SettingsScreen(
 
             // Sezione Numerazione ID
             SettingsSection(
-                title = "Numerazione ID",
+                title = stringResource(R.string.settings_id_numbering),
                 icon = Icons.Default.Tag,
                 iconColor = MaterialTheme.colorScheme.primary
             ) {
                 SettingsCard(
-                    headline = "Strategia Numerazione",
+                    headline = stringResource(R.string.settings_id_strategy),
                     subtitle = "Incremento continuo o riuso ID",
                     leadingIcon = Icons.Default.Numbers,
                     iconColor = MaterialTheme.colorScheme.primary,
@@ -227,7 +302,7 @@ fun SettingsScreen(
 
             // Sezione Info
             SettingsSection(
-                title = "Informazioni",
+                title = stringResource(R.string.settings_category_info),
                 icon = Icons.Default.Info,
                 iconColor = MaterialTheme.colorScheme.secondary
             ) {
@@ -239,11 +314,11 @@ fun SettingsScreen(
                     )
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        InfoRow("Versione", "1.0.0")
+                        InfoRow(stringResource(R.string.settings_version), "1.0.0")
                         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                        InfoRow("Build", "Debug")
+                        InfoRow(stringResource(R.string.settings_build), "Debug")
                         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                        InfoRow("Developed by", "Shitworks mostly with Vibe Coding")
+                        InfoRow("Developed by", stringResource(R.string.settings_developer))
                     }
                 }
             }
@@ -474,15 +549,15 @@ fun ThemeSelectionDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
             TextButton(onClick = { onSave(selectedConfig, primaryColor, secondaryColor, backgroundColor, customContentColor) }) {
-                Text("Applica")
+                Text(stringResource(R.string.save)) // Using save/applica context
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Annulla")
+                Text(stringResource(R.string.cancel))
             }
         },
-        title = { Text("Personalizza Tema") },
+        title = { Text(stringResource(R.string.settings_custom_colors)) },
         text = {
             Column(
                 modifier = Modifier
@@ -545,7 +620,7 @@ fun ThemeSelectionDialog(
 
                 // Custom Colors
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("Colori Personalizzati", style = MaterialTheme.typography.labelMedium)
+                    Text(stringResource(R.string.settings_custom_colors), style = MaterialTheme.typography.labelMedium)
                     
                     // Primary Picker
                     ColorPickerRow("Primario", colors, primaryColor) { primaryColor = it }
