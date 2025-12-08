@@ -3,7 +3,12 @@ package com.app.miklink.data.db.model
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "clients")
+@Entity(
+    tableName = "clients",
+    indices = [
+        androidx.room.Index(value = ["companyName"])
+    ]
+)
 data class Client(
     @PrimaryKey(autoGenerate = true)
     val clientId: Long = 0,

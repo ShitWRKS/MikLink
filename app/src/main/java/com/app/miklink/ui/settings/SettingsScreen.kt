@@ -227,14 +227,12 @@ fun SettingsScreen(
             // Sezione Gestione Dati
             SettingsSection(
                 title = stringResource(R.string.settings_category_data),
-                icon = Icons.Default.Storage,
-                iconColor = MaterialTheme.colorScheme.primary
+                icon = Icons.Default.Storage
             ) {
                 SettingsCard(
                     headline = stringResource(R.string.settings_manage_profiles),
                     subtitle = stringResource(R.string.settings_manage_profiles_desc),
                     leadingIcon = Icons.AutoMirrored.Filled.ListAlt,
-                    iconColor = MaterialTheme.colorScheme.primary,
                     onClick = { navController.navigate("profile_list") }
                 )
 
@@ -242,7 +240,6 @@ fun SettingsScreen(
                     headline = stringResource(R.string.settings_manage_clients),
                     subtitle = stringResource(R.string.settings_manage_clients_desc),
                     leadingIcon = Icons.Default.Business,
-                    iconColor = MaterialTheme.colorScheme.primary,
                     onClick = { navController.navigate("client_list") }
                 )
             }
@@ -256,7 +253,6 @@ fun SettingsScreen(
                     headline = stringResource(R.string.settings_theme),
                     subtitle = "Chiaro, Scuro o Auto",
                     leadingIcon = Icons.Default.DarkMode,
-                    iconColor = MaterialTheme.colorScheme.primary,
                     onClick = { showThemeDialog = true },
                     trailingContent = {
                         Surface(
@@ -283,7 +279,6 @@ fun SettingsScreen(
                     headline = stringResource(R.string.settings_pdf_preferences),
                     subtitle = stringResource(R.string.settings_pdf_preferences_desc),
                     leadingIcon = Icons.Default.SettingsApplications,
-                    iconColor = MaterialTheme.colorScheme.primary,
                     onClick = { navController.navigate("pdf_settings") }
                 )
             }
@@ -297,7 +292,6 @@ fun SettingsScreen(
                     headline = stringResource(R.string.settings_id_strategy),
                     subtitle = "Incremento continuo o riuso ID",
                     leadingIcon = Icons.Default.Numbers,
-                    iconColor = MaterialTheme.colorScheme.primary,
                     onClick = { showIdStrategyDialog = true },
                     trailingContent = {
                         Surface(
@@ -316,14 +310,12 @@ fun SettingsScreen(
             // Sezione Modalità di Filtraggio
             SettingsSection(
                 title = "Modalità di Filtraggio",
-                icon = Icons.Default.Tune,
-                iconColor = MaterialTheme.colorScheme.primary
+                icon = Icons.Default.Tune
             ) {
                 SettingsCard(
                     headline = "Filtraggio CDP/LLDP",
                     subtitle = "Seleziona la modalità di filtraggio",
                     leadingIcon = Icons.Default.FilterList,
-                    iconColor = MaterialTheme.colorScheme.primary,
                     onClick = { /* TODO: Implement Filtering Mode Selector */ },
                     trailingContent = {
                         Surface(
@@ -470,7 +462,6 @@ private fun SettingsCard(
     headline: String,
     subtitle: String,
     leadingIcon: ImageVector,
-    iconColor: Color,
     onClick: () -> Unit,
     trailingContent: (@Composable () -> Unit)? = null
 ) {
@@ -492,13 +483,12 @@ private fun SettingsCard(
                 modifier = Modifier
                     .size(48.dp)
                     .clip(CircleShape)
-                    .background(iconColor.copy(alpha = 0.15f)),
+                    .background(MaterialTheme.colorScheme.primaryContainer),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = leadingIcon,
                     contentDescription = null,
-                    tint = iconColor,
                     modifier = Modifier.size(24.dp)
                 )
             }

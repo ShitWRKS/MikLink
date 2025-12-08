@@ -55,6 +55,19 @@ object Migrations {
         }
     }
 
+    // Migrazione v12 -> v13: aggiunta indici per performance
+    val MIGRATION_12_13 = object : Migration(12, 13) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            // Indices for Client entity
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_clients_companyName ON clients(companyName)")
+            
+            // Indices for Report entity
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_test_reports_clientId ON test_reports(clientId)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_test_reports_timestamp ON test_reports(timestamp)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_test_reports_clientId_timestamp ON test_reports(clientId, timestamp)")
+        }
+    }
+
     /**
      * Array di tutte le migrazioni in ordine.
      * Utile per aggiungere tutte le migrazioni al database.
@@ -63,8 +76,9 @@ object Migrations {
         MIGRATION_7_8,
         MIGRATION_8_9,
         MIGRATION_9_10,
-        MIGRATION_10_11
-        ,MIGRATION_11_12
+        MIGRATION_10_11,
+        MIGRATION_11_12,
+        MIGRATION_12_13
     )
 }
 
