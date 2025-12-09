@@ -39,6 +39,10 @@ class PdfGeneratorIText @Inject constructor(
     private val moshi: Moshi
 ) {
 
+    // instantiate a parser helper internally to avoid changing constructor signature that
+    // annotation processors (KSP/Hilt) may attempt to resolve during processing.
+    private val parsedResultsParser: ParsedResultsParser = ParsedResultsParser(moshi)
+
 
     private data class ColumnFlags(
         val ping: Boolean,
@@ -542,93 +546,6 @@ class PdfGeneratorIText @Inject constructor(
 
     // Reuse parseResults from original PdfGenerator
     internal fun parseResults(json: String): ParsedResults? {
-        if (json.isBlank()) return null
-
-        var parsed: ParsedResults? = null
-        try {
-            parsed = moshi.adapter(ParsedResults::class.java).fromJson(json)
-            if (parsed != null && parsed.ping != null && parsed.tdr != null) return parsed
-        } catch (_: Exception) {
-            // Ignore: will use legacy normalization
-        }
-
-        return try {
-            val mapType = com.squareup.moshi.Types.newParameterizedType(
-                Map::class.java, String::class.java, Any::class.java
-            )
-            val mapAdapter: com.squareup.moshi.JsonAdapter<Map<String, Any?>> = moshi.adapter(mapType)
-            val root = mapAdapter.fromJson(json)
-
-            if (root == null) return parsed
-
-            var pingList: MutableList<com.app.miklink.data.network.PingResult>? = null
-
-            if (parsed?.ping.isNullOrEmpty()) {
-                val listType = com.squareup.moshi.Types.newParameterizedType(
-                    List::class.java, com.app.miklink.data.network.PingResult::class.java
-                )
-                val pingListAdapter: com.squareup.moshi.JsonAdapter<List<com.app.miklink.data.network.PingResult>> = moshi.adapter(listType)
-                root.forEach { (key, value) ->
-                    if (key.startsWith("ping_")) {
-                        var items = pingListAdapter.fromJsonValue(value) ?: emptyList()
-                        if (items.isEmpty()) {
-                            val rawList = (value as? List<*>)?.mapNotNull { it as? Map<*, *> } ?: emptyList()
-                            if (rawList.isNotEmpty()) {
-                                items = rawList.map { m ->
-                                    com.app.miklink.data.network.PingResult(
-                                        avgRtt = m["avg-rtt"] as? String,
-                                        host = m["host"] as? String,
-                                        maxRtt = m["max-rtt"] as? String,
-                                        minRtt = m["min-rtt"] as? String,
-                                        packetLoss = m["packet-loss"] as? String,
-                                        received = m["received"] as? String,
-                                        sent = m["sent"] as? String,
-                                        seq = m["seq"] as? String,
-                                        size = m["size"] as? String,
-                                        time = m["time"] as? String,
-                                        ttl = m["ttl"] as? String
-                                    )
-                                }
-                            }
-                        }
-                        if (items.isNotEmpty()) {
-                            if (pingList == null) pingList = mutableListOf()
-                            pingList!!.addAll(items)
-                        }
-                    }
-                }
-            }
-
-            var tdrList: List<com.app.miklink.data.network.CableTestResult>? = parsed?.tdr
-            if (tdrList == null) {
-                val tdrVal = root["tdr"]
-                when (tdrVal) {
-                    is Map<*, *> -> {
-                        val tdrAdapter: com.squareup.moshi.JsonAdapter<com.app.miklink.data.network.CableTestResult> =
-                            moshi.adapter(com.app.miklink.data.network.CableTestResult::class.java)
-                        val single = tdrAdapter.fromJsonValue(tdrVal)
-                        if (single != null) tdrList = listOf(single)
-                    }
-                    is List<*> -> {
-                        val listType = com.squareup.moshi.Types.newParameterizedType(
-                            List::class.java, com.app.miklink.data.network.CableTestResult::class.java
-                        )
-                        val listAdapter: com.squareup.moshi.JsonAdapter<List<com.app.miklink.data.network.CableTestResult>> = moshi.adapter(listType)
-                        tdrList = listAdapter.fromJsonValue(tdrVal)
-                    }
-                }
-            }
-
-            if (pingList == null && tdrList == null) parsed else ParsedResults(
-                tdr = tdrList ?: parsed?.tdr,
-                link = parsed?.link,
-                lldp = parsed?.lldp,
-                ping = pingList ?: parsed?.ping,
-                speedTest = parsed?.speedTest
-            )
-        } catch (e: Exception) {
-            android.util.Log.e("PdfGeneratorIText", "Error parsing results JSON (legacy)", e)
-            parsed
-        }
+        return parsedResultsParser.parse(json)
     }
 }
