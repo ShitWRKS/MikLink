@@ -250,54 +250,7 @@ fun ClientListScreen(
                                 title = client.companyName,
                                 subtitle = client.location ?: "Nessuna sede specificata",
                                 icon = Icons.Default.Business,
-                                onClick = { navController.navigate("client_edit/${client.clientId}") },
-                                trailingContent = {
-                                    IconButton(
-                                        onClick = {
-                                            coroutineScope.launch {
-                                                try {
-                                                    snackbarHostState.showSnackbar("Generazione PDF in corso...")
-                                                    
-                                                    // Use iText to generate PDF directly
-                                                    val pdfFile = viewModel.generatePdfWithIText(client.clientId)
-                                                    
-                                                    if (pdfFile != null && pdfFile.exists() && pdfFile.length() > 0) {
-                                                        // Open PDF with default viewer
-                                                        val uri = androidx.core.content.FileProvider.getUriForFile(
-                                                            context,
-                                                            "${context.packageName}.fileprovider",
-                                                            pdfFile
-                                                        )
-                                                        
-                                                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
-                                                            setDataAndType(uri, "application/pdf")
-                                                            addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                                            addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-                                                        }
-                                                        
-                                                        try {
-                                                            context.startActivity(intent)
-                                                            snackbarHostState.showSnackbar("PDF generato con successo!")
-                                                        } catch (e: android.content.ActivityNotFoundException) {
-                                                            snackbarHostState.showSnackbar("Nessun visualizzatore PDF trovato")
-                                                        }
-                                                    } else {
-                                                        snackbarHostState.showSnackbar("Nessun dato da esportare")
-                                                    }
-                                                } catch (e: Exception) {
-                                                    android.util.Log.e("ClientPDF", "Error generating PDF with iText", e)
-                                                    snackbarHostState.showSnackbar("Errore generazione PDF: ${e.message}")
-                                                }
-                                            }
-                                        }
-                                    ) {
-                                        Icon(
-                                            Icons.Default.PictureAsPdf,
-                                            contentDescription = "Export PDF",
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
-                                    }
-                                }
+                                onClick = { navController.navigate("client_edit/${client.clientId}") }
                             )
                         }
                     }

@@ -59,7 +59,7 @@ fun TestProfileListScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF9C27B0).copy(alpha = 0.15f)
+                    containerColor = MaterialTheme.colorScheme.surface
                 )
             )
         },
@@ -68,7 +68,8 @@ fun TestProfileListScreen(
                 onClick = { navController.navigate("profile_edit/-1") },
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
                 text = { Text("NUOVO PROFILO") },
-                containerColor = Color(0xFF9C27B0)
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
             )
         }
     ) { paddingValues ->
@@ -95,14 +96,14 @@ fun TestProfileListScreen(
                             modifier = Modifier
                                 .size(80.dp)
                                 .clip(CircleShape)
-                                .background(Color(0xFF9C27B0).copy(alpha = 0.2f)),
+                                .background(MaterialTheme.colorScheme.primaryContainer),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 Icons.AutoMirrored.Filled.PlaylistAddCheck,
                                 contentDescription = null,
                                 modifier = Modifier.size(40.dp),
-                                tint = Color(0xFF9C27B0)
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer
                             )
                         }
                         Spacer(Modifier.height(24.dp))
@@ -122,7 +123,7 @@ fun TestProfileListScreen(
                         Button(
                             onClick = { navController.navigate("profile_edit/-1") },
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF9C27B0)
+                                containerColor = MaterialTheme.colorScheme.primary
                             )
                         ) {
                             Icon(Icons.Default.Add, contentDescription = null)
@@ -172,7 +173,6 @@ fun TestProfileCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
             .animateContentSize(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
@@ -181,7 +181,10 @@ fun TestProfileCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Icona profilo
@@ -189,13 +192,13 @@ fun TestProfileCard(
                 modifier = Modifier
                     .size(56.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFF9C27B0).copy(alpha = 0.15f)),
+                    .background(MaterialTheme.colorScheme.primaryContainer),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     Icons.Default.Checklist,
                     contentDescription = null,
-                    tint = Color(0xFF9C27B0),
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
                     modifier = Modifier.size(28.dp)
                 )
             }
@@ -237,7 +240,7 @@ fun TestProfileCard(
                         TestBadge("LLDP", Color(0xFFFF9800))
                     }
                     if (profile.runPing) {
-                        TestBadge("PING", Color(0xFF9C27B0))
+                        TestBadge("PING", MaterialTheme.colorScheme.primary)
                     }
                 }
 

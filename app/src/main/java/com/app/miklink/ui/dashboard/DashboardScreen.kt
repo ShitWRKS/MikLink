@@ -2,6 +2,7 @@ package com.app.miklink.ui.dashboard
 
 import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -26,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -37,6 +39,9 @@ import com.app.miklink.ui.components.ModernSearchBar
 import com.app.miklink.ui.components.StatusBadge
 import com.app.miklink.ui.navigateDashboard
 import com.app.miklink.ui.theme.Spacing
+
+import androidx.compose.ui.res.stringResource
+import com.app.miklink.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,11 +57,22 @@ fun DashboardScreen(
     val selectedProfile by viewModel.selectedProfile.collectAsStateWithLifecycle()
     val socketName by viewModel.socketName.collectAsStateWithLifecycle()
     val isProbeOnline by viewModel.isProbeOnline.collectAsStateWithLifecycle()
+    val glowIntensity by viewModel.dashboardGlowIntensity.collectAsStateWithLifecycle()
 
     val isTestButtonEnabled = selectedClient != null && currentProbe != null &&
                             selectedProfile != null && socketName.isNotBlank()
 
-    val showProbeOfflineWarning = currentProbe != null && !isProbeOnline
+
+    // Ambient Glow Colors
+    val targetGlowColor = if (currentProbe == null) {
+        MaterialTheme.colorScheme.primary.copy(alpha = 0.05f) // Default subtle glow
+    } else if (isProbeOnline) {
+        com.app.miklink.ui.theme.TechGreen.copy(alpha = glowIntensity) // Online Green Glow with dynamic alpha
+    } else {
+        com.app.miklink.ui.theme.TechRed.copy(alpha = glowIntensity) // Offline Red Glow with dynamic alpha
+    }
+
+    val glowColor by animateColorAsState(targetValue = targetGlowColor, label = "glow_color", animationSpec = tween(1000))
 
     // Sheet State
     var showClientSheet by remember { mutableStateOf(false) }
@@ -75,170 +91,167 @@ fun DashboardScreen(
         label = "button_alpha"
     )
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.clickable { navController.navigateDashboard() }
-                    ) {
-                        Icon(
-                            Icons.Default.Dashboard,
-                            contentDescription = null,
-                            modifier = Modifier.size(24.dp),
-                            tint = MaterialTheme.colorScheme.primary
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        // Ambient Glow Layer
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(300.dp)
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            glowColor,
+                            Color.Transparent
                         )
-                        Spacer(Modifier.width(12.dp))
-                        Text("Dashboard", fontWeight = FontWeight.Bold)
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { navController.navigate("history") }) {
-                        Icon(Icons.Default.History, contentDescription = "Storico")
-                    }
-                    IconButton(onClick = { navController.navigate("settings") }) {
-                        Icon(Icons.Default.Settings, contentDescription = "Impostazioni")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    titleContentColor = MaterialTheme.colorScheme.onBackground,
-                    actionIconContentColor = MaterialTheme.colorScheme.onBackground
+                    )
                 )
-            )
-        },
-        bottomBar = {
-            Surface(
-                tonalElevation = 8.dp,
-                shadowElevation = 8.dp
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                        .navigationBarsPadding()
-                ) {
-                    // Status Badges
-                    AnimatedVisibility(visible = selectedClient != null || currentProbe != null) {
+        )
+
+        Scaffold(
+            containerColor = Color.Transparent,
+            topBar = {
+                // Updated TopAppBar to be transparent to show glow
+                TopAppBar(
+                    title = {
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 12.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.clickable { navController.navigateDashboard() }
                         ) {
-                            selectedClient?.let { client ->
-                                StatusBadge(
-                                    text = client.companyName,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    icon = Icons.Default.Business
-                                )
-                            }
-                            currentProbe?.let { probe ->
-                                // Show a generic probe label instead of a specific name
-                                StatusBadge(
-                                    text = "Sonda",
-                                    color = if (isProbeOnline) Color(0xFF4CAF50) else Color(0xFFF44336),
-                                    icon = if (isProbeOnline) Icons.Default.CheckCircle else Icons.Default.Error
-                                )
-                            }
+                            // Logo dell'app invece dell'icona Dashboard
+                            Icon(
+                                painter = androidx.compose.ui.res.painterResource(id = com.app.miklink.R.drawable.logo),
+                                contentDescription = "MikLink Logo",
+                                modifier = Modifier.size(32.dp),
+                                tint = Color.Unspecified
+                            )
+                            Spacer(Modifier.width(12.dp))
+                            Text(stringResource(R.string.dashboard_title), fontWeight = FontWeight.Bold)
                         }
-                    }
-
-                    // Warning for offline probe
-                    AnimatedVisibility(visible = showProbeOfflineWarning) {
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 8.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer
-                            ),
-                            shape = RoundedCornerShape(8.dp)
+                    },
+                    actions = {
+                        // Tasto Report più evidente
+                        FilledTonalButton(
+                            onClick = { navController.navigate("history") },
+                            modifier = Modifier.padding(end = 8.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
                         ) {
-                            Row(
-                                modifier = Modifier.padding(12.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    Icons.Default.Warning,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.error,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(Modifier.width(8.dp))
-                                Text(
-                                    text = "Sonda offline: il test potrebbe fallire",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onErrorContainer
-                                )
-                            }
+                            Icon(
+                                Icons.Default.Description,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(stringResource(R.string.dashboard_btn_report), fontWeight = FontWeight.Bold)
                         }
-                    }
 
-                    Button(
-                        onClick = {
-                            selectedClient?.let { client ->
-                                currentProbe?.let { probe ->
-                                    selectedProfile?.let { profile ->
-                                        val encodedSocket = Uri.encode(socketName)
-                                        navController.navigate(
-                                            "test_execution/${client.clientId}/${probe.probeId}/${profile.profileId}/$encodedSocket"
-                                        )
-                                    }
-                                }
-                            }
-                        },
+                        IconButton(onClick = { navController.navigate("settings") }) {
+                            Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.dashboard_btn_settings))
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent, // Transparent for glow
+                        titleContentColor = MaterialTheme.colorScheme.onBackground,
+                        actionIconContentColor = MaterialTheme.colorScheme.onBackground
+                    )
+                )
+            },
+            bottomBar = {
+                Surface(
+                    tonalElevation = 8.dp,
+                    shadowElevation = 8.dp
+                ) {
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(56.dp)
-                            .alpha(if (isTestButtonEnabled) buttonAlpha else 1f),
-                        enabled = isTestButtonEnabled,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (isTestButtonEnabled)
-                                MaterialTheme.colorScheme.primary
-                            else
-                                MaterialTheme.colorScheme.surfaceVariant,
-                            contentColor = if (isTestButtonEnabled)
-                                MaterialTheme.colorScheme.onPrimary
-                            else
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                        ),
-                        shape = RoundedCornerShape(12.dp)
+                            .padding(16.dp)
+                            .navigationBarsPadding()
                     ) {
-                        Icon(
-                            Icons.Default.PlayArrow,
-                            contentDescription = null,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            text = if (isTestButtonEnabled) "AVVIA TEST" else "CONFIGURA TEST",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
+                        // Status Badges (Removed Sonda Badge)
+                        AnimatedVisibility(visible = selectedClient != null) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 12.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                selectedClient?.let { client ->
+                                    StatusBadge(
+                                        text = client.companyName,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        icon = Icons.Default.Business
+                                    )
+                                }
+                            }
+                        }
+
+                        Button(
+                            onClick = {
+                                selectedClient?.let { client ->
+                                    currentProbe?.let { probe ->
+                                        selectedProfile?.let { profile ->
+                                            val encodedSocket = Uri.encode(socketName)
+                                            navController.navigate(
+                                                "test_execution/${client.clientId}/${probe.probeId}/${profile.profileId}/$encodedSocket"
+                                            )
+                                        }
+                                    }
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp)
+                                .alpha(if (isTestButtonEnabled) buttonAlpha else 1f),
+                            enabled = isTestButtonEnabled,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (isTestButtonEnabled)
+                                    MaterialTheme.colorScheme.primary
+                                else
+                                    MaterialTheme.colorScheme.surfaceVariant,
+                                contentColor = if (isTestButtonEnabled)
+                                    MaterialTheme.colorScheme.onPrimary
+                                else
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.PlayArrow,
+                                contentDescription = null,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                text = if (isTestButtonEnabled) stringResource(R.string.dashboard_btn_start_test) else stringResource(R.string.dashboard_btn_configure_test),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
             }
-        }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
-        ) {
+        ) { padding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp)
+            ) {
             // 1. Client Selection
+            SectionHeader(title = stringResource(R.string.dashboard_section_client), icon = Icons.Default.Business)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 SelectionCard(
-                    title = selectedClient?.companyName ?: "Seleziona Cliente",
-                    subtitle = selectedClient?.location ?: "Clicca per selezionare",
+                    title = selectedClient?.companyName ?: stringResource(R.string.dashboard_select_client),
+                    subtitle = selectedClient?.location ?: stringResource(R.string.dashboard_click_to_select),
                     icon = Icons.Default.Business,
                     isSelected = selectedClient != null,
                     onClick = { showClientSheet = true },
@@ -246,9 +259,9 @@ fun DashboardScreen(
                 )
                 
                 IconButton(onClick = { navController.navigate("client_list") }) {
-                    Icon(
+                        Icon(
                         Icons.Default.Edit,
-                        contentDescription = "Gestisci Clienti",
+                        contentDescription = stringResource(R.string.settings_manage_clients),
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(24.dp)
                     )
@@ -256,14 +269,15 @@ fun DashboardScreen(
             }
 
             // 2. Profile Selection
+            SectionHeader(title = stringResource(R.string.dashboard_section_profile), icon = Icons.Default.Speed)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 SelectionCard(
-                    title = selectedProfile?.profileName ?: "Seleziona Profilo",
-                    subtitle = selectedProfile?.profileDescription ?: "Clicca per selezionare",
+                    title = selectedProfile?.profileName ?: stringResource(R.string.dashboard_select_profile),
+                    subtitle = selectedProfile?.profileDescription ?: stringResource(R.string.dashboard_click_to_select),
                     icon = Icons.Default.Speed,
                     isSelected = selectedProfile != null,
                     onClick = { showProfileSheet = true },
@@ -273,7 +287,7 @@ fun DashboardScreen(
                 IconButton(onClick = { navController.navigate("profile_list") }) {
                     Icon(
                         Icons.Default.Edit,
-                        contentDescription = "Gestisci Profili",
+                        contentDescription = stringResource(R.string.settings_manage_profiles),
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(24.dp)
                     )
@@ -281,13 +295,13 @@ fun DashboardScreen(
             }
 
             // 3. Socket ID
-            SectionHeader(title = "3. Identificativo Presa", icon = Icons.Default.PowerInput)
+            SectionHeader(title = stringResource(R.string.dashboard_section_socket), icon = Icons.Default.PowerInput)
             
             OutlinedTextField(
                 value = socketName,
                 onValueChange = { viewModel.socketName.value = it },
-                label = { Text("ID Presa") },
-                placeholder = { Text("Es. Ufficio 1, Sala Riunioni") },
+                label = { Text(stringResource(R.string.dashboard_socket_label)) },
+                placeholder = { Text(stringResource(R.string.dashboard_socket_placeholder)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 leadingIcon = {
@@ -303,6 +317,7 @@ fun DashboardScreen(
             Spacer(Modifier.height(32.dp))
         }
     }
+}
 
     // Client Bottom Sheet
     if (showClientSheet) {
@@ -321,7 +336,7 @@ fun DashboardScreen(
 
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    "Seleziona Cliente",
+                    stringResource(R.string.dashboard_select_client),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(bottom = 16.dp)
@@ -330,7 +345,7 @@ fun DashboardScreen(
                 ModernSearchBar(
                     query = searchQuery,
                     onQueryChange = { searchQuery = it },
-                    placeholder = "Cerca cliente...",
+                    placeholder = stringResource(R.string.dashboard_search_client),
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
 
@@ -353,7 +368,7 @@ fun DashboardScreen(
                     if (filteredClients.isEmpty()) {
                         item {
                             Text(
-                                "Nessun cliente trovato",
+                                stringResource(R.string.dashboard_no_clients_found),
                                 modifier = Modifier.padding(16.dp),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -372,7 +387,7 @@ fun DashboardScreen(
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    "Seleziona Profilo",
+                    stringResource(R.string.dashboard_select_profile),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(bottom = 16.dp)
@@ -397,7 +412,7 @@ fun DashboardScreen(
                     if (profiles.isEmpty()) {
                         item {
                             Text(
-                                "Nessun profilo configurato",
+                                stringResource(R.string.dashboard_no_profiles),
                                 modifier = Modifier.padding(16.dp),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -438,7 +453,7 @@ private fun SectionHeader(
         
         if (onManageClick != null) {
             TextButton(onClick = onManageClick) {
-                Text("GESTISCI")
+                Text(stringResource(R.string.manage).uppercase())
             }
         }
     }
@@ -455,8 +470,7 @@ private fun SelectionCard(
 ) {
     Card(
         modifier = modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
+            .fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected) 
@@ -469,7 +483,10 @@ private fun SelectionCard(
         else null
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(

@@ -60,6 +60,13 @@ class DashboardViewModel @Inject constructor(
     private val idNumberingStrategy = userPreferencesRepository.idNumberingStrategy
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), IdNumberingStrategy.CONTINUOUS_INCREMENT)
 
+    val dashboardGlowIntensity = userPreferencesRepository.dashboardGlowIntensity
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = 0.5f
+        )
+
     init {
         // Combina selectedClient e idNumberingStrategy per calcolare socketName
         viewModelScope.launch {
@@ -77,7 +84,9 @@ class DashboardViewModel @Inject constructor(
                             findNextAvailableId(client)
                         }
                     }
-                    socketName.value = "${client.socketPrefix}${String.format(Locale.US, "%03d", nextNumber)}"
+                    // Format: prefix + separator + paddedNumber + separator + suffix
+                    val paddedNumber = String.format(Locale.US, "%0${client.socketNumberPadding}d", nextNumber)
+                    socketName.value = "${client.socketPrefix}${client.socketSeparator}${paddedNumber}${client.socketSeparator}${client.socketSuffix}"
                 } else {
                     socketName.value = ""
                 }

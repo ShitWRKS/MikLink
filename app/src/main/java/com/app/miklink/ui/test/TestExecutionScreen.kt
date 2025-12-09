@@ -14,6 +14,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.animation.core.*
+import androidx.compose.ui.draw.scale
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -64,12 +66,14 @@ fun TestExecutionScreen(
     val isRunning by viewModel.isRunning.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
     var showRawLog by rememberSaveable { mutableStateOf(false) }
+    var showRepeatDialog by remember { mutableStateOf(false) }
+    var hasAutoStarted by remember { mutableStateOf(false) }
 
     // Riabilitazione autostart: avvia il test automaticamente alla prima composizione
-    // ma solo se lo stato è Idle e non in esecuzione
+    // ma solo se lo stato è Idle, non in esecuzione, e non è già stato avviato automaticamente
     LaunchedEffect(Unit) {
-        if (uiState is UiState.Idle && !isRunning) {
-            // small guard: only start when Idle and not running
+        if (uiState is UiState.Idle && !isRunning && !hasAutoStarted) {
+            hasAutoStarted = true
             viewModel.startTest()
         }
     }
@@ -81,9 +85,9 @@ fun TestExecutionScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            CenterAlignedTopAppBar(
                 title = {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
                         if (isRunning) {
                             Icon(Icons.Default.HourglassEmpty, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                             Spacer(Modifier.width(8.dp))
@@ -116,7 +120,7 @@ fun TestExecutionScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro")
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = when {
                         isRunning -> MaterialTheme.colorScheme.primaryContainer
                         uiState is UiState.Success && (uiState as UiState.Success<Report>).data.overallStatus == "PASS" -> Color(0xFF4CAF50).copy(alpha = 0.2f)
@@ -153,7 +157,7 @@ fun TestExecutionScreen(
                         }
 
                         OutlinedButton(
-                            onClick = viewModel::startTest,
+                            onClick = { showRepeatDialog = true },
                             modifier = Modifier.weight(1f),
                             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 12.dp)
                         ) {
@@ -175,7 +179,7 @@ fun TestExecutionScreen(
                                 if (isFailed) Icons.Default.Warning else Icons.Default.Check,
                                 contentDescription = null,
                                 modifier = Modifier.size(16.dp),
-                                tint = if (isFailed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                                tint = Color.White
                             )
                             Spacer(Modifier.width(4.dp))
                             Text("SALVA", maxLines = 1, style = MaterialTheme.typography.labelMedium)
@@ -262,6 +266,68 @@ fun TestExecutionScreen(
                 }
             }
         }
+    }
+    
+    // Repeat test confirmation dialog
+    if (showRepeatDialog) {
+        AlertDialog(
+            onDismissRequest = { showRepeatDialog = false },
+            icon = {
+                Icon(
+                    Icons.Default.Warning,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(32.dp)
+                )
+            },
+            title = {
+                Text(
+                    "Ripetere il test?",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        "Attenzione: ripetendo il test verranno persi i dati attuali.",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "Assicurati di:",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        "• Riposizionarti sulla stessa presa",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Text(
+                        "• Verificare la connessione del cavo",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showRepeatDialog = false
+                        viewModel.startTest()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Ripeti Test")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRepeatDialog = false }) {
+                    Text("Annulla")
+                }
+            }
+        )
     }
 }
 
@@ -458,7 +524,7 @@ fun TestCompletedView(
     modifier: Modifier = Modifier
 ) {
     val isPassed = report.overallStatus == "PASS"
-    val resultColor = if (isPassed) Color(0xFF4CAF50) else Color(0xFFF44336)
+    val resultColor = if (isPassed) com.app.miklink.ui.theme.TechGreen else com.app.miklink.ui.theme.TechRed
     val backgroundColor = resultColor.copy(alpha = 0.1f)
 
     LazyColumn(
@@ -479,9 +545,21 @@ fun TestCompletedView(
                     modifier = Modifier.padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    val infiniteTransition = rememberInfiniteTransition(label = "status_pulse")
+                    val scale by infiniteTransition.animateFloat(
+                        initialValue = 1f,
+                        targetValue = 1.1f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(1000, easing = FastOutSlowInEasing),
+                            repeatMode = RepeatMode.Reverse
+                        ),
+                        label = "scale"
+                    )
+
                     Box(
                         modifier = Modifier
                             .size(80.dp)
+                            .scale(scale)
                             .clip(CircleShape)
                             .background(resultColor),
                         contentAlignment = Alignment.Center

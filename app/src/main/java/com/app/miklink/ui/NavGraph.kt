@@ -17,13 +17,17 @@ import com.app.miklink.ui.profile.TestProfileEditScreen
 import com.app.miklink.ui.profile.TestProfileListScreen
 import com.app.miklink.ui.settings.SettingsScreen
 import com.app.miklink.ui.test.TestExecutionScreen
+import com.app.miklink.ui.splash.SplashScreen
 import androidx.hilt.navigation.compose.hiltViewModel
 
 @Composable
 fun NavGraph() {
     val navController = rememberNavController()
 
-    NavHost(navController = navController, startDestination = "dashboard") {
+    NavHost(navController = navController, startDestination = "splash") {
+        // Splash Screen
+        composable("splash") { SplashScreen(navController) }
+
         // Main Screen
         composable("dashboard") { DashboardScreen(navController) }
 
@@ -51,6 +55,7 @@ fun NavGraph() {
 
         // Settings and Management Screens
         composable("settings") { SettingsScreen(navController) }
+        composable("pdf_settings") { com.app.miklink.ui.settings.PdfSettingsScreen(navController) }
         
         // Probe Routes (DEPRECATO: multi-probe, mantenuto per compatibility)
         // composable("probe_list") { ProbeListScreen(navController) }

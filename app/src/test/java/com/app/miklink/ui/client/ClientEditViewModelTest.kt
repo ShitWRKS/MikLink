@@ -151,15 +151,12 @@ class ClientEditViewModelTest {
         // Act - Tenta il salvataggio
         viewModel.saveClient()
 
-        // Assert - Il ViewModel attuale NON ha validazione, quindi insert viene chiamato
-        // In un refactoring futuro, questo test dovrebbe verificare che insert NON sia chiamato
-        coVerify(exactly = 1) { clientDao.insert(any()) }
+        // Assert - Now that we enforce validation, an empty company name should
+        // prevent persistence and keep isSaved false.
+        coVerify(exactly = 0) { clientDao.insert(any()) }
 
-        // Verifica che isSaved sia true
-        viewModel.isSaved.test {
-            assertTrue("isSaved dovrebbe essere true dopo saveClient", awaitItem())
-            cancelAndIgnoreRemainingEvents()
-        }
+        // Verifica che isSaved sia ancora false (nessun salvataggio eseguito)
+        assertFalse(viewModel.isSaved.value)
     }
 
     /**

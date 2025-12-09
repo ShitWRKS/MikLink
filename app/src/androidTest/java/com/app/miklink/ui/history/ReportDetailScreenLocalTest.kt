@@ -25,7 +25,7 @@ class ReportDetailScreenLocalTest {
                 timestamp = 0L,
                 socketName = null,
                 notes = null,
-                probeName = "Probe",
+                probeName = "Sonda",
                 profileName = "Profile",
                 overallStatus = "PASS",
                 resultsJson = "{}"

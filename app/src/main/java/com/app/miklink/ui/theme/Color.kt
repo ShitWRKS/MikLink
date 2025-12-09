@@ -2,20 +2,25 @@ package com.app.miklink.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Ubiquiti-inspired Blue Palette
-val UbiquitiBlue = Color(0xFF0066CC) // Primary Blue
-val UbiquitiDarkBlue = Color(0xFF004C99) // Darker shade for contrast
-val UbiquitiLightBlue = Color(0xFFE6F0FA) // Light shade for backgrounds
+// MikroTik-inspired Technical Palette
+val MikLinkPrimary = Color(0xFF37474F) // Blue Grey 800 - Technical (Light Mode)
+val MikLinkPrimaryLight = Color(0xFFB0BEC5) // Blue Grey 200 - High Contrast (Dark Mode)
+val MikLinkSecondary = Color(0xFF0066CC) // Blue - Accent (Changed from Red to avoid confusion)
+val MikLinkTertiary = Color(0xFF546E7A) // Blue Grey 600
 
-val Neutral900 = Color(0xFF171717) // Dark Text
-val Neutral500 = Color(0xFF737373) // Secondary Text
-val Neutral100 = Color(0xFFF5F5F5) // Light Background
+// Neutral / Backgrounds
+val TechDarkBackground = Color(0xFF121212)
+val TechDarkSurface = Color(0xFF1E1E1E)
+val TechDarkSurfaceVariant = Color(0xFF2C2C2C)
+
+val TechLightBackground = Color(0xFFF5F5F5)
+val TechLightSurface = Color(0xFFFFFFFF)
+val TechLightSurfaceVariant = Color(0xFFE0E0E0)
+
+val Neutral900 = Color(0xFF171717)
+val Neutral500 = Color(0xFF757575)
 val White = Color(0xFFFFFFFF)
 
-// Legacy Colors (kept for compatibility if needed, but discouraged)
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+// Standard Status Colors (Technical/Desaturated)
+val TechGreen = Color(0xFF2E7D32) // Success
+val TechRed = Color(0xFFC62828) // Error

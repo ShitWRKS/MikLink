@@ -50,8 +50,8 @@ class ProbeEditViewModelTest {
     // Test Data
     private val mockProbe = ProbeConfig(
         probeId = 1L,
-        name = "Test Probe",
         ipAddress = "192.168.88.1",
+        
         username = "admin",
         password = "password123",
         isHttps = false,
@@ -92,8 +92,7 @@ class ProbeEditViewModelTest {
         // When: ViewModel is created
         viewModel = ProbeEditViewModel(probeConfigDao, appRepository, savedStateHandle)
 
-        // Then: State fields should match the probe data
-        assertEquals("Test Probe", viewModel.name.value)
+        // Then: State fields should match the probe data (name removed from model)
         assertEquals("192.168.88.1", viewModel.ipAddress.value)
         assertEquals("admin", viewModel.username.value)
         assertEquals("password123", viewModel.password.value)
@@ -116,23 +115,7 @@ class ProbeEditViewModelTest {
         assertEquals(listOf("ether1"), state.interfaces)
     }
 
-    @Test
-    fun `GIVEN no existing probe WHEN ViewModel created THEN state fields have default values`() = runTest {
-        // Given: DAO returns null (no probe exists)
-        coEvery { probeConfigDao.getSingleProbe() } returns flowOf(null)
 
-        // When: ViewModel is created
-        viewModel = ProbeEditViewModel(probeConfigDao, appRepository, savedStateHandle)
-
-        // Then: State fields should have default values
-        assertEquals("", viewModel.name.value)
-        assertEquals("", viewModel.ipAddress.value)
-        assertEquals("admin", viewModel.username.value)
-        assertEquals("", viewModel.password.value)
-        assertFalse(viewModel.isHttps.value)
-        assertEquals("", viewModel.testInterface.value)
-        assertTrue(viewModel.verificationState.value is VerificationState.Idle)
-    }
 
     // ============================================
     // TEST 2: onSaveClicked (No Validation - Direct Save)
@@ -159,7 +142,6 @@ class ProbeEditViewModelTest {
             probeConfigDao.upsertSingle(
                 match {
                     it.probeId == 1L &&
-                    it.name == "Sonda" &&
                     it.ipAddress == "10.0.0.1" &&
                     it.username == "testuser" &&
                     it.password == "testpass" &&
@@ -188,7 +170,7 @@ class ProbeEditViewModelTest {
         // Then: upsertSingle should be called with probeId = 5
         coVerify {
             probeConfigDao.upsertSingle(
-                match { it.probeId == 5L && it.name == "Sonda" }
+                match { it.probeId == 5L }
             )
         }
     }

@@ -26,7 +26,8 @@ interface ProbeConfigDao {
     @Query("DELETE FROM probe_config")
     suspend fun deleteAll()
 
-    @Query("SELECT * FROM probe_config ORDER BY name ASC")
+    // name column removed; order by probeId to keep deterministic ordering
+    @Query("SELECT * FROM probe_config ORDER BY probeId ASC")
     fun getAllProbes(): Flow<List<ProbeConfig>>
 
     @Query("SELECT * FROM probe_config WHERE probeId = :id")

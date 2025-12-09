@@ -1,14 +1,16 @@
 package com.app.miklink.ui.history
 
-import android.content.Context
-import android.print.PrintDocumentAdapter
+
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.app.miklink.data.db.dao.ClientDao
 import com.app.miklink.data.db.dao.ReportDao
+import com.app.miklink.data.db.dao.TestProfileDao
 import com.app.miklink.data.db.model.Report
-import com.app.miklink.data.pdf.PdfGenerator
+import com.app.miklink.data.db.model.TestProfile
+
+import com.app.miklink.data.pdf.PdfGeneratorIText
 import com.app.miklink.ui.history.model.ParsedResults
 import com.squareup.moshi.Moshi
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -21,10 +23,25 @@ import javax.inject.Inject
 class ReportDetailViewModel @Inject constructor(
     private val reportDao: ReportDao,
     private val clientDao: ClientDao,
-    private val pdfGenerator: PdfGenerator, // Injected dependency
+    private val profileDao: TestProfileDao,
+
+    private val pdfGeneratorIText: PdfGeneratorIText, // For new single-test PDF
     private val moshi: Moshi,
+    private val userPreferencesRepository: com.app.miklink.data.repository.UserPreferencesRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel(), ReportDetailScreenStateProvider {
+
+    val pdfIncludeEmptyTests = userPreferencesRepository.pdfIncludeEmptyTests
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    val pdfSelectedColumns = userPreferencesRepository.pdfSelectedColumns
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
+
+    val pdfReportTitle = userPreferencesRepository.pdfReportTitle
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "Collaudo Cablaggio di Rete")
+
+    val pdfHideEmptyColumns = userPreferencesRepository.pdfHideEmptyColumns
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     private val reportId: Long = savedStateHandle.get<Long>("reportId") ?: -1L
 
@@ -37,6 +54,12 @@ class ReportDetailViewModel @Inject constructor(
     private val _parsedResults = MutableStateFlow<ParsedResults?>(null)
     override val parsedResults: StateFlow<ParsedResults?> = _parsedResults.asStateFlow()
 
+    private val _clientName = MutableStateFlow("")
+    val clientName: StateFlow<String> = _clientName.asStateFlow()
+
+    private val _profile = MutableStateFlow<TestProfile?>(null)
+    val profile: StateFlow<TestProfile?> = _profile.asStateFlow()
+
     private val _pdfStatus = MutableStateFlow("")
     override val pdfStatus: StateFlow<String> = _pdfStatus.asStateFlow()
 
@@ -47,6 +70,21 @@ class ReportDetailViewModel @Inject constructor(
                     socketName.value = currentReport.socketName ?: ""
                     notes.value = currentReport.notes ?: ""
                     _parsedResults.value = parseResults(currentReport.resultsJson)
+                    
+                    // Load client name
+                    currentReport.clientId?.let { clientId ->
+                        val client = clientDao.getClientById(clientId).firstOrNull()
+                        _clientName.value = client?.companyName ?: "Unknown Client"
+                    } ?: run {
+                        _clientName.value = "Unknown Client"
+                    }
+                    
+                    // Load profile
+                    currentReport.profileName?.let { profileName ->
+                        _profile.value = profileDao.getProfileByName(profileName).firstOrNull()
+                    } ?: run {
+                        _profile.value = null
+                    }
                 }
             }
         }
@@ -61,13 +99,7 @@ class ReportDetailViewModel @Inject constructor(
         }
     }
 
-    // Sospeso: recupera client e costruisce HTML
-    suspend fun generateHtmlForCurrentReport(): String? {
-        val currentReport = report.value ?: return null
-        val client = currentReport.clientId?.let { id -> clientDao.getClientById(id).firstOrNull() }
-        val title = getProposedFilename()
-        return pdfGenerator.generateHtmlFromReports(listOf(currentReport), client, title)
-    }
+
 
     suspend fun getProposedFilename(): String {
         val currentReport = report.value ?: return "MikLink_Report"
@@ -76,9 +108,25 @@ class ReportDetailViewModel @Inject constructor(
         val date = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.getDefault()).format(java.util.Date(currentReport.timestamp))
         return "${clientName}-${date}-${currentReport.reportId}"
     }
+    
+    // Generate PDF File for single test using iText with Config
+    suspend fun generatePdfWithIText(config: com.app.miklink.data.pdf.PdfExportConfig): java.io.File? {
+        val currentReport = report.value ?: return null
+        val client = currentReport.clientId?.let { it -> clientDao.getClientById(it).firstOrNull() }
+        
+        return try {
+            pdfGeneratorIText.generatePdfReport(
+                rawReports = listOf(currentReport),
+                client = client,
+                config = config
+            )
+        } catch (e: Exception) {
+            android.util.Log.e("ReportDetailVM", "Error generating PDF", e)
+            null
+        }
+    }
 
-    suspend fun createPrintAdapter(context: Context, html: String, jobName: String): PrintDocumentAdapter =
-        pdfGenerator.createPrintAdapter(context, html, jobName)
+
 
     override fun exportReportToPdf() {
         // No-op: la stampa è demandata alla UI

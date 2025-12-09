@@ -31,4 +31,7 @@ interface TestProfileDao {
 
     @Query("SELECT * FROM test_profiles WHERE profileId = :id")
     fun getProfileById(id: Long): Flow<TestProfile?>
+    
+    @Query("SELECT * FROM test_profiles WHERE profileName = :name LIMIT 1")
+    fun getProfileByName(name: String): Flow<TestProfile?>
 }

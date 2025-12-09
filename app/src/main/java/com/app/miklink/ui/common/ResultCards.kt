@@ -22,7 +22,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 private fun StatusChip(status: String) {
     val (bg, fg, ic) = when (status.uppercase()) {
-        "PASS" -> Triple(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.onPrimaryContainer, Icons.Default.Check)
+        "PASS" -> Triple(Color(0xFFE8F5E9), Color(0xFF2E7D32), Icons.Default.Check) // Green Container, Green Text
         "FAIL" -> Triple(MaterialTheme.colorScheme.errorContainer, MaterialTheme.colorScheme.onErrorContainer, Icons.Default.Close)
         "PARTIAL", "INFO" -> Triple(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.onSurfaceVariant, Icons.Default.Info)
         "SKIPPED" -> Triple(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.onSurfaceVariant, Icons.Default.SkipNext)

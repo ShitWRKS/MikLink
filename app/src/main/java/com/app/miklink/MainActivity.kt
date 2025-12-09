@@ -2,7 +2,7 @@ package com.app.miklink
 
 import android.os.Bundle
 import android.view.WindowManager
-import androidx.activity.ComponentActivity
+import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -16,7 +16,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
 @AndroidEntryPoint
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
 
     @Inject
     lateinit var userPreferencesRepository: UserPreferencesRepository
@@ -29,6 +29,9 @@ class MainActivity : ComponentActivity() {
             val themeConfig by userPreferencesRepository.themeConfig.collectAsStateWithLifecycle(
                 initialValue = ThemeConfig.FOLLOW_SYSTEM
             )
+            val customPalette by userPreferencesRepository.customPalette.collectAsStateWithLifecycle(
+                initialValue = UserPreferencesRepository.CustomPalette()
+            )
 
             val isDarkTheme = when (themeConfig) {
                 ThemeConfig.LIGHT -> false
@@ -36,7 +39,13 @@ class MainActivity : ComponentActivity() {
                 ThemeConfig.FOLLOW_SYSTEM -> isSystemInDarkTheme()
             }
 
-            MikLinkTheme(darkTheme = isDarkTheme) {
+            MikLinkTheme(
+                darkTheme = isDarkTheme,
+                customPrimaryInfo = customPalette.primary,
+                customSecondaryInfo = customPalette.secondary,
+                customBackgroundInfo = customPalette.background,
+                customContentInfo = customPalette.content
+            ) {
                 NavGraph()
             }
         }

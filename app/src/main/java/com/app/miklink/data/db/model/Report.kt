@@ -3,7 +3,14 @@ package com.app.miklink.data.db.model
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "test_reports")
+@Entity(
+    tableName = "test_reports",
+    indices = [
+        androidx.room.Index(value = ["clientId"]),
+        androidx.room.Index(value = ["timestamp"]),
+        androidx.room.Index(value = ["clientId", "timestamp"]) // Composite index for common query
+    ]
+)
 data class Report(
     @PrimaryKey(autoGenerate = true)
     val reportId: Long = 0,

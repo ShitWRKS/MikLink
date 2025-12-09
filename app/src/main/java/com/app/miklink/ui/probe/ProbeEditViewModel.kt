@@ -7,7 +7,6 @@ import com.app.miklink.data.db.dao.ProbeConfigDao
 import com.app.miklink.data.db.model.ProbeConfig
 import com.app.miklink.data.repository.AppRepository
 import com.app.miklink.data.repository.ProbeCheckResult
-import com.app.miklink.utils.Compatibility
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -22,9 +21,8 @@ class ProbeEditViewModel @Inject constructor(
 
     private val probeId: Long = savedStateHandle.get<Long>("probeId") ?: -1L
 
-    val name = MutableStateFlow("")
     val ipAddress = MutableStateFlow("")
-    val username = MutableStateFlow("admin")
+    val username = MutableStateFlow("")
     val password = MutableStateFlow("")
     val isHttps = MutableStateFlow(false)
     val testInterface = MutableStateFlow("")
@@ -33,7 +31,9 @@ class ProbeEditViewModel @Inject constructor(
     private val _isOnline = MutableStateFlow(false)
     private val _tdrSupported = MutableStateFlow(false)
 
+    // Internal verification state (used to update UI verification progress/result)
     private val _verificationState = MutableStateFlow<VerificationState>(VerificationState.Idle)
+
     val verificationState = _verificationState.asStateFlow()
 
     private val _isSaved = MutableStateFlow(false)
@@ -50,7 +50,6 @@ class ProbeEditViewModel @Inject constructor(
     ) { ip, user, pass, https ->
         ProbeConfig(
             probeId = 0L, // Default value for a temporary verification object
-            name = "", // Default value
             ipAddress = ip,
             username = user,
             password = pass,
@@ -61,13 +60,12 @@ class ProbeEditViewModel @Inject constructor(
             tdrSupported = false // Default value
         )
     }
-
     init {
         viewModelScope.launch {
             if (isEditing) {
                 // Editing existing probe (legacy multi-probe mode)
                 probeConfigDao.getProbeById(probeId).firstOrNull()?.let { probe ->
-                    name.value = probe.name
+                    // name was removed from ProbeConfig — not tracked in UI
                     ipAddress.value = probe.ipAddress
                     username.value = probe.username
                     password.value = probe.password
@@ -78,7 +76,7 @@ class ProbeEditViewModel @Inject constructor(
             } else {
                 // NUOVO: Carica sonda unica se esiste (navigazione da settings)
                 probeConfigDao.getSingleProbe().firstOrNull()?.let { probe ->
-                    name.value = probe.name
+                    // name was removed from ProbeConfig — not tracked in UI
                     ipAddress.value = probe.ipAddress
                     username.value = probe.username
                     password.value = probe.password
@@ -114,8 +112,6 @@ class ProbeEditViewModel @Inject constructor(
             when (val result = repository.checkProbeConnection(tempProbe)) {
                 is ProbeCheckResult.Success -> {
                     _isOnline.value = true
-                    _modelName.value = result.boardName
-                    _tdrSupported.value = Compatibility.isTdrSupported(result.boardName)
                     testInterface.value = result.interfaces.firstOrNull() ?: ""
                     _verificationState.value = VerificationState.Success(result.boardName, result.interfaces)
                 }
@@ -130,9 +126,7 @@ class ProbeEditViewModel @Inject constructor(
     fun onSaveClicked() {
         viewModelScope.launch {
             val probeToSave = ProbeConfig(
-                probeId = if (isEditing) probeId else 1, // MODIFICATO: forza ID=1 per sonda unica
-                // Name is fixed to a generic value for single-probe setup
-                name = "Sonda",
+                probeId = if (isEditing) probeId else 1, // force ID=1 for single-probe
                 ipAddress = ipAddress.value,
                 username = username.value,
                 password = password.value,

@@ -24,7 +24,7 @@ fun ProbeEditScreen(
     navController: NavController,
     viewModel: ProbeEditViewModel = hiltViewModel()
 ) {
-    val name by viewModel.name.collectAsStateWithLifecycle()
+    // probe name removed from model — not tracked in the UI
     val ipAddress by viewModel.ipAddress.collectAsStateWithLifecycle()
     val username by viewModel.username.collectAsStateWithLifecycle()
     val password by viewModel.password.collectAsStateWithLifecycle()

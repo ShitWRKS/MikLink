@@ -14,6 +14,7 @@ import com.app.miklink.data.network.*
 import com.app.miklink.data.network.dto.SpeedTestRequest
 import com.app.miklink.data.network.dto.SpeedTestResult
 import com.app.miklink.utils.UiState
+import com.app.miklink.R
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -42,29 +43,23 @@ class AppRepository @Inject constructor(
     val testProfileDao: TestProfileDao,
     val reportDao: ReportDao,
     private val retrofitBuilder: Retrofit.Builder,
-    private val baseOkHttpClient: OkHttpClient
+    private val baseOkHttpClient: OkHttpClient,
+    private val userPreferencesRepository: UserPreferencesRepository
 ) {
-
-    private val connectivityManager by lazy { context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager }
-
-    // NUOVO: Sonda unica (post-refactor)
     val currentProbe: Flow<ProbeConfig?> = probeConfigDao.getSingleProbe()
 
-    private suspend fun findWifiNetwork(): Network? = withContext(Dispatchers.IO) {
-        // Return active network only if it's WIFI
-        val active = connectivityManager.activeNetwork
-        val activeCaps = active?.let { connectivityManager.getNetworkCapabilities(it) }
-        if (activeCaps?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true) {
-            active
-        } else {
-            null
+
+    @Suppress("DEPRECATION")
+    private fun findWifiNetwork(): Network? {
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        return connectivityManager.allNetworks.firstOrNull { network ->
+            val caps = connectivityManager.getNetworkCapabilities(network)
+            caps?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
         }
     }
 
-    private suspend fun buildServiceFor(probe: ProbeConfig): MikroTikApiService {
-        val protocol = if (probe.isHttps) "https://" else "http://"
-        val baseUrl = "$protocol${probe.ipAddress}/"
-
+    private fun buildServiceFor(probe: ProbeConfig): MikroTikApiService {
+        val baseUrl = "http://${probe.ipAddress}/rest/"
         val wifiNetwork = findWifiNetwork()
 
         val authInterceptor = okhttp3.Interceptor { chain ->
@@ -105,7 +100,7 @@ class AppRepository @Inject constructor(
             try {
                 UiState.Success(apiCall.invoke())
             } catch (e: Exception) {
-                UiState.Error(e.message ?: "An unknown error occurred")
+                UiState.Error(e.message ?: context.getString(R.string.error_unknown))
             }
         }
     }
@@ -119,20 +114,24 @@ class AppRepository @Inject constructor(
         }
     }
 
-    fun observeProbeStatus(probe: ProbeConfig): Flow<Boolean> = flow {
-        while (true) {
-            val isOnline = try {
-                val api = buildServiceFor(probe)
-                api.getSystemResource(ProplistRequest(listOf("board-name"))).isNotEmpty()
-            } catch (_: HttpException) {
-                false
-            } catch (_: Exception) {
-                false
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    fun observeProbeStatus(probe: ProbeConfig): Flow<Boolean> = userPreferencesRepository.probePollingInterval
+        .flatMapLatest { interval ->
+            flow {
+                while (true) {
+                    val isOnline = try {
+                        val api = buildServiceFor(probe)
+                        api.getSystemResource(ProplistRequest(listOf("board-name"))).isNotEmpty()
+                    } catch (_: HttpException) {
+                        false
+                    } catch (_: Exception) {
+                        false
+                    }
+                    emit(isOnline)
+                    delay(interval)
+                }
             }
-            emit(isOnline)
-            delay(15000)
         }
-    }
 
     suspend fun checkProbeConnection(probe: ProbeConfig): ProbeCheckResult = withContext(Dispatchers.IO) {
         try {
@@ -148,7 +147,7 @@ class AppRepository @Inject constructor(
             ProbeCheckResult.Success(boardName, interfaces)
         } catch (e: Exception) {
             android.util.Log.e("AppRepository", "checkProbeConnection: Errore durante la verifica", e)
-            ProbeCheckResult.Error(e.message ?: "An unknown error occurred while connecting to the probe.")
+            ProbeCheckResult.Error(e.message ?: context.getString(R.string.error_probe_connection_unknown))
         }
     }
 
@@ -201,7 +200,7 @@ class AppRepository @Inject constructor(
                     address = existingDhcp.address,
                     gateway = existingDhcp.gateway,
                     dns = existingDhcp.dns,
-                    message = "DHCP già configurato e attivo"
+                    message = context.getString(R.string.status_dhcp_configured)
                 )
             }
 
@@ -242,7 +241,7 @@ class AppRepository @Inject constructor(
             var lease: DhcpClientStatus? = null
             repeat(6) {
                 val cur = api.getDhcpClientStatus(iface).firstOrNull()
-                if (cur?.status.equals("bound", true)) { lease = cur; return@repeat }
+                if (cur?.status?.equals("bound", true) == true) { lease = cur; return@repeat }
                 delay(1000)
             }
             val bound = lease ?: api.getDhcpClientStatus(iface).firstOrNull()
@@ -252,7 +251,7 @@ class AppRepository @Inject constructor(
                 address = bound?.address,
                 gateway = bound?.gateway,
                 dns = bound?.dns,
-                message = if (bound?.status == "bound") "DHCP lease acquisita" else "DHCP non bound (verificare server DHCP)"
+                message = if (bound?.status == "bound") context.getString(R.string.status_dhcp_lease_active) else context.getString(R.string.status_dhcp_not_bound)
             )
         } else {
             // STATIC
@@ -267,10 +266,10 @@ class AppRepository @Inject constructor(
                 val mask = effective.staticSubnet ?: ""
                 if (ip.isNotBlank() && mask.isNotBlank()) append("$ip/$mask")
             }
-            require(!cidr.isNullOrBlank()) { "Static CIDR non configurato" }
+            require(!cidr.isNullOrBlank()) { context.getString(R.string.error_static_cidr_missing) }
 
             api.addIpAddress(IpAddressAdd(address = cidr, `interface` = iface))
-            val gw = effective.staticGateway ?: error("Gateway statico mancante")
+            val gw = effective.staticGateway ?: error(context.getString(R.string.error_static_gateway_missing))
             api.addRoute(RouteAdd(dstAddress = "0.0.0.0/0", gateway = gw))
 
             NetworkConfigFeedback(
@@ -279,21 +278,22 @@ class AppRepository @Inject constructor(
                 address = cidr,
                 gateway = gw,
 dns = null,
-                message = "Indirizzo statico configurato"
+                message = context.getString(R.string.status_static_configured)
             )
         }
     }
 
+    @Suppress("unused") // public API kept for completeness / future use
     suspend fun getCurrentInterfaceIpConfig(probe: ProbeConfig): UiState<NetworkConfigFeedback> = safeApiCall {
         val api = buildServiceFor(probe)
         val iface = probe.testInterface
         val dhcp = api.getDhcpClientStatus(iface).firstOrNull()
         if (dhcp != null && dhcp.status?.equals("bound", true) == true) {
-            NetworkConfigFeedback("DHCP", iface, dhcp.address, dhcp.gateway, dhcp.dns, "Lease attiva")
+            NetworkConfigFeedback("DHCP", iface, dhcp.address, dhcp.gateway, dhcp.dns, context.getString(R.string.status_lease_active))
         } else {
             val addr = api.getIpAddresses().firstOrNull { it.iface == iface }
             val route = api.getRoutes().firstOrNull { it.dstAddress == "0.0.0.0/0" }
-            NetworkConfigFeedback("STATIC", iface, addr?.address, route?.gateway, null, "Statico rilevato")
+            NetworkConfigFeedback("STATIC", iface, addr?.address, route?.gateway, null, context.getString(R.string.status_static_detected))
         }
     }
 
@@ -301,7 +301,8 @@ dns = null,
 
     suspend fun runCableTest(probe: ProbeConfig, interfaceName: String): UiState<CableTestResult> {
         android.util.Log.d("TDR_DEBUG", "=== Cable-Test Request Start ===")
-        android.util.Log.d("TDR_DEBUG", "Probe: ${probe.name} @ ${probe.ipAddress}")
+        // Probe.name removed — use generic label with IP for logs
+        android.util.Log.d("TDR_DEBUG", "Sonda @ ${probe.ipAddress}")
         android.util.Log.d("TDR_DEBUG", "Interface: $interfaceName")
         android.util.Log.d("TDR_DEBUG", "TDR Supported: ${probe.tdrSupported}")
 
@@ -335,7 +336,7 @@ dns = null,
             } catch (e: SocketTimeoutException) {
                 val elapsed = System.currentTimeMillis() - startTime
                 android.util.Log.e("TDR_DEBUG", "TIMEOUT after ${elapsed}ms: ${e.message}", e)
-                UiState.Error("Timeout durante cable-test (>${elapsed/1000}s). Il comando potrebbe richiedere più tempo su questo modello.")
+                UiState.Error(context.getString(R.string.error_cable_test_timeout, elapsed/1000))
 
             } catch (e: HttpException) {
                 android.util.Log.e("TDR_DEBUG", "HTTP ERROR ${e.code()}: ${e.message()}", e)
@@ -343,14 +344,14 @@ dns = null,
                 android.util.Log.e("TDR_DEBUG", "Error body: $errorBody")
 
                 when (e.code()) {
-                    500 -> UiState.Error("Cable-Test non supportato da questo hardware MikroTik")
-                    400 -> UiState.Error("Richiesta cable-test non valida: $errorBody")
-                    else -> UiState.Error("Errore HTTP ${e.code()}: ${e.message()}")
+                    500 -> UiState.Error(context.getString(R.string.error_cable_test_unsupported))
+                    400 -> UiState.Error(context.getString(R.string.error_cable_test_invalid, errorBody ?: ""))
+                    else -> UiState.Error(context.getString(R.string.error_http_generic, e.code(), e.message()))
                 }
 
             } catch (e: Exception) {
                 android.util.Log.e("TDR_DEBUG", "GENERIC ERROR: ${e::class.simpleName} - ${e.message}", e)
-                UiState.Error("Errore cable-test: ${e.message ?: "Errore sconosciuto"}")
+                UiState.Error(context.getString(R.string.error_cable_test_generic, e.message ?: context.getString(R.string.error_unknown)))
             }
         }
     }
@@ -363,7 +364,7 @@ dns = null,
 
     suspend fun getNeighborsForInterface(probe: ProbeConfig, interfaceName: String): UiState<List<NeighborDetail>> {
         android.util.Log.d("LLDP_DEBUG", "=== LLDP Request Start ===")
-        android.util.Log.d("LLDP_DEBUG", "Probe: ${probe.name} @ ${probe.ipAddress}")
+            android.util.Log.d("LLDP_DEBUG", "Sonda @ ${probe.ipAddress}")
         android.util.Log.d("LLDP_DEBUG", "Interface: $interfaceName")
         android.util.Log.d("LLDP_DEBUG", "Query parameter: interface=$interfaceName (sintassi corretta)")
 
@@ -372,7 +373,7 @@ dns = null,
             val result = api.getIpNeighbors(interfaceName)
 
             // Normalizza: Retrofit potrebbe restituire List vuota se nessun neighbor
-            val normalizedResult = result ?: emptyList()
+            val normalizedResult = result
 
             android.util.Log.d("LLDP_DEBUG", "Response: ${normalizedResult.size} neighbor(s) found")
             normalizedResult.forEachIndexed { index, neighbor ->
@@ -386,7 +387,7 @@ dns = null,
             UiState.Success(normalizedResult)
         } catch (e: Exception) {
             android.util.Log.e("LLDP_DEBUG", "ERRORE LLDP: ${e.message}", e)
-            UiState.Error(e.message ?: "Errore sconosciuto LLDP/CDP")
+            UiState.Error(e.message ?: context.getString(R.string.error_lldp_unknown))
         }
     }
 
@@ -401,7 +402,7 @@ dns = null,
 
     suspend fun runSpeedTest(probe: ProbeConfig, client: Client): UiState<SpeedTestResult> {
         if (client.speedTestServerAddress.isNullOrBlank()) {
-            return UiState.Error("Indirizzo server speed test non configurato.")
+            return UiState.Error(context.getString(R.string.error_speedtest_no_server))
         }
 
         return try {
@@ -424,23 +425,23 @@ dns = null,
                 if (result != null) {
                     UiState.Success(result)
                 } else {
-                    UiState.Error("Risposta vuota dal server.")
+                    UiState.Error(context.getString(R.string.error_speedtest_empty_response))
                 }
             } else {
                 when (response.code()) {
-                    400 -> UiState.Error("Errore 400: Richiesta non valida. (Controlla i parametri)")
-                    401, 403 -> UiState.Error("Errore 401: Username o Password del server errati.")
-                    else -> UiState.Error("Errore API: ${response.code()} ${response.message()}")
+                    400 -> UiState.Error(context.getString(R.string.error_speedtest_400))
+                    401, 403 -> UiState.Error(context.getString(R.string.error_speedtest_401))
+                    else -> UiState.Error(context.getString(R.string.error_api_generic, response.code(), response.message()))
                 }
             }
         } catch (e: HttpException) {
-            UiState.Error("Errore HTTP: ${e.message() ?: e.message}")
-        } catch (e: SocketTimeoutException) {
-            UiState.Error("Server non raggiungibile (Timeout).")
-        } catch (e: ConnectException) {
-            UiState.Error("Impossibile connettersi al server.")
+            UiState.Error(context.getString(R.string.error_http_generic_msg, e.message() ?: e.message))
+        } catch (_: SocketTimeoutException) {
+            UiState.Error(context.getString(R.string.error_server_unreachable))
+        } catch (_: ConnectException) {
+            UiState.Error(context.getString(R.string.error_connection_failed))
         } catch (e: Exception) {
-            UiState.Error("Errore sconosciuto: ${e.message}")
+            UiState.Error(context.getString(R.string.error_unknown_with_msg, e.message))
         }
     }
 
@@ -449,9 +450,11 @@ dns = null,
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     fun observeAllProbesWithStatus(): Flow<List<ProbeStatusInfo>> =
-        probeConfigDao.getAllProbes().flatMapLatest { probes ->
+        combine(probeConfigDao.getAllProbes(), userPreferencesRepository.probePollingInterval) { probes, interval ->
+            Pair(probes, interval)
+        }.flatMapLatest { (probes, interval) ->
             if (probes.isEmpty()) return@flatMapLatest flowOf(emptyList())
-            tickerFlow(10_000L).map {
+            tickerFlow(interval).map {
                 withContext(Dispatchers.IO) {
                     probes.map { probe ->
                         val isOnline = try {
@@ -459,7 +462,7 @@ dns = null,
                             val result = api.getSystemResource(ProplistRequest(listOf("board-name")))
                             result.isNotEmpty()
                         } catch (e: Exception) {
-                            android.util.Log.w("AppRepository", "Probe '${probe.name}' offline: ${e.message}")
+                            android.util.Log.w("AppRepository", "Sonda @ ${probe.ipAddress} offline: ${e.message}")
                             false
                         }
                         ProbeStatusInfo(probe, isOnline)
@@ -483,4 +486,4 @@ private fun tickerFlow(periodMs: Long): Flow<Unit> = flow {
 }
 
 // Probe status monitoring
-data class ProbeStatusInfo(val probe: com.app.miklink.data.db.model.ProbeConfig, val isOnline: Boolean)
+data class ProbeStatusInfo(val probe: ProbeConfig, val isOnline: Boolean)

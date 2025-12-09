@@ -35,6 +35,13 @@ class SettingsViewModel @Inject constructor(
             initialValue = ThemeConfig.FOLLOW_SYSTEM
         )
 
+    val customPalette = userPreferencesRepository.customPalette
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = UserPreferencesRepository.CustomPalette()
+        )
+
     val idNumberingStrategy = userPreferencesRepository.idNumberingStrategy
         .stateIn(
             scope = viewModelScope,
@@ -51,6 +58,90 @@ class SettingsViewModel @Inject constructor(
     fun updateIdNumberingStrategy(strategy: IdNumberingStrategy) {
         viewModelScope.launch {
             userPreferencesRepository.setIdNumberingStrategy(strategy)
+        }
+    }
+
+    val pdfIncludeEmptyTests = userPreferencesRepository.pdfIncludeEmptyTests
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = true
+        )
+
+    val pdfSelectedColumns = userPreferencesRepository.pdfSelectedColumns
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = com.app.miklink.data.pdf.ExportColumn.values().map { it.name }.toSet()
+        )
+
+    fun updatePdfIncludeEmptyTests(include: Boolean) {
+        viewModelScope.launch {
+            userPreferencesRepository.setPdfIncludeEmptyTests(include)
+        }
+    }
+
+    fun updatePdfSelectedColumns(columns: Set<String>) {
+        viewModelScope.launch {
+            userPreferencesRepository.setPdfSelectedColumns(columns)
+        }
+    }
+
+    val pdfReportTitle = userPreferencesRepository.pdfReportTitle
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = "Collaudo Cablaggio di Rete"
+        )
+
+    val pdfHideEmptyColumns = userPreferencesRepository.pdfHideEmptyColumns
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = false
+        )
+
+    fun updatePdfReportTitle(title: String) {
+        viewModelScope.launch {
+            userPreferencesRepository.setPdfReportTitle(title)
+        }
+    }
+
+    fun updatePdfHideEmptyColumns(hide: Boolean) {
+        viewModelScope.launch {
+            userPreferencesRepository.setPdfHideEmptyColumns(hide)
+        }
+    }
+
+    fun updateCustomPalette(primary: Int?, secondary: Int?, background: Int?, content: Int? = null) {
+        viewModelScope.launch {
+            userPreferencesRepository.setCustomPalette(primary, secondary, background, content)
+        }
+    }
+
+    val dashboardGlowIntensity = userPreferencesRepository.dashboardGlowIntensity
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = 0.5f
+        )
+
+    fun updateDashboardGlowIntensity(intensity: Float) {
+        viewModelScope.launch {
+            userPreferencesRepository.setDashboardGlowIntensity(intensity)
+        }
+    }
+
+    val probePollingInterval = userPreferencesRepository.probePollingInterval
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = 5000L
+        )
+
+    fun updateProbePollingInterval(interval: Long) {
+        viewModelScope.launch {
+            userPreferencesRepository.setProbePollingInterval(interval)
         }
     }
 

@@ -27,15 +27,14 @@ fun MinimalListItem(
     title: String,
     subtitle: String,
     icon: ImageVector,
+    modifier: Modifier = Modifier,
     isSelected: Boolean = false,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier,
     trailingContent: @Composable (() -> Unit)? = null
 ) {
     Surface(
         modifier = modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
+            .fillMaxWidth(),
         shape = RoundedCornerShape(CornerRadius.small),
         color = if (isSelected) MaterialTheme.colorScheme.surface.copy(alpha = 0.8f) else MaterialTheme.colorScheme.surface,
         border = if (isSelected) 
@@ -46,6 +45,7 @@ fun MinimalListItem(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .clickable(onClick = onClick)
                 .padding(Spacing.sm),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
