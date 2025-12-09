@@ -56,7 +56,7 @@ fun TestProfileEditScreen(
         },
         bottomBar = {
             Button(
-                onClick = viewModel::save,
+                onClick = viewModel::saveProfile,
                 modifier = Modifier.fillMaxWidth().padding(16.dp).navigationBarsPadding(),
                 enabled = profileName.isNotBlank()
             ) {

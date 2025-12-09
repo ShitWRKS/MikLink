@@ -80,7 +80,7 @@ fun ClientEditScreen(
                 actions = {
                     // Quick save action
                     IconButton(
-                        onClick = viewModel::save,
+                        onClick = viewModel::saveClient,
                         enabled = companyName.isNotBlank()
                     ) {
                         Icon(
@@ -93,7 +93,7 @@ fun ClientEditScreen(
         },
         bottomBar = {
             Button(
-                onClick = viewModel::save,
+                onClick = viewModel::saveClient,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp)

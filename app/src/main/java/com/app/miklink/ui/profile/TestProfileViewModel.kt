@@ -91,6 +91,7 @@ class TestProfileViewModel @Inject constructor(
         listOf(t1, t2, t3).count { it.isBlank() }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 3)
 
-    override fun validateBeforeSave(): Boolean = profileName.value.isNotBlank()
+    // Validation helper for UI/tests (not part of BaseEditViewModel contract)
+    fun isValidForSave(): Boolean = profileName.value.isNotBlank()
 }
 
