@@ -127,6 +127,12 @@ val client = OkHttpClient.Builder().sslSocketFactory(clientCerts.sslSocketFactor
 
 Add such integration checks for every factory and repository that builds Retrofit clients dynamically.
 
+Connectivity provider tests
+
+- For TCP checks, prefer using `MockWebServer` as a reachable TCP endpoint for "connect" tests.
+- For refused/timeouts use a short timeout and connect to an unused/high port or non-routable address; assert false on exception/timeouts.
+
+
 ---
 
 3) ViewModel tests

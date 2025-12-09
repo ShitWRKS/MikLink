@@ -47,6 +47,8 @@ Small, safe refactors and test improvements were landed on branch `pr/parser-and
 - Extracted PDF parsing into a dedicated and testable `ParsedResultsParser` class (moved logic out of `PdfGeneratorIText`). This improves unit testability and reduces the complexity of the PDF generator.
 - Added `MikroTikServiceFactory` — a small, testable factory that configures Retrofit + OkHttp per `ProbeConfig` (baseUrl, HTTP/HTTPS and optional Basic auth header).
 - Added `NetworkValidator` utilities and extra validation for probe targets (hostname/IP/DHCP_GATEWAY handling).
+- Added `NetworkValidator` utilities and extra validation for probe targets (hostname/IP/DHCP_GATEWAY handling).
+- Implemented a small `ConnectivityProvider` utility providing tested HTTP and TCP reachability checks. This is intended for repositories and ViewModels to perform lightweight probe reachability checks without blocking the main thread. Tests include MockWebServer HTTP/HTTPS and quick TCP verification.
 - Added a set of robust MockWebServer integration-style unit tests for network code (http/https/timeout/error cases) and unit tests for the parser. Tests were written to illustrate best-practices for TLS handling in tests (HandshakeCertificates / HeldCertificate).
 - Added test dependencies: `mockwebserver` and `okhttp-tls` to support integration-style tests.
 
