@@ -101,5 +101,21 @@ class TestProfileViewModel @Inject constructor(
             testProfileDao.delete(profile)
         }
     }
+
+    /**
+     * Public API to save a profile from the UI/tests. This delegates to the
+     * BaseEditViewModel.save() flow so the persistence and lifecycle behaviour
+     * (isSaved flow, validation hook) are consistently applied.
+     */
+    fun saveProfile() {
+        save()
+    }
+
+    /**
+     * Require a profile name to be present before saving. This is a small,
+     * intentional validation rule that prevents saving empty/unnamed profiles
+     * and keeps data quality high.
+     */
+    override fun validateBeforeSave(): Boolean = profileName.value.isNotBlank()
 }
 

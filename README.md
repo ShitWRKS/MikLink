@@ -192,6 +192,18 @@ app/src/main/java/com/app/miklink/
 
 ---
 
+## 🚨 Stato corrente - audit (2025-12-09)
+
+Nota: durante l'audit di repository (09/12/2025) sono stati identificati problemi che impattano la build e la pipeline CI. Riassunto rapido:
+
+- La codebase contiene due implementazioni / riferimenti del generatore PDF (legacy `PdfGenerator` e implementazione basata su iText `PdfGeneratorIText`). Attualmente la versione `PdfGeneratorIText.kt` presente nel codice produce errori di compilazione KSP (sintassi mancante / brace non chiuso) — vedere `build_log_utf8.txt` e `compile_errors.txt` per i dettagli.
+- Alcuni unit test storici sono stati aggiornati per usare `PdfGeneratorIText` e risultano passati in test snapshot (`test_results.log`), ma la build completa fallisce su KSP/compilazione (inconsistenza fra snapshot e build). Questo richiede una rapida correzione della sintassi in `PdfGeneratorIText.kt` oppure l'uso di un wrapper di compatibilità `PdfGenerator` per ripristinare la stabilità.
+- File sensibili / artefatti (es. `key` nella radice del repo, class/.dex file elencati in `project_structure.txt`) sono presenti e rappresentano un rischio di sicurezza e peso del repository — raccomandata pulizia della history e aggiornamento `.gitignore`.
+
+Passo raccomandato subito: risolvere l'errore di compilazione in `app/src/main/java/com/app/miklink/data/pdf/PdfGeneratorIText.kt` (fix sintassi) e ripristinare la build. Se il fix diretto non è pratico, reintrodurre un wrapper `PdfGenerator` compatibile che delega a `PdfGeneratorIText` (soluzione temporanea rapida per CI).
+
+---
+
 ## 📚 Documentazione
 
 La documentazione tecnica dettagliata, lo schema dell'architettura e il design system sono disponibili nella nostra cartella /docs.

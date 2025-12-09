@@ -59,7 +59,9 @@ fun ClientEditScreen(
     // Preview computations
     val socketPreview = remember(socketPrefix, socketSeparator, socketNumberPadding, socketSuffix) {
         val paddedNumber = String.format(Locale.US, "%0${socketNumberPadding}d", 1)
-        "${socketPrefix}${socketSeparator}${paddedNumber}${socketSeparator}${socketSuffix}"
+        val prefixPart = if (socketPrefix.isNotBlank()) "${socketPrefix}${socketSeparator}" else ""
+        val suffixPart = if (socketSuffix.isNotBlank()) "${socketSeparator}${socketSuffix}" else ""
+        "${prefixPart}${paddedNumber}${suffixPart}"
     }
 
     val speedTestPreview = remember(speedTestServerAddress) {
@@ -78,7 +80,7 @@ fun ClientEditScreen(
                 actions = {
                     // Quick save action
                     IconButton(
-                        onClick = viewModel::saveClient,
+                        onClick = viewModel::save,
                         enabled = companyName.isNotBlank()
                     ) {
                         Icon(
@@ -91,7 +93,7 @@ fun ClientEditScreen(
         },
         bottomBar = {
             Button(
-                onClick = viewModel::saveClient,
+                onClick = viewModel::save,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp)

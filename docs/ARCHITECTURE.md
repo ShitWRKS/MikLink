@@ -173,6 +173,28 @@ Risultati test salvati
     ]
   }
 }
+## 📌 Problemi correnti (audit 2025-12-09) e azioni raccomandate
+
+Questo documento riflette lo stato dell'applicazione dopo un audit completo eseguito il 09/12/2025. Di seguito i problemi che richiedono attenzione immediata e le azioni consigliate:
+
+1) Errore KSP / compilazione in PdfGeneratorIText
+    - Sintomo: `PdfGeneratorIText.kt` causa errori di compilazione (es. "expecting '->'" e "missing '}'") durante il build (vedi `build_log_utf8.txt`).
+    - Impatto: impedisce task `:app:kspDebugKotlin` / compilazione completa → build CI fallisce.
+    - Azione consigliata (immediata): correggere la sintassi in `PdfGeneratorIText.kt` oppure introdurre temporaneamente un wrapper `PdfGenerator` compatibile che delega a `PdfGeneratorIText` per ripristinare la stabilità CI.
+
+2) Discrepanza tra test e build (PdfGenerator legacy vs iText)
+    - Stato: i test unitari più recenti sono stati aggiornati per usare `PdfGeneratorIText` (vedi `app/src/test/.../PdfGeneratorTest.kt`) e alcuni snapshot di test risultano verdi. Tuttavia, ci sono riferimenti/artefatti legacy (`PdfGenerator`) che possono creare incoerenze e fallimenti in ambienti diversi.
+    - Azione consigliata: scegliere una strategia (ad es. rimuovere definitivamente legacy e consolidare su `PdfGeneratorIText`, o creare un adapter `PdfGenerator`→`PdfGeneratorIText`) e applicare la scelta a test e codice di produzione in modo coerente.
+
+3) File sensibili e artefatti nella VCS
+    - Esempi: file `key` presente alla radice del repo; numerosi file `.class`/`.dex` nel progetto elencati in `project_structure.txt`.
+    - Impatto: rischio sicurezza, repository gonfio.
+    - Azione consigliata: rimuovere file sensibili, aggiornare `.gitignore`, e pianificare pulizia della storia Git (BFG/git-filter-repo) con approvazione del team.
+
+4) Altri punti da verificare
+    - Controllare riferimenti non risolti e coerenza tipale (es. `runSpeedTest` in `TestViewModel` — alcune snapshot indicano test OK, altre mostrano errori di compilazione). Rivedere i log (`unit_test_compile.log`, `compile_errors.txt`) per ricostruire una diagnosi completa.
+
+Questa sezione va mantenuta aggiornata — aggiungere qui gli esiti dopo ogni fix-commit e il riferimento agli issue/PR che risolvono i problemi.
 ```
 
 ---

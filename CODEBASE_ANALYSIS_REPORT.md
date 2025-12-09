@@ -28,6 +28,8 @@
 > - Added LogEntry entity for MikroTik logs
 > - Project continues to be actively developed
 
+> **🔔 AUDIT (2025-12-09):** Durante l'ultimo controllo completo ho rilevato problemi che impattano la build e la pipeline CI. Nello specifico: errori KSP/compilazione in `PdfGeneratorIText.kt` (sintassi mancante e brace non chiuso), discrepanze tra test e build (alcuni test aggiornati a `PdfGeneratorIText` risultano passati ma la compilazione KSP fallisce), e presenza di file sensibili/artefatti commessi (es. `key` in root, class/.dex in project_structure.txt). Vedi sezione "Audit update" più avanti per dettagli e azioni consigliate.
+
 ### Module Organization
 ```
 app/src/main/java/com/app/miklink/

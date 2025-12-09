@@ -26,8 +26,11 @@ data class Client(
     val socketPrefix: String = "",
     // Nuovi campi per formattazione ID presa
     val socketSuffix: String = "",
-    val socketSeparator: String = "-",
-    val socketNumberPadding: Int = 1,
+    // Historically socket names were formatted like PREFIX + NUMBER (e.g. TST001).
+    // Use no separator and a sensible padding of 3 digits by default to be
+    // consistent with existing UI and expectations (e.g. TST001).
+    val socketSeparator: String = "",
+    val socketNumberPadding: Int = 3,
     val nextIdNumber: Int = 1,
     val lastFloor: String? = null,
     val lastRoom: String? = null,

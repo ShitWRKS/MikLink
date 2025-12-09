@@ -51,7 +51,7 @@
 ### [testing/](testing/)
 **Storico report di testing e validazione**
 
-#### [testing/API_TESTING_2025-11-15.md](testing/API_TESTING_2025-11-15.md)
+#### [testing/API_TESTING_2025-11-15.md](TESTING/API/API_TESTING_2025-11-15.md)
 - Report finale testing API REST con dispositivo MikroTik (IP 192.168.0.251)
 - Riepilogo 6 fix critici (conversione POST→GET, parametri mancanti, timeout)
 - Tabella completa 16 endpoint con status test
@@ -61,7 +61,7 @@
 - Report validazione post-implementazione refactor v2.0
 - Executive summary: 6 problemi rilevati e risolti
 - Fix critici: Migrazione DB v7→v8, route `probe_list` deprecata
-- Build status: ✅ PRONTO
+- Build status: ⚠️ BLOCCATO — la build è attualmente bloccata da errori KSP/COMPILAZIONE (vedi `docs/ISSUES/ISSUES.md` - ISSUE-001)
 
 ---
 

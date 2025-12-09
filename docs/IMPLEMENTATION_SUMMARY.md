@@ -1,7 +1,22 @@
 # MIKLINK - REFACTOR IMPLEMENTATION SUMMARY
-**Data implementazione**: 2025-01-15  
-**Versione target**: 2.0  
-**Status**: ✅ IMPLEMENTATO (senza build/test come richiesto)
+**NOTE (migrated):** This document was moved to `docs/ENGINEERING/IMPLEMENTATION_SUMMARY.md` on 2025-12-09 as part of the documentation reorganization.
+
+Please open the canonical file at `docs/ENGINEERING/IMPLEMENTATION_SUMMARY.md` for the up-to-date implementation summary and current open issues.
+
+---
+## 🔎 Audit update (2025-12-09)
+
+Durante l'audit completo del repository (09/12/2025) sono emerse alcune discrepanze operative rilevanti:
+
+- La build attuale fallisce nella fase KSP/compilazione a causa di errori di sintassi in `app/src/main/java/com/app/miklink/data/pdf/PdfGeneratorIText.kt` (es. "expecting '->'", missing '}' ). Vedere `build_log_utf8.txt` e `compile_errors.txt` per i dettagli.
+- I test unitari inerenti al parsing JSON PDF (`PdfGeneratorTest`) sono aggiornati a `PdfGeneratorIText` e alcuni snapshot dei test risultano passati (`test_results.log`). Nonostante ciò, la presenza di errori di compilazione impedisce la build/CI completa: è necessario risolvere la sintassi o applicare una soluzione temporanea di compatibilità.
+- E' presente un file sensibile (`key`) alla radice del repository e vari artefatti compilati appaiono in `project_structure.txt`. Raccomandata pulizia della VCS dopo approvazione del team.
+
+Azioni raccomandate immediatamente:
+1. Correggere `PdfGeneratorIText.kt` per risolvere gli errori di compilazione (preferito).
+2. Se si preferisce una soluzione più rapida per ripristinare CI, reintrodurre un wrapper `PdfGenerator` che delega a `PdfGeneratorIText` e aggiornare i test di riferimento.
+3. Rimuovere/archiviare file sensibili e artefatti dal repository (follow-up con BFG/git-filter-repo).
+
 
 ---
 
@@ -245,8 +260,8 @@ Refs: MASTER_PLAN.md, ARCHITECTURE.md
 
 ---
 
-**Status finale**: ✅ **IMPLEMENTAZIONE COMPLETATA E VALIDATA**  
-**Build status**: ✅ **PRONTO PER BUILD** (problemi critici risolti)  
+**Status finale**: ⚠️ **PARZIALE — BUILD BLOCCATA** (ci sono errori KSP/COMPILAZIONE ancora aperti)  
+**Build status**: ⚠️ **BLOCCATA DA KSP/COMPILATION ERRORS** — vedi `docs/ISSUES/ISSUES.md` (ISSUE-001)  
 **Next action**: Eseguire `gradlew clean build` → Test su emulatore
 
 **Validazione**: Vedi `docs/VALIDATION_REPORT.md` per dettagli completi.
