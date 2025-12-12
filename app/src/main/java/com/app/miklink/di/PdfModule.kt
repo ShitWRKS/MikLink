@@ -1,7 +1,7 @@
 package com.app.miklink.di
 
-import com.app.miklink.data.pdf.PdfGenerator
-import com.app.miklink.data.pdf.PdfGeneratorIText
+import com.app.miklink.core.data.pdf.PdfGenerator
+import com.app.miklink.core.data.pdf.impl.PdfGeneratorIText
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn

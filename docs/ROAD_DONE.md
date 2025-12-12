@@ -1,3 +1,1257 @@
+
+
+EPIC S5 — Decomposizione AppRepository + UseCase “Run Test” (SOLID, no quick-fix)
+Obiettivo
+
+Eliminare il “god object” AppRepository spezzandolo in repository piccoli e coesi.
+
+Spostare l’orchestrazione dei test fuori da TestViewModel in un UseCase di dominio (RunTestUseCase).
+
+Preparare l’app a: stabilizzazione link, TDR capability, neighbor selection, VLAN/voice VLAN e streaming log, senza introdurre feature nuove in questa EPIC.
+
+Questa EPIC è “strutturale”: l’output è architettura pulita + contratti + wiring DI, anche se alcune parti restano TODO (ma solo dove esplicitamente previsto).
+
+Regole anti-drift (obbligatorie)
+
+❌ Vietato cambiare UI/UX delle schermate test (progress + pass/fail).
+
+❌ Vietato cambiare chiamate REST (endpoint, payload, parsing) e logica di rete: solo spostamento e incapsulamento.
+
+❌ Vietato aggiungere workaround “temporanei” non documentati (bridge random, duplicazioni).
+
+✅ Ogni nuovo componente deve avere:
+
+responsabilità singola,
+
+interfaccia in core/domain o core/data (a seconda del livello),
+
+implementazione in data/* o core/data/* già migrati,
+
+KDoc con input/output ed error model.
+
+✅ Dopo ogni step marcato “Checkpoint”:
+
+./gradlew :app:kspDebugKotlin
+
+./gradlew assembleDebug
+
+./gradlew testDebugUnitTest
+Se fallisce: fix solo import/DI/compilazione e STOP.
+
+Scope “cosa spostiamo”
+Dal mondo attuale (già noto dal tuo audit precedente)
+
+TestViewModel.kt oggi orchestra: apply network config, link check, TDR, ping, speed-test, report aggregation.
+
+AppRepository.kt oggi contiene: DB read/write, network calls MikroTik, config rete, utility.
+
+Verso architettura target (in questa EPIC)
+
+core/domain/usecase/test/RunTestUseCase.kt (nuovo) → orchestration.
+
+core/domain/test/* (nuovi contracts) → step del test.
+
+core/data/repository/* (nuove interfacce) → accesso a DB e a MikroTik.
+
+Implementazioni nelle aree già migrate:
+
+MikroTik REST: core/data/remote/mikrotik/** (già S2)
+
+Room v1: core/data/local/room/v1/** (già S3)
+
+PDF/IO: core/data/** (già S4)
+
+S5.0 — Preflight (obbligatorio)
+S5.0.1 Baseline build
+
+Eseguire:
+
+./gradlew :app:kspDebugKotlin
+
+./gradlew assembleDebug
+
+./gradlew testDebugUnitTest
+
+Creare file:
+
+docs/migration/S5_BASELINE.md con data e risultati PASS/FAIL.
+
+Stop condition: se fallisce, fermarsi e riportare errori (niente refactor).
+
+S5.1 — Definizione “contratti” di dominio per il Test Runner
+
+Nota: qui NON implementiamo logica MikroTik. Creiamo solo contratti e modelli.
+
+S5.1.1 Creare cartelle
+
+app/src/main/java/com/app/miklink/core/domain/test/
+
+app/src/main/java/com/app/miklink/core/domain/test/model/
+
+app/src/main/java/com/app/miklink/core/domain/test/step/
+
+app/src/main/java/com/app/miklink/core/domain/usecase/test/
+
+S5.1.2 Creare model minimi (solo dati, no logica)
+
+Creare file:
+
+core/domain/test/model/TestPlan.kt
+
+Contiene: clientId, probeId, profileId, socketId, notes?
+
+KDoc: “Input per avvio test; non contiene stato runtime”.
+
+core/domain/test/model/TestProgress.kt
+
+Stato progressivo: step corrente, percentuale, messaggio UI.
+
+Non legarsi a Compose.
+
+core/domain/test/model/TestOutcome.kt
+
+overallStatus: Pass/Fail
+
+sections: List<TestSectionResult>
+
+rawResultsJson: String (se già usato oggi)
+
+KDoc: “Output consumato da UI + persistenza Report”.
+
+core/domain/test/model/TestError.kt
+
+sealed class (es. NetworkError, AuthError, Timeout, Unsupported, Unexpected)
+
+Non mappare tutto ora: creare subset, con TODO esplicito.
+
+core/domain/test/model/TestEvent.kt
+
+sealed class: Progress(TestProgress), LogLine(...), Completed(TestOutcome), Failed(TestError)
+
+Serve per stream in Flow.
+
+S5.1.3 Creare contratti step (no implementazione)
+
+Creare interfacce:
+
+core/domain/test/step/LinkStatusStep.kt
+
+core/domain/test/step/CableTestStep.kt
+
+core/domain/test/step/PingStep.kt
+
+core/domain/test/step/SpeedTestStep.kt
+
+core/domain/test/step/NeighborDiscoveryStep.kt
+
+core/domain/test/step/NetworkConfigStep.kt (apply DHCP/static alla probe in base al Client)
+
+Ogni interfaccia deve esporre:
+
+suspend fun run(context: TestExecutionContext): StepResult
+
+dove TestExecutionContext è un nuovo data class con dentro client, probeConfig, profile, socketId, ecc.
+
+Creare:
+
+core/domain/test/model/TestExecutionContext.kt
+
+core/domain/test/model/StepResult.kt (sealed class: Success(data), Skipped(reason), Failed(TestError))
+
+Checkpoint: build PASS (ksp/assemble/test)
+
+S5.2 — Interfacce repository in core/data (SOLID)
+S5.2.1 Creare cartelle
+
+app/src/main/java/com/app/miklink/core/data/repository/test/
+
+app/src/main/java/com/app/miklink/core/data/repository/client/
+
+app/src/main/java/com/app/miklink/core/data/repository/probe/
+
+app/src/main/java/com/app/miklink/core/data/repository/report/
+
+S5.2.2 Creare interfacce (solo contratti)
+
+core/data/repository/client/ClientRepository.kt
+
+suspend fun getClient(id: Long): Client
+
+core/data/repository/probe/ProbeRepository.kt
+
+suspend fun getProbe(id: Long): ProbeConfig
+
+core/data/repository/test/TestProfileRepository.kt
+
+suspend fun getProfile(id: Long): TestProfile
+
+core/data/repository/report/ReportRepository.kt
+
+suspend fun saveReport(report: Report): Long
+
+suspend fun getReport(id: Long): Report
+
+core/data/repository/test/MikroTikTestRepository.kt
+
+incapsula operazioni MikroTik usate dai test:
+
+suspend fun monitorEthernet(numbers: String, once: Boolean = true): ...
+
+suspend fun cableTest(numbers: String, once: Boolean = true): ...
+
+suspend fun ping(address: String, count: Int): ...
+
+suspend fun neighbors(): ...
+
+suspend fun systemResource(): ...
+
+⚠️ I tipi di ritorno devono essere quelli già usati in produzione oggi (DTO esistenti o modelli già presenti). Se non è chiaro, NON inventare: usa i DTO già creati in S2 o crea wrapper “TBD” con TODO.
+
+Checkpoint: build PASS
+
+S5.3 — Implementazioni repository (minime) usando Room v1 + MikroTik REST
+
+Qui si crea solo “glue code”, senza cambiare logica.
+
+S5.3.1 Implementazioni Room-backed
+
+Creare in:
+
+app/src/main/java/com/app/miklink/data/repositoryimpl/roomv1/ (nuovo namespace data impl)
+
+File:
+
+RoomV1ClientRepository.kt
+
+RoomV1ProbeRepository.kt
+
+RoomV1TestProfileRepository.kt
+
+RoomV1ReportRepository.kt
+
+Ogni implementazione:
+
+prende in constructor i DAO già migrati (core/data/local/room/v1/dao/*)
+
+implementa la rispettiva interfaccia core/data/repository/...
+
+S5.3.2 Implementazione MikroTikTestRepository
+
+Creare:
+
+data/repositoryimpl/mikrotik/MikroTikTestRepositoryImpl.kt
+Usa:
+
+core/data/remote/mikrotik/service/MikroTikApiService
+
+core/data/remote/mikrotik/infra/MikroTikServiceFactory (se serve per creare service dal ProbeConfig)
+
+Vincolo: non cambiare endpoint, non cambiare payload.
+
+Checkpoint: build PASS
+
+S5.4 — UseCase RunTestUseCase (orchestrazione fuori dalla UI)
+S5.4.1 Creare interfaccia usecase
+
+File:
+
+core/domain/usecase/test/RunTestUseCase.kt
+
+fun execute(plan: TestPlan): Flow<TestEvent>
+
+S5.4.2 Implementazione usecase
+
+File:
+
+core/domain/usecase/test/RunTestUseCaseImpl.kt
+
+Dipendenze (via constructor):
+
+ClientRepository, ProbeRepository, TestProfileRepository
+
+ReportRepository
+
+Step interfaces: LinkStatusStep, CableTestStep, PingStep, SpeedTestStep, NeighborDiscoveryStep, NetworkConfigStep
+
+(facoltativo) ReportAggregator (se esiste già in core/domain/report)
+
+Comportamento minimo (senza cambiare logica esistente):
+
+Carica client, probe, profile
+
+Costruisce TestExecutionContext
+
+Esegue step in ordine definito dal profilo (runLinkStatus, runTdr, runPing, runSpeedTest, runLldp…)
+
+Emette TestEvent.Progress prima/dopo ogni step
+
+Aggrega outcome finale e salva report tramite ReportRepository
+
+Emette TestEvent.Completed(outcome) oppure Failed(error)
+
+⚠️ Se oggi l’ordine e le regole sono in TestViewModel, replicare identico ordine (non ottimizzare).
+
+Checkpoint: build PASS
+
+S5.5 — Implementazione degli Step (wrapper verso repository)
+S5.5.1 Step implementations in data/ (non core)
+
+Creare in:
+
+app/src/main/java/com/app/miklink/data/teststeps/
+
+File (Impl):
+
+NetworkConfigStepImpl.kt → usa repo/config esistenti (se oggi in AppRepository)
+
+LinkStatusStepImpl.kt → usa MikroTikTestRepository.monitorEthernet
+
+CableTestStepImpl.kt → usa MikroTikTestRepository.cableTest
+
+PingStepImpl.kt → usa MikroTikTestRepository.ping
+
+NeighborDiscoveryStepImpl.kt → usa MikroTikTestRepository.neighbors
+
+SpeedTestStepImpl.kt → usa MikroTikTestRepository.speedTest (se esiste già in API/DTO)
+
+Ogni step:
+
+prende TestExecutionContext
+
+ritorna StepResult
+
+gestisce errori con mapping minimale in TestError (no inventare: solo mapping di eccezioni evidenti)
+
+Checkpoint: build PASS
+
+S5.6 — DI wiring (RepositoryModule + nuova TestModule)
+S5.6.1 Aggiornare/creare moduli Hilt
+
+In RepositoryModule.kt:
+
+bind interfacce ClientRepository, ProbeRepository, TestProfileRepository, ReportRepository alle impl RoomV1*Repository
+
+bind MikroTikTestRepository a MikroTikTestRepositoryImpl
+
+Creare di/TestRunnerModule.kt:
+
+@Binds per Step interfaces → StepImpl
+
+@Binds RunTestUseCase → RunTestUseCaseImpl
+
+Checkpoint: build PASS
+
+S5.7 — Migrazione TestViewModel a UseCase (senza cambiare UI)
+S5.7.1 Ridurre responsabilità ViewModel
+
+In ui/test/TestViewModel.kt:
+
+rimuovere orchestrazione diretta (niente chiamate a DAO + AppRepository per eseguire i test)
+
+iniettare RunTestUseCase
+
+su startTest() chiamare useCase.execute(plan) e collezionare eventi:
+
+Progress → aggiorna stato UI
+
+LogLine → aggiorna log UI
+
+Completed/Failed → aggiorna risultato
+
+Vincolo: mantenere invariato lo stato UI/section model (solo adattare la fonte dei dati).
+
+Checkpoint: build PASS
+
+S5.8 — Deprecazione controllata di AppRepository
+S5.8.1 Identificare metodi rimasti
+
+Cercare usi residui di AppRepository in:
+
+ui/**
+
+data/**
+
+Se AppRepository resta usato per backup o altre feature, lasciarlo solo per quello.
+
+Se non più usato nel flusso test, segnare con KDoc:
+
+“Deprecated: replaced by RunTestUseCase + repositories”.
+
+Checkpoint finale: build PASS + golden tests PASS
+
+Deliverable documentazione (obbligatorio)
+
+Creare:
+
+docs/migration/S5_RESULT.md con:
+
+elenco file creati (path completi)
+
+dipendenze DI aggiunte
+
+elenco delle responsabilità spostate da TestViewModel/AppRepository al UseCase
+
+comandi finali PASS
+
+Criteri di accettazione
+
+TestViewModel non orchestra più i test (solo UI state).
+
+RunTestUseCase esiste e produce Flow<TestEvent>.
+
+AppRepository non è più coinvolto nel “run test” (salvo feature non incluse).
+
+Build PASS (KSP/assemble/unit).
+
+Golden parsing tests restano verdi.
+
+Nota finale (importantissima)
+
+Se in qualsiasi step il tipo di ritorno di una chiamata MikroTik non è chiaro (DTO/shape), non inventare: usare i DTO già presenti in core/data/remote/mikrotik/dto o fermarsi e riportare l’ambiguità con:
+
+file coinvolti
+
+firma attuale
+
+cosa manca per proseguire
+
+
+S4 — Migrazione PDF + IO in core/data (NO refactor funzionale)
+Obiettivo
+
+Spostare i moduli PDF e IO da data/ a core/data/, mantenendo invariata la logica:
+
+nessun cambiamento ai risultati PDF
+
+nessun cambiamento al parsing di resultsJson
+
+nessun cambiamento alla UI (solo import/DI)
+
+Scope preciso
+
+Da migrare (come da struttura che avevamo visto):
+
+app/src/main/java/com/app/miklink/data/pdf/**
+
+PdfGenerator.kt
+
+PdfGeneratorIText.kt
+
+PdfExportConfig.kt
+
+ParsedResultsParser.kt
+
+PdfDocumentHelper.kt
+
+app/src/main/java/com/app/miklink/data/io/**
+
+FileReader.kt
+
+ContentResolverFileReader.kt
+
+DI:
+
+app/src/main/java/com/app/miklink/di/PdfModule.kt (e import collegati)
+
+Riferimenti nel codice (ViewModel/UI/History ecc.) che importano questi componenti
+
+Vincoli (anti-drift)
+
+❌ Vietato cambiare logica PDF (layout, formattazione, campi, calcoli, parsing).
+
+❌ Vietato cambiare la struttura dati di resultsJson e relativi parsing model.
+
+❌ Vietato cambiare firme pubbliche (metodi/parametri) se non strettamente necessario per il move.
+
+✅ Consentito solo: move file, package coerente col path, aggiornare import e DI.
+
+✅ Checkpoint build obbligatori dopo ogni blocco.
+
+S4.0 — Preflight
+S4.0.1 Baseline build (obbligatorio)
+
+Eseguire e registrare l’esito (anche “BUILD SUCCESSFUL”):
+
+./gradlew :app:kspDebugKotlin
+
+./gradlew assembleDebug
+
+./gradlew testDebugUnitTest
+
+Stop condition: se fallisce, STOP e riportare l’errore (non fixare in questa EPIC).
+
+S4.1 — Creare struttura target (solo cartelle)
+
+Creare (se mancanti):
+
+app/src/main/java/com/app/miklink/core/data/pdf/
+
+app/src/main/java/com/app/miklink/core/data/pdf/impl/
+
+app/src/main/java/com/app/miklink/core/data/pdf/parser/
+
+app/src/main/java/com/app/miklink/core/data/io/
+
+app/src/main/java/com/app/miklink/core/data/io/impl/
+
+Checkpoint: ./gradlew :app:kspDebugKotlin
+
+S4.2 — Migrazione IO (meccanica)
+S4.2.1 Spostare interfaccia FileReader
+
+Spostare:
+
+data/io/FileReader.kt
+→
+
+core/data/io/FileReader.kt
+
+Aggiornare package:
+
+package com.app.miklink.core.data.io
+
+S4.2.2 Spostare implementazione ContentResolverFileReader
+
+Spostare:
+
+data/io/ContentResolverFileReader.kt
+→
+
+core/data/io/impl/ContentResolverFileReader.kt
+
+Aggiornare package:
+
+package com.app.miklink.core.data.io.impl
+
+Aggiornare import verso FileReader:
+
+com.app.miklink.core.data.io.FileReader
+
+Checkpoint: ./gradlew :app:kspDebugKotlin
+
+S4.3 — Migrazione PDF (meccanica)
+S4.3.1 Spostare interfaccia PdfGenerator
+
+Spostare:
+
+data/pdf/PdfGenerator.kt
+→
+
+core/data/pdf/PdfGenerator.kt
+
+Package:
+
+package com.app.miklink.core.data.pdf
+
+S4.3.2 Spostare config e helper “neutri”
+
+Spostare:
+
+data/pdf/PdfExportConfig.kt
+→ core/data/pdf/PdfExportConfig.kt
+
+data/pdf/PdfDocumentHelper.kt
+→ core/data/pdf/PdfDocumentHelper.kt
+
+Package:
+
+package com.app.miklink.core.data.pdf
+
+S4.3.3 Spostare parser resultsJson
+
+Spostare:
+
+data/pdf/ParsedResultsParser.kt
+→
+
+core/data/pdf/parser/ParsedResultsParser.kt
+
+Package:
+
+package com.app.miklink.core.data.pdf.parser
+
+⚠️ Vincolo: non cambiare logica di parsing (solo import/package).
+
+S4.3.4 Spostare implementazione iText
+
+Spostare:
+
+data/pdf/PdfGeneratorIText.kt
+→
+
+core/data/pdf/impl/PdfGeneratorIText.kt
+
+Package:
+
+package com.app.miklink.core.data.pdf.impl
+
+Aggiornare import verso:
+
+PdfGenerator (core)
+
+ParsedResultsParser (core)
+
+eventuali helper/config (core)
+
+Checkpoint: ./gradlew :app:kspDebugKotlin
+
+S4.4 — Aggiornare DI (PdfModule)
+
+File noto:
+
+app/src/main/java/com/app/miklink/di/PdfModule.kt
+
+S4.4.1 Aggiornare import e provider
+
+Aggiornare tutti i riferimenti da com.app.miklink.data.pdf... a:
+
+com.app.miklink.core.data.pdf.*
+
+com.app.miklink.core.data.pdf.impl.*
+
+com.app.miklink.core.data.pdf.parser.*
+
+Vincolo: stessa istanziazione di prima, stessi parametri.
+
+Checkpoint: ./gradlew :app:kspDebugKotlin
+
+S4.5 — Aggiornare import nel resto del codice
+S4.5.1 Ricerca e sostituzione import (solo import)
+
+Sostituire ovunque:
+
+com.app.miklink.data.pdf. → com.app.miklink.core.data.pdf.
+
+com.app.miklink.data.io. → com.app.miklink.core.data.io.
+
+Verificare almeno i file tipici:
+
+ui/history/** (export PDF, detail report)
+
+ui/settings/** (PdfSettings)
+
+data/repository/** (se usa parsing o generator)
+
+eventuali ViewModel che costruiscono export
+
+Checkpoint: ./gradlew :app:kspDebugKotlin
+
+S4.6 — Pulizia cartelle vuote in data/
+
+Se ora vuote, eliminare:
+
+app/src/main/java/com/app/miklink/data/pdf/
+
+app/src/main/java/com/app/miklink/data/io/
+
+Se rimane qualcosa dentro: STOP e riportare cosa resta.
+
+S4.7 — Build finale (obbligatoria)
+
+Eseguire:
+
+./gradlew :app:kspDebugKotlin
+
+./gradlew assembleDebug
+
+./gradlew testDebugUnitTest
+
+Output richiesto a fine EPIC (obbligatorio)
+
+Elenco file sotto:
+
+app/src/main/java/com/app/miklink/core/data/pdf/**
+
+app/src/main/java/com/app/miklink/core/data/io/**
+
+Conferma assenza vecchi package:
+
+nessun file sotto com.app.miklink.data.pdf.*
+
+nessun file sotto com.app.miklink.data.io.*
+
+Report docs:
+
+docs/migration/S4_BASELINE.md
+
+docs/migration/S4_RESULT.md (lista file migrati + conferme PASS)
+
+Criteri di accettazione
+
+PDF/IO vivono in core/data/**
+
+DI aggiornata
+
+build verde (KSP/assemble/unit)
+
+nessuna modifica funzionale a PDF/parsing
+
+
+
+
+
+
+
+
+
+S4 — Migrazione PDF + IO in core/data (NO refactor funzionale)
+Obiettivo
+
+Spostare i moduli PDF e IO da data/ a core/data/, mantenendo invariata la logica:
+
+nessun cambiamento ai risultati PDF
+
+nessun cambiamento al parsing di resultsJson
+
+nessun cambiamento alla UI (solo import/DI)
+
+Scope preciso
+
+Da migrare (come da struttura che avevamo visto):
+
+app/src/main/java/com/app/miklink/data/pdf/**
+
+PdfGenerator.kt
+
+PdfGeneratorIText.kt
+
+PdfExportConfig.kt
+
+ParsedResultsParser.kt
+
+PdfDocumentHelper.kt
+
+app/src/main/java/com/app/miklink/data/io/**
+
+FileReader.kt
+
+ContentResolverFileReader.kt
+
+DI:
+
+app/src/main/java/com/app/miklink/di/PdfModule.kt (e import collegati)
+
+Riferimenti nel codice (ViewModel/UI/History ecc.) che importano questi componenti
+
+Vincoli (anti-drift)
+
+❌ Vietato cambiare logica PDF (layout, formattazione, campi, calcoli, parsing).
+
+❌ Vietato cambiare la struttura dati di resultsJson e relativi parsing model.
+
+❌ Vietato cambiare firme pubbliche (metodi/parametri) se non strettamente necessario per il move.
+
+✅ Consentito solo: move file, package coerente col path, aggiornare import e DI.
+
+✅ Checkpoint build obbligatori dopo ogni blocco.
+
+S4.0 — Preflight
+S4.0.1 Baseline build (obbligatorio)
+
+Eseguire e registrare l’esito (anche “BUILD SUCCESSFUL”):
+
+./gradlew :app:kspDebugKotlin
+
+./gradlew assembleDebug
+
+./gradlew testDebugUnitTest
+
+Stop condition: se fallisce, STOP e riportare l’errore (non fixare in questa EPIC).
+
+S4.1 — Creare struttura target (solo cartelle)
+
+Creare (se mancanti):
+
+app/src/main/java/com/app/miklink/core/data/pdf/
+
+app/src/main/java/com/app/miklink/core/data/pdf/impl/
+
+app/src/main/java/com/app/miklink/core/data/pdf/parser/
+
+app/src/main/java/com/app/miklink/core/data/io/
+
+app/src/main/java/com/app/miklink/core/data/io/impl/
+
+Checkpoint: ./gradlew :app:kspDebugKotlin
+
+S4.2 — Migrazione IO (meccanica)
+S4.2.1 Spostare interfaccia FileReader
+
+Spostare:
+
+data/io/FileReader.kt
+→
+
+core/data/io/FileReader.kt
+
+Aggiornare package:
+
+package com.app.miklink.core.data.io
+
+S4.2.2 Spostare implementazione ContentResolverFileReader
+
+Spostare:
+
+data/io/ContentResolverFileReader.kt
+→
+
+core/data/io/impl/ContentResolverFileReader.kt
+
+Aggiornare package:
+
+package com.app.miklink.core.data.io.impl
+
+Aggiornare import verso FileReader:
+
+com.app.miklink.core.data.io.FileReader
+
+Checkpoint: ./gradlew :app:kspDebugKotlin
+
+S4.3 — Migrazione PDF (meccanica)
+S4.3.1 Spostare interfaccia PdfGenerator
+
+Spostare:
+
+data/pdf/PdfGenerator.kt
+→
+
+core/data/pdf/PdfGenerator.kt
+
+Package:
+
+package com.app.miklink.core.data.pdf
+
+S4.3.2 Spostare config e helper “neutri”
+
+Spostare:
+
+data/pdf/PdfExportConfig.kt
+→ core/data/pdf/PdfExportConfig.kt
+
+data/pdf/PdfDocumentHelper.kt
+→ core/data/pdf/PdfDocumentHelper.kt
+
+Package:
+
+package com.app.miklink.core.data.pdf
+
+S4.3.3 Spostare parser resultsJson
+
+Spostare:
+
+data/pdf/ParsedResultsParser.kt
+→
+
+core/data/pdf/parser/ParsedResultsParser.kt
+
+Package:
+
+package com.app.miklink.core.data.pdf.parser
+
+⚠️ Vincolo: non cambiare logica di parsing (solo import/package).
+
+S4.3.4 Spostare implementazione iText
+
+Spostare:
+
+data/pdf/PdfGeneratorIText.kt
+→
+
+core/data/pdf/impl/PdfGeneratorIText.kt
+
+Package:
+
+package com.app.miklink.core.data.pdf.impl
+
+Aggiornare import verso:
+
+PdfGenerator (core)
+
+ParsedResultsParser (core)
+
+eventuali helper/config (core)
+
+Checkpoint: ./gradlew :app:kspDebugKotlin
+
+S4.4 — Aggiornare DI (PdfModule)
+
+File noto:
+
+app/src/main/java/com/app/miklink/di/PdfModule.kt
+
+S4.4.1 Aggiornare import e provider
+
+Aggiornare tutti i riferimenti da com.app.miklink.data.pdf... a:
+
+com.app.miklink.core.data.pdf.*
+
+com.app.miklink.core.data.pdf.impl.*
+
+com.app.miklink.core.data.pdf.parser.*
+
+Vincolo: stessa istanziazione di prima, stessi parametri.
+
+Checkpoint: ./gradlew :app:kspDebugKotlin
+
+S4.5 — Aggiornare import nel resto del codice
+S4.5.1 Ricerca e sostituzione import (solo import)
+
+Sostituire ovunque:
+
+com.app.miklink.data.pdf. → com.app.miklink.core.data.pdf.
+
+com.app.miklink.data.io. → com.app.miklink.core.data.io.
+
+Verificare almeno i file tipici:
+
+ui/history/** (export PDF, detail report)
+
+ui/settings/** (PdfSettings)
+
+data/repository/** (se usa parsing o generator)
+
+eventuali ViewModel che costruiscono export
+
+Checkpoint: ./gradlew :app:kspDebugKotlin
+
+S4.6 — Pulizia cartelle vuote in data/
+
+Se ora vuote, eliminare:
+
+app/src/main/java/com/app/miklink/data/pdf/
+
+app/src/main/java/com/app/miklink/data/io/
+
+Se rimane qualcosa dentro: STOP e riportare cosa resta.
+
+S4.7 — Build finale (obbligatoria)
+
+Eseguire:
+
+./gradlew :app:kspDebugKotlin
+
+./gradlew assembleDebug
+
+./gradlew testDebugUnitTest
+
+Output richiesto a fine EPIC (obbligatorio)
+
+Elenco file sotto:
+
+app/src/main/java/com/app/miklink/core/data/pdf/**
+
+app/src/main/java/com/app/miklink/core/data/io/**
+
+Conferma assenza vecchi package:
+
+nessun file sotto com.app.miklink.data.pdf.*
+
+nessun file sotto com.app.miklink.data.io.*
+
+Report docs:
+
+docs/migration/S4_BASELINE.md
+
+docs/migration/S4_RESULT.md (lista file migrati + conferme PASS)
+
+Criteri di accettazione
+
+PDF/IO vivono in core/data/**
+
+DI aggiornata
+
+build verde (KSP/assemble/unit)
+
+nessuna modifica funzionale a PDF/parsing
+
+
+EPIC S3 — Migrazione Room v1 in core/data/local/room/v1 (NO refactor DB, NO v2)
+Obiettivo
+
+Spostare tutto il DB Room attuale (v1) da:
+
+app/src/main/java/com/app/miklink/data/db/**
+
+a:
+
+app/src/main/java/com/app/miklink/core/data/local/room/v1/**
+
+e aggiornare DI e import, senza cambiare lo schema, senza introdurre DB v2, senza modificare migrazioni.
+
+Perché ora
+
+È un blocco meccanico come S2.
+
+Riduce dipendenze “data/*” e prepara lo split SOLID senza toccare la logica.
+
+Vincoli (anti-drift)
+
+❌ Vietato cambiare @Database(version=...), @Entity, @Dao, Migrations logic, nomi tabelle/colonne.
+
+❌ Vietato rinominare classi o campi.
+
+❌ Vietato introdurre nuove entity/dao/DB o “copie minime”.
+
+✅ Consentito solo: spostare file, aggiornare package, aggiornare import, aggiornare moduli DI.
+
+✅ Checkpoint obbligatori e stop condition.
+
+S3.0 — Preflight & sanity check
+S3.0.1 Baseline build (obbligatorio)
+
+Eseguire e salvare output (anche “BUILD SUCCESSFUL”):
+
+./gradlew :app:kspDebugKotlin
+
+./gradlew assembleDebug
+
+./gradlew testDebugUnitTest
+
+Stop condition: se fallisce, fermarsi e riportare errore.
+
+S3.0.2 Sanity check path (obbligatorio)
+
+Verificare che il path base sia coerente:
+
+i sorgenti devono stare sotto:
+app/src/main/java/com/app/miklink/
+Se trovi file sotto com/app/mikrotik/ o altri path simili: STOP e riportare elenco (non correggere in questa EPIC).
+
+S3.1 — Inventario DB v1 esistente (senza modifiche)
+
+Confermare esistenza di questi file (path attuali):
+
+app/src/main/java/com/app/miklink/data/db/AppDatabase.kt
+
+app/src/main/java/com/app/miklink/data/db/Migrations.kt
+
+app/src/main/java/com/app/miklink/data/db/dao/ClientDao.kt
+
+app/src/main/java/com/app/miklink/data/db/dao/ProbeConfigDao.kt
+
+app/src/main/java/com/app/miklink/data/db/dao/ReportDao.kt
+
+app/src/main/java/com/app/miklink/data/db/dao/TestProfileDao.kt
+
+app/src/main/java/com/app/miklink/data/db/model/Client.kt
+
+app/src/main/java/com/app/miklink/data/db/model/ProbeConfig.kt
+
+app/src/main/java/com/app/miklink/data/db/model/Report.kt
+
+app/src/main/java/com/app/miklink/data/db/model/TestProfile.kt
+
+app/src/main/java/com/app/miklink/data/db/model/LogEntry.kt (se esiste)
+
+app/src/main/java/com/app/miklink/data/db/model/NetworkMode.kt (se esiste)
+
+Se nomi/percorsi differiscono: STOP e riportare elenco reale.
+
+S3.2 — Creare struttura target (solo cartelle)
+
+Creare (se mancanti):
+
+app/src/main/java/com/app/miklink/core/data/local/room/v1/
+
+app/src/main/java/com/app/miklink/core/data/local/room/v1/dao/
+
+app/src/main/java/com/app/miklink/core/data/local/room/v1/model/
+
+app/src/main/java/com/app/miklink/core/data/local/room/v1/migration/
+
+Checkpoint: ./gradlew :app:kspDebugKotlin
+
+S3.3 — Migrazione model (Entity) v1
+S3.3.1 Spostare model
+
+Spostare fisicamente tutti i file in:
+
+app/src/main/java/com/app/miklink/data/db/model/*
+→ in:
+
+app/src/main/java/com/app/miklink/core/data/local/room/v1/model/*
+
+S3.3.2 Aggiornare package
+
+Aggiornare package a:
+
+package com.app.miklink.core.data.local.room.v1.model
+
+S3.3.3 Fix import nei DAO e DB
+
+Aggiornare import dei model in:
+
+DAO (client/probe/report/profile)
+
+AppDatabase
+
+Migrations (se referenzia entity class)
+
+Checkpoint: ./gradlew :app:kspDebugKotlin
+Stop condition: fix solo import/package finché passa.
+
+S3.4 — Migrazione DAO v1
+S3.4.1 Spostare DAO
+
+Spostare fisicamente:
+
+app/src/main/java/com/app/miklink/data/db/dao/*
+→
+
+app/src/main/java/com/app/miklink/core/data/local/room/v1/dao/*
+
+S3.4.2 Aggiornare package DAO
+
+package com.app.miklink.core.data.local.room.v1.dao
+
+S3.4.3 Fix import entity nei DAO
+
+Verificare import a:
+
+com.app.miklink.core.data.local.room.v1.model.*
+
+Checkpoint: ./gradlew :app:kspDebugKotlin
+
+S3.5 — Migrazione AppDatabase + Migrations
+S3.5.1 Spostare AppDatabase
+
+Spostare:
+
+data/db/AppDatabase.kt
+→
+
+core/data/local/room/v1/AppDatabase.kt
+
+Aggiornare package:
+
+package com.app.miklink.core.data.local.room.v1
+
+Aggiornare import DAO:
+
+com.app.miklink.core.data.local.room.v1.dao.*
+e import model:
+
+com.app.miklink.core.data.local.room.v1.model.*
+
+S3.5.2 Spostare Migrations
+
+Spostare:
+
+data/db/Migrations.kt
+→
+
+core/data/local/room/v1/migration/Migrations.kt
+
+Aggiornare package:
+
+package com.app.miklink.core.data.local.room.v1.migration
+
+Aggiornare import necessari (Room Migration, SupportSQLiteDatabase, ecc.) senza cambiare logica.
+
+Checkpoint: ./gradlew :app:kspDebugKotlin
+Stop condition: fix import/package finché passa.
+
+S3.6 — Aggiornare DI (DatabaseModule)
+
+File noto:
+
+app/src/main/java/com/app/miklink/di/DatabaseModule.kt
+
+S3.6.1 Update import
+
+Aggiornare riferimenti a:
+
+AppDatabase → com.app.miklink.core.data.local.room.v1.AppDatabase
+
+Migrations → com.app.miklink.core.data.local.room.v1.migration.Migrations
+
+DAO → com.app.miklink.core.data.local.room.v1.dao.*
+
+⚠️ Non cambiare la creazione DB (nome DB, fallback, exportSchema, ecc.)
+
+Checkpoint: ./gradlew :app:kspDebugKotlin
+
+S3.7 — Aggiornare import nel resto del codice
+S3.7.1 Ricerca vecchio package
+
+Cercare e sostituire import:
+
+com.app.miklink.data.db.
+
+com.app.miklink.data.db.dao.
+
+com.app.miklink.data.db.model.
+
+con:
+
+com.app.miklink.core.data.local.room.v1.
+
+com.app.miklink.core.data.local.room.v1.dao.
+
+com.app.miklink.core.data.local.room.v1.model.
+
+File tipicamente impattati (controllare almeno):
+
+data/repository/* (AppRepository, BackupManager, TransactionRunner, ecc.)
+
+ui/**ViewModel.kt (se iniettano DAO direttamente)
+
+RepositoryModule.kt (se fornisce repository che dipendono da DAO)
+
+Checkpoint: ./gradlew :app:kspDebugKotlin
+
+S3.8 — Rimozione cartelle vuote e build finale
+S3.8.1 Eliminare cartelle DB v1 rimaste vuote
+
+Se ora vuote, eliminare:
+
+app/src/main/java/com/app/miklink/data/db/
+
+app/src/main/java/com/app/miklink/data/db/dao/
+
+app/src/main/java/com/app/miklink/data/db/model/
+
+Se rimane qualcosa: STOP e riportare cosa.
+
+S3.8.2 Build finale (obbligatoria)
+
+Eseguire:
+
+./gradlew :app:kspDebugKotlin
+
+./gradlew assembleDebug
+
+./gradlew testDebugUnitTest
+
+Output richiesto a fine EPIC (obbligatorio)
+
+Elenco file sotto:
+
+app/src/main/java/com/app/miklink/core/data/local/room/v1/** (tutti i file)
+
+Conferma assenza dei vecchi package:
+
+nessun file sotto com.app.miklink.data.db.*
+
+Output comandi finali: PASS per KSP/assemble/tests.
+
+Aggiornare docs/migration/ con:
+
+S3_BASELINE.md (esito step S3.0.1)
+
+S3_RESULT.md (lista file migrati e conferme)
+
+Criteri di accettazione
+
+Room v1 è completamente sotto core/data/local/room/v1
+
+DI aggiornata e build verde
+
+Nessun cambiamento funzionale allo schema o alle migrazioni
+
+Nessun duplicato di entity/dao/database
+
+
 EPIC S2 — Migrazione Networking MikroTik in core/data/remote/mikrotik (NO refactor funzionale)
 Obiettivo
 

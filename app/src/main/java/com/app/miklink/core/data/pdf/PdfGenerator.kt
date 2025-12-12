@@ -1,4 +1,4 @@
-package com.app.miklink.data.pdf
+package com.app.miklink.core.data.pdf
 
 import com.app.miklink.core.data.local.room.v1.model.Client
 import com.app.miklink.core.data.local.room.v1.model.Report
@@ -15,3 +15,4 @@ interface PdfGenerator {
 
     fun generateSingleTestPdf(report: Report, client: Client?, profile: TestProfile?, reportTitle: String): File?
 }
+

@@ -1,4 +1,4 @@
-package com.app.miklink.data.pdf
+package com.app.miklink.core.data.pdf.parser
 
 import com.app.miklink.core.data.remote.mikrotik.dto.CableTestResult
 import com.app.miklink.core.data.remote.mikrotik.dto.PingResult
@@ -106,3 +106,4 @@ class ParsedResultsParser @Inject constructor(private val moshi: Moshi) {
         }
     }
 }
+

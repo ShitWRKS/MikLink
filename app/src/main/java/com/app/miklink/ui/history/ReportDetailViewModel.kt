@@ -10,7 +10,8 @@ import com.app.miklink.core.data.local.room.v1.dao.TestProfileDao
 import com.app.miklink.core.data.local.room.v1.model.Report
 import com.app.miklink.core.data.local.room.v1.model.TestProfile
 
-import com.app.miklink.data.pdf.PdfGenerator
+import com.app.miklink.core.data.pdf.PdfGenerator
+import com.app.miklink.core.data.pdf.PdfExportConfig
 import com.app.miklink.ui.history.model.ParsedResults
 import com.squareup.moshi.Moshi
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -110,7 +111,7 @@ class ReportDetailViewModel @Inject constructor(
     }
     
     // Generate PDF File for single test using iText with Config
-    suspend fun generatePdfWithIText(config: com.app.miklink.data.pdf.PdfExportConfig): java.io.File? {
+    suspend fun generatePdfWithIText(config: PdfExportConfig): java.io.File? {
         val currentReport = report.value ?: return null
         val client = currentReport.clientId?.let { it -> clientDao.getClientById(it).firstOrNull() }
         

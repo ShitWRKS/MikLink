@@ -1,0 +1,110 @@
+﻿> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :app:processDebugNavigationResources UP-TO-DATE
+> Task :app:compileDebugNavigationResources UP-TO-DATE
+> Task :app:generateDebugResValues UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :app:mergeDebugResources UP-TO-DATE
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :app:processDebugMainManifest UP-TO-DATE
+> Task :app:processDebugManifest UP-TO-DATE
+> Task :app:processDebugManifestForPackage UP-TO-DATE
+> Task :app:processDebugResources UP-TO-DATE
+> Task :app:kspDebugKotlin UP-TO-DATE
+> Task :app:javaPreCompileDebug UP-TO-DATE
+> Task :app:mergeDebugShaders UP-TO-DATE
+> Task :app:compileDebugShaders NO-SOURCE
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :app:mergeDebugAssets UP-TO-DATE
+> Task :app:compressDebugAssets UP-TO-DATE
+> Task :app:desugarDebugFileDependencies UP-TO-DATE
+> Task :app:checkDebugDuplicateClasses UP-TO-DATE
+> Task :app:mergeExtDexDebug UP-TO-DATE
+> Task :app:mergeLibDexDebug UP-TO-DATE
+> Task :app:mergeDebugJniLibFolders UP-TO-DATE
+> Task :app:mergeDebugNativeLibs UP-TO-DATE
+> Task :app:stripDebugDebugSymbols UP-TO-DATE
+> Task :app:validateSigningDebug UP-TO-DATE
+> Task :app:writeDebugAppMetadata UP-TO-DATE
+> Task :app:writeDebugSigningConfigVersions UP-TO-DATE
+
+> Task :app:compileDebugKotlin
+./gradlew : exception: WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+In C:\Users\dot\AppData\Local\Temp\ps-script-e1d96964-c3c4-43ae-948f-8febdf1ea47a.ps1:77 car:48
++ ... t\AndroidStudioProjects\MikLink; ./gradlew assembleDebug 2>&1 | Out-F ...
++                                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (exception: WARN...has been called:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+exception: WARNING: sun.misc.Unsafe::objectFieldOffset has been called by 
+org.jetbrains.kotlin.com.intellij.util.containers.Unsafe (file:/C:/Users/dot/.gradle/caches/modules-2/files-2.1/org.jet
+brains.kotlin/kotlin-compiler-embeddable/2.1.0/988bf980588bbbcfa1ba19c1ffd7aa869b335a31/kotlin-compiler-embeddable-2.1.
+0.jar)
+exception: WARNING: Please consider reporting this to the maintainers of class 
+org.jetbrains.kotlin.com.intellij.util.containers.Unsafe
+exception: WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+exception: app\src\main\java\com\app\miklink\data\repository\AppRepository.kt:264:26: warning: this declaration 
+overrides a deprecated member but is not marked as deprecated itself. Please add the '@Deprecated' annotation or 
+suppress the diagnostic.
+exception:     override suspend fun runCableTest(probe: ProbeConfig, interfaceName: String): UiState<CableTestResult> {
+exception:                          ^^^^^^^^^^^^
+exception: app\src\main\java\com\app\miklink\data\repository\AppRepository.kt:321:26: warning: this declaration 
+overrides a deprecated member but is not marked as deprecated itself. Please add the '@Deprecated' annotation or 
+suppress the diagnostic.
+exception:     override suspend fun getLinkStatus(probe: ProbeConfig, interfaceName: String): UiState<MonitorResponse> 
+= safeApiCall {
+exception:                          ^^^^^^^^^^^^^
+exception: app\src\main\java\com\app\miklink\data\repository\AppRepository.kt:327:26: warning: this declaration 
+overrides a deprecated member but is not marked as deprecated itself. Please add the '@Deprecated' annotation or 
+suppress the diagnostic.
+exception:     override suspend fun getNeighborsForInterface(probe: ProbeConfig, interfaceName: String): 
+UiState<List<NeighborDetail>> {
+exception:                          ^^^^^^^^^^^^^^^^^^^^^^^^
+exception: app\src\main\java\com\app\miklink\data\repository\AppRepository.kt:356:26: warning: this declaration 
+overrides a deprecated member but is not marked as deprecated itself. Please add the '@Deprecated' annotation or 
+suppress the diagnostic.
+exception:     override suspend fun runPing(probe: ProbeConfig, target: String, interfaceName: String, count: Int): 
+UiState<List<PingResult>> = safeApiCall {
+exception:                          ^^^^^^^
+exception: app\src\main\java\com\app\miklink\data\repository\AppRepository.kt:365:26: warning: this declaration 
+overrides a deprecated member but is not marked as deprecated itself. Please add the '@Deprecated' annotation or 
+suppress the diagnostic.
+exception:     override suspend fun runSpeedTest(probe: ProbeConfig, client: Client): UiState<SpeedTestResult> {
+exception:                          ^^^^^^^^^^^^
+exception: app\src\main\java\com\app\miklink\data\teststeps\NetworkConfigStepImpl.kt:19:52: warning: 'suspend fun 
+applyClientNetworkConfig(probe: ProbeConfig, client: Client, override: Client? = ...): NetworkConfigFeedback' is 
+deprecated. Temporary bridge: replace with dedicated implementation.
+exception:             val feedback = networkConfigRepository.applyClientNetworkConfig(
+exception:                                                    ^^^^^^^^^^^^^^^^^^^^^^^^
+
+> Task :app:compileDebugJavaWithJavac
+> Task :app:hiltAggregateDepsDebug UP-TO-DATE
+> Task :app:hiltJavaCompileDebug
+> Task :app:processDebugJavaRes UP-TO-DATE
+> Task :app:mergeDebugJavaResource UP-TO-DATE
+> Task :app:transformDebugClassesWithAsm
+> Task :app:dexBuilderDebug
+> Task :app:mergeDebugGlobalSynthetics UP-TO-DATE
+> Task :app:mergeProjectDexDebug
+> Task :app:packageDebug
+> Task :app:createDebugApkListingFileRedirect UP-TO-DATE
+> Task :app:assembleDebug
+
+[Incubating] Problems report is available at: file:///C:/Users/dot/AndroidStudioProjects/MikLink/build/reports/problems/problems-report.html
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/9.1.0/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD SUCCESSFUL in 20s
+42 actionable tasks: 7 executed, 35 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.1.0/userguide/configuration_cache_enabling.html

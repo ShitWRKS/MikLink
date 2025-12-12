@@ -411,7 +411,10 @@ fun TestInProgressView(
                             section.details.forEach { d ->
                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                     Text(d.label)
-                                    Text(d.value, fontWeight = FontWeight.Bold)
+                                    Text(
+                                        if (d.label == "reason") TestSkipReasonMapper.getLocalizedReason(d.value) else d.value,
+                                        fontWeight = FontWeight.Bold
+                                    )
                                 }
                             }
                         }
@@ -498,7 +501,7 @@ fun TestInProgressView(
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
                                             Text(
-                                                d.value,
+                                                if (d.label == "reason") TestSkipReasonMapper.getLocalizedReason(d.value) else d.value,
                                                 style = MaterialTheme.typography.bodyMedium,
                                                 fontWeight = FontWeight.Bold
                                             )
@@ -681,7 +684,10 @@ fun TestCompletedView(
                 section.details.forEach { d ->
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(d.label)
-                        Text(d.value, fontWeight = FontWeight.Bold)
+                        Text(
+                            if (d.label == "reason") TestSkipReasonMapper.getLocalizedReason(d.value) else d.value,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
             }
@@ -698,7 +704,10 @@ fun TestCompletedView(
                 section.details.forEach { d ->
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(d.label)
-                        Text(d.value, fontWeight = FontWeight.Bold)
+                        Text(
+                            if (d.label == "reason") TestSkipReasonMapper.getLocalizedReason(d.value) else d.value,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
             }
@@ -717,7 +726,10 @@ fun TestCompletedView(
                     linkSec.details.forEach { d ->
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text(d.label)
-                            Text(d.value, fontWeight = FontWeight.Bold)
+                            Text(
+                                if (d.label == "reason") TestSkipReasonMapper.getLocalizedReason(d.value) else d.value,
+                                fontWeight = FontWeight.Bold
+                            )
                         }
                     }
                 }
@@ -803,7 +815,7 @@ fun TestCompletedView(
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                     Text(
-                                        d.value,
+                                        if (d.label == "reason") TestSkipReasonMapper.getLocalizedReason(d.value) else d.value,
                                         style = MaterialTheme.typography.bodyMedium,
                                         fontWeight = FontWeight.Bold
                                     )
@@ -828,7 +840,10 @@ fun TestCompletedView(
                     tdrSec.details.forEach { d ->
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text(d.label)
-                            Text(d.value, fontWeight = FontWeight.Bold)
+                            Text(
+                                if (d.label == "reason") TestSkipReasonMapper.getLocalizedReason(d.value) else d.value,
+                                fontWeight = FontWeight.Bold
+                            )
                         }
                     }
                 }
@@ -871,7 +886,10 @@ fun TestCompletedView(
                             else -> {
                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                     Text(d.label)
-                                    Text(d.value, fontWeight = FontWeight.Bold)
+                                    Text(
+                                        if (d.label == "reason") TestSkipReasonMapper.getLocalizedReason(d.value) else d.value,
+                                        fontWeight = FontWeight.Bold
+                                    )
                                 }
                             }
                         }

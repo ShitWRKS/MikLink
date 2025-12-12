@@ -1,4 +1,4 @@
-package com.app.miklink.data.pdf
+package com.app.miklink.core.data.pdf
 
 import com.itextpdf.io.font.constants.StandardFonts
 import com.itextpdf.kernel.colors.ColorConstants
@@ -194,3 +194,4 @@ class PdfDocumentHelper {
         }
     }
 }
+

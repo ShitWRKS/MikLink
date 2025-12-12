@@ -6,9 +6,9 @@ import androidx.lifecycle.viewModelScope
 import com.app.miklink.core.data.local.room.v1.dao.ClientDao
 import com.app.miklink.core.data.local.room.v1.dao.ReportDao
 import com.app.miklink.core.data.local.room.v1.model.Client
-import com.app.miklink.data.pdf.ExportColumn
-import com.app.miklink.data.pdf.PdfExportConfig
-import com.app.miklink.data.pdf.PdfGenerator
+import com.app.miklink.core.data.pdf.ExportColumn
+import com.app.miklink.core.data.pdf.PdfExportConfig
+import com.app.miklink.core.data.pdf.PdfGenerator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch

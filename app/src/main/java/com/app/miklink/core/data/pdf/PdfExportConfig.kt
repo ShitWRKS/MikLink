@@ -1,4 +1,4 @@
-package com.app.miklink.data.pdf
+package com.app.miklink.core.data.pdf
 
 enum class ExportColumn(val label: String) {
     SOCKET("Presa"),
@@ -26,3 +26,4 @@ data class PdfExportConfig(
     val orientation: PdfPageOrientation = PdfPageOrientation.LANDSCAPE,
     val hideEmptyColumns: Boolean = false
 )
+

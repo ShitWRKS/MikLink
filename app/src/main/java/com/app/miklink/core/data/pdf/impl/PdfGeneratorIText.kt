@@ -1,13 +1,19 @@
-package com.app.miklink.data.pdf
+package com.app.miklink.core.data.pdf.impl
 
 import android.content.Context
 import com.app.miklink.core.data.local.room.v1.model.Client
 import com.app.miklink.core.data.local.room.v1.model.Report
 import com.app.miklink.core.data.local.room.v1.model.TestProfile
+import com.app.miklink.core.data.pdf.ExportColumn
+import com.app.miklink.core.data.pdf.PdfDocumentHelper
+import com.app.miklink.core.data.pdf.PdfExportConfig
+import com.app.miklink.core.data.pdf.PdfGenerator
+import com.app.miklink.core.data.pdf.PdfPageOrientation
+import com.app.miklink.core.data.pdf.parser.ParsedResultsParser
 import com.app.miklink.ui.history.model.ParsedResults
-import com.app.miklink.utils.normalizeTime
 import com.app.miklink.utils.normalizeLinkSpeed
 import com.app.miklink.utils.normalizeLinkStatus
+import com.app.miklink.utils.normalizeTime
 import com.itextpdf.io.font.constants.StandardFonts
 import com.itextpdf.kernel.colors.ColorConstants
 import com.itextpdf.kernel.colors.DeviceRgb
@@ -343,3 +349,4 @@ class PdfGeneratorIText @Inject constructor(
         return parsedResultsParser.parse(json)
     }
 }
+

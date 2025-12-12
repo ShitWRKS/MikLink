@@ -20,10 +20,24 @@ import javax.inject.Singleton
 // removed duplicate import
 import com.app.miklink.domain.usecase.backup.ImportBackupUseCase
 import com.app.miklink.domain.usecase.backup.ImportBackupUseCaseImpl
-import com.app.miklink.data.io.FileReader
-import com.app.miklink.data.io.ContentResolverFileReader
+import com.app.miklink.core.data.io.FileReader
+import com.app.miklink.core.data.io.impl.ContentResolverFileReader
 import dagger.hilt.android.qualifiers.ApplicationContext
 import android.content.Context
+import com.app.miklink.core.data.repository.client.ClientRepository
+import com.app.miklink.core.data.repository.probe.ProbeRepository
+import com.app.miklink.core.data.repository.report.ReportRepository
+import com.app.miklink.core.data.repository.test.TestProfileRepository
+import com.app.miklink.core.data.repository.test.MikroTikTestRepository
+import com.app.miklink.core.data.repository.test.NetworkConfigRepository
+import com.app.miklink.core.data.repository.test.PingTargetResolver
+import com.app.miklink.data.repositoryimpl.roomv1.RoomV1ClientRepository
+import com.app.miklink.data.repositoryimpl.roomv1.RoomV1ProbeRepository
+import com.app.miklink.data.repositoryimpl.roomv1.RoomV1ReportRepository
+import com.app.miklink.data.repositoryimpl.roomv1.RoomV1TestProfileRepository
+import com.app.miklink.data.repositoryimpl.mikrotik.MikroTikTestRepositoryImpl
+import com.app.miklink.data.repositoryimpl.NetworkConfigRepositoryImpl
+import com.app.miklink.data.repositoryimpl.PingTargetResolverImpl
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -36,6 +50,35 @@ abstract class RepositoryModule {
 
     @Binds
     abstract fun bindImportBackupUseCase(impl: ImportBackupUseCaseImpl): ImportBackupUseCase
+
+    // S5: Repository bindings
+    @Binds
+    @Singleton
+    abstract fun bindClientRepository(impl: RoomV1ClientRepository): ClientRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindProbeRepository(impl: RoomV1ProbeRepository): ProbeRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindTestProfileRepository(impl: RoomV1TestProfileRepository): TestProfileRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindReportRepository(impl: RoomV1ReportRepository): ReportRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindMikroTikTestRepository(impl: MikroTikTestRepositoryImpl): MikroTikTestRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindNetworkConfigRepository(impl: NetworkConfigRepositoryImpl): NetworkConfigRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindPingTargetResolver(impl: PingTargetResolverImpl): PingTargetResolver
 
     companion object {
         @Provides

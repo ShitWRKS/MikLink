@@ -167,4 +167,12 @@
     <string name="status_fail">FAIL</string>
     <string name="test_passed">TEST PASSED</string>
     <string name="test_failed">TEST FAILED</string>
+    
+    <!-- Test Skip Reasons -->
+    <string name="skip_reason_ping_no_targets">No ping targets configured</string>
+    <string name="skip_reason_ping_no_valid_targets">No valid ping targets</string>
+    <string name="skip_reason_speed_no_server">Speed test server not configured</string>
+    <string name="skip_reason_profile_disabled">Test disabled in profile</string>
+    <string name="skip_reason_hardware_unsupported">Hardware does not support this test</string>
+    <string name="skip_reason_unknown">Unknown reason</string>
 </resources>

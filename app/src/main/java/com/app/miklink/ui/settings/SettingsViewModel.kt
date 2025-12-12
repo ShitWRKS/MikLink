@@ -5,7 +5,7 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.app.miklink.core.data.repository.BackupRepository
-import com.app.miklink.data.io.FileReader
+import com.app.miklink.core.data.io.FileReader
 import com.app.miklink.domain.usecase.backup.ImportBackupUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -76,7 +76,7 @@ class SettingsViewModel @Inject constructor(
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = com.app.miklink.data.pdf.ExportColumn.values().map { it.name }.toSet()
+            initialValue = com.app.miklink.core.data.pdf.ExportColumn.values().map { it.name }.toSet()
         )
 
     fun updatePdfIncludeEmptyTests(include: Boolean) {

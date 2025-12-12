@@ -209,42 +209,23 @@ Un’epic è considerata completata solo se:
 Solo quando tutti questi punti sono soddisfatti, l’epic può essere considerata “Done” e si può passare alla successiva.
 
 
+EPIC S5.1 — Hardening S5 (cleanup + rimozione commenti + riduzione dipendenze legacy)
 
-EPIC S3 — Migrazione Room v1 in core/data/local/room/v1 (NO refactor DB, NO v2)
+Copia/incolla in roadmap.
+
 Obiettivo
 
-Spostare tutto il DB Room attuale (v1) da:
+Eliminare drift post-S5: niente blocchi commentati, ridurre dipendenze residue da AppRepository, rendere deterministico l’output del runner (sections + rawResultsJson) senza cambiare UI/UX.
 
-app/src/main/java/com/app/miklink/data/db/**
+Vincoli
 
-a:
+❌ Nessun cambiamento UI/UX (progress + pass/fail invariati).
 
-app/src/main/java/com/app/miklink/core/data/local/room/v1/**
+❌ Nessun cambiamento a endpoint/payload MikroTik.
 
-e aggiornare DI e import, senza cambiare lo schema, senza introdurre DB v2, senza modificare migrazioni.
+✅ Solo cleanup strutturale e mapping deterministico.
 
-Perché ora
-
-È un blocco meccanico come S2.
-
-Riduce dipendenze “data/*” e prepara lo split SOLID senza toccare la logica.
-
-Vincoli (anti-drift)
-
-❌ Vietato cambiare @Database(version=...), @Entity, @Dao, Migrations logic, nomi tabelle/colonne.
-
-❌ Vietato rinominare classi o campi.
-
-❌ Vietato introdurre nuove entity/dao/DB o “copie minime”.
-
-✅ Consentito solo: spostare file, aggiornare package, aggiornare import, aggiornare moduli DI.
-
-✅ Checkpoint obbligatori e stop condition.
-
-S3.0 — Preflight & sanity check
-S3.0.1 Baseline build (obbligatorio)
-
-Eseguire e salvare output (anche “BUILD SUCCESSFUL”):
+S5.1.0 — Preflight
 
 ./gradlew :app:kspDebugKotlin
 
@@ -252,246 +233,124 @@ Eseguire e salvare output (anche “BUILD SUCCESSFUL”):
 
 ./gradlew testDebugUnitTest
 
-Stop condition: se fallisce, fermarsi e riportare errore.
+Scrivere docs/migration/S5_1_BASELINE.md con esito.
 
-S3.0.2 Sanity check path (obbligatorio)
+S5.1.1 — Rimozione “commented legacy code” da TestViewModel
 
-Verificare che il path base sia coerente:
+Target: ui/test/TestViewModel.kt
 
-i sorgenti devono stare sotto:
-app/src/main/java/com/app/miklink/
-Se trovi file sotto com/app/mikrotik/ o altri path simili: STOP e riportare elenco (non correggere in questa EPIC).
+Eliminare completamente i blocchi commentati “legacy orchestration”.
 
-S3.1 — Inventario DB v1 esistente (senza modifiche)
+Se serve conservazione storica:
 
-Confermare esistenza di questi file (path attuali):
+creare file TestViewModel_legacy.kt in percorso legacy concordato oppure usare suffisso _legacy (in base alla policy del progetto),
 
-app/src/main/java/com/app/miklink/data/db/AppDatabase.kt
+ma mai tenere 600+ linee commentate nel file attivo.
 
-app/src/main/java/com/app/miklink/data/db/Migrations.kt
+Checkpoint: 3 comandi build PASS.
 
-app/src/main/java/com/app/miklink/data/db/dao/ClientDao.kt
+S5.1.2 — NetworkConfigRepository bridge: renderlo esplicito e tracciabile
 
-app/src/main/java/com/app/miklink/data/db/dao/ProbeConfigDao.kt
+Target:
 
-app/src/main/java/com/app/miklink/data/db/dao/ReportDao.kt
+core/data/repository/test/NetworkConfigRepository.kt
 
-app/src/main/java/com/app/miklink/data/db/dao/TestProfileDao.kt
+data/repositoryimpl/NetworkConfigRepositoryImpl.kt
 
-app/src/main/java/com/app/miklink/data/db/model/Client.kt
+Aggiungere KDoc chiaro:
 
-app/src/main/java/com/app/miklink/data/db/model/ProbeConfig.kt
+“Temporary bridge to AppRepository; will be removed in EPIC S6 (or next).”
 
-app/src/main/java/com/app/miklink/data/db/model/Report.kt
+Marcare metodi bridge con @Deprecated("Temporary bridge: replace with dedicated implementation").
 
-app/src/main/java/com/app/miklink/data/db/model/TestProfile.kt
+Se l’impl dipende da AppRepository, documentare esattamente quali metodi usa.
 
-app/src/main/java/com/app/miklink/data/db/model/LogEntry.kt (se esiste)
+Checkpoint: build PASS.
 
-app/src/main/java/com/app/miklink/data/db/model/NetworkMode.kt (se esiste)
+S5.1.3 — Estrarre resolveTargetIp fuori da AppRepository
 
-Se nomi/percorsi differiscono: STOP e riportare elenco reale.
+Target attuale (da S5 Result):
 
-S3.2 — Creare struttura target (solo cartelle)
+PingStep “temporaneamente” usa resolveTargetIp.
 
-Creare (se mancanti):
+Nuovo contratto
 
-app/src/main/java/com/app/miklink/core/data/local/room/v1/
+Creare:
 
-app/src/main/java/com/app/miklink/core/data/local/room/v1/dao/
+core/data/repository/test/PingTargetResolver.kt
 
-app/src/main/java/com/app/miklink/core/data/local/room/v1/model/
+suspend fun resolve(client: Client, profile: TestProfile, input: String): String
 
-app/src/main/java/com/app/miklink/core/data/local/room/v1/migration/
+Implementazione
 
-Checkpoint: ./gradlew :app:kspDebugKotlin
+Creare:
 
-S3.3 — Migrazione model (Entity) v1
-S3.3.1 Spostare model
+data/repositoryimpl/PingTargetResolverImpl.kt
 
-Spostare fisicamente tutti i file in:
+Implementazione deve replicare la logica corrente (senza ottimizzare).
 
-app/src/main/java/com/app/miklink/data/db/model/*
-→ in:
+Aggiornare:
 
-app/src/main/java/com/app/miklink/core/data/local/room/v1/model/*
+PingStepImpl per usare PingTargetResolver invece di AppRepository.
 
-S3.3.2 Aggiornare package
+Checkpoint: build PASS.
 
-Aggiornare package a:
+S5.1.4 — Rendere deterministico rawResultsJson
 
-package com.app.miklink.core.data.local.room.v1.model
+Target: RunTestUseCaseImpl.kt
 
-S3.3.3 Fix import nei DAO e DB
+Definire una struttura JSON minima e stabile (anche “v1”), ad esempio:
 
-Aggiornare import dei model in:
+timestamp
 
-DAO (client/probe/report/profile)
+plan (clientId/probeId/profileId/socketId)
 
-AppDatabase
+steps array con: name, status, data (se presente), error (se presente)
 
-Migrations (se referenzia entity class)
+⚠️ Vincolo: non inventare campi “di rete” non disponibili. Usa solo ciò che già hai in StepResult/DTO.
 
-Checkpoint: ./gradlew :app:kspDebugKotlin
-Stop condition: fix solo import/package finché passa.
+Serializzare con Moshi o altro già presente in progetto (senza introdurre nuove librerie).
 
-S3.4 — Migrazione DAO v1
-S3.4.1 Spostare DAO
+Popolare TestOutcome.rawResultsJson sempre (anche in fail: almeno con steps eseguiti).
 
-Spostare fisicamente:
+Checkpoint: build PASS.
 
-app/src/main/java/com/app/miklink/data/db/dao/*
-→
+S5.1.5 — Mapping minimo StepResult → TestSectionResult coerente
 
-app/src/main/java/com/app/miklink/core/data/local/room/v1/dao/*
+Target:
 
-S3.4.2 Aggiornare package DAO
+core/domain/test/model/TestSectionResult.kt
 
-package com.app.miklink.core.data.local.room.v1.dao
+RunTestUseCaseImpl.kt (costruzione outcome)
 
-S3.4.3 Fix import entity nei DAO
+Definire regole minime:
 
-Verificare import a:
+ogni Step produce 1 TestSectionResult con title, status, details.
 
-com.app.miklink.core.data.local.room.v1.model.*
+NON cambiare UI: adattare l’output a ciò che la UI già si aspetta oggi (se servono campi, aggiungerli al model in modo compatibile).
 
-Checkpoint: ./gradlew :app:kspDebugKotlin
+Checkpoint: build PASS.
 
-S3.5 — Migrazione AppDatabase + Migrations
-S3.5.1 Spostare AppDatabase
+S5.1.6 — Documentazione finale
 
-Spostare:
+Creare:
 
-data/db/AppDatabase.kt
-→
+docs/migration/S5_1_RESULT.md con:
 
-core/data/local/room/v1/AppDatabase.kt
+file modificati/creati (path completi),
 
-Aggiornare package:
+cosa è stato rimosso (commenti legacy),
 
-package com.app.miklink.core.data.local.room.v1
+conferma che PingStep non dipende più da AppRepository,
 
-Aggiornare import DAO:
+comandi finali PASS.
 
-com.app.miklink.core.data.local.room.v1.dao.*
-e import model:
+Criteri di accettazione S5.1
 
-com.app.miklink.core.data.local.room.v1.model.*
+Nessun blocco legacy commentato nei file attivi.
 
-S3.5.2 Spostare Migrations
+PingStep non usa più AppRepository.
 
-Spostare:
+rawResultsJson è sempre popolato in modo deterministico.
 
-data/db/Migrations.kt
-→
-
-core/data/local/room/v1/migration/Migrations.kt
-
-Aggiornare package:
-
-package com.app.miklink.core.data.local.room.v1.migration
-
-Aggiornare import necessari (Room Migration, SupportSQLiteDatabase, ecc.) senza cambiare logica.
-
-Checkpoint: ./gradlew :app:kspDebugKotlin
-Stop condition: fix import/package finché passa.
-
-S3.6 — Aggiornare DI (DatabaseModule)
-
-File noto:
-
-app/src/main/java/com/app/miklink/di/DatabaseModule.kt
-
-S3.6.1 Update import
-
-Aggiornare riferimenti a:
-
-AppDatabase → com.app.miklink.core.data.local.room.v1.AppDatabase
-
-Migrations → com.app.miklink.core.data.local.room.v1.migration.Migrations
-
-DAO → com.app.miklink.core.data.local.room.v1.dao.*
-
-⚠️ Non cambiare la creazione DB (nome DB, fallback, exportSchema, ecc.)
-
-Checkpoint: ./gradlew :app:kspDebugKotlin
-
-S3.7 — Aggiornare import nel resto del codice
-S3.7.1 Ricerca vecchio package
-
-Cercare e sostituire import:
-
-com.app.miklink.data.db.
-
-com.app.miklink.data.db.dao.
-
-com.app.miklink.data.db.model.
-
-con:
-
-com.app.miklink.core.data.local.room.v1.
-
-com.app.miklink.core.data.local.room.v1.dao.
-
-com.app.miklink.core.data.local.room.v1.model.
-
-File tipicamente impattati (controllare almeno):
-
-data/repository/* (AppRepository, BackupManager, TransactionRunner, ecc.)
-
-ui/**ViewModel.kt (se iniettano DAO direttamente)
-
-RepositoryModule.kt (se fornisce repository che dipendono da DAO)
-
-Checkpoint: ./gradlew :app:kspDebugKotlin
-
-S3.8 — Rimozione cartelle vuote e build finale
-S3.8.1 Eliminare cartelle DB v1 rimaste vuote
-
-Se ora vuote, eliminare:
-
-app/src/main/java/com/app/miklink/data/db/
-
-app/src/main/java/com/app/miklink/data/db/dao/
-
-app/src/main/java/com/app/miklink/data/db/model/
-
-Se rimane qualcosa: STOP e riportare cosa.
-
-S3.8.2 Build finale (obbligatoria)
-
-Eseguire:
-
-./gradlew :app:kspDebugKotlin
-
-./gradlew assembleDebug
-
-./gradlew testDebugUnitTest
-
-Output richiesto a fine EPIC (obbligatorio)
-
-Elenco file sotto:
-
-app/src/main/java/com/app/miklink/core/data/local/room/v1/** (tutti i file)
-
-Conferma assenza dei vecchi package:
-
-nessun file sotto com.app.miklink.data.db.*
-
-Output comandi finali: PASS per KSP/assemble/tests.
-
-Aggiornare docs/migration/ con:
-
-S3_BASELINE.md (esito step S3.0.1)
-
-S3_RESULT.md (lista file migrati e conferme)
-
-Criteri di accettazione
-
-Room v1 è completamente sotto core/data/local/room/v1
-
-DI aggiornata e build verde
-
-Nessun cambiamento funzionale allo schema o alle migrazioni
-
-Nessun duplicato di entity/dao/database
+Build PASS (KSP/assemble/unit).

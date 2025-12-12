@@ -15,8 +15,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.draw.scale
-import com.app.miklink.data.pdf.ExportColumn
-import com.app.miklink.data.pdf.PdfExportConfig
+import com.app.miklink.core.data.pdf.ExportColumn
+import com.app.miklink.core.data.pdf.PdfExportConfig
+import com.app.miklink.core.data.pdf.PdfPageOrientation
 import androidx.compose.ui.res.stringResource
 import com.app.miklink.R
 
@@ -41,7 +42,7 @@ fun PdfExportDialog(
     
     var signatureLeftLabel by remember { mutableStateOf(defaultSigLeft) }
     var signatureRightLabel by remember { mutableStateOf(defaultSigRight) }
-    var selectedOrientation by remember { mutableStateOf(com.app.miklink.data.pdf.PdfPageOrientation.PORTRAIT) }
+    var selectedOrientation by remember { mutableStateOf(PdfPageOrientation.PORTRAIT) }
     
     var isExpanded by remember { mutableStateOf(false) }
 
@@ -109,14 +110,14 @@ fun PdfExportDialog(
                                     Text(stringResource(R.string.pdf_orientation), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         RadioButton(
-                                            selected = selectedOrientation == com.app.miklink.data.pdf.PdfPageOrientation.PORTRAIT,
-                                            onClick = { selectedOrientation = com.app.miklink.data.pdf.PdfPageOrientation.PORTRAIT }
+                                            selected = selectedOrientation == PdfPageOrientation.PORTRAIT,
+                                            onClick = { selectedOrientation = PdfPageOrientation.PORTRAIT }
                                         )
                                         Text(stringResource(R.string.pdf_orientation_portrait), style = MaterialTheme.typography.bodyMedium)
                                         Spacer(Modifier.width(16.dp))
                                         RadioButton(
-                                            selected = selectedOrientation == com.app.miklink.data.pdf.PdfPageOrientation.LANDSCAPE,
-                                            onClick = { selectedOrientation = com.app.miklink.data.pdf.PdfPageOrientation.LANDSCAPE }
+                                            selected = selectedOrientation == PdfPageOrientation.LANDSCAPE,
+                                            onClick = { selectedOrientation = PdfPageOrientation.LANDSCAPE }
                                         )
                                         Text(stringResource(R.string.pdf_orientation_landscape), style = MaterialTheme.typography.bodyMedium)
                                     }

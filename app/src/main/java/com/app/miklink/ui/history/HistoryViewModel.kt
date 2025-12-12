@@ -8,7 +8,8 @@ import com.app.miklink.core.data.local.room.v1.dao.ReportDao
 import com.app.miklink.core.data.local.room.v1.dao.TestProfileDao
 import com.app.miklink.core.data.local.room.v1.model.Client
 import com.app.miklink.core.data.local.room.v1.model.Report
-import com.app.miklink.data.pdf.PdfGenerator
+import com.app.miklink.core.data.pdf.PdfGenerator
+import com.app.miklink.core.data.pdf.PdfExportConfig
 import com.app.miklink.ui.history.model.ReportsByClient
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -141,7 +142,7 @@ class HistoryViewModel @Inject constructor(
      */
     suspend fun generatePdfWithITextForClient(
         clientReports: ReportsByClient,
-        config: com.app.miklink.data.pdf.PdfExportConfig
+        config: PdfExportConfig
     ): java.io.File? {
         return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             pdfGenerator.generatePdfReport(clientReports.reports, clientReports.client, config)
@@ -153,7 +154,7 @@ class HistoryViewModel @Inject constructor(
      */
     suspend fun generatePdfForSingleReport(
         report: Report,
-        config: com.app.miklink.data.pdf.PdfExportConfig
+        config: PdfExportConfig
     ): java.io.File? {
         // Find client for this report
         val client = report.clientId?.let { clientId ->

@@ -1,0 +1,134 @@
+﻿> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :app:processDebugNavigationResources UP-TO-DATE
+> Task :app:compileDebugNavigationResources UP-TO-DATE
+> Task :app:generateDebugResValues UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :app:mergeDebugResources UP-TO-DATE
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :app:processDebugMainManifest UP-TO-DATE
+> Task :app:processDebugManifest UP-TO-DATE
+> Task :app:processDebugManifestForPackage UP-TO-DATE
+> Task :app:processDebugResources UP-TO-DATE
+> Task :app:kspDebugKotlin UP-TO-DATE
+> Task :app:compileDebugKotlin UP-TO-DATE
+> Task :app:javaPreCompileDebug UP-TO-DATE
+> Task :app:compileDebugJavaWithJavac UP-TO-DATE
+> Task :app:hiltAggregateDepsDebug UP-TO-DATE
+> Task :app:hiltJavaCompileDebug UP-TO-DATE
+> Task :app:transformDebugClassesWithAsm UP-TO-DATE
+> Task :app:preDebugUnitTestBuild UP-TO-DATE
+> Task :app:processDebugJavaRes UP-TO-DATE
+> Task :app:javaPreCompileDebugUnitTest UP-TO-DATE
+> Task :app:bundleDebugClassesToCompileJar
+> Task :app:bundleDebugClassesToRuntimeJar
+
+> Task :app:kspDebugUnitTestKotlin
+./gradlew : exception: WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+In C:\Users\dot\AppData\Local\Temp\ps-script-9c491f8f-1e1e-4a52-aec8-df15fa395342.ps1:76 car:48
++ ... droidStudioProjects\MikLink; ./gradlew testDebugUnitTest 2>&1 | Out-F ...
++                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (exception: WARN...has been called:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+exception: WARNING: sun.misc.Unsafe::objectFieldOffset has been called by 
+org.jetbrains.kotlin.com.intellij.util.containers.Unsafe (file:/C:/Users/dot/.gradle/caches/modules-2/files-2.1/org.jet
+brains.kotlin/kotlin-compiler-embeddable/2.1.0/988bf980588bbbcfa1ba19c1ffd7aa869b335a31/kotlin-compiler-embeddable-2.1.
+0.jar)
+exception: WARNING: Please consider reporting this to the maintainers of class 
+org.jetbrains.kotlin.com.intellij.util.containers.Unsafe
+exception: WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+exception: WARNING: A restricted method in java.lang.System has been called
+exception: WARNING: java.lang.System::load has been called by org.sqlite.SQLiteJDBCLoader in an unnamed module (file:/C
+:/Users/dot/.gradle/caches/modules-2/files-2.1/org.xerial/sqlite-jdbc/3.41.2.2/ddeb8d3a3004f412ed19b4c98b3aec11d9452ab5
+/sqlite-jdbc-3.41.2.2.jar)
+exception: WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
+exception: WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+exception: 
+exception: info: [ksp] loaded provider(s): 
+[dagger.hilt.processor.internal.uninstallmodules.KspUninstallModulesProcessor$Provider, 
+dagger.hilt.processor.internal.definecomponent.KspDefineComponentProcessor$Provider, 
+dagger.hilt.android.processor.internal.androidentrypoint.KspAndroidEntryPointProcessor$Provider, 
+dagger.hilt.processor.internal.root.KspRootProcessor$Provider, 
+dagger.hilt.android.processor.internal.viewmodel.KspViewModelProcessor$Provider, 
+dagger.hilt.android.processor.internal.bindvalue.KspBindValueProcessor$Provider, 
+dagger.hilt.processor.internal.root.KspComponentTreeDepsProcessor$Provider, 
+dagger.hilt.processor.internal.aliasof.KspAliasOfProcessor$Provider, 
+dagger.hilt.processor.internal.generatesrootinput.KspGeneratesRootInputProcessor$Provider, 
+dagger.hilt.processor.internal.originatingelement.KspOriginatingElementProcessor$Provider, 
+dagger.hilt.processor.internal.earlyentrypoint.KspEarlyEntryPointProcessor$Provider, 
+dagger.hilt.android.processor.internal.customtestapplication.KspCustomTestApplicationProcessor$Provider, 
+dagger.hilt.processor.internal.aggregateddeps.KspAggregatedDepsProcessor$Provider, 
+androidx.room.RoomKspProcessor$Provider, dagger.internal.codegen.KspComponentProcessor$Provider]
+
+> Task :app:compileDebugUnitTestKotlin
+exception: WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+exception: WARNING: sun.misc.Unsafe::objectFieldOffset has been called by 
+org.jetbrains.kotlin.com.intellij.util.containers.Unsafe (file:/C:/Users/dot/.gradle/caches/modules-2/files-2.1/org.jet
+brains.kotlin/kotlin-compiler-embeddable/2.1.0/988bf980588bbbcfa1ba19c1ffd7aa869b335a31/kotlin-compiler-embeddable-2.1.
+0.jar)
+exception: WARNING: Please consider reporting this to the maintainers of class 
+org.jetbrains.kotlin.com.intellij.util.containers.Unsafe
+exception: WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+
+> Task :app:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :app:hiltAggregateDepsDebugUnitTest UP-TO-DATE
+> Task :app:hiltJavaCompileDebugUnitTest NO-SOURCE
+> Task :app:processDebugUnitTestJavaRes UP-TO-DATE
+> Task :app:transformDebugUnitTestClassesWithAsm
+
+> Task :app:testDebugUnitTest
+
+BridgeHostGoldenParsingTest > parse bridge host and assert mac and on-interface present PASSED
+
+BridgePortGoldenParsingTest > parse bridge ports assert bridge and pvid PASSED
+
+BridgeVlanGoldenParsingTest > parse bridge vlan empty returns empty list PASSED
+
+CableTestGoldenParsingTest > parse cable test no link with cable pairs PASSED
+
+CableTestGoldenParsingTest > parse cable test link ok no measurement PASSED
+
+EthernetMonitorGoldenParsingTest > parse ethernet monitor link ok 1gbps PASSED
+
+EthernetMonitorGoldenParsingTest > parse ethernet monitor no link rate absent becomes null PASSED
+
+LogGoldenParsingTest > parse log proplist and assert topics present PASSED
+
+NeighborGoldenParsingTest > parse neighbor golden fixture PASSED
+
+SystemResourceGoldenParsingTest > parse system resource golden fixture PASSED
+
+LinkStabilizerContractTest > linkOkRateReady SKIPPED
+
+LinkStabilizerContractTest > noLinkNotReady SKIPPED
+
+LogFilterContractTest > filter excludes dhcp topic SKIPPED
+
+LogFilterContractTest > filter includes only interface topic SKIPPED
+
+NeighborSelectorContractTest > neighborNotInBridgeHostUnknown SKIPPED
+
+CableTestInterpreterContractTest > noLinkWithCablePairs SKIPPED
+
+CableTestInterpreterContractTest > linkOkNoMeasurement SKIPPED
+
+> Task :app:jacocoTestReport
+
+[Incubating] Problems report is available at: file:///C:/Users/dot/AndroidStudioProjects/MikLink/build/reports/problems/problems-report.html
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/9.1.0/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD SUCCESSFUL in 8s
+33 actionable tasks: 7 executed, 26 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.1.0/userguide/configuration_cache_enabling.html
