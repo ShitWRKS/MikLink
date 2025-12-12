@@ -1,7 +1,7 @@
 package com.app.miklink.data.repository
 
-import com.app.miklink.data.db.model.ProbeConfig
-import com.app.miklink.data.db.model.TestProfile
+import com.app.miklink.core.data.local.room.v1.model.ProbeConfig
+import com.app.miklink.core.data.local.room.v1.model.TestProfile
 
 /**
  * Backup format for export/import. Includes a version number for future extension.

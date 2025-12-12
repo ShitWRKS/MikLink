@@ -1,6 +1,6 @@
 package com.app.miklink.ui.history
 
-import com.app.miklink.data.db.model.Report
+import com.app.miklink.core.data.local.room.v1.model.Report
 import com.app.miklink.ui.history.model.ParsedResults
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

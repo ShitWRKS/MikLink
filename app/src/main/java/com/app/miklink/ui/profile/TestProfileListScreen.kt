@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import com.app.miklink.core.data.local.room.v1.model.TestProfile
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -159,7 +160,7 @@ fun TestProfileListScreen(
 
 @Composable
 fun TestProfileCard(
-    profile: com.app.miklink.data.db.model.TestProfile,
+    profile: TestProfile,
     onClick: () -> Unit
 ) {
     // Conta i test attivi

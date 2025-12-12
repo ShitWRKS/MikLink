@@ -1,9 +1,9 @@
 package com.app.miklink.core.data.repository
 
-import com.app.miklink.data.db.model.Client
-import com.app.miklink.data.db.model.ProbeConfig
-import com.app.miklink.data.db.model.Report
-import com.app.miklink.data.db.model.TestProfile
+import com.app.miklink.core.data.local.room.v1.model.Client
+import com.app.miklink.core.data.local.room.v1.model.ProbeConfig
+import com.app.miklink.core.data.local.room.v1.model.Report
+import com.app.miklink.core.data.local.room.v1.model.TestProfile
 import com.app.miklink.core.data.remote.mikrotik.dto.CableTestResult
 import com.app.miklink.core.data.remote.mikrotik.dto.MonitorResponse
 import com.app.miklink.core.data.remote.mikrotik.dto.NeighborDetail

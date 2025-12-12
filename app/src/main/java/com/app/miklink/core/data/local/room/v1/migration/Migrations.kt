@@ -1,4 +1,4 @@
-package com.app.miklink.data.db
+package com.app.miklink.core.data.local.room.v1.migration
 
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase

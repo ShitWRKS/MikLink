@@ -18,7 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
-import com.app.miklink.data.db.model.NetworkMode
+import com.app.miklink.core.data.local.room.v1.model.NetworkMode
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)

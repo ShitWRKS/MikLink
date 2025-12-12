@@ -2,10 +2,12 @@ package com.app.miklink.ui.history
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.app.miklink.data.db.dao.ClientDao
-import com.app.miklink.data.db.dao.ReportDao
-import com.app.miklink.data.db.model.Client
-import com.app.miklink.data.db.model.Report
+import com.app.miklink.core.data.local.room.v1.dao.ClientDao
+import com.app.miklink.core.data.local.room.v1.dao.ProbeConfigDao
+import com.app.miklink.core.data.local.room.v1.dao.ReportDao
+import com.app.miklink.core.data.local.room.v1.dao.TestProfileDao
+import com.app.miklink.core.data.local.room.v1.model.Client
+import com.app.miklink.core.data.local.room.v1.model.Report
 import com.app.miklink.data.pdf.PdfGenerator
 import com.app.miklink.ui.history.model.ReportsByClient
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -20,8 +22,8 @@ class HistoryViewModel @Inject constructor(
     private val reportDao: ReportDao,
     private val clientDao: ClientDao,
     private val pdfGenerator: PdfGenerator,
-    private val probeDao: com.app.miklink.data.db.dao.ProbeConfigDao,
-    private val profileDao: com.app.miklink.data.db.dao.TestProfileDao,
+    private val probeDao: ProbeConfigDao,
+    private val profileDao: TestProfileDao,
     private val userPreferencesRepository: com.app.miklink.data.repository.UserPreferencesRepository
 ) : ViewModel() {
 

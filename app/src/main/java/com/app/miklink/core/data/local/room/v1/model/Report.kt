@@ -1,4 +1,4 @@
-package com.app.miklink.data.db.model
+package com.app.miklink.core.data.local.room.v1.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey

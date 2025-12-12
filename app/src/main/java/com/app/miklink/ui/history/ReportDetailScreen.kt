@@ -27,7 +27,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.draw.alpha
 import com.app.miklink.ui.common.TestSectionCard
 import com.app.miklink.ui.history.model.ParsedResults
-import com.app.miklink.data.db.model.Report
+import com.app.miklink.core.data.local.room.v1.model.Report
 import com.app.miklink.utils.normalizeTime
 import com.app.miklink.utils.normalizeLinkSpeed
 import com.app.miklink.utils.normalizeLinkStatus

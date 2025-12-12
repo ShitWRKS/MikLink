@@ -2,12 +2,12 @@ package com.app.miklink.ui.dashboard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.app.miklink.data.db.dao.ClientDao
-import com.app.miklink.data.db.dao.ReportDao
-import com.app.miklink.data.db.dao.TestProfileDao
-import com.app.miklink.data.db.model.Client
-import com.app.miklink.data.db.model.ProbeConfig
-import com.app.miklink.data.db.model.TestProfile
+import com.app.miklink.core.data.local.room.v1.dao.ClientDao
+import com.app.miklink.core.data.local.room.v1.dao.ReportDao
+import com.app.miklink.core.data.local.room.v1.dao.TestProfileDao
+import com.app.miklink.core.data.local.room.v1.model.Client
+import com.app.miklink.core.data.local.room.v1.model.ProbeConfig
+import com.app.miklink.core.data.local.room.v1.model.TestProfile
 import com.app.miklink.core.data.repository.AppRepository
 import com.app.miklink.data.repository.IdNumberingStrategy
 import com.app.miklink.data.repository.UserPreferencesRepository

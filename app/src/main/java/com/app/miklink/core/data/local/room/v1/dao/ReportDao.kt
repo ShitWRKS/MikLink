@@ -1,7 +1,7 @@
-package com.app.miklink.data.db.dao
+package com.app.miklink.core.data.local.room.v1.dao
 
 import androidx.room.*
-import com.app.miklink.data.db.model.Report
+import com.app.miklink.core.data.local.room.v1.model.Report
 import kotlinx.coroutines.flow.Flow
 
 @Dao

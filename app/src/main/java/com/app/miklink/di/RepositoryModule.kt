@@ -6,7 +6,11 @@ import com.app.miklink.data.repository.BackupManager
 import com.app.miklink.data.repository.BackupManagerImpl
 import com.app.miklink.data.repository.TransactionRunner
 import com.app.miklink.data.repository.RoomTransactionRunner
-import com.app.miklink.data.db.AppDatabase
+import com.app.miklink.core.data.local.room.v1.AppDatabase
+import com.app.miklink.core.data.local.room.v1.dao.ClientDao
+import com.app.miklink.core.data.local.room.v1.dao.ProbeConfigDao
+import com.app.miklink.core.data.local.room.v1.dao.ReportDao
+import com.app.miklink.core.data.local.room.v1.dao.TestProfileDao
 import dagger.Provides
 import dagger.Binds
 import dagger.Module
@@ -44,10 +48,10 @@ abstract class RepositoryModule {
         @Singleton
         fun provideAppRepositoryLegacy(
             @ApplicationContext context: Context,
-            clientDao: com.app.miklink.data.db.dao.ClientDao,
-            probeConfigDao: com.app.miklink.data.db.dao.ProbeConfigDao,
-            testProfileDao: com.app.miklink.data.db.dao.TestProfileDao,
-            reportDao: com.app.miklink.data.db.dao.ReportDao,
+            clientDao: ClientDao,
+            probeConfigDao: ProbeConfigDao,
+            testProfileDao: TestProfileDao,
+            reportDao: ReportDao,
             serviceFactory: com.app.miklink.core.data.remote.mikrotik.infra.MikroTikServiceFactory,
             routeManager: RouteManager,
             userPreferencesRepository: com.app.miklink.data.repository.UserPreferencesRepository

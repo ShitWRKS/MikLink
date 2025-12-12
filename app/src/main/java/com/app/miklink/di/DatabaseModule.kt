@@ -4,9 +4,10 @@ import android.content.Context
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
-import com.app.miklink.data.db.AppDatabase
-import com.app.miklink.data.db.Migrations
-import com.app.miklink.data.db.model.TestProfile
+import com.app.miklink.core.data.local.room.v1.AppDatabase
+import com.app.miklink.core.data.local.room.v1.dao.TestProfileDao
+import com.app.miklink.core.data.local.room.v1.migration.Migrations
+import com.app.miklink.core.data.local.room.v1.model.TestProfile
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -28,7 +29,7 @@ object DatabaseModule {
     fun provideAppDatabase(
         @ApplicationContext context: Context,
         // Use a Provider to avoid circular dependency
-        testProfileDaoProvider: Provider<com.app.miklink.data.db.dao.TestProfileDao>
+        testProfileDaoProvider: Provider<TestProfileDao>
     ): AppDatabase {
         return Room.databaseBuilder(
             context,
@@ -52,7 +53,7 @@ object DatabaseModule {
         .build()
     }
 
-    private suspend fun addDefaultProfiles(testProfileDao: com.app.miklink.data.db.dao.TestProfileDao) {
+    private suspend fun addDefaultProfiles(testProfileDao: TestProfileDao) {
         testProfileDao.insert(
             TestProfile(
                 profileName = "Full Test",

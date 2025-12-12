@@ -1,7 +1,7 @@
 package com.app.miklink.ui.history.model
 
-import com.app.miklink.data.db.model.Client
-import com.app.miklink.data.db.model.Report
+import com.app.miklink.core.data.local.room.v1.model.Client
+import com.app.miklink.core.data.local.room.v1.model.Report
 
 data class ReportsByClient(
     val client: Client?,

@@ -1,14 +1,14 @@
-package com.app.miklink.data.db
+package com.app.miklink.core.data.local.room.v1.migration
 
 import androidx.room.testing.MigrationTestHelper
 import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.app.miklink.core.data.local.room.v1.AppDatabase
 import org.junit.Assert.assertEquals
 // assertNotNull not used — removed import to silence unused-import warning
 import org.junit.Rule
 import org.junit.Test
-import org.junit.Rule
 import org.junit.runner.RunWith
 import java.io.IOException
 
@@ -27,7 +27,7 @@ class MigrationTest {
     val helper: MigrationTestHelper = MigrationTestHelper(
         InstrumentationRegistry.getInstrumentation(),
         AppDatabase::class.java,
-        com.app.miklink.core.data.local.room.v1.AppDatabase::class.java,
+        emptyList(),
         FrameworkSQLiteOpenHelperFactory()
     )
 

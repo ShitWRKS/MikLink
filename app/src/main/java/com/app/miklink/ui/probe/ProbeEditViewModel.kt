@@ -3,8 +3,8 @@ package com.app.miklink.ui.probe
 import androidx.lifecycle.SavedStateHandle
 import com.app.miklink.ui.common.BaseEditViewModel
 import androidx.lifecycle.viewModelScope
-import com.app.miklink.data.db.dao.ProbeConfigDao
-import com.app.miklink.data.db.model.ProbeConfig
+import com.app.miklink.core.data.local.room.v1.dao.ProbeConfigDao
+import com.app.miklink.core.data.local.room.v1.model.ProbeConfig
 import com.app.miklink.core.data.repository.AppRepository
 import com.app.miklink.core.data.repository.ProbeCheckResult
 import dagger.hilt.android.lifecycle.HiltViewModel

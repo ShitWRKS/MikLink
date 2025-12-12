@@ -25,7 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
-import com.app.miklink.data.db.model.Report
+import com.app.miklink.core.data.local.room.v1.model.Report
 import com.app.miklink.ui.history.model.ReportsByClient
 import java.text.SimpleDateFormat
 import java.util.Date

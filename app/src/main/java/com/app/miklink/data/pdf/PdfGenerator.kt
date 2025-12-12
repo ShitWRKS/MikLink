@@ -1,8 +1,8 @@
 package com.app.miklink.data.pdf
 
-import com.app.miklink.data.db.model.Client
-import com.app.miklink.data.db.model.Report
-import com.app.miklink.data.db.model.TestProfile
+import com.app.miklink.core.data.local.room.v1.model.Client
+import com.app.miklink.core.data.local.room.v1.model.Report
+import com.app.miklink.core.data.local.room.v1.model.TestProfile
 import java.io.File
 
 /**

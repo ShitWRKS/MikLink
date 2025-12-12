@@ -1,8 +1,8 @@
 package com.app.miklink.data.repository
 
-import com.app.miklink.data.db.AppDatabase
-import com.app.miklink.data.db.dao.ProbeConfigDao
-import com.app.miklink.data.db.dao.TestProfileDao
+import com.app.miklink.core.data.local.room.v1.AppDatabase
+import com.app.miklink.core.data.local.room.v1.dao.ProbeConfigDao
+import com.app.miklink.core.data.local.room.v1.dao.TestProfileDao
 import com.squareup.moshi.Moshi
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject

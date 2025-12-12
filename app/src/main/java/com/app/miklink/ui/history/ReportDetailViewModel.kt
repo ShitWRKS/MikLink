@@ -4,11 +4,11 @@ package com.app.miklink.ui.history
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.app.miklink.data.db.dao.ClientDao
-import com.app.miklink.data.db.dao.ReportDao
-import com.app.miklink.data.db.dao.TestProfileDao
-import com.app.miklink.data.db.model.Report
-import com.app.miklink.data.db.model.TestProfile
+import com.app.miklink.core.data.local.room.v1.dao.ClientDao
+import com.app.miklink.core.data.local.room.v1.dao.ReportDao
+import com.app.miklink.core.data.local.room.v1.dao.TestProfileDao
+import com.app.miklink.core.data.local.room.v1.model.Report
+import com.app.miklink.core.data.local.room.v1.model.TestProfile
 
 import com.app.miklink.data.pdf.PdfGenerator
 import com.app.miklink.ui.history.model.ParsedResults

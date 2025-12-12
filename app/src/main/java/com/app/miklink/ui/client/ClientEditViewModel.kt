@@ -2,9 +2,9 @@ package com.app.miklink.ui.client
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
-import com.app.miklink.data.db.dao.ClientDao
-import com.app.miklink.data.db.model.Client
-import com.app.miklink.data.db.model.NetworkMode
+import com.app.miklink.core.data.local.room.v1.dao.ClientDao
+import com.app.miklink.core.data.local.room.v1.model.Client
+import com.app.miklink.core.data.local.room.v1.model.NetworkMode
 import com.app.miklink.ui.common.BaseEditViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow

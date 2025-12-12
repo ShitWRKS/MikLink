@@ -2,8 +2,8 @@ package com.app.miklink.ui.profile
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
-import com.app.miklink.data.db.dao.TestProfileDao
-import com.app.miklink.data.db.model.TestProfile
+import com.app.miklink.core.data.local.room.v1.dao.TestProfileDao
+import com.app.miklink.core.data.local.room.v1.model.TestProfile
 import com.app.miklink.ui.common.BaseEditViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*

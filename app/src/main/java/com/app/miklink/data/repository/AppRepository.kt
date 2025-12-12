@@ -4,12 +4,12 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
-import com.app.miklink.data.db.dao.ClientDao
-import com.app.miklink.data.db.dao.ProbeConfigDao
-import com.app.miklink.data.db.dao.ReportDao
-import com.app.miklink.data.db.dao.TestProfileDao
-import com.app.miklink.data.db.model.Client
-import com.app.miklink.data.db.model.ProbeConfig
+import com.app.miklink.core.data.local.room.v1.dao.ClientDao
+import com.app.miklink.core.data.local.room.v1.dao.ProbeConfigDao
+import com.app.miklink.core.data.local.room.v1.dao.ReportDao
+import com.app.miklink.core.data.local.room.v1.dao.TestProfileDao
+import com.app.miklink.core.data.local.room.v1.model.Client
+import com.app.miklink.core.data.local.room.v1.model.ProbeConfig
 import com.app.miklink.core.data.remote.mikrotik.service.MikroTikApiService
 import com.app.miklink.core.data.remote.mikrotik.infra.MikroTikServiceFactory
 import com.app.miklink.core.data.remote.mikrotik.dto.*
@@ -34,10 +34,10 @@ import javax.inject.Singleton
 @Singleton
 class AppRepository_legacy constructor(
     @ApplicationContext private val context: Context,
-    val clientDao: com.app.miklink.data.db.dao.ClientDao,
-    val probeConfigDao: com.app.miklink.data.db.dao.ProbeConfigDao,
-    val testProfileDao: com.app.miklink.data.db.dao.TestProfileDao,
-    val reportDao: com.app.miklink.data.db.dao.ReportDao,
+    val clientDao: ClientDao,
+    val probeConfigDao: ProbeConfigDao,
+    val testProfileDao: TestProfileDao,
+    val reportDao: ReportDao,
     private val serviceFactory: com.app.miklink.core.data.remote.mikrotik.infra.MikroTikServiceFactory,
     private val routeManager: com.app.miklink.data.repository.RouteManager,
     private val userPreferencesRepository: com.app.miklink.data.repository.UserPreferencesRepository

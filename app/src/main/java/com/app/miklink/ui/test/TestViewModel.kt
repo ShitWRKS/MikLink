@@ -3,8 +3,8 @@ package com.app.miklink.ui.test
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.app.miklink.data.db.dao.*
-import com.app.miklink.data.db.model.*
+import com.app.miklink.core.data.local.room.v1.dao.*
+import com.app.miklink.core.data.local.room.v1.model.*
 import com.app.miklink.core.data.remote.mikrotik.dto.SpeedTestResult
 import com.app.miklink.core.data.repository.AppRepository
 import com.app.miklink.utils.UiState
