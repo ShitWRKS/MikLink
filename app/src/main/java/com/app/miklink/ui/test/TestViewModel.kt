@@ -6,7 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.app.miklink.data.db.dao.*
 import com.app.miklink.data.db.model.*
 import com.app.miklink.data.network.dto.SpeedTestResult
-import com.app.miklink.data.repository.AppRepository
+import com.app.miklink.core.data.repository.AppRepository
 import com.app.miklink.utils.UiState
 import com.app.miklink.utils.normalizeTime
 import com.app.miklink.utils.normalizeLinkSpeed

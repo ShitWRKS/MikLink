@@ -3,7 +3,7 @@ package com.app.miklink.ui.history
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.*
 import androidx.navigation.compose.rememberNavController
-import com.app.miklink.data.db.model.Report
+import com.app.miklink.core.data.local.room.v1.model.Report
 import com.app.miklink.ui.history.model.ParsedResults
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -34,7 +34,7 @@ class ReportDetailScreenLocalTest {
         private val _results = MutableStateFlow(
             ParsedResults(
                 ping = listOf(
-                    com.app.miklink.data.network.dto.PingResult(
+                    com.app.miklink.core.data.remote.mikrotik.dto.PingResult(
                         avgRtt = "10ms", host = "8.8.8.8", maxRtt = "15ms", minRtt = "8ms", packetLoss = "0", received = "4", sent = "4", seq = "4", size = "64", time = "10ms", ttl = "64"
                     )
                 )

@@ -8,7 +8,7 @@ import com.app.miklink.data.db.dao.TestProfileDao
 import com.app.miklink.data.db.model.Client
 import com.app.miklink.data.db.model.ProbeConfig
 import com.app.miklink.data.db.model.TestProfile
-import com.app.miklink.data.repository.AppRepository
+import com.app.miklink.core.data.repository.AppRepository
 import com.app.miklink.data.repository.IdNumberingStrategy
 import com.app.miklink.data.repository.UserPreferencesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel

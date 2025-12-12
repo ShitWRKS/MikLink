@@ -1,0 +1,4 @@
+> Task :app:kspDebugKotlin
+BUILD SUCCESSFUL
+
+(Full run completed successfully; no remaining `error.NonExistentClass` KSP errors.)

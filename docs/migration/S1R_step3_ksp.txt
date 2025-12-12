@@ -1,0 +1,21 @@
+> Task :app:kspDebugKotlin
+exception: WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+exception: WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.jetbrains.kotlin.com.intellij.util.containers.Unsafe (file:/C:/Users/dot/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-compiler-embeddable/2.1.0/988bf980588bbbcfa1ba19c1ffd7aa869b335a31/kotlin-compiler-embeddable-2.1.0.jar)
+exception: WARNING: Please consider reporting this to the maintainers of class org.jetbrains.kotlin.com.intellij.util.containers.Unsafe
+exception: WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+exception: WARNING: A restricted method in java.lang.System has been called
+exception: WARNING: java.lang.System::load has been called by org.sqlite.SQLiteJDBCLoader in an unnamed module (file:/C:/Users/dot/.gradle/caches/modules-2/files-2.1/org.xerial/sqlite-jdbc/3.41.2.2/ddeb8d3a3004f412ed19b4c98b3aec11d9452ab5/sqlite-jdbc-3.41.2.2.jar)
+exception: WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
+exception: WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+exception:
+exception: info: [ksp] loaded provider(s): [dagger.hilt.processor.internal.uninstallmodules.KspUninstallModulesProcessor$Provider, dagger.hilt.processor.internal.definecomponent.KspDefineComponentProcessor$Provider, dagger.hilt.android.processor.internal.androidentrypoint.KspAndroidEntryPointProcessor$Provider, dagger.hilt.pro
+cessor.internal.root.KspRootProcessor$Provider, dagger.hilt.android.processor.internal.viewmodel.KspViewModelProcessor$Provider, dagger.hilt.android.processor.internal.bindvalue.KspBindValueProcessor$Provider, dagger.hilt.processor.internal.root.KspComponentTreeDepsProcessor$Provider, dagger.hilt.android.processor.internal.customtestapplication.KspCustomTestApplicationProcessor$Provider, dagger.hilt.processor.internal.aggregateddeps.KspAggregatedDepsProcessor$Provider, androidx.room.RoomKspProcessor$Provider, dagger.internal.codegen.KspComponentProcessor$Provider]
+exception: error: [ksp] InjectProcessingStep was unable to process 'BackupManagerImpl(error.NonExistentClass,error.NonExistentClass,error.NonExistentClass,com.squareup.moshi.Moshi,error.NonExistentClass)' because 'error.NonExistentClass' could not be resolved.
+exception:
+exception: dependency trace:
+exception:     => element (CLASS): com.app.miklink.data.repository.BackupManagerImpl
+exception:     => element (CONSTRUCTOR): BackupManagerImpl(error.NonExistentClass,error.NonExistentClass,error.NonExistentClass,com.squareup.moshi.Moshi,error.NonExistentClass)
+exception:     => type (EXECUTABLE constructor): (error.NonExistentClass,error.NonExistentClass,error.NonExistentClass,com.squareup.moshi.Moshi,error.NonExistentClass)void
+exception:     => type (ERROR parameter type): error.NonExistentClass
+exception:
+exception: if type 'error.NonExistentClass' is a generated type, check above for compilation errors that may have prevented the type from being generated. Otherwise, ensure that type 'error.NonExistentClass' is on your classpath.

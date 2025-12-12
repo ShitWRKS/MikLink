@@ -2,8 +2,8 @@ package com.app.miklink.ui.probe
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.app.miklink.data.repository.AppRepository
-import com.app.miklink.data.repository.ProbeStatusInfo
+import com.app.miklink.core.data.repository.AppRepository
+import com.app.miklink.core.data.repository.ProbeStatusInfo
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow

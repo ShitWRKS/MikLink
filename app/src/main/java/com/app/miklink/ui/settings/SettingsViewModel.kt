@@ -4,7 +4,7 @@ import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.app.miklink.data.repository.BackupRepository
+import com.app.miklink.core.data.repository.BackupRepository
 import com.app.miklink.data.io.FileReader
 import com.app.miklink.domain.usecase.backup.ImportBackupUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel

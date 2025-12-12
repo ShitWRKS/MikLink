@@ -20,7 +20,7 @@ class BackupManagerImpl @Inject constructor(
     private val probeConfigDao: ProbeConfigDao,
     private val testProfileDao: TestProfileDao,
     private val moshi: Moshi,
-    private val txRunner: TransactionRunner
+    private val txRunner: com.app.miklink.data.repository.TransactionRunner
 ) : BackupManager {
 
     override suspend fun exportConfigToJson(): String {

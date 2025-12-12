@@ -1,6 +1,6 @@
 package com.app.miklink.domain.usecase.backup
 
-import com.app.miklink.data.repository.BackupRepository
+import com.app.miklink.core.data.repository.BackupRepository
 import com.app.miklink.data.repository.BackupData
 import com.squareup.moshi.Moshi
 import javax.inject.Inject

@@ -1,6 +1,6 @@
 package com.app.miklink.ui.probe
 
-import com.app.miklink.data.repository.ProbeCheckResult
+import com.app.miklink.core.data.repository.ProbeCheckResult
 
 data class ProbeEditUiState(
     val isEditing: Boolean = false,

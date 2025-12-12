@@ -210,6 +210,430 @@ Solo quando tutti questi punti sono soddisfatti, l’epic può essere considerat
 
 
 
+EPIC S1 — Migrazione “Data Layer” verso struttura SOLID + Legacy tagging (senza cambi logici)
+Obiettivo
+
+Portare tutto il layer data/ e domain/usecase dentro la struttura SOLID prevista (core/data, core/domain) senza cambiare comportamento, mantenendo build verde.
+Separare chiaramente:
+
+Core: interfacce + modelli/mapper/infra necessari
+
+Legacy: implementazioni vecchie o non ancora rifattorizzate (con suffisso _legacy), non più usate direttamente dal nuovo codice
+
+Vincoli
+
+❌ Nessuna operazione git / PR.
+
+❌ Nessun refactor funzionale “a sentimento”.
+
+✅ Ogni step deve essere compilabile (o con correzioni minime di import/package).
+
+✅ Se un file non è chiaramente classificabile, non decidere a caso: spostalo in legacy/ e documentalo.
+
+A) Pre-flight (obbligatorio)
+S1.A1 — Baseline build
+
+Eseguire:
+
+./gradlew testDebugUnitTest
+
+./gradlew assembleDebug (o task equivalente se presente)
+
+Salvare in docs/migration/S1_BASELINE.md:
+
+data/ora
+
+task eseguiti
+
+risultato (SUCCESS/FAIL) + eventuali errori (solo riassunto)
+
+Stop condition: se baseline fallisce, fermarsi e riportare errore (senza “fix creativi”).
+
+B) Creare cartelle canoniche mancanti (solo struttura)
+
+Nota: alcune esistono già come placeholder. Se esistono, non duplicare.
+
+S1.B1 — Core data local (Room v1)
+
+Creare (se mancanti):
+
+app/src/main/java/com/app/miklink/core/data/local/room/v1/
+
+app/src/main/java/com/app/miklink/core/data/local/room/v1/dao/
+
+app/src/main/java/com/app/miklink/core/data/local/room/v1/model/
+
+app/src/main/java/com/app/miklink/core/data/local/room/v1/migrations/
+
+S1.B2 — Core data remote (MikroTik)
+
+Creare (se mancanti):
+
+app/src/main/java/com/app/miklink/core/data/remote/mikrotik/service/
+
+app/src/main/java/com/app/miklink/core/data/remote/mikrotik/dto/
+
+app/src/main/java/com/app/miklink/core/data/remote/mikrotik/infra/ (interceptor/factory/adapters)
+
+S1.B3 — Core data repository
+
+Creare (se mancanti):
+
+app/src/main/java/com/app/miklink/core/data/repository/
+
+app/src/main/java/com/app/miklink/core/data/repository/impl/ (implementazioni “nuove” o ponte)
+
+app/src/main/java/com/app/miklink/core/data/transaction/
+
+app/src/main/java/com/app/miklink/core/data/preferences/
+
+S1.B4 — Core data pdf/io
+
+Creare (se mancanti):
+
+app/src/main/java/com/app/miklink/core/data/pdf/
+
+app/src/main/java/com/app/miklink/core/data/pdf/impl/
+
+app/src/main/java/com/app/miklink/core/data/io/
+
+C) Spostamento “Room v1” da data/db a core/data/local/room/v1
+
+Fonte (report agent): data/db/AppDatabase.kt, Migrations.kt, dao/*, model/*
+
+S1.C1 — Spostare database + migrations
+
+Spostare:
+
+app/src/main/java/com/app/miklink/data/db/AppDatabase.kt
+→ app/src/main/java/com/app/miklink/core/data/local/room/v1/AppDatabase.kt
+
+app/src/main/java/com/app/miklink/data/db/Migrations.kt
+→ app/src/main/java/com/app/miklink/core/data/local/room/v1/migrations/Migrations.kt
+
+Aggiornare:
+
+package declaration coerente con il nuovo path
+
+import in di/DatabaseModule.kt (solo import/path, nessun refactor logico)
+
+S1.C2 — Spostare DAO
+
+Spostare cartella:
+
+app/src/main/java/com/app/miklink/data/db/dao/*
+→ app/src/main/java/com/app/miklink/core/data/local/room/v1/dao/*
+
+Aggiornare package/import dove usati (ViewModel/Repository/DI).
+
+S1.C3 — Spostare Entities/Model
+
+Spostare cartella:
+
+app/src/main/java/com/app/miklink/data/db/model/*
+→ app/src/main/java/com/app/miklink/core/data/local/room/v1/model/*
+
+Aggiornare package/import dove usati.
+
+S1.C4 — Build checkpoint
+
+Eseguire:
+
+./gradlew testDebugUnitTest
+
+./gradlew assembleDebug
+
+---
+
+### S1-R — Stabilizzazione (S1 Regression Stabilization)
+
+Nota: fase di stabilizzazione post-migrazione per garantire che gli step S1 siano consistenti
+e che i task di build/annotation processing/test passino in modo deterministico.
+
+Eseguiti (Step 1–5):
+
+- Step 1: Correzione package↔path per i file sotto `app/src/main/java/com/app/miklink/data/**` che
+  dichiaravano package legacy; risolte discrepanze e ripristinati i package coerenti con il path.
+- Step 2: Ripristinato un unico `@Database` reale (`AppDatabase` in `com.app.miklink.data.db`, version 13)
+  e aggiornati i provider nel `DatabaseModule`.
+- Step 3: Resa non-fragile `AppRepository_legacy` rimuovendo `@Inject` dal costruttore e aggiungendo
+  un `@Provides` esplicito in `RepositoryModule`; creato un bridge `core` (`com.app.miklink.core.data.repository.AppRepository`) e fatto il binding.
+- Step 4: Risolti in modo deterministico tutti gli errori KSP `error.NonExistentClass` correttando import,
+  binding e firme dei provider (es. `BackupRepository`), senza inventare Entities/DAOs.
+- Step 5: Eseguiti i check finali: `kspDebugKotlin`, `assembleDebug`, `testDebugUnitTest` (tutti passati).
+
+Task che ora passano (verificati):
+
+- `kspDebugKotlin` (annotation processing)
+- `assembleDebug`
+- `testDebugUnitTest`
+
+Log salvati in: `docs/migration/` (checkpoint di esecuzione):
+
+- `docs/migration/S1R_step1_ksp.txt`
+- `docs/migration/S1R_step2_ksp.txt`
+- `docs/migration/S1R_step3_ksp.txt`
+- `docs/migration/S1R_step4_ksp.txt`
+- `docs/migration/S1R_step5_assemble.txt`
+- `docs/migration/S1R_step5_tests.txt`
+
+Nota sui vincoli: nessuna nuova Entity/DAO è stata introdotta; solo bridge/interfaces sono state
+aggiunte per stabilizzare il DI. Non sono state eseguite ulteriori refactor oltre quanto necessario
+per rendere la codebase compilabile e le pipeline locali verdi.
+
+Stop condition: se fallisce, sistemare solo package/import. Non cambiare logica.
+
+D) Spostamento “Remote Mikrotik” da data/network a core/data/remote/mikrotik
+
+Fonte (report agent):
+data/network/MikroTikApiService.kt, MikroTikServiceFactory.kt, AuthInterceptor.kt, NeighborDetailListAdapter.kt, data/network/dto/*
+
+S1.D1 — Spostare Retrofit service
+
+Spostare:
+
+app/src/main/java/com/app/miklink/data/network/MikroTikApiService.kt
+→ app/src/main/java/com/app/miklink/core/data/remote/mikrotik/service/MikroTikApiService.kt
+
+S1.D2 — Spostare DTO
+
+Spostare tutti i file in:
+
+app/src/main/java/com/app/miklink/data/network/dto/*
+→ app/src/main/java/com/app/miklink/core/data/remote/mikrotik/dto/*
+
+Regola: sposta tutto ciò che è sotto dto/ senza selezionare “a mano”.
+
+S1.D3 — Spostare infra (factory/interceptor/adapter)
+
+Spostare:
+
+app/src/main/java/com/app/miklink/data/network/MikroTikServiceFactory.kt
+→ app/src/main/java/com/app/miklink/core/data/remote/mikrotik/infra/MikroTikServiceFactory.kt
+
+app/src/main/java/com/app/miklink/data/network/AuthInterceptor.kt
+→ app/src/main/java/com/app/miklink/core/data/remote/mikrotik/infra/AuthInterceptor.kt
+
+app/src/main/java/com/app/miklink/data/network/NeighborDetailListAdapter.kt
+→ app/src/main/java/com/app/miklink/core/data/remote/mikrotik/infra/NeighborDetailListAdapter.kt
+
+Aggiornare:
+
+import in di/NetworkModule.kt
+
+import ovunque venga usato MikroTikServiceFactory o MikroTikApiService
+
+S1.D4 — Build checkpoint
+
+Eseguire:
+
+./gradlew testDebugUnitTest
+
+./gradlew assembleDebug
+
+E) Spostamento “Repository/Infra” da data/repository a core/data/repository
+
+Fonte (report agent):
+data/repository/AppRepository.kt, BackupManager.kt, BackupRepository.kt, BackupData.kt, RouteManager.kt, TransactionRunner.kt, UserPreferencesRepository.kt
+
+S1.E1 — Transaction runner
+
+Spostare:
+
+app/src/main/java/com/app/miklink/data/repository/TransactionRunner.kt
+→ app/src/main/java/com/app/miklink/core/data/transaction/TransactionRunner.kt
+
+Aggiornare:
+
+import dove usato (BackupManager/AppRepository/DI)
+
+S1.E2 — UserPreferencesRepository
+
+Spostare:
+
+app/src/main/java/com/app/miklink/data/repository/UserPreferencesRepository.kt
+→ app/src/main/java/com/app/miklink/core/data/preferences/UserPreferencesRepository.kt
+
+Aggiornare:
+
+import in MainActivity.kt e in DI (DataStoreModule.kt / RepositoryModule.kt se lo fornisce)
+
+S1.E3 — RouteManager
+
+Spostare:
+
+app/src/main/java/com/app/miklink/data/repository/RouteManager.kt
+→ app/src/main/java/com/app/miklink/core/data/repository/impl/RouteManager.kt
+(oppure core/data/remote/mikrotik/impl se e solo se dal codice è chiaramente un “remote client helper”; se non è chiaro, resta in repository/impl.)
+
+S1.E4 — Backup (manager/repo/data)
+
+Spostare:
+
+app/src/main/java/com/app/miklink/data/repository/BackupManager.kt
+→ app/src/main/java/com/app/miklink/core/data/repository/impl/BackupManager.kt
+
+app/src/main/java/com/app/miklink/data/repository/BackupRepository.kt
+→ app/src/main/java/com/app/miklink/core/data/repository/BackupRepository.kt
+
+app/src/main/java/com/app/miklink/data/repository/BackupData.kt
+→ app/src/main/java/com/app/miklink/core/data/repository/BackupData.kt
+
+Regola: in questa EPIC si sposta soltanto; non si risolve ancora il fatto che domain/usecase dipenda da data. Quello verrà nella prossima EPIC.
+
+S1.E5 — AppRepository (God object) → legacy ponte
+
+Qui non si rifattorizza. Si fa solo isolamento per preparare la prossima EPIC.
+
+Operazione:
+
+Spostare AppRepository.kt in legacy con suffisso:
+
+da: app/src/main/java/com/app/miklink/data/repository/AppRepository.kt
+
+a: app/src/main/java/com/app/miklink/legacy/data/repository/AppRepository_legacy.kt
+
+Creare un “ponte” minimo nello spazio core:
+
+app/src/main/java/com/app/miklink/core/data/repository/AppRepositoryBridge.kt
+
+Contenuto:
+
+solo interfaccia o wrapper che espone i metodi attualmente usati dai ViewModel
+
+implementazione temporanea che delega a AppRepository_legacy
+
+Vincolo: nessun cambiamento di logica. Solo spostamento + delega.
+
+Aggiornare i ViewModel che oggi iniettano AppRepository:
+
+cambiare DI e import per usare AppRepositoryBridge (o interfaccia equivalente) invece del legacy direttamente.
+
+S1.E6 — Build checkpoint
+
+Eseguire:
+
+./gradlew testDebugUnitTest
+
+./gradlew assembleDebug
+
+F) Spostamento data/pdf e data/io in core
+
+Fonte (report agent): data/pdf/*, data/io/*
+
+S1.F1 — PDF
+
+Spostare:
+
+app/src/main/java/com/app/miklink/data/pdf/PdfGenerator.kt
+→ app/src/main/java/com/app/miklink/core/data/pdf/PdfGenerator.kt
+
+app/src/main/java/com/app/miklink/data/pdf/PdfGeneratorIText.kt
+→ app/src/main/java/com/app/miklink/core/data/pdf/impl/PdfGeneratorIText.kt
+
+app/src/main/java/com/app/miklink/data/pdf/PdfExportConfig.kt
+→ app/src/main/java/com/app/miklink/core/data/pdf/PdfExportConfig.kt
+
+app/src/main/java/com/app/miklink/data/pdf/ParsedResultsParser.kt
+→ app/src/main/java/com/app/miklink/core/data/pdf/ParsedResultsParser.kt
+
+app/src/main/java/com/app/miklink/data/pdf/PdfDocumentHelper.kt
+→ app/src/main/java/com/app/miklink/core/data/pdf/PdfDocumentHelper.kt
+
+Aggiornare import in:
+
+di/PdfModule.kt
+
+ui/history/* dove usato (solo import, zero logica)
+
+S1.F2 — IO
+
+Spostare:
+
+app/src/main/java/com/app/miklink/data/io/FileReader.kt
+→ app/src/main/java/com/app/miklink/core/data/io/FileReader.kt
+
+app/src/main/java/com/app/miklink/data/io/ContentResolverFileReader.kt
+→ app/src/main/java/com/app/miklink/core/data/io/ContentResolverFileReader.kt
+
+Aggiornare import dove usati.
+
+S1.F3 — Build checkpoint
+
+Eseguire:
+
+./gradlew testDebugUnitTest
+
+./gradlew assembleDebug
+
+G) domain/usecase → core/domain/usecase (solo spostamento)
+
+Fonte (report agent): ImportBackupUseCase.kt in domain/usecase che dipende da data.repository.BackupRepository (violazione). In questa EPIC NON si risolve, si prepara.
+
+S1.G1 — Spostare usecase
+
+Spostare:
+
+app/src/main/java/com/app/miklink/domain/usecase/ImportBackupUseCase.kt
+→ app/src/main/java/com/app/miklink/core/domain/usecase/ImportBackupUseCase.kt
+
+Aggiornare package/import dove referenziato.
+
+Nota: dipendenza architetturale (domain→data) verrà risolta in EPIC successiva con interfacce e inversione dipendenze. Qui solo move.
+
+S1.G2 — Build checkpoint finale
+
+Eseguire:
+
+./gradlew testDebugUnitTest
+
+./gradlew assembleDebug
+
+H) Pulizia cartelle vuote + aggiornamento documentazione
+S1.H1 — Rimuovere cartelle vuote
+
+Eliminare cartelle ormai vuote:
+
+app/src/main/java/com/app/miklink/data/ (o sotto-cartelle rimaste) solo se vuote
+
+app/src/main/java/com/app/miklink/domain/ (se svuotata)
+
+app/src/main/java/com/app/miklink/legacy/ mantenere solo ciò che serve (es. AppRepository_legacy.kt)
+
+S1.H2 — Aggiornare ARCHITECTURE.md
+
+Aggiungere una sezione “Stato migrazione S1” con:
+
+cosa è stato spostato (elenco cartelle)
+
+cosa resta “legacy” (almeno AppRepository_legacy)
+
+regola: nuovo codice non deve dipendere direttamente da legacy/*
+
+S1.H3 — Aggiornare ROADMAP.md
+
+Segnare EPIC S1 come COMPLETATA solo se:
+
+build + unit test passano
+
+data/network, data/db, data/pdf, data/io, data/repository non contengono più implementazioni attive (salvo legacy spostato)
+
+Criteri di accettazione finali (S1)
+
+Non esistono più file attivi in com.app.miklink.data.network/**, data.db/**, data.pdf/**, data.io/**, data.repository/** (spostati in core o legacy).
+
+AppRepository non è più importato direttamente dai ViewModel: passa tramite bridge o interfacce core (anche se delega a legacy).
+
+./gradlew testDebugUnitTest e ./gradlew assembleDebug = SUCCESS.
+
+legacy/ contiene solo ciò che è necessario come ponte temporaneo (minimo indispensabile).
+
+
+
+
+
+
+
 EPIC T1 — Refactor totale dei test + Golden Fixtures RouterOS REALI (v7.20.5) + Nuova struttura SOLID per test “final-state”
 Scopo (vincolante)
 

@@ -11,8 +11,18 @@ import com.app.miklink.data.db.model.ProbeConfig
 import com.app.miklink.data.db.model.Report
 import com.app.miklink.data.db.model.TestProfile
 
+/**
+ * Restored single AppDatabase annotated for Room.
+ * Uses existing entities and DAOs in `com.app.miklink.data.db`.
+ * Version is derived from existing migrations (last migration target is 13).
+ */
 @Database(
-    entities = [Client::class, ProbeConfig::class, TestProfile::class, Report::class],
+    entities = [
+        Client::class,
+        ProbeConfig::class,
+        TestProfile::class,
+        Report::class
+    ],
     version = 13,
     exportSchema = true
 )

@@ -157,7 +157,7 @@ fun ProbeListScreen(
 
 @Composable
 fun ProbeCard(
-    probeInfo: com.app.miklink.data.repository.ProbeStatusInfo,
+    probeInfo: com.app.miklink.core.data.repository.ProbeStatusInfo,
     onClick: () -> Unit
 ) {
     val probe = probeInfo.probe

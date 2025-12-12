@@ -3,6 +3,7 @@ package com.app.miklink.data.repository
 import com.app.miklink.data.network.MikroTikApiService
 import com.app.miklink.data.network.dto.RouteAdd
 import com.app.miklink.data.network.dto.RouteEntry
+import com.app.miklink.data.network.dto.NumbersRequest
 
 /**
  * Abstraction for route management operations on MikroTik devices.
@@ -38,7 +39,7 @@ class RouteManagerImpl @javax.inject.Inject constructor() : RouteManager {
         try {
             candidates.forEach { r ->
                 r.id?.let {
-                    api.removeRoute(com.app.miklink.data.network.dto.NumbersRequest(it))
+                    api.removeRoute(NumbersRequest(it))
                     removedRoutes.add(r)
                 }
             }

@@ -8,6 +8,7 @@ import org.junit.Assert.assertEquals
 // assertNotNull not used — removed import to silence unused-import warning
 import org.junit.Rule
 import org.junit.Test
+import org.junit.Rule
 import org.junit.runner.RunWith
 import java.io.IOException
 
@@ -26,7 +27,7 @@ class MigrationTest {
     val helper: MigrationTestHelper = MigrationTestHelper(
         InstrumentationRegistry.getInstrumentation(),
         AppDatabase::class.java,
-        emptyList(),
+        com.app.miklink.core.data.local.room.v1.AppDatabase::class.java,
         FrameworkSQLiteOpenHelperFactory()
     )
 

@@ -1,0 +1,14 @@
+> Task :app:testDebugUnitTest
+
+BridgeHostGoldenParsingTest > parse bridge host and assert mac and on-interface present PASSED
+BridgePortGoldenParsingTest > parse bridge ports assert bridge and pvid PASSED
+BridgeVlanGoldenParsingTest > parse bridge vlan empty returns empty list PASSED
+CableTestGoldenParsingTest > parse cable test no link with cable pairs PASSED
+CableTestGoldenParsingTest > parse cable test link ok no measurement PASSED
+EthernetMonitorGoldenParsingTest > parse ethernet monitor link ok 1gbps PASSED
+EthernetMonitorGoldenParsingTest > parse ethernet monitor no link rate absent becomes null PASSED
+LogGoldenParsingTest > parse log proplist and assert topics present PASSED
+NeighborGoldenParsingTest > parse neighbor golden fixture PASSED
+SystemResourceGoldenParsingTest > parse system resource golden fixture PASSED
+
+(Several contract-style tests SKIPPED; overall unit test task completed successfully)

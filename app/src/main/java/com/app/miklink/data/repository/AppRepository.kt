@@ -13,9 +13,10 @@ import com.app.miklink.data.db.model.ProbeConfig
 import com.app.miklink.data.network.MikroTikApiService
 import com.app.miklink.data.network.MikroTikServiceFactory
 import com.app.miklink.data.network.dto.*
-import com.app.miklink.data.network.dto.SpeedTestRequest
-import com.app.miklink.data.network.dto.SpeedTestResult
 import com.app.miklink.utils.UiState
+import com.app.miklink.core.data.repository.NetworkConfigFeedback
+import com.app.miklink.core.data.repository.ProbeStatusInfo
+import com.app.miklink.core.data.repository.ProbeCheckResult
 import com.app.miklink.R
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -28,24 +29,20 @@ import java.net.SocketTimeoutException
 import javax.inject.Inject
 import javax.inject.Singleton
 
-// Result wrapper for the probe check
-sealed class ProbeCheckResult {
-    data class Success(val boardName: String, val interfaces: List<String>) : ProbeCheckResult()
-    data class Error(val message: String) : ProbeCheckResult()
-}
+// ProbeCheckResult is defined in the core bridge; do not duplicate.
 
 @Singleton
-class AppRepository @Inject constructor(
+class AppRepository_legacy constructor(
     @ApplicationContext private val context: Context,
-    val clientDao: ClientDao,
-    val probeConfigDao: ProbeConfigDao,
-    val testProfileDao: TestProfileDao,
-    val reportDao: ReportDao,
-    private val serviceFactory: MikroTikServiceFactory,
+    val clientDao: com.app.miklink.data.db.dao.ClientDao,
+    val probeConfigDao: com.app.miklink.data.db.dao.ProbeConfigDao,
+    val testProfileDao: com.app.miklink.data.db.dao.TestProfileDao,
+    val reportDao: com.app.miklink.data.db.dao.ReportDao,
+    private val serviceFactory: com.app.miklink.data.network.MikroTikServiceFactory,
     private val routeManager: com.app.miklink.data.repository.RouteManager,
-    private val userPreferencesRepository: UserPreferencesRepository
-) {
-    val currentProbe: Flow<ProbeConfig?> = probeConfigDao.getSingleProbe()
+    private val userPreferencesRepository: com.app.miklink.data.repository.UserPreferencesRepository
+) : com.app.miklink.core.data.repository.AppRepository {
+    override val currentProbe: Flow<ProbeConfig?> = probeConfigDao.getSingleProbe()
 
 
     @Suppress("DEPRECATION")
@@ -62,7 +59,7 @@ class AppRepository @Inject constructor(
         return serviceFactory.createService(probe, wifiNetwork?.socketFactory)
     }
 
-    suspend fun resolveTargetIp(probe: ProbeConfig, target: String, interfaceName: String): String {
+    override suspend fun resolveTargetIp(probe: ProbeConfig, target: String, interfaceName: String): String {
         if (target.equals("DHCP_GATEWAY", ignoreCase = true)) {
             return getDhcpGateway(probe, interfaceName) ?: target
         }
@@ -89,7 +86,7 @@ class AppRepository @Inject constructor(
     }
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    fun observeProbeStatus(probe: ProbeConfig): Flow<Boolean> = userPreferencesRepository.probePollingInterval
+    override fun observeProbeStatus(probe: ProbeConfig): Flow<Boolean> = userPreferencesRepository.probePollingInterval
         .flatMapLatest { interval ->
             flow {
                 while (true) {
@@ -107,7 +104,7 @@ class AppRepository @Inject constructor(
             }
         }
 
-    suspend fun checkProbeConnection(probe: ProbeConfig): ProbeCheckResult = withContext(Dispatchers.IO) {
+    override suspend fun checkProbeConnection(probe: ProbeConfig): ProbeCheckResult = withContext(Dispatchers.IO) {
         try {
             val api = buildServiceFor(probe)
             val boardName = api.getSystemResource(ProplistRequest(listOf("board-name"))).firstOrNull()?.boardName ?: "Unknown Board"
@@ -127,19 +124,12 @@ class AppRepository @Inject constructor(
 
     // --- CONFIG RETE PER CLIENTE ---
 
-    data class NetworkConfigFeedback(
-        val mode: String,
-        val interfaceName: String,
-        val address: String?,
-        val gateway: String?,
-        val dns: String?,
-        val message: String
-    )
+    // NetworkConfigFeedback now defined in core bridge; use the core type instead of duplicating it here.
 
-    suspend fun applyClientNetworkConfig(
+    override suspend fun applyClientNetworkConfig(
         probe: ProbeConfig,
         client: Client,
-        override: Client? = null // usa un Client temporaneo per override per-singolo-test
+        override: Client? // usa un Client temporaneo per override per-singolo-test
     ): UiState<NetworkConfigFeedback> = safeApiCall {
         val effective = override ?: client
         val api = buildServiceFor(probe)
@@ -271,7 +261,7 @@ dns = null,
 
     // --- TEST FUNCTIONS ---
 
-    suspend fun runCableTest(probe: ProbeConfig, interfaceName: String): UiState<CableTestResult> {
+    override suspend fun runCableTest(probe: ProbeConfig, interfaceName: String): UiState<CableTestResult> {
         android.util.Log.d("TDR_DEBUG", "=== Cable-Test Request Start ===")
         // Probe.name removed — use generic label with IP for logs
         android.util.Log.d("TDR_DEBUG", "Sonda @ ${probe.ipAddress}")
@@ -328,13 +318,13 @@ dns = null,
         }
     }
 
-    suspend fun getLinkStatus(probe: ProbeConfig, interfaceName: String): UiState<MonitorResponse> = safeApiCall {
+    override suspend fun getLinkStatus(probe: ProbeConfig, interfaceName: String): UiState<MonitorResponse> = safeApiCall {
         val api = buildServiceFor(probe)
         val results = api.getLinkStatus(MonitorRequest(numbers = interfaceName, once = true))
         results.lastOrNull() ?: throw IllegalStateException("No link status returned")
     }
 
-    suspend fun getNeighborsForInterface(probe: ProbeConfig, interfaceName: String): UiState<List<NeighborDetail>> {
+    override suspend fun getNeighborsForInterface(probe: ProbeConfig, interfaceName: String): UiState<List<NeighborDetail>> {
         android.util.Log.d("LLDP_DEBUG", "=== LLDP Request Start ===")
             android.util.Log.d("LLDP_DEBUG", "Sonda @ ${probe.ipAddress}")
         android.util.Log.d("LLDP_DEBUG", "Interface: $interfaceName")
@@ -363,7 +353,7 @@ dns = null,
         }
     }
 
-    suspend fun runPing(probe: ProbeConfig, target: String, interfaceName: String, count: Int = 4): UiState<List<PingResult>> = safeApiCall {
+    override suspend fun runPing(probe: ProbeConfig, target: String, interfaceName: String, count: Int): UiState<List<PingResult>> = safeApiCall {
         val resolvedTarget = resolveTargetIp(probe, target, interfaceName)
         if (resolvedTarget.equals("DHCP_GATEWAY", ignoreCase = true)) {
             throw IllegalStateException("DHCP gateway not resolved for interface $interfaceName")
@@ -372,7 +362,7 @@ dns = null,
         api.runPing(PingRequest(address = resolvedTarget, `interface` = interfaceName, count = count.toString()))
     }
 
-    suspend fun runSpeedTest(probe: ProbeConfig, client: Client): UiState<SpeedTestResult> {
+    override suspend fun runSpeedTest(probe: ProbeConfig, client: Client): UiState<SpeedTestResult> {
         if (client.speedTestServerAddress.isNullOrBlank()) {
             return UiState.Error(context.getString(R.string.error_speedtest_no_server))
         }
@@ -421,7 +411,7 @@ dns = null,
     // --- PROBE MONITORING ---
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    fun observeAllProbesWithStatus(): Flow<List<ProbeStatusInfo>> =
+    override fun observeAllProbesWithStatus(): Flow<List<ProbeStatusInfo>> =
         combine(probeConfigDao.getAllProbes(), userPreferencesRepository.probePollingInterval) { probes, interval ->
             Pair(probes, interval)
         }.flatMapLatest { (probes, interval) ->
@@ -457,5 +447,4 @@ private fun tickerFlow(periodMs: Long): Flow<Unit> = flow {
     }
 }
 
-// Probe status monitoring
-data class ProbeStatusInfo(val probe: ProbeConfig, val isOnline: Boolean)
+// ProbeStatusInfo is defined in the core bridge; do not duplicate.

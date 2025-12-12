@@ -47,6 +47,33 @@ Nel processo di refactor (EPICs di refactor), il codice legacy verrà gestito co
 
 - Il nuovo schema target e le decisioni su campi legacy (es. `lastFloor`, `lastRoom`) sono descritti nel file `docs/DATABASE_V2.md`.
 
+## Stato post S1-R
+
+Questa sezione descrive lo stato della codebase dopo la fase di stabilizzazione S1-R.
+
+- **Unico `AppDatabase` reale**: l'unico database annotato con `@Database` è:
+
+    `app/src/main/java/com/app/miklink/data/db/AppDatabase.kt`
+
+    (Versione: 13; utilizza le entità e le DAO presenti in `data/db/model` e `data/db/dao`).
+
+- **Nessun duplicato di Entity/DAO in package diversi**: le entità principali e le DAO sono centralizzate sotto
+
+    `app/src/main/java/com/app/miklink/data/db/model`  (Entities)
+
+    `app/src/main/java/com/app/miklink/data/db/dao`    (DAOs)
+
+    eccezione: `ClientDaoV2.kt` rimane in `core` come ponte/compatibilità (vedi nota di refactor futura).
+
+- **Bridge/core repository**: i bridge introdotti per stabilizzare il DI sono:
+
+    - `com.app.miklink.core.data.repository.AppRepository` (interfaccia bridge)
+    - `com.app.miklink.core.data.repository.BackupRepository` (interfaccia bridge)
+
+    Le implementazioni concrete legacy continuano a esistere, ma sono fornite tramite `RepositoryModule` con provider espliciti per evitare fragilità nell'annotation processing (KSP/Hilt).
+
+Questa sezione serve come punto di riferimento per reviewer e per i successivi step di refactor (migrazione completa verso `core/*` potrà essere pianificata in piccoli step seguendo la stessa strategia di verifica: compilazione + KSP + assemble + test dopo ogni modifica).
+
 ### Cleanup & Secrets
 
 Le linee guida per la rimozione sicura di file locali o sensibili presenti nel repository sono in `docs/CLEANUP_GUIDE.md`. Si consiglia di seguire il procedimento descritto prima di eseguire merge/PR che tolgano o modifichino file contenenti credenziali.
