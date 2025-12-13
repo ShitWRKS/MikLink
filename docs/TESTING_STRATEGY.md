@@ -35,3 +35,40 @@ Test running
 TODOs:
 - Add small fixtures for more RouterOS outputs as integrations increase
 - Align `TestMoshiProvider` to production once DI modules are stabilized
+
+Hardcoded Strings Guard (EPIC U2.2) — Italiano
+------------------------------------------------
+
+Questa suite include un test JVM che rileva stringhe hardcoded nelle UI Compose.
+
+Come lanciare:
+
+```powershell
+./gradlew.bat testDebugUnitTest --tests "com.app.miklink.quality.HardcodedStringsScanTest"
+./gradlew.bat testDebugUnitTest --tests "com.app.miklink.quality.StringsItalianCoverageTest"
+```
+
+Comportamento:
+- Il test `HardcodedStringsScanTest` scansiona `app/src/main/java/com/app/miklink/ui/` per le occorrenze di:
+	- `Text("...")`
+	- `Text(text = "...")`
+	- `contentDescription = "..."`
+- Se trova violazioni il test fallisce con messaggi del tipo:
+
+```
+HARD_CODED_UI_TEXT: <file>:<line> -> <snippet>
+
+FIX (standard)
+crea una key in res/values/strings.xml
+crea la traduzione in res/values-it/strings.xml
+sostituisci con stringResource(R.string.<key>) (o context.getString(...) se non sei in composable)
+```
+
+Regole di ignoramento e allowlist:
+- Aggiungi `// i18n-ignore` sulla stessa riga quando la stringa hardcoded è intenzionale e giustificata (es. test fixture, costante tecnica). Il commento impedisce il fail del test.
+- Sono ignorate stringhe vuote `""` e stringhe costituite solo da simboli tecnici (es. `"---"`, `":"`, `%`).
+
+Note:
+- Questo non è un lint personalizzato: è un unit test JVM che fallisce la build quando vengono introdotte stringhe hardcoded in UI.
+- Se il test segnala falsi positivi, aggiorna l'allowlist in `HardcodedStringsScanTest.kt` e aggiungi il caso di test pertinente.
+

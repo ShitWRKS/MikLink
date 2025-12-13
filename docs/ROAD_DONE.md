@@ -1,5 +1,274 @@
 
 
+
+EPIC S8 — Sunset definitivo di AppRepository (Audit + Migrazione + Rimozione)
+Scopo
+
+Eliminare completamente l’uso di AppRepository dalla codebase (UI, domain, data), sostituendolo con repository SOLID dedicati (interfacce in core/, implementazioni in data/), mantenendo build e test verdi.
+
+Nota: eventuali problemi non bloccanti emersi in S7 vanno tracciati ma non risolti ora (vedi sezione “Known Issues”).
+
+Regole operative per l’agent
+
+Non inventare nulla. Ogni decisione deve essere supportata da codice esistente o da documentazione già presente nel repo.
+
+Non eseguire comandi git / PR.
+
+Dopo ogni step “di migrazione” eseguire i 3 comandi (KSP/assemble/test) e salvare i log in docs/migration/.
+
+Cambiamenti solo “meccanici”: spostamenti, estrazioni, rinomina dipendenze, DI bindings, test contract minimi.
+
+Se un refactor richiede una scelta funzionale non definita: STOP e scrivere “Decision required” in docs/migration/S8_OPEN_QUESTIONS.md.
+
+S8.0 — Baseline + checkpoint obbligatori
+
+Comandi
+
+./gradlew :app:kspDebugKotlin
+
+./gradlew assembleDebug
+
+./gradlew testDebugUnitTest
+
+Output
+
+Salvare in:
+
+docs/migration/S8_ksp_baseline.txt
+
+docs/migration/S8_assemble_baseline.txt
+
+docs/migration/S8_tests_baseline.txt
+
+Doc
+
+Creare docs/migration/S8_BASELINE.md con data + esito + note.
+
+S8.1 — Audit deterministico: dove viene ancora usato AppRepository
+
+Obiettivo
+Produrre una lista completa e verificabile di:
+
+file che importano/iniettano AppRepository
+
+metodi usati
+
+feature impattata (UI, data, domain)
+
+Azioni
+
+Ricerca testuale su sorgenti main (no test):
+
+cercare AppRepository
+
+cercare @Inject constructor(... AppRepository
+
+cercare import .*AppRepository
+
+Generare report:
+
+docs/migration/S8_apprepository_usage_audit.md con:
+
+tabella: File | Classe | Tipo (VM/Repo/UseCase/Altro) | Metodi chiamati | Note
+
+indicare anche se è una dipendenza non usata (da rimuovere)
+
+Checkpoint
+
+Nessun codice cambiato in questo step.
+
+S8.2 — Definizione “target repositories” (solo contratti)
+
+Obiettivo
+Per ogni responsabilità rimasta in AppRepository (dall’audit S8.1), creare 1 repository dedicato (SRP).
+
+Regole
+
+Interfacce in app/src/main/java/com/app/miklink/core/data/repository/...
+
+Nomi espliciti per responsabilità (no “Manager” generici)
+
+Metodi copiati come “contract” (stessa firma se possibile), ma senza dipendenze Android nella signature (se evitabile)
+
+Output
+
+Creare file interfacce + KDoc con:
+
+Input
+
+Output
+
+Error handling atteso
+
+Threading/coroutines attese (suspend/Flow)
+
+Checkpoint
+
+./gradlew :app:kspDebugKotlin + log in docs/migration/S8_ksp_step_contracts.txt
+
+S8.3 — Implementazioni data/repositoryimpl (una responsabilità per volta)
+
+Obiettivo
+Implementare ogni contract con classi in:
+
+app/src/main/java/com/app/miklink/data/repositoryimpl/...
+
+Sequenza
+Migrare una sola responsabilità per PR virtuale (cioè per step), così:
+
+Implementazione repository
+
+Binding DI
+
+Aggiornamento dei chiamanti
+
+Deprecazione del metodo corrispondente in AppRepository (temporaneo)
+
+Checkpoint build/test
+
+Checkpoint per ogni responsabilità
+
+./gradlew :app:kspDebugKotlin → docs/migration/S8_ksp_step_<name>.txt
+
+./gradlew assembleDebug → docs/migration/S8_assemble_step_<name>.txt
+
+./gradlew testDebugUnitTest → docs/migration/S8_tests_step_<name>.txt
+
+S8.4 — Aggiornamento chiamanti (ViewModel / UseCase / altri)
+
+Obiettivo
+Rimuovere AppRepository dai costruttori e sostituire con i nuovi repository.
+
+Regole
+
+Ogni ViewModel deve dipendere solo da:
+
+repository core (interfacce)
+
+usecase core (se presenti)
+
+DAO solo se già stabilito come eccezione (ma preferire repository)
+
+Pulizia
+
+Se AppRepository è iniettato ma non usato: rimuovere subito (con checkpoint).
+
+S8.5 — Rimozione definitiva di AppRepository
+
+Obiettivo
+Eliminare AppRepository e qualsiasi implementazione/bridge residua.
+
+Azioni
+
+Verifica: nessuna occorrenza in main:
+
+AppRepository non deve comparire in app/src/main/java/**
+
+Eliminare file/classi:
+
+rimuovere AppRepository (core e data, legacy se presente)
+
+rimuovere binding DI correlati
+
+Aggiornare documentazione architettura:
+
+docs/ARCHITECTURE.md: rimuovere riferimenti ad AppRepository come entry point.
+
+Checkpoint finale
+
+./gradlew :app:kspDebugKotlin → docs/migration/S8_ksp_final.txt
+
+./gradlew assembleDebug → docs/migration/S8_assemble_final.txt
+
+./gradlew testDebugUnitTest → docs/migration/S8_tests_final.txt
+
+S8.6 — Contract tests minimi per i repository creati
+
+Obiettivo
+Aggiungere test unitari “contract-style” per ogni nuovo repository:
+
+verifica mapping base
+
+gestione errori
+
+casi vuoti/null
+
+Vincoli
+
+Test non devono “barare” per passare.
+
+Dove serve rete: mock del MikroTikServiceProvider (o equivalente già presente).
+
+---
+
+## EPIC U1.7 — Progressive Reveal Cards (Test UI)
+
+Scopo
+
+Rendere l'esperienza utente della schermata di test più leggibile durante l'esecuzione: mostrare progressivamente le card (solo gli step già conclusi + la prossima corrente), impedire l'espansione e il rendering dei dettagli per step non finali (RUNNING/PENDING), e riusare il renderer dei dettagli della schermata finale per evitare drift.
+
+Regole operative
+
+- Nessuna modifica al dominio o agli usecase.
+- Nessun evento aggiunto (es. `SectionsUpdated`), solo logica di presentazione.
+- Nessun debito tecnico: riusare renderer/mapper esistenti (es. `TestSkipReasonMapper`).
+
+Acceptance Criteria
+
+- Durante test in corso (isRunning == true): appaiono tutte le sezioni con status != "PENDING" + al massimo la prima "PENDING" incontrata.
+- Le card PASS/FAIL/SKIP sono espandibili e mostrano i dettagli.
+- Le card RUNNING/PENDING non sono espandibili e non mostrano dettagli (solo header).
+
+Implementazione (sintesi)
+
+- `TestExecutionScreen.kt`: nella composable `TestInProgressView` calcolare `visibleSections` includendo tutte le non-pending e la prima pending incontrata, preservando l'ordine.
+- Aggiungere `isFinalStatus(status)` helper che ritorna true per PASS/FAIL/SKIP.
+- Aggiungere `expandable: Boolean = true` a `TestSectionCard` e disabilitare l'interazione/icone/dettagli quando `expandable == false`.
+- Estrarre `@Composable private fun TestSectionDetails(section: TestSection)` e riusarlo sia in `TestCompletedView` che in `TestInProgressView` per assicurare lo stesso rendering dei dettagli.
+
+Files toccati
+
+- `app/src/main/java/com/app/miklink/ui/test/TestExecutionScreen.kt`
+- `app/src/main/java/com/app/miklink/ui/common/ResultCards.kt`
+
+Log e risultato
+
+- Baseline + final logs e risultato sono salvati in `docs/migration/`:
+  - `U1_7_ksp_baseline.txt`, `U1_7_assemble_baseline.txt`, `U1_7_tests_baseline.txt`
+  - `U1_7_ksp_final.txt`, `U1_7_assemble_final.txt`, `U1_7_tests_final.txt`
+  - Report finale: `docs/migration/U1_7_RESULT.md`
+
+Stato: Completed ✅
+
+S8.7 — Known Issues (posticipati ma tracciati)
+
+Obiettivo
+Non risolvere ora i problemi non bloccanti, ma tracciarli.
+
+Azioni
+
+Creare/aggiornare docs/KNOWN_ISSUES.md con:
+
+ID, descrizione, impatto, riproduzione, area, severità, workaround
+
+Link ai log / file coinvolti
+
+Acceptance Criteria EPIC S8
+
+✅ Nessuna occorrenza di AppRepository in app/src/main/java/**
+
+✅ ./gradlew :app:kspDebugKotlin PASS
+
+✅ ./gradlew assembleDebug PASS
+
+✅ ./gradlew testDebugUnitTest PASS
+
+✅ docs/migration/S8_RESULT.md presente con baseline + step logs + elenco file creati/modificati
+
+✅ docs/ARCHITECTURE.md aggiornato coerentemente
+
+
+
 EPIC S6 — Eliminare i bridge verso AppRepository nel percorso “Run Test” (NetworkConfig + DHCP/Gateway)
 
 Copia/incolla in ROADMAP. Super-dettagliata, con stop condition anti-drift.
