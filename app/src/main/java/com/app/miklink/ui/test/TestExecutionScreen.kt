@@ -401,9 +401,25 @@ fun TestInProgressView(
                 }
             }
         } else {
-            // Sections cards
-            val infoSections = sections.filter { it.category == INFO }
-            val testSections = sections.filter { it.category == TEST }
+            // Calcolare visibleSections per progressive reveal:
+            // includere tutte le sezioni non-pending + la prima pending incontrata
+            val visibleSections = remember(sections) {
+                val list = mutableListOf<TestSection>()
+                var pendingIncluded = false
+                for (s in sections) {
+                    val status = s.status.uppercase()
+                    val isPending = status == "PENDING"
+                    if (!isPending) list.add(s)
+                    else if (!pendingIncluded) {
+                        list.add(s)
+                        pendingIncluded = true
+                    }
+                }
+                list
+            }
+
+            val infoSections = visibleSections.filter { it.category == INFO }
+            val testSections = visibleSections.filter { it.category == TEST }
             LazyColumn(
                 state = listState,
                 modifier = Modifier.fillMaxWidth(),
@@ -417,16 +433,15 @@ fun TestInProgressView(
                             LLDP -> Icons.Default.Devices to MaterialTheme.colorScheme.secondary
                             else -> Icons.Default.Info to MaterialTheme.colorScheme.onSurfaceVariant
                         }
-                        TestSectionCard(title = mapTestSectionTitle(section.type, section.title), status = section.status, icon = icon, statusColor = color) {
-                            section.details.forEach { d ->
-                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                    Text(d.label)
-                                    Text(
-                                        if (d.label == "reason") TestSkipReasonMapper.getLocalizedReason(d.value) else d.value,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                            }
+                        val expandable = isFinalStatus(section.status)
+                        TestSectionCard(
+                            title = mapTestSectionTitle(section.type, section.title),
+                            status = section.status,
+                            icon = icon,
+                            statusColor = color,
+                            expandable = expandable
+                        ) {
+                            if (expandable) TestSectionDetails(section)
                         }
                     }
                     item { HorizontalDivider() }
@@ -441,86 +456,116 @@ fun TestInProgressView(
                             SPEED -> Icons.Default.Speed to Color(0xFFFF9800)
                             else -> Icons.Default.Info to MaterialTheme.colorScheme.onSurfaceVariant
                         }
-                        // Passiamo i dettagli della sezione così com'erano (persistiti dal ViewModel)
-                        TestSectionCard(title = mapTestSectionTitle(section.type, section.title), status = section.status, icon = icon, statusColor = color) {
-                            if (section.type == PING) {
-                                // Mostra il chip LOSS solo se esiste un valore significativo (non '-' e non vuoto)
-                                val lossText = section.details.firstOrNull { it.label == "Packet Loss" }?.value ?: ""
-                                if (lossText.isNotBlank() && lossText != "-" && lossText.any { it.isDigit() }) {
-                                    val isZeroLoss = lossText.trim().startsWith("0")
-                                    val chipBg = if (isZeroLoss) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.errorContainer
-                                    val chipFg = if (isZeroLoss) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onErrorContainer
-                                    Surface(color = chipBg, shape = RoundedCornerShape(12.dp)) {
-                                        Row(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                                            Icon(if (isZeroLoss) Icons.Default.CheckCircle else Icons.Default.Error, contentDescription = null, tint = chipFg, modifier = Modifier.size(14.dp))
-                                            Spacer(Modifier.width(6.dp))
-                                            Text(text = "LOSS ${lossText}", color = chipFg, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                                        }
-                                    }
-                                    Spacer(Modifier.height(8.dp))
-                                }
-                            }
-                            // Dettagli generici + stile speciale per Ping rows
-                            section.details.forEach { d ->
-                                when {
-                                    d.label == "---" -> {
-                                        Spacer(Modifier.height(8.dp))
-                                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                                        Spacer(Modifier.height(8.dp))
-                                        Text(
-                                            d.value,
-                                            style = MaterialTheme.typography.labelMedium,
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.primary
-                                        )
-                                        Spacer(Modifier.height(4.dp))
-                                    }
-                                    d.label.startsWith("Ping #") -> {
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(vertical = 4.dp)
-                                                .background(
-                                                    MaterialTheme.colorScheme.surfaceVariant,
-                                                    RoundedCornerShape(4.dp)
-                                                )
-                                                .padding(8.dp),
-                                            horizontalArrangement = Arrangement.SpaceBetween
-                                        ) {
-                                            Text(
-                                                d.label,
-                                                style = MaterialTheme.typography.bodySmall,
-                                                fontWeight = FontWeight.Medium
-                                            )
-                                            Text(
-                                                d.value,
-                                                style = MaterialTheme.typography.bodySmall,
-                                                fontFamily = FontFamily.Monospace,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-                                    }
-                                    else -> {
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
-                                            horizontalArrangement = Arrangement.SpaceBetween
-                                        ) {
-                                            Text(
-                                                d.label,
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                            Text(
-                                                if (d.label == "reason") TestSkipReasonMapper.getLocalizedReason(d.value) else d.value,
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        }
-                                    }
-                                }
-                            }
+                        val expandable = isFinalStatus(section.status)
+                        TestSectionCard(
+                            title = mapTestSectionTitle(section.type, section.title),
+                            status = section.status,
+                            icon = icon,
+                            statusColor = color,
+                            expandable = expandable
+                        ) {
+                            if (expandable) TestSectionDetails(section)
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Restituisce true se lo status è finale (PASS/FAIL/SKIP)
+ */
+private fun isFinalStatus(status: String): Boolean = status.uppercase() in setOf("PASS", "FAIL", "SKIP")
+
+@Composable
+private fun TestSectionDetails(section: TestSection) {
+    // Reuse logic from TestCompletedView for consistency
+    if (section.type == PING) {
+        // Packet Loss chip
+        val lossText = section.details.firstOrNull { it.label == "Packet Loss" }?.value ?: ""
+        if (lossText.isNotBlank() && lossText != "-" && lossText.any { it.isDigit() }) {
+            val isZeroLoss = lossText.trim().startsWith("0")
+            val chipBg = if (isZeroLoss) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.errorContainer
+            val chipFg = if (isZeroLoss) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onErrorContainer
+            Surface(color = chipBg, shape = RoundedCornerShape(12.dp)) {
+                Row(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(if (isZeroLoss) Icons.Default.CheckCircle else Icons.Default.Error, contentDescription = null, tint = chipFg, modifier = Modifier.size(14.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text(text = "LOSS ${lossText}", color = chipFg, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+        }
+    }
+
+    section.details.forEach { d ->
+        when {
+            d.label == "---" -> {
+                Spacer(Modifier.height(8.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    d.value,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(Modifier.height(4.dp))
+            }
+            d.label.startsWith("Ping #") -> {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                        .background(
+                            MaterialTheme.colorScheme.surfaceVariant,
+                            RoundedCornerShape(4.dp)
+                        )
+                        .padding(8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        d.label,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        d.value,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontFamily = FontFamily.Monospace,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            isSpeedDetailLabel(d.label) -> {
+                val (speed, load) = parseSpeedAndLoad(d.value)
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text(d.label)
+                    Text(speed, fontWeight = FontWeight.Bold)
+                }
+                if (!load.isNullOrBlank()) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("CPU Load")
+                        Text(load, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+            d.label.equals("Avviso", ignoreCase = true) -> {
+                Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(d.value, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            else -> {
+                Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text(d.label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        if (d.label == "reason") TestSkipReasonMapper.getLocalizedReason(d.value) else d.value,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }
@@ -705,15 +750,7 @@ fun TestCompletedView(
                 icon = Icons.Default.SettingsEthernet,
                 statusColor = MaterialTheme.colorScheme.primary
             ) {
-                section.details.forEach { d ->
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text(d.label)
-                        Text(
-                            if (d.label == "reason") TestSkipReasonMapper.getLocalizedReason(d.value) else d.value,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
+                TestSectionDetails(section)
             }
         }
 
@@ -725,15 +762,7 @@ fun TestCompletedView(
                 icon = Icons.Default.Devices,
                 statusColor = MaterialTheme.colorScheme.secondary
             ) {
-                section.details.forEach { d ->
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text(d.label)
-                        Text(
-                            if (d.label == "reason") TestSkipReasonMapper.getLocalizedReason(d.value) else d.value,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
+                TestSectionDetails(section)
             }
         }
 
@@ -747,15 +776,7 @@ fun TestCompletedView(
                     icon = Icons.Default.Link,
                     statusColor = MaterialTheme.colorScheme.tertiary
                 ) {
-                    linkSec.details.forEach { d ->
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text(d.label)
-                            Text(
-                                if (d.label == "reason") TestSkipReasonMapper.getLocalizedReason(d.value) else d.value,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
+                    TestSectionDetails(linkSec)
                 }
             }
         }
@@ -772,81 +793,7 @@ fun TestCompletedView(
                     statusColor = Color(0xFF2196F3),
                     initialExpanded = expandByDefault
                 ) {
-                    // Chip di sintesi Packet Loss (se presente e significativo)
-                    val lossText = pingSec.details.firstOrNull { it.label == "Packet Loss" }?.value ?: ""
-                    if (lossText.isNotBlank() && lossText != "-" && lossText.any { it.isDigit() }) {
-                        val isZeroLoss = lossText.trim().startsWith("0")
-                        val chipBg = if (isZeroLoss) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.errorContainer
-                        val chipFg = if (isZeroLoss) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onErrorContainer
-                        Surface(color = chipBg, shape = RoundedCornerShape(12.dp)) {
-                            Row(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Icon(if (isZeroLoss) Icons.Default.CheckCircle else Icons.Default.Error, contentDescription = null, tint = chipFg, modifier = Modifier.size(14.dp))
-                                Spacer(Modifier.width(6.dp))
-                                Text(text = "LOSS ${lossText}", color = chipFg, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                            }
-                        }
-                        Spacer(Modifier.height(8.dp))
-                    }
-
-                    // Dettagli ping con stile
-                    pingSec.details.forEach { d ->
-                        when {
-                            d.label == "---" -> {
-                                Spacer(Modifier.height(8.dp))
-                                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                                Spacer(Modifier.height(8.dp))
-                                Text(
-                                    d.value,
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                                Spacer(Modifier.height(4.dp))
-                            }
-                            d.label.startsWith("Ping #") -> {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 4.dp)
-                                        .background(
-                                            MaterialTheme.colorScheme.surfaceVariant,
-                                            RoundedCornerShape(4.dp)
-                                        )
-                                        .padding(8.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Text(
-                                        d.label,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                    Text(
-                                        d.value,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        fontFamily = FontFamily.Monospace,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-                            else -> {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Text(
-                                        d.label,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Text(
-                                        if (d.label == "reason") TestSkipReasonMapper.getLocalizedReason(d.value) else d.value,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                            }
-                        }
-                    }
+                    TestSectionDetails(pingSec)
                 }
             }
         }
@@ -861,15 +808,7 @@ fun TestCompletedView(
                     icon = Icons.Default.Cable,
                     statusColor = MaterialTheme.colorScheme.primary
                 ) {
-                    tdrSec.details.forEach { d ->
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text(d.label)
-                            Text(
-                                if (d.label == "reason") TestSkipReasonMapper.getLocalizedReason(d.value) else d.value,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
+                    TestSectionDetails(tdrSec)
                 }
             }
         }
@@ -884,40 +823,7 @@ fun TestCompletedView(
                     icon = Icons.Default.Speed,
                     statusColor = Color(0xFFFF9800)
                 ) {
-                    speedSec.details.forEach { d ->
-                        // Gestione formattata per righe speed e warning
-                        when {
-                            isSpeedDetailLabel(d.label) -> {
-                                val (speed, load) = parseSpeedAndLoad(d.value)
-                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                    Text(d.label)
-                                    Text(speed, fontWeight = FontWeight.Bold)
-                                }
-                                if (!load.isNullOrBlank()) {
-                                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                        Text("CPU Load")
-                                        Text(load, fontWeight = FontWeight.Bold)
-                                    }
-                                }
-                            }
-                            d.label.equals("Avviso", ignoreCase = true) -> {
-                                Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(18.dp))
-                                    Spacer(Modifier.width(8.dp))
-                                    Text(d.value, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-                            }
-                            else -> {
-                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                    Text(d.label)
-                                    Text(
-                                        if (d.label == "reason") TestSkipReasonMapper.getLocalizedReason(d.value) else d.value,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                            }
-                        }
-                    }
+                    TestSectionDetails(speedSec)
                 }
             }
         }

@@ -50,14 +50,16 @@ fun TestSectionCard(
     modifier: Modifier = Modifier,
     detailsTestTag: String? = null,
     initialExpanded: Boolean = false,
+    expandable: Boolean = true,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    var expanded by rememberSaveable { mutableStateOf(initialExpanded) }
+    var expanded by rememberSaveable(title, status, expandable) { mutableStateOf(initialExpanded && expandable) }
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        onClick = { expanded = !expanded }
+        onClick = { if (expandable) expanded = !expanded },
+        enabled = expandable
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
             Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
@@ -65,14 +67,19 @@ fun TestSectionCard(
                 Spacer(Modifier.width(12.dp))
                 Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
                 StatusChip(status)
-                Spacer(Modifier.width(8.dp))
-                Icon(
-                    if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                    contentDescription = if (expanded) "Comprimi" else "Espandi",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                if (expandable) {
+                    Spacer(Modifier.width(8.dp))
+                    Icon(
+                        if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        contentDescription = if (expanded) "Comprimi" else "Espandi",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
-            AnimatedVisibility(visible = expanded, modifier = if (detailsTestTag != null) Modifier.testTag(detailsTestTag) else Modifier) {
+            AnimatedVisibility(
+                visible = expanded && expandable,
+                modifier = if (detailsTestTag != null) Modifier.testTag(detailsTestTag) else Modifier
+            ) {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Spacer(Modifier.height(12.dp))
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)

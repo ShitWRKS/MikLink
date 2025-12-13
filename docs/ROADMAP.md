@@ -406,6 +406,47 @@ Test non devono “barare” per passare.
 
 Dove serve rete: mock del MikroTikServiceProvider (o equivalente già presente).
 
+---
+
+## EPIC U1.7 — Progressive Reveal Cards (Test UI)
+
+Scopo
+
+Rendere l'esperienza utente della schermata di test più leggibile durante l'esecuzione: mostrare progressivamente le card (solo gli step già conclusi + la prossima corrente), impedire l'espansione e il rendering dei dettagli per step non finali (RUNNING/PENDING), e riusare il renderer dei dettagli della schermata finale per evitare drift.
+
+Regole operative
+
+- Nessuna modifica al dominio o agli usecase.
+- Nessun evento aggiunto (es. `SectionsUpdated`), solo logica di presentazione.
+- Nessun debito tecnico: riusare renderer/mapper esistenti (es. `TestSkipReasonMapper`).
+
+Acceptance Criteria
+
+- Durante test in corso (isRunning == true): appaiono tutte le sezioni con status != "PENDING" + al massimo la prima "PENDING" incontrata.
+- Le card PASS/FAIL/SKIP sono espandibili e mostrano i dettagli.
+- Le card RUNNING/PENDING non sono espandibili e non mostrano dettagli (solo header).
+
+Implementazione (sintesi)
+
+- `TestExecutionScreen.kt`: nella composable `TestInProgressView` calcolare `visibleSections` includendo tutte le non-pending e la prima pending incontrata, preservando l'ordine.
+- Aggiungere `isFinalStatus(status)` helper che ritorna true per PASS/FAIL/SKIP.
+- Aggiungere `expandable: Boolean = true` a `TestSectionCard` e disabilitare l'interazione/icone/dettagli quando `expandable == false`.
+- Estrarre `@Composable private fun TestSectionDetails(section: TestSection)` e riusarlo sia in `TestCompletedView` che in `TestInProgressView` per assicurare lo stesso rendering dei dettagli.
+
+Files toccati
+
+- `app/src/main/java/com/app/miklink/ui/test/TestExecutionScreen.kt`
+- `app/src/main/java/com/app/miklink/ui/common/ResultCards.kt`
+
+Log e risultato
+
+- Baseline + final logs e risultato sono salvati in `docs/migration/`:
+  - `U1_7_ksp_baseline.txt`, `U1_7_assemble_baseline.txt`, `U1_7_tests_baseline.txt`
+  - `U1_7_ksp_final.txt`, `U1_7_assemble_final.txt`, `U1_7_tests_final.txt`
+  - Report finale: `docs/migration/U1_7_RESULT.md`
+
+Stato: Completed ✅
+
 S8.7 — Known Issues (posticipati ma tracciati)
 
 Obiettivo
