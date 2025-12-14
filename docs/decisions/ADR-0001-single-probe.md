@@ -1,23 +1,18 @@
-# ADR-0001 — Sonda unica (rimozione probeId)
+# ADR-0001 — Single probe (nessun probeId)
 
 - **Status:** Accepted
 - **Data:** 2025-12-13
 
 ## Contesto
 
-In una prima fase l'app prevedeva più sonde (da qui la presenza storica di `probeId` in DB, UI routes e report).
-La direzione attuale è semplificare: **una sola sonda configurabile**.
+L'app gestisce una sola sonda MikroTik configurabile dall'utente. Introdurre un `probeId` porterebbe complessità (UI, DB, migrazioni, logica multi‑probe) non richiesta dal prodotto.
 
 ## Decisione
 
-- L'app supporta **una sola sonda**.
-- `probeId` è considerato **legacy** e va rimosso completamente:
-  - da DB schema
-  - da UI navigation/routes
-  - dai repository contracts e dagli use case
+- `ProbeConfig` non espone alcun id nel dominio.
+- Persistenza come singleton in DB: `probe_config.id = 1`.
 
 ## Conseguenze
 
-- Le schermate “probe list” diventano “probe config” (singola configurazione).
-- Il repository della sonda espone semantica “getSingle()/upsertSingle()” invece di CRUD multi-record.
-- Ogni riferimento a `probeId` rimane solo come compatibilità temporanea durante migrazione (da tracciare in `DISCREPANCIES.md`).
+- I repository/DAO lavorano con un singolo record.
+- Import backup può mantenere la probe esistente quando il backup non la include.

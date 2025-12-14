@@ -1,11 +1,11 @@
-# ADR-0004 — Socket ID “Lite”
+# ADR-0004 — Socket ID Lite (formattazione deterministica)
 
 - **Status:** Accepted
 - **Data:** 2025-12-14
 
 ## Contesto
 
-Serve un meccanismo di generazione socket-id per i report che sia utile subito, senza introdurre complessità “full template”.
+Serve un socket-id leggibile e deterministico nei report, senza introdurre un sistema di template complesso.
 
 ## Decisione
 
@@ -17,13 +17,27 @@ Implementiamo una versione **Lite** basata su campi semplici nel `Client`:
 - `socketSuffix` (String)
 - `nextIdNumber` (Int)
 
-Generazione:
+### Formattazione
 
-1) `socketId = prefix + separator + nextIdNumber(padded) + separator + suffix`  
-   (gestire separator vuoto e suffix/prefix vuoti)
-2) `nextIdNumber` si incrementa **solo** quando un test termina con SUCCESS.
+La formattazione è pure function nel dominio:
+
+- `Client.socketNameFor(idNumber: Int): String`
+
+Regola:
+
+- `padded = idNumber` formattato con zero-padding in base a `socketNumberPadding`
+- `socketName = prefix + separator + padded + separator + suffix`
+
+> Nota: la funzione concatena sempre entrambi i separatori (anche se prefix/suffix sono vuoti).  
+> Fonte: `core/domain/model/Client.kt`.
+
+### Incremento nextIdNumber
+
+`nextIdNumber` si incrementa **solo** quando un report salvato ha `overallStatus == "PASS"`.
+
+Fonte: `data/repositoryimpl/room/RoomReportRepository.kt` + `SocketIdLiteIncrementTest`.
 
 ## Conseguenze
 
-- Nessuna configurazione JSON nella lite.
-- Il refactor “full template” resta fuori scope e richiede ADR dedicata.
+- Il comportamento è deterministico e testabile.
+- Un eventuale “full template” resta fuori scope e richiede ADR dedicato.

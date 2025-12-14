@@ -1,113 +1,86 @@
-# Database (baseline — Room v1)
+# Database (Room)
 
-Questa pagina descrive lo **stato attuale “as-is”** del database, allineato a:
+Questa pagina descrive lo **schema v1** del database Room, preso come fonte di verità da `app/schemas/com.app.miklink.data.local.room.MikLinkDatabase/1.json`.
 
-- Decisioni chiuse (ADR / Context Pack)
-- Room schema export: `app/schemas/com.app.miklink.data.local.room.MikLinkDatabase/1.json`
+## Invarianti
+- `probe_config` è **singleton**: PK fissa `id = 1`.
+- Le tabelle `clients`, `test_profiles`, `test_reports` usano ID autogenerati.
 
-## Metadati
+## Tabella `clients`
 
-- Room database: `com.app.miklink.data.local.room.MikLinkDatabase`
-- Nome file DB: `miklink`
-- Room schemaVersion: `1`
-- Migrazioni Room: nessuna; fallback non configurato (rebase distruttivo se cambia la versione)
-- Policy refactor DB: **rebase distruttivo** (reset accettato durante sviluppo; vedi ADR-0003)
+| Colonna | Tipo | Nullabilità | Key | Default |
+|---|---|---|---|---|
+| `clientId` | INTEGER | NOT NULL | PK |  |
+| `companyName` | TEXT | NOT NULL |  |  |
+| `location` | TEXT | NULL |  |  |
+| `notes` | TEXT | NULL |  |  |
+| `networkMode` | TEXT | NOT NULL |  |  |
+| `staticIp` | TEXT | NULL |  |  |
+| `staticSubnet` | TEXT | NULL |  |  |
+| `staticGateway` | TEXT | NULL |  |  |
+| `staticCidr` | TEXT | NULL |  |  |
+| `minLinkRate` | TEXT | NOT NULL |  |  |
+| `socketPrefix` | TEXT | NOT NULL |  |  |
+| `socketSuffix` | TEXT | NOT NULL |  |  |
+| `socketSeparator` | TEXT | NOT NULL |  |  |
+| `socketNumberPadding` | INTEGER | NOT NULL |  |  |
+| `nextIdNumber` | INTEGER | NOT NULL |  |  |
+| `speedTestServerAddress` | TEXT | NULL |  |  |
+| `speedTestServerUser` | TEXT | NULL |  |  |
+| `speedTestServerPassword` | TEXT | NULL |  |  |
 
-## Single probe (probe_config)
 
-La configurazione sonda è **una sola**.
+### Indici
+- `index_clients_companyName` su (companyName)
 
-- Tabella: `probe_config`
-- PK interna: `id` (INTEGER, **non autogenerata**)
-- Convenzione runtime: record singleton con `id = 1`
-  - In DAO sono usate query `WHERE id = 1`
-- Nota: `id` è tecnica **interna Room** e non deve diventare un concetto pubblico (UI/domain/backup).
+## Tabella `probe_config`
 
-### `probe_config` (schema)
+| Colonna | Tipo | Nullabilità | Key | Default |
+|---|---|---|---|---|
+| `id` | INTEGER | NOT NULL | PK |  |
+| `ipAddress` | TEXT | NOT NULL |  |  |
+| `username` | TEXT | NOT NULL |  |  |
+| `password` | TEXT | NOT NULL |  |  |
+| `testInterface` | TEXT | NOT NULL |  |  |
+| `isHttps` | INTEGER | NOT NULL |  |  |
+| `isOnline` | INTEGER | NOT NULL |  |  |
+| `modelName` | TEXT | NULL |  |  |
+| `tdrSupported` | INTEGER | NOT NULL |  |  |
 
-PK: `id` (autoGenerate = false)
+## Tabella `test_profiles`
 
-| Column | Type | Nullable | Default |
-|---|---|---|---|
-| `id` | INTEGER | NO |  |
-| `ipAddress` | TEXT | NO |  |
-| `username` | TEXT | NO |  |
-| `password` | TEXT | NO |  |
-| `testInterface` | TEXT | NO |  |
-| `isHttps` | INTEGER | NO |  |
-| `isOnline` | INTEGER | NO |  |
-| `modelName` | TEXT | YES |  |
-| `tdrSupported` | INTEGER | NO |  |
+| Colonna | Tipo | Nullabilità | Key | Default |
+|---|---|---|---|---|
+| `profileId` | INTEGER | NOT NULL | PK |  |
+| `profileName` | TEXT | NOT NULL |  |  |
+| `profileDescription` | TEXT | NULL |  |  |
+| `runTdr` | INTEGER | NOT NULL |  |  |
+| `runLinkStatus` | INTEGER | NOT NULL |  |  |
+| `runLldp` | INTEGER | NOT NULL |  |  |
+| `runPing` | INTEGER | NOT NULL |  |  |
+| `pingTarget1` | TEXT | NULL |  |  |
+| `pingTarget2` | TEXT | NULL |  |  |
+| `pingTarget3` | TEXT | NULL |  |  |
+| `pingCount` | INTEGER | NOT NULL |  |  |
+| `runSpeedTest` | INTEGER | NOT NULL |  |  |
 
-## Tabelle
+## Tabella `test_reports`
 
-### `clients`
+| Colonna | Tipo | Nullabilità | Key | Default |
+|---|---|---|---|---|
+| `reportId` | INTEGER | NOT NULL | PK |  |
+| `clientId` | INTEGER | NULL |  |  |
+| `timestamp` | INTEGER | NOT NULL |  |  |
+| `socketName` | TEXT | NULL |  |  |
+| `notes` | TEXT | NULL |  |  |
+| `probeName` | TEXT | NULL |  |  |
+| `profileName` | TEXT | NULL |  |  |
+| `overallStatus` | TEXT | NOT NULL |  |  |
+| `resultFormatVersion` | INTEGER | NOT NULL |  |  |
+| `resultsJson` | TEXT | NOT NULL |  |  |
 
-PK: `clientId` (autoGenerate = true)  
-Index: `index_clients_companyName`
 
-| Column | Type | Nullable | Default |
-|---|---|---|---|
-| `clientId` | INTEGER | NO |  |
-| `companyName` | TEXT | NO |  |
-| `location` | TEXT | YES |  |
-| `notes` | TEXT | YES |  |
-| `networkMode` | TEXT | NO |  |
-| `staticIp` | TEXT | YES |  |
-| `staticSubnet` | TEXT | YES |  |
-| `staticGateway` | TEXT | YES |  |
-| `staticCidr` | TEXT | YES |  |
-| `minLinkRate` | TEXT | NO |  |
-| `socketPrefix` | TEXT | NO |  |
-| `socketSuffix` | TEXT | NO |  |
-| `socketSeparator` | TEXT | NO |  |
-| `socketNumberPadding` | INTEGER | NO |  |
-| `nextIdNumber` | INTEGER | NO |  |
-| `speedTestServerAddress` | TEXT | YES |  |
-| `speedTestServerUser` | TEXT | YES |  |
-| `speedTestServerPassword` | TEXT | YES |  |
-
-### `test_profiles`
-
-PK: `profileId` (autoGenerate = true)
-
-| Column | Type | Nullable | Default |
-|---|---|---|---|
-| `profileId` | INTEGER | NO |  |
-| `profileName` | TEXT | NO |  |
-| `profileDescription` | TEXT | YES |  |
-| `runTdr` | INTEGER | NO |  |
-| `runLinkStatus` | INTEGER | NO |  |
-| `runLldp` | INTEGER | NO |  |
-| `runPing` | INTEGER | NO |  |
-| `pingTarget1` | TEXT | YES |  |
-| `pingTarget2` | TEXT | YES |  |
-| `pingTarget3` | TEXT | YES |  |
-| `pingCount` | INTEGER | NO |  |
-| `runSpeedTest` | INTEGER | NO |  |
-
-### `test_reports`
-
-PK: `reportId` (autoGenerate = true)  
-Indici:
-- `index_test_reports_clientId`
-- `index_test_reports_timestamp`
-- `index_test_reports_clientId_timestamp`
-
-Note:
-- `clientId` è presente ma **non** è definito come foreign key nello schema export.
-- `resultsJson` resta una **singola colonna JSON** (TEXT).
-- `resultFormatVersion` esiste come INTEGER per versionare il formato del JSON.
-
-| Column | Type | Nullable | Default |
-|---|---|---|---|
-| `reportId` | INTEGER | NO |  |
-| `clientId` | INTEGER | YES |  |
-| `timestamp` | INTEGER | NO |  |
-| `socketName` | TEXT | YES |  |
-| `notes` | TEXT | YES |  |
-| `probeName` | TEXT | YES |  |
-| `profileName` | TEXT | YES |  |
-| `overallStatus` | TEXT | NO |  |
-| `resultFormatVersion` | INTEGER | NO |  |
-| `resultsJson` | TEXT | NO |  |
+### Indici
+- `index_test_reports_clientId` su (clientId)
+- `index_test_reports_timestamp` su (timestamp)
+- `index_test_reports_clientId_timestamp` su (clientId, timestamp)

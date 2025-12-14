@@ -1,1 +1,9 @@
 ﻿"Branding/Miklink - Inline - Black/302/234.png"
+docs/migration/U1_assemble_after_import_fix_raw.txt
+docs/migration/U1_assemble_release_after_import_fix_raw.txt
+docs/migration/U1_tests_after_import_fix_full.txt
+docs/migration/U1_tests_after_import_fix_raw.txt
+docs/migration/U1_assemble_after_import_fix_raw.txt
+docs/migration/U1_assemble_release_after_import_fix_raw.txt
+docs/migration/U1_tests_after_import_fix_full.txt
+docs/migration/U1_tests_after_import_fix_raw.txt

@@ -1,58 +1,55 @@
 # MikroTik REST API (RouterOS)
 
-Questa pagina descrive le chiamate REST usate oggi dalla codebase per interagire con RouterOS.
+Questa pagina descrive la costruzione del service Retrofit e **gli endpoint effettivamente presenti** nella codebase.
 
-## Base URL
+## Base URL e HTTPS
 
-- Host: configurato tramite `ProbeConfig.ipAddress`
-- Protocollo:
-  - `http://` se `isHttps = false`
-  - `https://` se `isHttps = true` (vedi ADR-0002)
+- La URL base è costruita in `MikroTikServiceFactory.createService(probeConfig)`:
+  - `scheme = https` se `ProbeConfig.isHttps = true`
+  - `scheme = http` altrimenti
+  - `baseUrl = "$scheme://${probe.ipAddress}/"`
 
 ## Autenticazione
 
-- Basic Auth (header `Authorization: Basic ...`)
-- Interceptor: `AuthInterceptor`
+- Basic Auth via header `Authorization: Basic <base64(user:pass)>`.
+- L'header viene aggiunto da un interceptor locale nella factory quando `username` o `password` non sono blank.
 
-## Endpoint principali (attuali)
+## Trust-all (solo in HTTPS)
 
-Definiti in `core/data/remote/mikrotik/service/MikroTikApiService.kt`:
+- Se `isHttps = true` la factory configura un SSLContext permissivo (trust-all) e `hostnameVerifier` permissivo **solo per questo client** (vedi ADR-0002).
 
-- `POST /rest/system/resource/print`
-  - usato per ottenere risorse / modello (board-name)
+## Binding Wi‑Fi (quando disponibile)
 
-- `GET /rest/interface/ethernet`
-  - elenco interfacce Ethernet (proplist default: `name`)
+- `MikroTikServiceProviderImpl` prova a trovare una rete Wi‑Fi attiva e, se presente, passa la `socketFactory` alla factory.
 
-- DHCP client:
-  - `GET /rest/ip/dhcp-client`
-  - `POST /rest/ip/dhcp-client/add`
-  - `POST /rest/ip/dhcp-client/enable`
-  - `POST /rest/ip/dhcp-client/disable`
+## Endpoint
 
-- IP addresses:
-  - `GET /rest/ip/address`
-  - `POST /rest/ip/address/add`
-  - `POST /rest/ip/address/remove`
+Definiti in `data/remote/mikrotik/service/MikroTikApiService.kt`:
 
-- Routing:
-  - `GET /rest/ip/route`
-  - `POST /rest/ip/route/add`
-  - `POST /rest/ip/route/remove`
+| Metodo | Path | Funzione |
+|---|---|---|
+| `POST` | `/rest/system/resource/print` | `getSystemResource(@Body request: ProplistRequest = ProplistRequest(…` |
+| `GET` | `/rest/interface/ethernet` | `getEthernetInterfaces(@Query(".proplist") proplist: String = "name"…` |
+| `GET` | `/rest/ip/dhcp-client` | `getDhcpClientStatus(@Query("interface") interfaceName: String): Lis…` |
+| `POST` | `/rest/ip/dhcp-client/add` | `addDhcpClient(@Body request: DhcpClientAdd): Any` |
+| `POST` | `/rest/ip/dhcp-client/enable` | `enableDhcpClient(@Body request: NumbersRequest): Any` |
+| `POST` | `/rest/ip/dhcp-client/disable` | `disableDhcpClient(@Body request: NumbersRequest): Any` |
+| `GET` | `/rest/ip/address` | `getIpAddresses(@Query(".proplist") proplist: String = ".id,address,…` |
+| `POST` | `/rest/ip/address/add` | `addIpAddress(@Body request: IpAddressAdd): Any` |
+| `POST` | `/rest/ip/address/remove` | `removeIpAddress(@Body request: NumbersRequest): Any` |
+| `GET` | `/rest/ip/route` | `getRoutes(@Query(".proplist") proplist: String = ".id,dst-address,g…` |
+| `POST` | `/rest/ip/route/add` | `addRoute(@Body request: RouteAdd): Any` |
+| `POST` | `/rest/ip/route/remove` | `removeRoute(@Body request: NumbersRequest): Any` |
+| `POST` | `/rest/interface/ethernet/cable-test` | `runCableTest(@Body request: CableTestRequest): List<CableTestResult>` |
+| `POST` | `/rest/interface/ethernet/monitor` | `getLinkStatus(@Body request: MonitorRequest): List<MonitorResponse>` |
+| `GET` | `/rest/ip/neighbor` | `getIpNeighbors(` |
+| `POST` | `/rest/ping` | `runPing(@Body request: PingRequest): List<PingResult>` |
+| `POST` | `/rest/tool/speed-test` | `runSpeedTest(` |
 
-- Test “link / cavo”:
-  - `POST /rest/interface/ethernet/cable-test`
-  - `POST /rest/interface/ethernet/monitor`
 
-- Neighbor discovery:
-  - `GET /rest/ip/neighbor`
-    - query: `interface=<name>`
-    - default `.proplist` include (tra gli altri) identity, interface-name, system-caps, address, mac-address, ecc.
+> Nota: alcune righe molto lunghe (es. `.proplist`) possono risultare troncate nel dump testuale; fai sempre riferimento al file Kotlin come fonte finale.
 
-- `POST /rest/ping`
-- `POST /rest/tool/speed-test`
 
-## Note importanti
-
-- Il parsing dei risultati usa **Moshi**.
-- La determinazione di TDR support richiede una fonte di verità nel dominio: il vecchio placeholder `core/domain/tdr/TdrCapabilities` è stato rimosso nel Milestone 5 e verrà riprogettato in una futura epic prima di reintrodurre il supporto TDR.
+## Parsing e Golden tests
+- I DTO vengono parsati con **Moshi**.
+- Le suite `app/src/test/java/com/app/miklink/data/remote/mikrotik/golden/*` validano che il parsing resti stabile su fixture versionate.

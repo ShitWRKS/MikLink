@@ -1,83 +1,70 @@
 # Architettura
 
-## Obiettivo
+MikLink è un'app Android (Compose) che comunica con una sonda MikroTik, esegue test di rete, salva lo storico e genera PDF.
 
-MikLink è un'app Android (Compose) che comunica con una **sonda MikroTik** (una sola), esegue test di rete, salva uno storico e genera PDF.
+Questa pagina descrive:
+- l'architettura a layer (Clean / Ports & Adapters)
+- i confini “non negoziabili” (per evitare drift)
+- dove vive cosa (con link alla reference della struttura)
 
-Questa pagina descrive l'architettura **target** (SOLID / clean) e soprattutto le regole **non interpretabili** che impediscono drift.
+## Obiettivi architetturali
 
----
+- **SOLID / testabilità**: logica di dominio isolata da Android/Retrofit/Room/iText
+- **Manutenibilità**: ogni feature ha owner chiaro e naming coerente
+- **Compatibilità dati**: DB schema e backup JSON restano importabili nel tempo
 
-## Architecture contract (non negoziabile)
+## Strati e direzione delle dipendenze
 
-### Canone (A) — Struttura
+```
+ui (Compose + VM)
+  ↓ (dipende da)
+core/domain (modelli + policy + usecase)
+  ↓ (dipende da)
+core/data (porte/contract: repository, IO, PDF, codec)
+  ↓ (implementato da)
+data (Room, Retrofit/Moshi, iText, DataStore, Android IO)
+```
 
-- `core/domain/**` = modelli di dominio + regole + use case (puro Kotlin)
-- `core/data/**` = **solo** ports/contratti (repository/provider/gateway) + tipi neutrali se indispensabili
-- `data/**` = implementazioni concrete (Room/Retrofit/OkHttp/Moshi/iText) + mapper/parser + repositoryImpl
-- `ui/**` = Compose + ViewModel + UiState + mapper domain→ui
-- `di/**` = wiring/binding. **Zero logica di business**
-- `feature/**` = non canonico → da eliminare/migrare
-- `domain/**` top-level = non canonico → da migrare in `core/domain/**`
+### Contract (non negoziabile)
 
-### Regole import (chiuse)
+- `core/domain/**` è **puro Kotlin**:
+  - non importa Android, Retrofit/Moshi, Room, iText
+- `core/data/**` contiene **solo contract**:
+  - interfacce repository
+  - contract per IO documenti e PDF
+  - codec/serializer come contract
+  - **non** importa `com.app.miklink.data.*` (niente DTO nelle porte)
+- `data/**` è il layer di implementazione e può dipendere dai framework
+- `ui/**` usa use case/porte e modelli di dominio; non deve dipendere da implementazioni concrete
 
-1) `core/domain/model/**` **NON** importa:
-   - `core/data/**`
-   - Android (`android.*`, `androidx.*`)
-   - Room/Retrofit/OkHttp/Moshi/iText
-   - qualsiasi package `ui/**`, `di/**`, `data/**`
+Per i dettagli operativi e l'albero package, vedi: `reference/project-structure.md`.
 
-2) `core/domain/usecase/**` **PUÒ** importare:
-   - `core/data/**` (solo ports)
-   - `core/domain/**`
+## Flusso alto livello (runtime)
 
-3) `core/data/**` **NON** importa:
-   - `data/**`
-   - `ui/**`
-   - `di/**`
-   - infrastruttura (Room/Retrofit/OkHttp/Moshi/iText, Android)
+1) L'utente configura la sonda (`ProbeConfig`) e verifica la connettività
+2) Lancia un test profile (`TestProfile`)
+3) Il runner esegue chiamate MikroTik (layer `data/remote`) + interpreters di dominio (layer `core/domain`)
+4) Salva `TestReport` e, quando previsto dalle policy di dominio, aggiorna lo stato client (es. Socket-ID Lite)
+5) Genera PDF tramite contract `core/data/pdf` + implementazione iText in `data/pdf/itext`
 
-4) `data/**` può importare:
-   - `core/data/**`
-   - `core/domain/**`
-   - librerie infra (Room/Retrofit/OkHttp/Moshi/iText)
+## Punti di attenzione (drift già individuato)
 
-5) `ui/**` può importare:
-   - `core/domain/**`
-   - (solo se indispensabile) `core/data/**` **ma non** implementazioni `data/**`
+### DTO leak in una porta
 
-6) `di/**` può importare tutto, ma:
-   - niente logica di business
-   - niente parsing/mapper “furbi” (solo wiring)
+È stato individuato un caso in cui una porta in `core/data` dipende da DTO in `data/remote/**`.
+Questo viola DIP (le porte non devono dipendere dalle implementazioni).
 
-### Invarianti
+**Regola**: le porte espongono solo tipi dominio o boundary model senza annotation Moshi/Retrofit.
 
-- **Single probe**: nessun percorso/DTO/usecase/repo espone `probeId`.
-- **DB baseline**: niente “v1/v2” in package o classi; Room version parte da 1.
-- **Results canonical**: UI e PDF consumano un **modello normalizzato di dominio** (non DTO remoti, non classi UI).
-- **HTTPS trust-all**: applicato **solo** quando l'utente ha scelto HTTPS (toggle).
-- **Socket-ID Lite**: prima versione semplice; estensioni future solo con ADR.
+**Fix**: spostare i DTO in `data/remote/mikrotik/dto` e introdurre mapper `dto -> domain` in `data/remote/mikrotik/mapper`.
+Vedi ADR: `decisions/ADR-0008-no-dto-leaks-across-ports.md`.
 
----
+## Guardrail consigliati
 
-## Data flow (semplificato)
-
-1) UI (Screen) → ViewModel (UiEvent)
-2) ViewModel → UseCase (domain) o Port (core/data) per CRUD “thin”
-3) UseCase → Port → `data/**` (Room/Retrofit/OkHttp/Moshi) → mapper → Domain model
-4) Output domain → mapper `ui/**` → UiState
-5) PDF: genera da **domain results** (normalizzati)
-
----
-
-## Quality gates (per evitare drift)
-
-Regola consigliata: ogni unità di lavoro (epic/PR) chiude con:
-
-- `./gradlew test` verde
-- se tocca UI/Room: `./gradlew connectedAndroidTest` quando possibile
-
-Se i test falliscono perché è cambiata l'intenzione, non “fixare a caso”:
-- registrare evidenza in `docs/DISCREPANCIES.md`
-- decidere tramite ADR o aggiornamento dello scope
+- static analysis (Detekt o equivalente) per vietare import:
+  - `core/domain` → `android.*`, `androidx.*`, `com.app.miklink.data.*`, `com.app.miklink.ui.*`
+  - `core/data` → `com.app.miklink.data.*`
+- test “bussola” per parsing/mapping:
+  - golden test per mapping dto → domain
+  - test di round-trip per backup JSON (export/import)
+  - test di stabilità per `ReportResultsCodec`

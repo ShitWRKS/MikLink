@@ -1,74 +1,128 @@
-# Project structure (Canone A)
+# Struttura progetto e convenzioni
 
-Questa pagina è **normativa**: descrive la struttura ammessa e le regole di import/naming.
+Questa pagina è la **reference** per:
+- struttura cartelle/package (dove mettere cosa)
+- nomenclatura file/classi
+- regole di dipendenza tra layer
 
-> Se una cartella/file non rispetta il canone, va migrata o rimossa (nessuna eccezione senza ADR).
+Fonte di verità: package nel codice sotto `app/src/main/java/com/app/miklink/**`.
 
-## Struttura canonica
+## Regole di dipendenza (non negoziabili)
 
-- `app/src/main/java/com/app/miklink/`
-  - `core/`
-  - `domain/`
-  - `model/`
-  - `usecase/`
-  - `...`
-  - `data/`
-    - `# SOLO ports/contratti + tipi neutrali`
-  - `repository/`
-  - `gateway/`
-  - `provider/`
-  - `io/`
-  - `pdf/`
-  - `...`
-  - `data/`
-    - `# Implementazioni infra + mapper`
-    - `local/`  `# Room / DataStore / file`
-    - `remote/` `# Retrofit/OkHttp/Moshi`
-    - `report/` `# codec/mapper report (infra)`
-    - `repositoryimpl/` `# implementazioni dei port`
-    - `...`
-  - `ui/`
-    - `# Compose + ViewModel + UiState + mapper domain->ui`
-  - `di/`
-    - `# Wiring DI (Hilt)`
-  - `utils/`
-    - `# helper “non di dominio” (no dipendenze ui<->data)`
+- `core/domain/**` **NON** importa:
+  - `android.*`, `androidx.*`
+  - `com.app.miklink.data.*`, `com.app.miklink.ui.*`, `com.app.miklink.di.*`
+- `core/data/**` (porte/contract) **NON** importa `com.app.miklink.data.*`
+  - in particolare: **mai DTO Retrofit/Moshi dentro le porte**
+- `data/**` può importare `core/**` e framework (Room, Retrofit/Moshi, iText, Android I/O)
+- `ui/**` importa `core/**` e usa use case/porte, non implementazioni concrete
+- `di/**` può importare tutto (wiring), ma non deve contenere logica di business
 
-markdown
-Copia codice
+## Albero target (package)
 
-## Regole di responsabilità
+> Nota: i nomi “macro” restano quelli attuali (`core/domain`, `core/data`, `data`, `ui`, `di`).
+> Questa struttura serve per evitare package ambigui (`repositoryimpl`, `utils` onnivori) e per rendere i confini SOLID verificabili.
 
-- `core/domain/**`: puro business.
-  - Vietati: Android SDK, Room, Retrofit/OkHttp, Moshi, iText/PDF, filesystem/SAF.
-- `core/data/**`: solo **contratti** e **tipi neutrali** (ports, DTO neutrali, destinazioni IO neutrali, ecc.).
-  - Vietate implementazioni tecnologiche.
-- `data/**`: implementazioni tecnologiche (Room, Retrofit/Moshi, OkHttp, PDF, SAF/ContentResolver, DataStore, ecc.).
-- `ui/**`: solo presentazione.
-  - Vietato importare `data/**` (usa use case e ports del core).
-- `di/**`: solo wiring.
+```text
+com.app.miklink
+  core/
+    domain/
+      model/                      # entità/value object: Client, ProbeConfig, TestReport, TestProfile e simili
+      policy/                     # regole business pure (validazioni, socket-id, ecc.)
+      test/                       # modelli e astrazioni del runner (step/result/outcome)
+      usecase/                    # orchestrazione applicativa: salva report, export/import, ecc.
+    data/
+      repository/                 # PORTE: interfacce repository per feature
+        client/
+        probe/
+          model/                  # modelli di confine (no DTO): ProbeCheckResult, ProbeStatusInfo e simili
+        report/
+        test/
+        testprofile/
+        preferences/
+        backup/
+      io/                         # DocumentReader/Writer (contract)
+      pdf/                        # PdfGenerator + config (contract)
+      report/                     # codec/serializer contract (es. ReportResultsCodec)
+  data/
+    local/
+      room/
+        db/                       # MikLinkDatabase
+        dao/
+        entity/
+        mapper/                   # toDomain/toEntity
+        transaction/              # runner transazioni
+      datastore/                  # implementazioni prefs
+    remote/
+      mikrotik/
+        api/                      # Retrofit service
+        dto/                      # DTO Moshi/Retrofit (restano qui)
+        mapper/                   # dto -> domain
+        infra/                    # OkHttp, SSL policy, interceptors, Moshi adapters
+        provider/                 # provider network binding (Android)
+    repository/
+      room/                       # RoomClientRepository, RoomReportRepository e simili
+      mikrotik/                   # MikroTik*Repository (per esempio MikroTikProbeStatusRepository)
+      backup/                     # DefaultBackupRepository / BackupManagerImpl
+      common/                     # componenti di composizione (es. RouteManager)
+    pdf/
+      itext/                      # implementazione iText
+    io/
+      android/                    # implementazioni Android document I/O
+  ui/
+    navigation/
+    theme/
+    components/                   # composables riusabili
+    feature/                      # vertical slice per feature (consigliato)
+      probe/
+      test/
+      history/
+      client/
+      settings/
+  di/
+    module/
+      DatabaseModule.kt
+      NetworkModule.kt
+      RepositoryBindingsModule.kt
+      UseCaseBindingsModule.kt
+      PdfModule.kt
+      TestRunnerModule.kt
+```
 
-## Cartelle non canoniche
+## Convenzioni di nomenclatura
 
-- `feature/**` → da eliminare/migrare (non usare per nuove feature)
-- `domain/**` top-level → da migrare in `core/domain/**`
-- qualunque cartella con suffissi `v1/`, `v2/` → vietata (usa Room schemaVersion, non naming)
+### Porte e implementazioni
 
-## Vincoli di naming (hard)
+- Porta: `XxxRepository`
+- Implementazione “esplicita”:
+  - Room: `RoomXxxRepository`
+  - MikroTik: `MikroTikXxxRepository`
+  - DataStore: `DataStoreXxxRepository` (o `DataStoreUserPreferencesRepository`)
+- Evita `XxxRepositoryImpl` generico: non comunica quale implementazione sia.
 
-- `probeId` è un concetto legacy e **vietato** come naming/termine pubblico.
-  - Hard rule: `git grep -n "probeId" app/src/main app/src/test` deve tornare **0 risultati** (anche commenti).
+### Remote / DTO / mapping
 
-## Checklist di revisione rapida
+- Retrofit: `MikroTikApiService` (ok)
+- DTO: `XxxDto` in `data/remote/mikrotik/dto`
+- Mapper: funzioni `toDomain()` / `toDto()` in `data/remote/mikrotik/mapper`
+- Le porte `core/data/**` espongono solo tipi dominio o boundary model senza annotation framework.
 
-- Un file in `core/domain/**` importa `android.*`? → **errore**
-- Un file in `core/domain/**` importa `retrofit2.*` / `okhttp3.*` / `com.squareup.moshi.*` / `androidx.room.*`? → **errore**
-- Un file in `core/data/**` contiene implementazioni concrete (Room/Retrofit/iText/SAF)? → **errore**
-- Un file in `ui/**` importa `androidx.room` / `dao` / `entity` / `data/**`? → **errore**
-- Un file in `data/**` importa `ui/**`? → **errore**
+### Room
 
-## Annotation processing
+- Entity: `XxxEntity`
+- DAO: `XxxDao`
+- Mapper: `toEntity()` / `toDomain()`
 
-- Room usa KSP (`room-compiler`).
-- Hilt usa KSP (`hilt-compiler`).
-- KAPT non è usato.
+### UI (Compose)
+
+Per ogni feature:
+- `XxxScreen.kt` — solo UI
+- `XxxViewModel.kt`
+- `XxxUiState.kt` (e `XxxEvent.kt` se serve)
+- `components/` locali alla feature se non riutilizzabili
+
+## Guardrail anti-drift
+
+Quando possibile, aggiungere (o mantenere) controlli automatici:
+- static analysis (Detekt) per vietare import proibiti in `core/domain` e `core/data`
+- test di compilazione/contract che falliscono se un confine viene violato

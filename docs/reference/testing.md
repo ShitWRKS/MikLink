@@ -1,53 +1,41 @@
 # Testing
 
-Questa pagina definisce la policy test durante il refactor.
+Questa pagina descrive la strategia test e dove mettere nuove verifiche.
 
-## Suite “bussola” (anti-regressione)
+## Suite “bussola” (anti‑regressione)
 
-Sono considerati **non negoziabili**:
+Non negoziabili:
 
-1) **Golden parsing tests** (fixture RouterOS + Moshi)
+1) **Golden parsing tests** (fixture RouterOS + Moshi)  
+   Path: `app/src/test/java/com/app/miklink/data/remote/mikrotik/golden/*`
+
 2) **Quality tests**
-   - scan hardcoded strings
-   - coverage italiano delle stringhe
+   - `HardcodedStringsScanTest`: fallisce se compaiono stringhe hardcoded in UI
+   - `StringsItalianCoverageTest`: copertura IT dove richiesto
 
-Altri test (contract placeholder, Compose UI test, migration) possono essere presenti,
-ma non devono guidare scelte architetturali se in conflitto con ADR/architettura.
+3) **Contract/UseCase tests**
+   - `RunTestUseCaseImplTest`
+   - contract test su repository principali
 
-## Quando eseguire i test
-
-Durante una unità di lavoro (epic/PR) è accettabile che:
-- compilazione o test falliscano temporaneamente
-
-Alla fine della unità di lavoro è obbligatorio che:
-- `./gradlew test` sia **verde**
-- se si toccano UI/Room: `./gradlew connectedAndroidTest` quando possibile
-
-Se un test fallisce perché è cambiata l'intenzione:
-- non “aggiustare” alla cieca
-- registrare evidenza in `docs/DISCREPANCIES.md`
-- decidere tramite aggiornamento scope o ADR
-
-## Dove sono i test
-
-- Unit test (JVM): `app/src/test/...`
-- Instrumentation tests: `app/src/androidTest/...`
-
-## Comandi
+## Come eseguire
 
 ```bash
-# unit test
 ./gradlew test
-
-# instrumentation
-./gradlew connectedAndroidTest
 ```
+
+## Aggiungere un Golden test (ricetta)
+
+1) Aggiungi la fixture in `app/src/test/resources/fixtures/<categoria>/<nome-file>` (se già presente, riusa il percorso esistente).
+2) Caricala usando `FixtureLoader`.
+3) Parsala con `TestMoshiProvider`.
+4) Confronta:
+   - campi obbligatori
+   - edge cases (null, array vuoti)
+   - mapping di tipi/enums
+
+> Obiettivo: “se RouterOS cambia output, o se rompiamo il parsing, lo vediamo subito”.
 
 ## Linee guida
 
-- Golden test deterministici:
-  - fixture JSON versionate
-  - parsing con Moshi (provider test dedicato)
-- Quality test:
-  - fallire se compaiono stringhe hardcoded in UI
-  - fallire se mancano traduzioni IT dove richiesto
+- Test deterministici (niente clock/random non controllati).
+- Evita di testare dettagli UI se non necessari: la UI dovrebbe consumare modelli già “puliti”.

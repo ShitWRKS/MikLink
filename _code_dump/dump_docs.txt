@@ -283,8 +283,8 @@ Questa è una scelta consapevole (trade-off accettato per il contesto d'uso).
 ==================== BEGIN FILE ====================
 PATH: docs/decisions/ADR-0003-db-rebase-baseline.md
 TYPE: TEXT
-SIZE: 1049
-SHA256: 37ea295d3a69669dccf1b26d9489543dd29d6438e84d611ebe994459974a1d2a
+SIZE: 1039
+SHA256: 7e93a70a6be6644b303523e6ddf819dcd8f0a410ae0c0806be6f6cd166fbcdae
 ==================== END HEADER ====================
 # ADR-0003 — Rebase DB (baseline) + probe singleton interno
 
@@ -304,7 +304,7 @@ Il refactor punta a semplificare: database “baseline” e single probe.
   - Nome file DB: `miklink`
   - Nessuna migrazione “storica”: si accetta reset durante sviluppo.
 - La configurazione sonda è **una sola** e non espone `probeId`.
-  - Per vincoli tecnici Room esiste una PK **interna** (es. `singletonKey=1`), mai esposta fuori dal layer DB.
+  - Per vincoli tecnici Room esiste una PK **interna** (es. `id=1`), mai esposta fuori dal layer DB.
   - I repository espongono solo:
     - `getProbeConfig(): ProbeConfig?`
     - `saveProbeConfig(config: ProbeConfig)`
@@ -385,110 +385,131 @@ La feature Logs introduce complessità (UI, storage, policy) e non è prioritari
 ==================== BEGIN FILE ====================
 PATH: docs/DISCREPANCIES.md
 TYPE: TEXT
-SIZE: 3531
-SHA256: 0e7e6d7a9e4b6416d76d3fbb583e6d1ed1cdb48d64c3a355ba37e6254bf5d5be
+SIZE: 5094
+SHA256: b520253136d133a6c2895e86fa4f85250a2cf242d625b001eda30c6745bcf571
 ==================== END HEADER ====================
-# DISCREPANCIES (Docs vs Codice)
+# DISCREPANCIES (Docs/ADR vs Codice)
 
-Questo file contiene **solo evidenze** tra docs e codice.  
-Non contiene proposte o soluzioni (quelle vanno in epic/PR).
-
-## Regole
-
-- Una discrepanza = un blocco con:
-  - data
-  - evidenza (path + simboli)
-  - perché è una discrepanza (rispetto a quale doc/ADR)
+Questo file contiene **solo evidenze** (path/line).  
+Niente soluzioni, niente proposte.
 
 ---
 
-<<<<<<< HEAD
-## Discrepanze note (da risolvere nel refactor)
-=======
-## Aggiornamenti 2025-12-13
+## D-001 — `probeId` ancora presente (hard rule = 0 occorrenze)
 
-- Schemi Room legacy rimossi: sotto `app/schemas/` resta solo MikLinkDatabase v1 e il task `guardLegacySchemas` vigila sui riferimenti.
-- RunTestUseCaseImpl + PdfGenerator ora operano solo su modelli di dominio normalizzati.
-
-## Discrepanze note (iniziali)
->>>>>>> aec31fe18138fb571fc1c1b9dd890bac55425d41
-
-### D-001 — `probeId` ancora presente nel flow
-
-- **Data:** 2025-12-14
-- **Docs:** ADR-0001, ADR-0003
-- **Evidenze (esempi):**
-  - `app/src/main/java/com/app/miklink/ui/NavGraph.kt` route `test_execution/{clientId}/{probeId}/...`
-  - `app/src/main/java/com/app/miklink/core/domain/test/model/TestPlan.kt` contiene `probeId`
-  - `app/src/main/java/com/app/miklink/core/data/local/room/v1/model/ProbeConfig.kt` PK `probeId`
-
-### D-002 — HTTPS trust-all applicato globalmente
-
-- **Data:** 2025-12-14
-- **Docs:** ADR-0002
-- **Evidenze (esempi):**
-  - `app/src/main/java/com/app/miklink/di/NetworkModule.kt` configura SSL trust-all e hostnameVerifier senza gating su `isHttps`
-
-### D-003 — PDF dipende da UI model
-
-- **Data:** 2025-12-14
-- **Docs:** `explanation/architecture.md` (Results canonical)
-- **Evidenze (esempi):**
-  - `app/src/main/java/com/app/miklink/core/data/pdf/impl/PdfGeneratorIText.kt` importa `com.app.miklink.ui.history.model.ParsedResults`
-  - `app/src/main/java/com/app/miklink/core/data/pdf/parser/ParsedResultsParser.kt` ritorna `ParsedResults`
-
-<<<<<<< HEAD
-### D-004 — UI dipende da DTO remoti per i risultati
-=======
-_Aggiornamento 2025-12-13: RunTestUseCaseImpl non importa più DTO; lasciare voce aperta finché l'intero dominio non è verificato._
-
-### 3) probeId ancora presente nel flow UI
->>>>>>> aec31fe18138fb571fc1c1b9dd890bac55425d41
-
-- **Data:** 2025-12-14
-- **Docs:** `explanation/architecture.md` (Results canonical)
-- **Evidenze (esempi):**
-  - `app/src/main/java/com/app/miklink/ui/history/model/ParsedResults.kt` importa DTO MikroTik
-
-### D-005 — DB “v1/v2” e migrazioni ancora presenti
-
-- **Data:** 2025-12-14
-- **Docs:** ADR-0003, `reference/database.md`
-- **Evidenze (esempi):**
-  - `core.data.local.room.v1.AppDatabase` con version 13
-  - `Migrations.kt` e `MigrationTest.kt`
-  - nome DB file `miklink-db`
-
-<<<<<<< HEAD
-### D-006 — Cartelle non canoniche presenti
-
-- **Data:** 2025-12-14
-- **Docs:** `reference/project-structure.md`
-- **Evidenze (esempi):**
-  - `feature/**` presente
-  - `domain/**` top-level presente
-  - `data/repositoryimpl/roomv1/**` presente
-
-=======
-- **Doc dice:** PDF dovrebbe consumare modelli normalizzati di dominio
-- **Codice mostra:** `PdfGeneratorIText` importava `ui.history.model.ParsedResults` e entity Room v1
-- **Impatto:** medio (storico)
-
-Esempio pre-fix:
-- `core/data/pdf/impl/PdfGeneratorIText.kt`
-
-_Chiuso 2025-12-13: PdfGeneratorIText ora usa `ReportData` e nessun import UI/data crossing._
+- `app/src/main/java/com/app/miklink/core/domain/test/model/TestPlan.kt:7`
+  - contiene la stringa `probeId` (anche se solo in commento)
 
 ---
 
-## Discrepanze aperte (template)
+## D-002 — HTTPS trust-all applicato anche quando si usa HTTP
 
-### X) [DOC] <file.md>#<sezione>
-- **Doc dice:** ...
-- **Codice mostra:** (path + simbolo)
-- **Impatto:** basso/medio/alto
-- **Note:** ...
->>>>>>> aec31fe18138fb571fc1c1b9dd890bac55425d41
+Vincolo: trust-all **solo** quando `isHttps = true` (ADR-0002).
+
+Evidenza:
+
+- `app/src/main/java/com/app/miklink/di/NetworkModule.kt:86-91`
+  - `sslSocketFactory(...)` + `hostnameVerifier { _, _ -> true }` applicati **sempre** nel client di default
+
+---
+
+## D-003 — Violazioni Canone A: implementazioni tecnologiche in `core/data/**`
+
+Vincolo: `core/data/**` = solo ports/contratti (no Retrofit/Room/iText/Android).
+
+Stato: **RISOLTO** ✅
+
+---
+
+## D-007 — Backup format: single-probe shape enforced
+
+Evidence that the app backup format uses a single `probe` (nullable) and includes `clients`, `profiles`, `reports`:
+
+- `app/src/main/java/com/app/miklink/data/repository/BackupData.kt:1-50` – `BackupData` now contains `probe: ProbeConfig?`, `clients: List<BackupClient>`, `profiles: List<TestProfile>`, `reports: List<BackupReport>`
+- `app/src/main/java/com/app/miklink/data/repository/BackupManager.kt:1-200` – `exportConfigToJson()` / `importBackupData()` implement export/import for single probe, clients and reports
+
+Checks/verification performed:
+
+- `git grep -nE "List<\\s*ProbeConfig\\s*>|\\bprobeConfigs\\b" app/src/main/java app/src/test` → **0 matches** (no list-based probe backup shapes)
+- `git grep -n "probeId" app/src/main app/src/test` → **0 matches** (no public probe id)
+- `./gradlew testDebugUnitTest` → **BUILD SUCCESSFUL**
+- `./gradlew assembleDebug` → **BUILD SUCCESSFUL**
+- `./gradlew assembleRelease` → **BUILD SUCCESSFUL**
+
+Additional evidence:
+
+- Roundtrip test added: `app/src/test/java/com/app/miklink/data/repository/BackupManagerTest.kt` → `roundtrip_export_import_preserves_client_report_associations()` verifies that client→report associations are preserved via a stable `clientKey` mapping during export/import (no DB schema changes).
+
+Stato: **RISOLTO** ✅
+
+Evidenze:
+
+- Le implementazioni iText + Android sono state spostate in `app/src/main/java/com/app/miklink/data/pdf/**`:
+  - `app/src/main/java/com/app/miklink/data/pdf/PdfDocumentHelper.kt` (contiene `com.itextpdf.*`).
+  - `app/src/main/java/com/app/miklink/data/pdf/impl/PdfGeneratorIText.kt` (contiene `com.itextpdf.*` e `android.content.Context`).
+
+- In `core/data/**` rimangono solo il port e i modelli neutrali (nessuna dipendenza platform-specifica):
+  - `app/src/main/java/com/app/miklink/core/data/pdf/PdfGenerator.kt` (interface)
+  - `app/src/main/java/com/app/miklink/core/data/pdf/PdfExportConfig.kt`
+  - `app/src/main/java/com/app/miklink/core/data/pdf/parser/ParsedResultsParser.kt`
+
+- Verifiche eseguite:
+  - `git grep -nE "com\\.itextpdf\\.|android\\." app/src/main/java/**/core/data/**` → **0 occorrenze**
+  - `./gradlew testDebugUnitTest` → **BUILD SUCCESSFUL**
+  - `./gradlew assembleDebug` → **BUILD SUCCESSFUL**
+  - `./gradlew assembleRelease` → **BUILD SUCCESSFUL**
+
+---
+
+## D-004 — Logs ancora presenti (fuori scope)
+
+Stato: **RISOLTO** (EPIC-0001.2).
+
+Evidenze precedenti rimosse:
+
+- UI: toggle + pannello "raw logs" (TestExecutionScreen)
+- Domain: evento log (TestEvent.LogLine)
+- String resources dedicate ai log
+
+---
+
+## D-005 — DB legacy / migrazioni (EPIC-0002)
+
+Stato: **RISOLTO** ✅
+
+Evidenze (solo comandi/output):
+
+- `git grep -n "miklink-db" app/src/main/java` → **0 occorrenze**
+- `git grep -nE "\bv1\b|\bv2\b|Database_v2|Migrations\.kt|Migration\b|AutoMigration" app/src/main/java` → **0 occorrenze**
+- `./gradlew testDebugUnitTest` → **BUILD SUCCESSFUL**
+- `./gradlew assembleDebug` → **BUILD SUCCESSFUL**
+- `./gradlew assembleRelease` → **BUILD SUCCESSFUL**
+
+---
+
+## D-006 — Socket-ID LITE increment gating
+
+Evidenze (implementazione + verifiche anti-drift):
+
+- Increment location (single block):
+  - `app/src/main/java/com/app/miklink/data/repositoryimpl/room/RoomReportRepository.kt:40`
+    - `val updated = client.copy(nextIdNumber = client.nextIdNumber + 1)`
+
+- Anti-drift grep (only 1 increment block):
+  - `git grep -nE "nextIdNumber\s*=\s*.*\+\s*1|nextIdNumber\+\+|incrementNextId|advanceNextId" app/src/main/java` → 1 match (`RoomReportRepository.kt:40`)
+
+- UI check (no UI-side increments found):
+  - `git grep -n "nextIdNumber" app/src/main/java/**/ui/**` → matches are only UI read/placeholder usages (no arithmetic/update)
+
+- ProbeId anti-regression (must be 0):
+  - `git grep -n "probeId" app/src/main app/src/test` → **0 matches**
+
+- Build gates (after tests & changes):
+  - `./gradlew testDebugUnitTest` → **BUILD SUCCESSFUL**
+  - `./gradlew assembleDebug` → **BUILD SUCCESSFUL**
+  - `./gradlew assembleRelease` → **BUILD SUCCESSFUL**
+
+Stato: **RISOLTO** ✅
 
 ==================== END FILE ====================
 
@@ -974,129 +995,122 @@ Questa cartella è la **source of truth** per:
 ==================== BEGIN FILE ====================
 PATH: docs/reference/database.md
 TYPE: TEXT
-SIZE: 4252
-SHA256: f170fa36ebd742d49605010876ab2df3ad033d1986c0058b263177db4f641aca
+SIZE: 3587
+SHA256: e06c2e54a95f5e21e90ebc64ae406213da7c9521e75d7e7763376b023ca702ab
 ==================== END HEADER ====================
-# Database (baseline)
+# Database (baseline — Room v1)
 
-<<<<<<< HEAD
-Questa pagina descrive lo **schema target** dopo il rebase distruttivo.
+Questa pagina descrive lo **stato attuale “as-is”** del database, allineato a:
 
-## Decisioni chiave
+- Decisioni chiuse (ADR / Context Pack)
+- Room schema export: `app/schemas/com.app.miklink.data.local.room.MikLinkDatabase/1.json`
 
+## Metadati
+
+- Room database: `com.app.miklink.data.local.room.MikLinkDatabase`
 - Nome file DB: `miklink`
 - Room schemaVersion: `1`
-- Nessuna migrazione: se lo schema cambia durante lo sviluppo, si accetta reset (vedi ADR-0003).
-- **Single probe**: la configurazione sonda è unica e non espone `probeId`.
-- `Report.resultsJson` resta una **singola colonna JSON**.
+- Migrazioni Room: nessuna; fallback non configurato (rebase distruttivo se cambia la versione)
+- Policy refactor DB: **rebase distruttivo** (reset accettato durante sviluppo; vedi ADR-0003)
+
+## Single probe (probe_config)
+
+La configurazione sonda è **una sola**.
+
+- Tabella: `probe_config`
+- PK interna: `id` (INTEGER, **non autogenerata**)
+- Convenzione runtime: record singleton con `id = 1`
+  - In DAO sono usate query `WHERE id = 1`
+- Nota: `id` è tecnica **interna Room** e non deve diventare un concetto pubblico (UI/domain/backup).
+
+### `probe_config` (schema)
+
+PK: `id` (autoGenerate = false)
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | INTEGER | NO |  |
+| `ipAddress` | TEXT | NO |  |
+| `username` | TEXT | NO |  |
+| `password` | TEXT | NO |  |
+| `testInterface` | TEXT | NO |  |
+| `isHttps` | INTEGER | NO |  |
+| `isOnline` | INTEGER | NO |  |
+| `modelName` | TEXT | YES |  |
+| `tdrSupported` | INTEGER | NO |  |
 
 ## Tabelle
 
 ### `clients`
-=======
-## Stato attuale (baseline Room v1)
 
-- Database: `com.app.miklink.data.local.room.MikLinkDatabase`
-- Nome file DB: `miklink`
-- Versione Room: `1`
-- Schema versionato: `app/schemas/com.app.miklink.data.local.room.MikLinkDatabase/1.json`
+PK: `clientId` (autoGenerate = true)  
+Index: `index_clients_companyName`
 
-La posizione dello schema resta definita nei Gradle args:
-
-- `room.schemaLocation = app/schemas` (annotation processor/KSP)
-
-> Nota 2025-12-13: tutte le cartelle legacy `AppDatabase` sono state rimosse dal repo; la sola fonte di verità è MikLinkDatabase.
->>>>>>> aec31fe18138fb571fc1c1b9dd890bac55425d41
-
-- `clientId` (PK, Long, autoincrement)
-- `companyName` (String, required)
-- `location` (String?, default "Sede")
-- `notes` (String?)
-- `networkMode` (Enum/String: DHCP | Static)
-- `staticIp` (String?)
-- `staticSubnet` (String?)  *(se mantenuta in lite; valutabile deprecazione futura)*
-- `staticGateway` (String?)
-- `staticCidr` (String?) *(preferita quando disponibile)*
-- `minLinkRate` (String) *(threshold PASS: "10M","100M","1G","10G")*
-- **Socket-ID Lite**
-  - `socketPrefix` (String)
-  - `socketSeparator` (String)
-  - `socketNumberPadding` (Int)
-  - `socketSuffix` (String)
-  - `nextIdNumber` (Int)
-- Speed test (opzionale)
-  - `speedTestServerAddress` (String?)
-  - `speedTestServerUser` (String?)
-  - `speedTestServerPassword` (String?)
-
-**Rimossi:** `lastFloor`, `lastRoom` (legacy).
-
-### `probe_config` (singleton interno)
-
-La UI e il domain trattano la probe config come **unica**.
-
-Per vincoli tecnici Room, esiste una PK interna **non esposta**:
-
-- `singletonKey` (Int, PK) → valore fisso `1`
-- `ipAddress` (String)
-- `username` (String)
-- `password` (String)
-- `testInterface` (String)
-- `isOnline` (Boolean)
-- `modelName` (String?)
-- `tdrSupported` (Boolean) *(cache; fonte di verità = domain TdrCapabilities)*
-- `isHttps` (Boolean)
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `clientId` | INTEGER | NO |  |
+| `companyName` | TEXT | NO |  |
+| `location` | TEXT | YES |  |
+| `notes` | TEXT | YES |  |
+| `networkMode` | TEXT | NO |  |
+| `staticIp` | TEXT | YES |  |
+| `staticSubnet` | TEXT | YES |  |
+| `staticGateway` | TEXT | YES |  |
+| `staticCidr` | TEXT | YES |  |
+| `minLinkRate` | TEXT | NO |  |
+| `socketPrefix` | TEXT | NO |  |
+| `socketSuffix` | TEXT | NO |  |
+| `socketSeparator` | TEXT | NO |  |
+| `socketNumberPadding` | INTEGER | NO |  |
+| `nextIdNumber` | INTEGER | NO |  |
+| `speedTestServerAddress` | TEXT | YES |  |
+| `speedTestServerUser` | TEXT | YES |  |
+| `speedTestServerPassword` | TEXT | YES |  |
 
 ### `test_profiles`
 
-- `profileId` (PK, Long, autoincrement)
-- `profileName` (String)
-- `profileDescription` (String?)
-- `runTdr` (Boolean)
-- `runLinkStatus` (Boolean)
-- `runLldp` (Boolean)
-- `runPing` (Boolean)
-- `pingTarget1`/`2`/`3` (String?)
-- `pingCount` (Int, default 4)
-- `runSpeedTest` (Boolean)
+PK: `profileId` (autoGenerate = true)
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `profileId` | INTEGER | NO |  |
+| `profileName` | TEXT | NO |  |
+| `profileDescription` | TEXT | YES |  |
+| `runTdr` | INTEGER | NO |  |
+| `runLinkStatus` | INTEGER | NO |  |
+| `runLldp` | INTEGER | NO |  |
+| `runPing` | INTEGER | NO |  |
+| `pingTarget1` | TEXT | YES |  |
+| `pingTarget2` | TEXT | YES |  |
+| `pingTarget3` | TEXT | YES |  |
+| `pingCount` | INTEGER | NO |  |
+| `runSpeedTest` | INTEGER | NO |  |
 
 ### `test_reports`
 
-- `reportId` (PK, Long, autoincrement)
-- `clientId` (Long?, FK opzionale)
-- `timestamp` (Long)
-- `socketName` (String?)
-- `notes` (String?)
-- `probeName` (String?)
-- `profileName` (String?)
-- `overallStatus` (String)
-- `resultsJson` (String)  ✅ **singola colonna JSON**
+PK: `reportId` (autoGenerate = true)  
+Indici:
+- `index_test_reports_clientId`
+- `index_test_reports_timestamp`
+- `index_test_reports_clientId_timestamp`
 
-## Note operative
+Note:
+- `clientId` è presente ma **non** è definito come foreign key nello schema export.
+- `resultsJson` resta una **singola colonna JSON** (TEXT).
+- `resultFormatVersion` esiste come INTEGER per versionare il formato del JSON.
 
-<<<<<<< HEAD
-- `tdrSupported` è una cache per UI/query: la decisione di “supportato/non supportato” è nel domain (`TdrCapabilities`).
-- Se in futuro serviranno analytics su metriche dei report, si farà una epic dedicata “Report Analytics” (no in baseline).
-=======
-## Guard rails
-
-- Task Gradle `guardLegacySchemas` (root build) fallisce se nel repo ricompaiono i vecchi identificatori Room v1 o l'AppDatabase legacy del modulo data.
-- CI/local scripts devono invocare `./gradlew guardLegacySchemas` quando si toccano schemi Room.
-
-## Rebaseline DB (decisione di progetto)
-
-Il progetto è in sviluppo e **non ci sono dati da preservare**: è accettabile rifare il DB “da zero” per:
-- rimuovere campi legacy (`probeId`, `lastFloor`, `lastRoom`, ecc.)
-- riallineare i layer (Room come infrastruttura in `data/**`)
-- semplificare migrazioni (ripartire da versione 1)
-
-**Importante:** prima di implementare la rebase dobbiamo fissare:
-1) quali dati devono esistere in v1 (Client / Profile / Probe config / Report / altro)
-2) quali relazioni e indici servono (query reali)
-3) quali campi sono “fonte di verità” vs “cache”
-
-Le discrepanze e scelte vanno tracciate in ADR e in `docs/DISCREPANCIES.md`.
->>>>>>> aec31fe18138fb571fc1c1b9dd890bac55425d41
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `reportId` | INTEGER | NO |  |
+| `clientId` | INTEGER | YES |  |
+| `timestamp` | INTEGER | NO |  |
+| `socketName` | TEXT | YES |  |
+| `notes` | TEXT | YES |  |
+| `probeName` | TEXT | YES |  |
+| `profileName` | TEXT | YES |  |
+| `overallStatus` | TEXT | NO |  |
+| `resultFormatVersion` | INTEGER | NO |  |
+| `resultsJson` | TEXT | NO |  |
 
 ==================== END FILE ====================
 
@@ -2027,42 +2041,58 @@ Definiti in `core/data/remote/mikrotik/service/MikroTikApiService.kt`:
 ==================== BEGIN FILE ====================
 PATH: docs/reference/project-structure.md
 TYPE: TEXT
-SIZE: 3516
-SHA256: c83ea5a34a3935133946256ca97c60423847b5e232a4b154317e7dc3b3a671af
+SIZE: 2629
+SHA256: eee9b9ac8a56921a3d2e07da8322ddd4805028d73d649458139ce7ecead23032
 ==================== END HEADER ====================
-# Project structure (canone)
+# Project structure (Canone A)
 
-Questa pagina è **normativa**: descrive la struttura ammessa e le regole di naming/import.
+Questa pagina è **normativa**: descrive la struttura ammessa e le regole di import/naming.
 
 > Se una cartella/file non rispetta il canone, va migrata o rimossa (nessuna eccezione senza ADR).
 
 ## Struttura canonica
 
-```
-app/src/main/java/com/app/miklink/
-  core/
-    domain/
-      model/
-      usecase/
-      ...
-    data/
-      # SOLO ports/contratti
-      repository/
-      gateway/
-      provider/
-      ...
-  data/
-    # Implementazioni infra + mapper
-    db/
-    remote/
-    repositoryimpl/
-    parser/
-    ...
-  ui/
-    # Compose + ViewModel + UiState + mapper domain->ui
-  di/
-    # Wiring DI
-```
+- `app/src/main/java/com/app/miklink/`
+  - `core/`
+  - `domain/`
+  - `model/`
+  - `usecase/`
+  - `...`
+  - `data/`
+    - `# SOLO ports/contratti + tipi neutrali`
+  - `repository/`
+  - `gateway/`
+  - `provider/`
+  - `io/`
+  - `pdf/`
+  - `...`
+  - `data/`
+    - `# Implementazioni infra + mapper`
+    - `local/`  `# Room / DataStore / file`
+    - `remote/` `# Retrofit/OkHttp/Moshi`
+    - `report/` `# codec/mapper report (infra)`
+    - `repositoryimpl/` `# implementazioni dei port`
+    - `...`
+  - `ui/`
+    - `# Compose + ViewModel + UiState + mapper domain->ui`
+  - `di/`
+    - `# Wiring DI (Hilt)`
+  - `utils/`
+    - `# helper “non di dominio” (no dipendenze ui<->data)`
+
+markdown
+Copia codice
+
+## Regole di responsabilità
+
+- `core/domain/**`: puro business.
+  - Vietati: Android SDK, Room, Retrofit/OkHttp, Moshi, iText/PDF, filesystem/SAF.
+- `core/data/**`: solo **contratti** e **tipi neutrali** (ports, DTO neutrali, destinazioni IO neutrali, ecc.).
+  - Vietate implementazioni tecnologiche.
+- `data/**`: implementazioni tecnologiche (Room, Retrofit/Moshi, OkHttp, PDF, SAF/ContentResolver, DataStore, ecc.).
+- `ui/**`: solo presentazione.
+  - Vietato importare `data/**` (usa use case e ports del core).
+- `di/**`: solo wiring.
 
 ## Cartelle non canoniche
 
@@ -2070,58 +2100,24 @@ app/src/main/java/com/app/miklink/
 - `domain/**` top-level → da migrare in `core/domain/**`
 - qualunque cartella con suffissi `v1/`, `v2/` → vietata (usa Room schemaVersion, non naming)
 
-## Regole di responsabilità
+## Vincoli di naming (hard)
 
-- `core/domain/**`: puro business. Niente Android, niente rete, niente DB.
-- `core/data/**`: solo interfacce/ports. Niente implementazioni.
-- `data/**`: DB/rete/PDF + mapper/parsing.
-- `ui/**`: solo presentazione.
-- `di/**`: solo wiring.
+- `probeId` è un concetto legacy e **vietato** come naming/termine pubblico.
+  - Hard rule: `git grep -n "probeId" app/src/main app/src/test` deve tornare **0 risultati** (anche commenti).
 
 ## Checklist di revisione rapida
 
-<<<<<<< HEAD
-- Un file in `core/domain/**` ha import `android.*`? → **errore**
-- Un file in `ui/**` importa `room`/`dao`/`entity`? → **errore**
+- Un file in `core/domain/**` importa `android.*`? → **errore**
+- Un file in `core/domain/**` importa `retrofit2.*` / `okhttp3.*` / `com.squareup.moshi.*` / `androidx.room.*`? → **errore**
+- Un file in `core/data/**` contiene implementazioni concrete (Room/Retrofit/iText/SAF)? → **errore**
+- Un file in `ui/**` importa `androidx.room` / `dao` / `entity` / `data/**`? → **errore**
 - Un file in `data/**` importa `ui/**`? → **errore**
-- Esiste `probeId` in qualsiasi file Kotlin? → **errore**
-=======
-## Cartelle presenti ma “in migrazione”
 
-- `legacy/`  
-- `domain/` (top-level, fuori dal canone `core/domain/**`)
-- `feature/` (struttura parallela a `ui/`)
+## Annotation processing
 
-**Regola pratica:** nessun nuovo codice dovrebbe nascere qui; si migra verso i layer canonici e poi si elimina.
-
-## Convenzioni
-
-- **Domain models**: in `core/domain/**/model`
-- **Use cases**: in `core/domain/usecase/**`
-- **Repository interfaces**: in `core/data/repository/**`
-- **Repository implementations**: in `data/repositoryimpl/**`
-- **Room**: è considerata infrastruttura ⇒ deve vivere in `data/**` (target).
-
-## Regole di import (Canone A)
-
-- `core/domain/**` è puro: può importare solo Kotlin stdlib, modelli dominio e i port definiti in `core/data/**`; vietato Android SDK, Room/Retrofit/OkHttp, Moshi, iText.
-- `core/data/**` espone solo contratti e tipi neutri; può dipendere da modelli di dominio ma non da infrastruttura (Android, Room, Retrofit/Moshi, iText, SAF, ContentResolver).
-- `data/**` contiene le impl tecnologiche; può importare Android/Room/Retrofit/Moshi/iText ma non deve essere importato da UI o domain e non deve esporre tipi infra nelle firme pubbliche.
-- `ui/**` usa soltanto use case e modelli dominio; nessun import di `data/**` o di DTO/infra.
-- I use case possono dipendere dai port definiti in `core/data/**` (es. `ReportResultsCodec`, `DocumentWriter`, repository) ma non dalle loro impl.
-
-Esempi consentiti:
-
-- Un `UseCase` in `core/domain/usecase/**` che richiede un `core/data/repository/*Repository` nel costruttore.
-- Un adapter in `data/repositoryimpl/**` che converte DTO Room/Retrofit in modelli dominio e implementa un port.
-
-Esempi vietati:
-
-- Un `UseCase` che crea un `JsonAdapter` Moshi o importa `com.app.miklink.data.repository.*`.
-- Un port in `core/data/**` che espone `android.net.Uri` o classi Retrofit/Moshi.
-- Una composable che importa direttamente un repository `data/**` o un DTO.
->>>>>>> aec31fe18138fb571fc1c1b9dd890bac55425d41
-
+- Room usa KSP (`room-compiler`).
+- Hilt usa KSP (`hilt-compiler`).
+- KAPT non è usato.
 ==================== END FILE ====================
 
 ==================== BEGIN FILE ====================

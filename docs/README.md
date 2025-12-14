@@ -1,36 +1,30 @@
-# MikLink — Documentazione
+# Docs
 
-Questa cartella è la **source of truth** per:
+Documentazione “docs-as-code” mantenuta insieme al codice.
 
-- architettura target (SOLID / clean)
-- decisioni non negoziabili (ADR)
-- riferimento tecnico (DB, dipendenze, test, fixtures)
-- discrepanze misurate tra docs e codice
+## Struttura (Diátaxis)
 
-> Regola: se una decisione cambia, si crea/aggiorna un **ADR**.  
-> Regola: `DISCREPANCIES.md` contiene **solo evidenze**, non proposte.
+- `explanation/` — spiegazioni e architettura (perché è fatto così)
+- `reference/` — reference tecnica (API, DB, build, formati)
+- `decisions/` — ADR (decisioni architetturali “congelate”)
+- `contributing/` — regole per contribuire alla documentazione
 
-## Indice
+## Regole
 
-### Decisioni (ADR)
-- [ADR-0001 — Sonda unica (rimozione probeId)](decisions/ADR-0001-single-probe.md)
-- [ADR-0002 — Toggle HTTPS + trust-all consapevole](decisions/ADR-0002-https-toggle-trust-all.md)
-- [ADR-0003 — Rebase DB (baseline) + probe singleton interno](decisions/ADR-0003-db-rebase-baseline.md)
-- [ADR-0004 — Socket ID “Lite”](decisions/ADR-0004-socket-id-lite.md)
-- [ADR-0005 — Rimozione Logs dallo scope](decisions/ADR-0005-remove-logs.md)
+- La **fonte di verità** è il codice: la doc deve linkare i file e non duplicare dettagli inutili.
+- Ogni decisione non ovvia → ADR.
+- Se una modifica rompe un'invariante, aggiorna prima ADR/architecture e poi il codice (o viceversa, ma nello stesso PR).
 
-### Spiegazioni
-- [Architettura](explanation/architecture.md)
-- [V1 — obiettivi e confini](explanation/v1-scope.md)
+## Indice rapido
 
-### Riferimenti
-- [Project structure (canone)](reference/project-structure.md)
-- [Database (baseline)](reference/database.md)
-- [Dipendenze](reference/dependencies.md)
-- [Testing](reference/testing.md)
-- [Fixtures](reference/fixtures.md)
-- [MikroTik REST API](reference/mikrotik-rest-api.md)
+- Architettura: `explanation/architecture.md`
+- Build: `reference/build.md`
+- Database: `reference/database.md`
+- MikroTik REST API: `reference/mikrotik-rest-api.md`
+- Testing: `reference/testing.md`
+- Backup format: `reference/backup-format.md`
 
-### Operativo
-- [Discrepanze (docs vs codice)](DISCREPANCIES.md)
-- [How-to: aggiungere un golden test](howto/add-golden-test.md)
+## Struttura progetto e naming
+
+- Struttura cartelle/package + convenzioni: `reference/project-structure.md`
+- Decisioni correlate: `decisions/ADR-0007-package-structure-and-naming.md`, `decisions/ADR-0008-no-dto-leaks-across-ports.md`

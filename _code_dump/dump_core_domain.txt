@@ -2,8 +2,8 @@
 ==================== BEGIN FILE ====================
 PATH: app/src/main/java/com/app/miklink/core/domain/model/Client.kt
 TYPE: TEXT
-SIZE: 695
-SHA256: 65b5a09997a6eb09add7dac6058c94865533bc796917bbe0863c5008cfebd9c3
+SIZE: 1116
+SHA256: b65321fd7cc951c74123de9285c37fe913ad12ea345df0e222751f6c8826fd5b
 ==================== END HEADER ====================
 package com.app.miklink.core.domain.model
 
@@ -30,6 +30,15 @@ data class Client(
 
 enum class NetworkMode {
     DHCP, STATIC
+}
+
+/**
+ * Deterministic socket name builder using the client's socket formatting fields.
+ * This function is pure and does not mutate state.
+ */
+fun Client.socketNameFor(idNumber: Int): String {
+    val paddedNumber = String.format(java.util.Locale.US, "%0${this.socketNumberPadding}d", idNumber)
+    return "${this.socketPrefix}${this.socketSeparator}${paddedNumber}${this.socketSeparator}${this.socketSuffix}"
 }
 
 ==================== END FILE ====================
@@ -224,8 +233,8 @@ data class TestReport(
 ==================== BEGIN FILE ====================
 PATH: app/src/main/java/com/app/miklink/core/domain/report/ReportAggregator.kt
 TYPE: TEXT
-SIZE: 711
-SHA256: c5ebbcf45e3288d1b55e552fddde571e90b89796a1580077290b9d7c1a7f7402
+SIZE: 695
+SHA256: f3af59c6231cf3e8d81a7b3f2eaaa93d1e2613f9dfcfcb24f8feac94953b5b00
 ==================== END HEADER ====================
 package com.app.miklink.core.domain.report
 
@@ -237,9 +246,9 @@ package com.app.miklink.core.domain.report
  * - Provide helper functions to extract metrics for reporting
  *
  * Design decision:
- * - In DB v2, `Report.resultsJson` remains a single JSON column. The transformation of
- *   `resultsJson` into structured columns or analytics-ready formats is deferred to a
- *   future epic named `Report Analytics`.
+ * - The current schema keeps `resultsJson` as a single JSON column. Transformations into
+ *   structured columns or analytics-ready formats are deferred to a future epic named
+ *   `Report Analytics`.
  */
 interface ReportAggregator {
     // fun aggregate(resultsJson: String): AggregatedReport
@@ -353,8 +362,8 @@ sealed class TestError {
 ==================== BEGIN FILE ====================
 PATH: app/src/main/java/com/app/miklink/core/domain/test/model/TestEvent.kt
 TYPE: TEXT
-SIZE: 528
-SHA256: b67e6833a2b944dcba7243e7a987e467104670125cc508867798580714e4a759
+SIZE: 469
+SHA256: 57f78fce78c76c7ca8c3c5c9b04fdf212e3dca84147cf4bee3442f7d2d95d35a
 ==================== END HEADER ====================
 package com.app.miklink.core.domain.test.model
 
@@ -364,7 +373,6 @@ package com.app.miklink.core.domain.test.model
  */
 sealed class TestEvent {
     data class Progress(val progress: TestProgress) : TestEvent()
-    data class LogLine(val message: String) : TestEvent()
     data class SectionsUpdated(val sections: List<TestSectionResult>) : TestEvent()
     data class Completed(val outcome: TestOutcome) : TestEvent()
     data class Failed(val error: TestError) : TestEvent()
@@ -424,8 +432,8 @@ data class TestOutcome(
 ==================== BEGIN FILE ====================
 PATH: app/src/main/java/com/app/miklink/core/domain/test/model/TestPlan.kt
 TYPE: TEXT
-SIZE: 442
-SHA256: 895867470c47081eddf274c10e2600f44657139ab519d354cb102ed237688453
+SIZE: 452
+SHA256: eee5c60a86d61b43120a6c376f0b1b4ef75e3066ad79c9af5ef8092a287eadb8
 ==================== END HEADER ====================
 package com.app.miklink.core.domain.test.model
 
@@ -433,7 +441,7 @@ package com.app.miklink.core.domain.test.model
  * Input per avvio test; non contiene stato runtime.
  * Definisce i parametri necessari per eseguire un test.
  * 
- * La sonda è SINGLETON: non si specifica probeId qui.
+ * La sonda è SINGLETON: non si specifica un identificatore qui.
  * RunTestUseCase carica automaticamente la ProbeConfig unica.
  */
 data class TestPlan(
@@ -835,8 +843,8 @@ interface RunTestUseCase {
 ==================== BEGIN FILE ====================
 PATH: app/src/main/java/com/app/miklink/core/domain/usecase/test/RunTestUseCaseImpl.kt
 TYPE: TEXT
-SIZE: 38602
-SHA256: fb427f4cf0871ff9cd2e56d32f08fa6dfe8007868aae4027b02b8bbdacc078a8
+SIZE: 36947
+SHA256: 53fb61a23f9bb119f03864d5fa383e0e7c886bb215079b6d50089a0449c968fe
 ==================== END HEADER ====================
 package com.app.miklink.core.domain.usecase.test
 
@@ -919,7 +927,6 @@ class RunTestUseCaseImpl @Inject constructor(
             notes = plan.notes
         )
 
-        emit(TestEvent.LogLine("--- INIZIO TEST ---"))
         emit(TestEvent.Progress(TestProgress("Inizializzazione", 0, "Caricamento dati...")))
 
         val sections = buildInitialSections(profile, probe)
@@ -972,7 +979,6 @@ class RunTestUseCaseImpl @Inject constructor(
 
         try {
             // 1) Network Config
-            emit(TestEvent.LogLine("Applicazione configurazione rete..."))
             emit(TestEvent.Progress(TestProgress("Network Config", 10, "Configurazione rete in corso...")))
 
             setSectionStatus(SECTION_NETWORK, STATUS_RUNNING)
@@ -990,7 +996,6 @@ class RunTestUseCaseImpl @Inject constructor(
                         rawData = networkRaw(feedback)
                     )
                     emitSectionsSnapshot()
-                    emit(TestEvent.LogLine("Rete configurata con successo"))
                 }
                 is StepResult.Failed -> {
                     overallStatus = "FAIL"
@@ -1003,7 +1008,6 @@ class RunTestUseCaseImpl @Inject constructor(
                         error = errorMessage
                     )
                     emitSectionsSnapshot()
-                    emit(TestEvent.LogLine("Configurazione rete fallita: $errorMessage"))
                 }
                 is StepResult.Skipped -> {
                     recordStep(
@@ -1019,7 +1023,6 @@ class RunTestUseCaseImpl @Inject constructor(
 
             // 2) Link Status
             if (profile.runLinkStatus) {
-                emit(TestEvent.LogLine("Esecuzione Test Stato Link..."))
                 emit(TestEvent.Progress(TestProgress("Link Status", 30, "Verifica stato link...")))
 
                 setSectionStatus(SECTION_LINK, STATUS_RUNNING)
@@ -1038,7 +1041,6 @@ class RunTestUseCaseImpl @Inject constructor(
                             rawData = linkRaw(linkStatus)
                         )
                         emitSectionsSnapshot()
-                        emit(TestEvent.LogLine("Link Status: OK"))
                     }
                     is StepResult.Failed -> {
                         overallStatus = "FAIL"
@@ -1051,7 +1053,6 @@ class RunTestUseCaseImpl @Inject constructor(
                             error = errorMessage
                         )
                         emitSectionsSnapshot()
-                        emit(TestEvent.LogLine("Link Status: FALLITO"))
                         // Stop immediato su errore link
                         emit(TestEvent.Failed(linkResult.error))
                         return@flow
@@ -1080,7 +1081,6 @@ class RunTestUseCaseImpl @Inject constructor(
 
             // 3) TDR
             if (profile.runTdr && probe.tdrSupported) {
-                emit(TestEvent.LogLine("Esecuzione TDR (Cable-Test)..."))
                 emit(TestEvent.Progress(TestProgress("TDR", 50, "Test cavo in corso...")))
 
                 setSectionStatus(SECTION_TDR, STATUS_RUNNING)
@@ -1099,7 +1099,6 @@ class RunTestUseCaseImpl @Inject constructor(
                             rawData = tdrRaw(cableTest)
                         )
                         emitSectionsSnapshot()
-                        emit(TestEvent.LogLine("TDR: SUCCESSO"))
                     }
                     is StepResult.Failed -> {
                         // Non bloccare il test se TDR fallisce per incompatibilità hardware
@@ -1124,7 +1123,6 @@ class RunTestUseCaseImpl @Inject constructor(
                             error = message
                         )
                         emitSectionsSnapshot()
-                        emit(TestEvent.LogLine("TDR: ${if (isFatal) "NON SUPPORTATO" else "FALLITO"}"))
                     }
                     is StepResult.Skipped -> {
                         recordStep(
@@ -1138,7 +1136,6 @@ class RunTestUseCaseImpl @Inject constructor(
                     }
                 }
             } else if (profile.runTdr && !probe.tdrSupported) {
-                emit(TestEvent.LogLine("TDR: SALTATO (hardware non supporta TDR)"))
                 recordStep(
                     name = SECTION_TDR,
                     title = "TDR",
@@ -1160,7 +1157,6 @@ class RunTestUseCaseImpl @Inject constructor(
 
             // 4) LLDP
             if (profile.runLldp) {
-                emit(TestEvent.LogLine("Esecuzione discovery LLDP/CDP..."))
                 emit(TestEvent.Progress(TestProgress("LLDP", 60, "Discovery neighbor...")))
 
                 setSectionStatus(SECTION_LLDP, STATUS_RUNNING)
@@ -1179,7 +1175,6 @@ class RunTestUseCaseImpl @Inject constructor(
                             rawData = lldpRaw(neighbors)
                         )
                         emitSectionsSnapshot()
-                        emit(TestEvent.LogLine("LLDP/CDP: Rilevato neighbor"))
                     }
                     is StepResult.Failed -> {
                         val message = lldpResult.error.message
@@ -1191,7 +1186,6 @@ class RunTestUseCaseImpl @Inject constructor(
                             rawData = mapOf("error" to message)
                         )
                         emitSectionsSnapshot()
-                        emit(TestEvent.LogLine("LLDP/CDP: FALLITO (${lldpResult.error.message})"))
                     }
                     is StepResult.Skipped -> {
                         recordStep(
@@ -1217,7 +1211,6 @@ class RunTestUseCaseImpl @Inject constructor(
 
             // 5) Ping
             if (profile.runPing) {
-                emit(TestEvent.LogLine("Esecuzione Ping..."))
                 emit(TestEvent.Progress(TestProgress("Ping", 70, "Test ping in corso...")))
 
                 setSectionStatus(SECTION_PING, STATUS_RUNNING)
@@ -1236,7 +1229,6 @@ class RunTestUseCaseImpl @Inject constructor(
                             rawData = pingRaw(outcomes)
                         )
                         emitSectionsSnapshot()
-                        emit(TestEvent.LogLine("Ping: SUCCESSO"))
                     }
                     is StepResult.Failed -> {
                         overallStatus = "FAIL"
@@ -1250,7 +1242,6 @@ class RunTestUseCaseImpl @Inject constructor(
                             error = message
                         )
                         emitSectionsSnapshot()
-                        emit(TestEvent.LogLine("Ping: FALLITO"))
                     }
                     is StepResult.Skipped -> {
                         recordStep(
@@ -1276,7 +1267,6 @@ class RunTestUseCaseImpl @Inject constructor(
 
             // 6) Speed Test
             if (profile.runSpeedTest) {
-                emit(TestEvent.LogLine("Esecuzione Speed Test..."))
                 emit(TestEvent.Progress(TestProgress("Speed Test", 90, "Speed test in corso...")))
 
                 setSectionStatus(SECTION_SPEED, STATUS_RUNNING)
@@ -1295,7 +1285,6 @@ class RunTestUseCaseImpl @Inject constructor(
                             rawData = speedRaw(speed, client.speedTestServerAddress)
                         )
                         emitSectionsSnapshot()
-                        emit(TestEvent.LogLine("Speed Test: COMPLETATO"))
                     }
                     is StepResult.Failed -> {
                         // Non fail l'intero test per uno speed test fallito (opzionale)
@@ -1309,7 +1298,6 @@ class RunTestUseCaseImpl @Inject constructor(
                             error = message
                         )
                         emitSectionsSnapshot()
-                        emit(TestEvent.LogLine("Speed Test: FALLITO"))
                     }
                     is StepResult.Skipped -> {
                         recordStep(
@@ -1333,7 +1321,6 @@ class RunTestUseCaseImpl @Inject constructor(
                 emitSectionsSnapshot()
             }
 
-            emit(TestEvent.LogLine("--- TEST COMPLETATO ---"))
             emit(TestEvent.Progress(TestProgress("Completato", 100, "Test completato")))
 
             val outcome = TestOutcome(
@@ -1345,7 +1332,6 @@ class RunTestUseCaseImpl @Inject constructor(
             emit(TestEvent.Completed(outcome))
 
         } catch (e: Exception) {
-            emit(TestEvent.LogLine("ERRORE IRREVERSIBILE: ${e.message}"))
             emit(TestEvent.Failed(TestError.Unexpected(e.message ?: "Unknown error", e)))
         }
     }
