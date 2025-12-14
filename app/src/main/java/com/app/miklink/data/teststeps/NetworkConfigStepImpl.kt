@@ -1,5 +1,6 @@
 package com.app.miklink.data.teststeps
 
+import com.app.miklink.core.data.repository.NetworkConfigFeedback
 import com.app.miklink.core.data.repository.test.NetworkConfigRepository
 import com.app.miklink.core.domain.test.model.StepResult
 import com.app.miklink.core.domain.test.model.TestError
@@ -14,7 +15,7 @@ import javax.inject.Inject
 class NetworkConfigStepImpl @Inject constructor(
     private val networkConfigRepository: NetworkConfigRepository
 ) : NetworkConfigStep {
-    override suspend fun run(context: TestExecutionContext): StepResult {
+    override suspend fun run(context: TestExecutionContext): StepResult<NetworkConfigFeedback> {
         return try {
             val feedback = networkConfigRepository.applyClientNetworkConfig(
                 probe = context.probeConfig,

@@ -7,13 +7,14 @@ import com.app.miklink.core.domain.test.model.TestOutcome
 import com.app.miklink.core.domain.test.model.TestPlan
 import com.app.miklink.core.domain.test.model.TestSectionResult
 import com.app.miklink.core.domain.usecase.test.RunTestUseCase
-import com.app.miklink.core.data.local.room.v1.model.Report
+import com.app.miklink.core.domain.model.TestReport
 import com.app.miklink.core.data.repository.report.ReportRepository
 import com.app.miklink.testsupport.MainDispatcherRule
 import com.app.miklink.utils.UiState
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -28,8 +29,25 @@ class TestViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val reportRepository = object : ReportRepository {
-        override suspend fun saveReport(report: Report): Long = 1L
-        override suspend fun getReport(id: Long): Report? = null
+        private val state = kotlinx.coroutines.flow.MutableStateFlow<List<TestReport>>(emptyList())
+
+        override suspend fun saveReport(report: TestReport): Long {
+            val id = (state.value.maxOfOrNull { it.reportId } ?: 0L) + 1L
+            val r = report.copy(reportId = id)
+            state.value = state.value + r
+            return id
+        }
+
+        override suspend fun getReport(id: Long): TestReport? = state.value.firstOrNull { it.reportId == id }
+
+        override fun observeAllReports(): Flow<List<TestReport>> = state
+
+        override fun observeReportsByClient(clientId: Long): Flow<List<TestReport>> =
+            state.map { list -> list.filter { it.clientId == clientId } }
+
+        override suspend fun deleteReport(report: TestReport) {
+            state.value = state.value.filterNot { it.reportId == report.reportId }
+        }
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -43,7 +61,6 @@ class TestViewModelTest {
         val savedStateHandle = SavedStateHandle(
             mapOf(
                 "clientId" to 1L,
-                "probeId" to 1L,
                 "profileId" to 1L,
                 "socketName" to "A1"
             )
@@ -94,7 +111,7 @@ class TestViewModelTest {
         advanceUntilIdle()
 
         val uiState = viewModel.uiState.value
-        assertTrue(uiState is UiState.Success<Report>)
+        assertTrue(uiState is UiState.Success<TestReport>)
         val sectionsStatuses = viewModel.sections.value.map { it.status }
         assertEquals(listOf("PASS", "FAIL"), sectionsStatuses)
 

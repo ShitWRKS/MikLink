@@ -3,8 +3,9 @@ package com.app.miklink.ui.history
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.*
 import androidx.navigation.compose.rememberNavController
-import com.app.miklink.core.data.local.room.v1.model.Report
-import com.app.miklink.ui.history.model.ParsedResults
+import com.app.miklink.core.domain.model.TestReport
+import com.app.miklink.core.domain.model.report.PingSample
+import com.app.miklink.core.domain.model.report.ReportData
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.junit.Rule
@@ -19,7 +20,7 @@ class ReportDetailScreenLocalTest {
 
     private class FakeProvider : ReportDetailScreenStateProvider {
         private val _report = MutableStateFlow(
-            Report(
+            TestReport(
                 reportId = 42L,
                 clientId = null,
                 timestamp = 0L,
@@ -28,21 +29,29 @@ class ReportDetailScreenLocalTest {
                 probeName = "Sonda",
                 profileName = "Profile",
                 overallStatus = "PASS",
+                resultFormatVersion = 1,
                 resultsJson = "{}"
             )
         )
         private val _results = MutableStateFlow(
-            ParsedResults(
-                ping = listOf(
-                    com.app.miklink.core.data.remote.mikrotik.dto.PingResult(
-                        avgRtt = "10ms", host = "8.8.8.8", maxRtt = "15ms", minRtt = "8ms", packetLoss = "0", received = "4", sent = "4", seq = "4", size = "64", time = "10ms", ttl = "64"
+            ReportData(
+                pingSamples = listOf(
+                    PingSample(
+                        target = "8.8.8.8",
+                        avgRtt = "10ms",
+                        minRtt = "8ms",
+                        maxRtt = "15ms",
+                        packetLoss = "0",
+                        seq = "4",
+                        time = "10ms",
+                        ttl = "64"
                     )
                 )
             )
         )
         private val _pdfStatus = MutableStateFlow("")
-        override val report: StateFlow<Report?> = _report
-        override val parsedResults: StateFlow<ParsedResults?> = _results
+        override val report: StateFlow<TestReport?> = _report
+        override val parsedResults: StateFlow<ReportData?> = _results
         override val pdfStatus: StateFlow<String> = _pdfStatus
         override val socketName = MutableStateFlow("")
         override val notes = MutableStateFlow("")

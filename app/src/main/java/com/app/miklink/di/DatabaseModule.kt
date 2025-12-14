@@ -4,10 +4,9 @@ import android.content.Context
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
-import com.app.miklink.core.data.local.room.v1.AppDatabase
-import com.app.miklink.core.data.local.room.v1.dao.TestProfileDao
-import com.app.miklink.core.data.local.room.v1.migration.Migrations
-import com.app.miklink.core.data.local.room.v1.model.TestProfile
+import com.app.miklink.data.local.room.MikLinkDatabase
+import com.app.miklink.data.local.room.dao.TestProfileDao
+import com.app.miklink.data.local.room.entity.TestProfileEntity
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -26,24 +25,21 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideAppDatabase(
+    fun provideMikLinkDatabase(
         @ApplicationContext context: Context,
-        // Use a Provider to avoid circular dependency
         testProfileDaoProvider: Provider<TestProfileDao>
-    ): AppDatabase {
+    ): MikLinkDatabase {
+        // Tabula rasa: elimina il vecchio DB
+        context.deleteDatabase("miklink-db")
+        
         return Room.databaseBuilder(
             context,
-            AppDatabase::class.java,
-            "miklink-db"
+            MikLinkDatabase::class.java,
+            "miklink"
         )
-        .addMigrations(*Migrations.ALL_MIGRATIONS)
-        // Avoid full destructive fallback on all version mismatches to prevent data loss.
-        // Keep fallback only for very old versions where we cannot reasonably support migration.
-        .fallbackToDestructiveMigrationFrom(1, 2, 3, 4, 5, 6)
         .addCallback(object : RoomDatabase.Callback() {
             override fun onCreate(db: SupportSQLiteDatabase) {
                 super.onCreate(db)
-                // Coroutine scope for the callback
                 val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
                 scope.launch {
                     addDefaultProfiles(testProfileDaoProvider.get())
@@ -55,7 +51,7 @@ object DatabaseModule {
 
     private suspend fun addDefaultProfiles(testProfileDao: TestProfileDao) {
         testProfileDao.insert(
-            TestProfile(
+            TestProfileEntity(
                 profileName = "Full Test",
                 profileDescription = "TDR, Link, LLDP, and Ping",
                 runTdr = true,
@@ -63,31 +59,38 @@ object DatabaseModule {
                 runLldp = true,
                 runPing = true,
                 pingTarget1 = "DHCP_GATEWAY",
-                pingTarget2 = "8.8.8.8"
+                pingTarget2 = "8.8.8.8",
+                pingTarget3 = null,
+                pingCount = 4,
+                runSpeedTest = false
             )
         )
         testProfileDao.insert(
-            TestProfile(
+            TestProfileEntity(
                 profileName = "Quick Test",
                 profileDescription = "Link status and Ping",
                 runTdr = false,
                 runLinkStatus = true,
                 runLldp = false,
                 runPing = true,
-                pingTarget1 = "DHCP_GATEWAY"
+                pingTarget1 = "DHCP_GATEWAY",
+                pingTarget2 = null,
+                pingTarget3 = null,
+                pingCount = 4,
+                runSpeedTest = false
             )
         )
     }
 
     @Provides
-    fun provideClientDao(db: AppDatabase) = db.clientDao()
+    fun provideClientDao(db: MikLinkDatabase) = db.clientDao()
 
     @Provides
-    fun provideProbeConfigDao(db: AppDatabase) = db.probeConfigDao()
+    fun provideProbeConfigDao(db: MikLinkDatabase) = db.probeConfigDao()
 
     @Provides
-    fun provideReportDao(db: AppDatabase) = db.reportDao()
+    fun provideTestReportDao(db: MikLinkDatabase) = db.testReportDao()
 
     @Provides
-    fun provideTestProfileDao(db: AppDatabase) = db.testProfileDao()
+    fun provideTestProfileDao(db: MikLinkDatabase) = db.testProfileDao()
 }

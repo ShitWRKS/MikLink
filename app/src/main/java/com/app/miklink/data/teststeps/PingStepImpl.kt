@@ -2,6 +2,7 @@ package com.app.miklink.data.teststeps
 
 import com.app.miklink.core.data.repository.test.MikroTikTestRepository
 import com.app.miklink.core.data.repository.test.PingTargetResolver
+import com.app.miklink.core.domain.test.model.PingMeasurement
 import com.app.miklink.core.domain.test.model.PingTargetOutcome
 import com.app.miklink.core.domain.test.model.StepResult
 import com.app.miklink.core.domain.test.model.TestError
@@ -18,11 +19,11 @@ class PingStepImpl @Inject constructor(
     private val mikrotikTestRepository: MikroTikTestRepository,
     private val pingTargetResolver: PingTargetResolver
 ) : PingStep {
-    override suspend fun run(context: TestExecutionContext): StepResult {
+    override suspend fun run(context: TestExecutionContext): StepResult<List<PingTargetOutcome>> {
         val pingTargets = listOfNotNull(
-            context.profile.pingTarget1,
-            context.profile.pingTarget2,
-            context.profile.pingTarget3
+            context.testProfile.pingTarget1,
+            context.testProfile.pingTarget2,
+            context.testProfile.pingTarget3
         ).filter { it.isNotBlank() }
 
         if (pingTargets.isEmpty()) {
@@ -38,7 +39,7 @@ class PingStepImpl @Inject constructor(
                 val resolvedTarget = pingTargetResolver.resolve(
                     probe = context.probeConfig,
                     client = context.client,
-                    profile = context.profile,
+                    profile = context.testProfile,
                     input = target
                 )
 
@@ -60,8 +61,9 @@ class PingStepImpl @Inject constructor(
                     probe = context.probeConfig,
                     target = resolvedTarget,
                     interfaceName = context.probeConfig.testInterface,
-                    count = context.profile.pingCount
+                    count = context.testProfile.pingCount
                 )
+                val measurements = pingResults.map { it.toMeasurement() }
 
                 // Verifica packet loss per determinare se questo target ha avuto successo
                 val lastResult = pingResults.lastOrNull()
@@ -75,7 +77,7 @@ class PingStepImpl @Inject constructor(
                         target = target,
                         resolved = resolvedTarget,
                         packetLoss = packetLoss,
-                        results = pingResults,
+                        results = measurements,
                         error = null
                     )
                 )
@@ -100,4 +102,20 @@ class PingStepImpl @Inject constructor(
             else -> StepResult.Failed(TestError.NetworkError("Alcuni ping sono falliti"))
         }
     }
+}
+
+private fun com.app.miklink.core.data.remote.mikrotik.dto.PingResult.toMeasurement(): PingMeasurement {
+    return PingMeasurement(
+        host = host,
+        minRtt = minRtt,
+        avgRtt = avgRtt,
+        maxRtt = maxRtt,
+        packetLoss = packetLoss,
+        sent = sent,
+        received = received,
+        seq = seq,
+        time = time,
+        ttl = ttl,
+        size = size
+    )
 }

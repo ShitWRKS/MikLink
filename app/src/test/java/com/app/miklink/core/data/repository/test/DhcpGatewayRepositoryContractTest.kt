@@ -1,6 +1,6 @@
 package com.app.miklink.core.data.repository.test
 
-import com.app.miklink.core.data.local.room.v1.model.ProbeConfig
+import com.app.miklink.core.domain.model.ProbeConfig
 import com.app.miklink.core.data.remote.mikrotik.dto.DhcpClientStatus
 import com.app.miklink.core.data.remote.mikrotik.service.MikroTikApiService
 import com.app.miklink.core.data.remote.mikrotik.service.MikroTikServiceProvider
@@ -22,7 +22,6 @@ class DhcpGatewayRepositoryContractTest {
     private val repository: DhcpGatewayRepository = DhcpGatewayRepositoryImpl(mockServiceProvider)
 
     private val testProbe = ProbeConfig(
-        probeId = 1,
         ipAddress = "192.168.1.1",
         username = "admin",
         password = "password",

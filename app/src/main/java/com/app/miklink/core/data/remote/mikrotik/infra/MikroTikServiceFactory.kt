@@ -1,6 +1,6 @@
 package com.app.miklink.core.data.remote.mikrotik.infra
 
-import com.app.miklink.core.data.local.room.v1.model.ProbeConfig
+import com.app.miklink.core.domain.model.ProbeConfig
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import javax.inject.Inject

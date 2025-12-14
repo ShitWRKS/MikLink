@@ -4,31 +4,31 @@ package com.app.miklink.ui.history
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.app.miklink.core.data.local.room.v1.dao.ClientDao
-import com.app.miklink.core.data.local.room.v1.dao.ReportDao
-import com.app.miklink.core.data.local.room.v1.dao.TestProfileDao
-import com.app.miklink.core.data.local.room.v1.model.Report
-import com.app.miklink.core.data.local.room.v1.model.TestProfile
+import com.app.miklink.core.data.repository.client.ClientRepository
+import com.app.miklink.core.data.repository.report.ReportRepository
+import com.app.miklink.core.data.repository.test.TestProfileRepository
+import com.app.miklink.core.domain.model.TestReport
+import com.app.miklink.core.domain.model.TestProfile
+import com.app.miklink.core.domain.model.report.ReportData
+import com.app.miklink.core.data.repository.preferences.UserPreferencesRepository
 
 import com.app.miklink.core.data.pdf.PdfGenerator
 import com.app.miklink.core.data.pdf.PdfExportConfig
-import com.app.miklink.ui.history.model.ParsedResults
-import com.squareup.moshi.Moshi
+import com.app.miklink.core.domain.usecase.report.ParseReportResultsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.flow.firstOrNull
 import javax.inject.Inject
 
 @HiltViewModel
 class ReportDetailViewModel @Inject constructor(
-    private val reportDao: ReportDao,
-    private val clientDao: ClientDao,
-    private val profileDao: TestProfileDao,
+    private val reportRepository: ReportRepository,
+    private val clientRepository: ClientRepository,
+    private val profileRepository: TestProfileRepository,
 
     private val pdfGenerator: PdfGenerator,
-    private val moshi: Moshi,
-    private val userPreferencesRepository: com.app.miklink.data.repository.UserPreferencesRepository,
+    private val parseReportResults: ParseReportResultsUseCase,
+    private val userPreferencesRepository: UserPreferencesRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel(), ReportDetailScreenStateProvider {
 
@@ -46,14 +46,15 @@ class ReportDetailViewModel @Inject constructor(
 
     private val reportId: Long = savedStateHandle.get<Long>("reportId") ?: -1L
 
-    override val report: StateFlow<Report?> = reportDao.getReportById(reportId)
+    override val report: StateFlow<TestReport?> = reportRepository.observeAllReports()
+        .map { reports -> reports.find { it.reportId == reportId } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     override val socketName = MutableStateFlow("")
     override val notes = MutableStateFlow("")
 
-    private val _parsedResults = MutableStateFlow<ParsedResults?>(null)
-    override val parsedResults: StateFlow<ParsedResults?> = _parsedResults.asStateFlow()
+    private val _parsedResults = MutableStateFlow<ReportData?>(null)
+    override val parsedResults: StateFlow<ReportData?> = _parsedResults.asStateFlow()
 
     private val _clientName = MutableStateFlow("")
     val clientName: StateFlow<String> = _clientName.asStateFlow()
@@ -70,11 +71,11 @@ class ReportDetailViewModel @Inject constructor(
                 if (currentReport != null) {
                     socketName.value = currentReport.socketName ?: ""
                     notes.value = currentReport.notes ?: ""
-                    _parsedResults.value = parseResults(currentReport.resultsJson)
+                    _parsedResults.value = parseReportResults(currentReport.resultsJson).getOrNull()
                     
                     // Load client name
                     currentReport.clientId?.let { clientId ->
-                        val client = clientDao.getClientById(clientId).firstOrNull()
+                        val client = clientRepository.getClient(clientId)
                         _clientName.value = client?.companyName ?: "Unknown Client"
                     } ?: run {
                         _clientName.value = "Unknown Client"
@@ -82,7 +83,7 @@ class ReportDetailViewModel @Inject constructor(
                     
                     // Load profile
                     currentReport.profileName?.let { profileName ->
-                        _profile.value = profileDao.getProfileByName(profileName).firstOrNull()
+                        _profile.value = profileRepository.observeAllProfiles().firstOrNull()?.find { it.profileName == profileName }
                     } ?: run {
                         _profile.value = null
                     }
@@ -95,7 +96,7 @@ class ReportDetailViewModel @Inject constructor(
         viewModelScope.launch {
             report.value?.let {
                 val updatedReport = it.copy(socketName = socketName.value, notes = notes.value)
-                reportDao.update(updatedReport)
+                reportRepository.saveReport(updatedReport)
             }
         }
     }
@@ -104,7 +105,7 @@ class ReportDetailViewModel @Inject constructor(
 
     suspend fun getProposedFilename(): String {
         val currentReport = report.value ?: return "MikLink_Report"
-        val client = currentReport.clientId?.let { id -> clientDao.getClientById(id).firstOrNull() }
+        val client = currentReport.clientId?.let { id -> clientRepository.getClient(id) }
         val clientName = client?.companyName?.replace(" ", "_") ?: "Client"
         val date = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.getDefault()).format(java.util.Date(currentReport.timestamp))
         return "${clientName}-${date}-${currentReport.reportId}"
@@ -113,7 +114,7 @@ class ReportDetailViewModel @Inject constructor(
     // Generate PDF File for single test using iText with Config
     suspend fun generatePdfWithIText(config: PdfExportConfig): java.io.File? {
         val currentReport = report.value ?: return null
-        val client = currentReport.clientId?.let { it -> clientDao.getClientById(it).firstOrNull() }
+        val client = currentReport.clientId?.let { it -> clientRepository.getClient(it) }
         
         return try {
             pdfGenerator.generatePdfReport(
@@ -134,11 +135,4 @@ class ReportDetailViewModel @Inject constructor(
         _pdfStatus.value = ""
     }
 
-    private fun parseResults(json: String): ParsedResults? {
-        return try {
-            moshi.adapter(ParsedResults::class.java).fromJson(json)
-        } catch (e: Exception) {
-            null
-        }
-    }
 }

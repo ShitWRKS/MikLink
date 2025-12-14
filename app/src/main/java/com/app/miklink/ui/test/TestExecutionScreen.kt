@@ -29,7 +29,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
-import com.app.miklink.core.data.local.room.v1.model.Report
+import com.app.miklink.core.domain.model.TestReport
 import com.app.miklink.ui.test.TestSectionCategory.*
 import com.app.miklink.ui.test.TestSectionType.*
 import com.app.miklink.utils.UiState
@@ -100,7 +100,7 @@ fun TestExecutionScreen(
                                 Text("Pronto per il Test")
                             }
                             is UiState.Success -> {
-                                val report = (uiState as UiState.Success<Report>).data
+                                val report = (uiState as UiState.Success<TestReport>).data
                                 if (report.overallStatus == "PASS") {
                                     Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF4CAF50))
                                     Spacer(Modifier.width(8.dp))
@@ -124,7 +124,7 @@ fun TestExecutionScreen(
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = when {
                         isRunning -> MaterialTheme.colorScheme.primaryContainer
-                        uiState is UiState.Success && (uiState as UiState.Success<Report>).data.overallStatus == "PASS" -> Color(0xFF4CAF50).copy(alpha = 0.2f)
+                        uiState is UiState.Success && (uiState as UiState.Success<TestReport>).data.overallStatus == "PASS" -> Color(0xFF4CAF50).copy(alpha = 0.2f)
                         uiState is UiState.Success -> Color(0xFFF44336).copy(alpha = 0.2f)
                         uiState is UiState.Error -> MaterialTheme.colorScheme.errorContainer
                         uiState is UiState.Idle -> MaterialTheme.colorScheme.surface
@@ -135,7 +135,7 @@ fun TestExecutionScreen(
         },
         bottomBar = {
             if (uiState is UiState.Success) {
-                val report = (uiState as UiState.Success<Report>).data
+                val report = (uiState as UiState.Success<TestReport>).data
                 val isFailed = report.overallStatus != "PASS"
                 BottomAppBar(
                     containerColor = MaterialTheme.colorScheme.surfaceContainer
@@ -574,7 +574,7 @@ private fun TestSectionDetails(section: TestSection) {
 
 @Composable
 fun TestCompletedView(
-    report: Report,
+    report: TestReport,
     sections: List<TestSection>,
     log: List<String>,
     showRawLog: Boolean,

@@ -1,7 +1,7 @@
 package com.app.miklink.core.data.repository.probe
 
 import android.content.Context
-import com.app.miklink.core.data.local.room.v1.model.ProbeConfig
+import com.app.miklink.core.domain.model.ProbeConfig
 import com.app.miklink.core.data.remote.mikrotik.dto.EthernetInterface
 import com.app.miklink.core.data.remote.mikrotik.dto.ProplistRequest
 import com.app.miklink.core.data.remote.mikrotik.dto.SystemResource
@@ -12,6 +12,7 @@ import com.app.miklink.data.repositoryimpl.mikrotik.ProbeConnectivityRepositoryI
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.*
 import org.junit.Test
@@ -32,7 +33,6 @@ class ProbeConnectivityRepositoryContractTest {
     )
 
     private val testProbe = ProbeConfig(
-        probeId = 1,
         ipAddress = "192.168.1.1",
         username = "admin",
         password = "password",
@@ -45,6 +45,9 @@ class ProbeConnectivityRepositoryContractTest {
 
     @Test
     fun `checkProbeConnection returns Success with boardName and interfaces`() = runTest {
+        mockkStatic("android.util.Log")
+        every { android.util.Log.d(any(), any()) } returns 0
+        every { android.util.Log.e(any(), any(), any()) } returns 0
         // Given: Connessione riuscita
         every { mockServiceProvider.build(testProbe) } returns mockApiService
         coEvery { mockApiService.getSystemResource(any<ProplistRequest>()) } returns listOf(
@@ -69,6 +72,9 @@ class ProbeConnectivityRepositoryContractTest {
 
     @Test
     fun `checkProbeConnection returns Error when connection fails`() = runTest {
+        mockkStatic("android.util.Log")
+        every { android.util.Log.d(any(), any()) } returns 0
+        every { android.util.Log.e(any(), any(), any()) } returns 0
         // Given: Connessione fallita
         every { mockServiceProvider.build(testProbe) } returns mockApiService
         coEvery { mockApiService.getSystemResource(any<ProplistRequest>()) } throws HttpException(
@@ -87,6 +93,9 @@ class ProbeConnectivityRepositoryContractTest {
 
     @Test
     fun `checkProbeConnection returns Success with Unknown Board when boardName is missing`() = runTest {
+        mockkStatic("android.util.Log")
+        every { android.util.Log.d(any(), any()) } returns 0
+        every { android.util.Log.e(any(), any(), any()) } returns 0
         // Given: Risposta API senza board-name
         every { mockServiceProvider.build(testProbe) } returns mockApiService
         coEvery { mockApiService.getSystemResource(any<ProplistRequest>()) } returns emptyList()

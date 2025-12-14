@@ -1,16 +1,18 @@
 package com.app.miklink.core.domain.usecase.test
 
-import com.app.miklink.core.data.local.room.v1.model.Client
-import com.app.miklink.core.data.local.room.v1.model.ProbeConfig
-import com.app.miklink.core.data.local.room.v1.model.TestProfile
-import com.app.miklink.core.data.remote.mikrotik.dto.CableTestResult
-import com.app.miklink.core.data.remote.mikrotik.dto.MonitorResponse
-import com.app.miklink.core.data.remote.mikrotik.dto.NeighborDetail
-import com.app.miklink.core.data.remote.mikrotik.dto.SpeedTestResult
+import com.app.miklink.core.domain.model.Client
+import com.app.miklink.core.domain.model.NetworkMode
+import com.app.miklink.core.domain.model.ProbeConfig
+import com.app.miklink.core.domain.model.TestProfile
+import com.app.miklink.core.domain.model.report.LinkStatusData
+import com.app.miklink.core.domain.model.report.NeighborData
+import com.app.miklink.core.domain.model.report.SpeedTestData
 import com.app.miklink.core.data.repository.NetworkConfigFeedback
 import com.app.miklink.core.data.repository.client.ClientRepository
 import com.app.miklink.core.data.repository.probe.ProbeRepository
 import com.app.miklink.core.data.repository.test.TestProfileRepository
+import com.app.miklink.core.domain.test.model.CableTestSummary
+import com.app.miklink.core.domain.test.model.PingMeasurement
 import com.app.miklink.core.domain.test.model.PingTargetOutcome
 import com.app.miklink.core.domain.test.model.StepResult
 import com.app.miklink.core.domain.test.model.TestEvent
@@ -21,9 +23,9 @@ import com.app.miklink.core.domain.test.step.NetworkConfigStep
 import com.app.miklink.core.domain.test.step.NeighborDiscoveryStep
 import com.app.miklink.core.domain.test.step.PingStep
 import com.app.miklink.core.domain.test.step.SpeedTestStep
-import com.squareup.moshi.Moshi
-import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import com.app.miklink.core.data.report.ReportResultsCodec
 import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
@@ -37,12 +39,10 @@ class RunTestUseCaseImplTest {
     private val probeRepository: ProbeRepository = mockk()
     private val profileRepository: TestProfileRepository = mockk()
 
-    private val moshi = Moshi.Builder()
-        .add(KotlinJsonAdapterFactory())
-        .build()
+    private val reportResultsCodec: ReportResultsCodec = mockk()
 
     private val networkStep = object : NetworkConfigStep {
-        override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult {
+        override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<NetworkConfigFeedback> {
             return StepResult.Success(
                 NetworkConfigFeedback(
                     mode = "dhcp",
@@ -57,25 +57,24 @@ class RunTestUseCaseImplTest {
     }
 
     private val linkStatusStep = object : LinkStatusStep {
-        override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult {
-            return StepResult.Success(MonitorResponse(status = "up", rate = "1G"))
+        override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<LinkStatusData> {
+            return StepResult.Success(LinkStatusData(status = "up", rate = "1G"))
         }
     }
 
     private val cableTestStep = object : CableTestStep {
-        override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult {
-            return StepResult.Success(CableTestResult(cablePairs = emptyList(), status = "ok"))
+        override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<CableTestSummary> {
+            return StepResult.Success(CableTestSummary(status = "ok", entries = emptyList()))
         }
     }
 
     private val neighborStep = object : NeighborDiscoveryStep {
-        override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult {
+        override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<List<NeighborData>> {
             return StepResult.Success(
                 listOf(
-                    NeighborDetail(
+                    NeighborData(
                         identity = "Switch-1",
                         interfaceName = "ether1",
-                        systemCaps = null,
                         discoveredBy = "LLDP",
                         vlanId = null,
                         voiceVlanId = null,
@@ -89,14 +88,14 @@ class RunTestUseCaseImplTest {
     }
 
     private val pingStep = object : PingStep {
-        override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult {
+        override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<List<PingTargetOutcome>> {
             return StepResult.Success(
                 listOf(
                     PingTargetOutcome(
                         target = "8.8.8.8",
                         resolved = "8.8.8.8",
                         packetLoss = "0",
-                        results = emptyList(),
+                        results = emptyList<PingMeasurement>(),
                         error = null
                     )
                 )
@@ -105,9 +104,9 @@ class RunTestUseCaseImplTest {
     }
 
     private val speedTestStep = object : SpeedTestStep {
-        override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult {
+        override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<SpeedTestData> {
             return StepResult.Success(
-                SpeedTestResult(
+                SpeedTestData(
                     status = "ok",
                     ping = "1/2/3",
                     jitter = "1/2/3",
@@ -116,7 +115,8 @@ class RunTestUseCaseImplTest {
                     tcpUpload = "900",
                     udpDownload = "800",
                     udpUpload = "800",
-                    warning = null
+                    warning = null,
+                    serverAddress = null
                 )
             )
         }
@@ -132,7 +132,7 @@ class RunTestUseCaseImplTest {
         neighborDiscoveryStep = neighborStep,
         pingStep = pingStep,
         speedTestStep = speedTestStep,
-        moshi = moshi
+        reportResultsCodec = reportResultsCodec
     )
 
     @Test
@@ -142,7 +142,7 @@ class RunTestUseCaseImplTest {
             companyName = "Acme",
             location = "HQ",
             notes = null,
-            networkMode = "dhcp",
+            networkMode = NetworkMode.DHCP,
             staticIp = null,
             staticSubnet = null,
             staticGateway = null,
@@ -153,14 +153,11 @@ class RunTestUseCaseImplTest {
             socketSeparator = "",
             socketNumberPadding = 3,
             nextIdNumber = 1,
-            lastFloor = null,
-            lastRoom = null,
             speedTestServerAddress = "speed.example.com",
             speedTestServerUser = null,
             speedTestServerPassword = null
         )
         val probe = ProbeConfig(
-            probeId = 1,
             ipAddress = "10.0.0.10",
             username = "admin",
             password = "admin",
@@ -186,12 +183,12 @@ class RunTestUseCaseImplTest {
         )
 
         coEvery { clientRepository.getClient(1) } returns client
-        coEvery { probeRepository.getProbe(1) } returns probe
+        coEvery { probeRepository.getProbeConfig() } returns probe
         coEvery { profileRepository.getProfile(1) } returns profile
+        every { reportResultsCodec.encode(any()) } returns Result.success("{}")
 
         val plan = TestPlan(
             clientId = 1,
-            probeId = 1,
             profileId = 1,
             socketId = "A1",
             notes = null
@@ -202,8 +199,9 @@ class RunTestUseCaseImplTest {
         assertTrue("Expected live sections updates", sectionsUpdates.isNotEmpty())
 
         val expectedOrder = listOf("NETWORK", "LINK", "TDR", "LLDP", "PING", "SPEED")
-        sectionsUpdates.forEach { update ->
-            assertEquals(expectedOrder, update.sections.map { it.type })
+        val actualOrder = sectionsUpdates.first().sections.map { it.type }
+        if (expectedOrder != actualOrder) {
+            org.junit.Assert.fail("expected: $expectedOrder actual: $actualOrder")
         }
 
         val firstStatuses = sectionsUpdates.first().sections.map { it.status }
@@ -217,7 +215,19 @@ class RunTestUseCaseImplTest {
         assertStatusProgression(sectionsUpdates, "SPEED")
 
         val completedIndex = events.indexOfFirst { it is TestEvent.Completed }
-        assertTrue("Completed event should be emitted", completedIndex >= 0)
+        if (completedIndex < 0) {
+            val eventsDesc = events.map { ev ->
+                when (ev) {
+                    is TestEvent.LogLine -> "LogLine"
+                    is TestEvent.Progress -> "Progress"
+                    is TestEvent.SectionsUpdated -> "SectionsUpdated(${ev.sections.map { it.type }})"
+                    is TestEvent.Failed -> "Failed(${ev.error.message})"
+                    is TestEvent.Completed -> "Completed"
+                    else -> ev.toString()
+                }
+            }
+            org.junit.Assert.fail("Completed event should be emitted; events: $eventsDesc")
+        }
         assertTrue(
             "SectionsUpdated must appear before Completed",
             events.subList(0, completedIndex).any { it is TestEvent.SectionsUpdated }

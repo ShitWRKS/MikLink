@@ -1,7 +1,7 @@
 package com.app.miklink.core.data.repository.test
 
-import com.app.miklink.core.data.local.room.v1.model.Client
-import com.app.miklink.core.data.local.room.v1.model.ProbeConfig
+import com.app.miklink.core.domain.model.Client
+import com.app.miklink.core.domain.model.ProbeConfig
 import com.app.miklink.core.data.repository.NetworkConfigFeedback
 
 /**

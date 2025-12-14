@@ -27,8 +27,9 @@ import androidx.compose.runtime.*
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.ui.res.stringResource
 import com.app.miklink.R
-import com.app.miklink.data.repository.IdNumberingStrategy
-import com.app.miklink.data.repository.ThemeConfig
+import com.app.miklink.core.domain.model.preferences.CustomPalette
+import com.app.miklink.core.domain.model.preferences.IdNumberingStrategy
+import com.app.miklink.core.domain.model.preferences.ThemeConfig
 import com.app.miklink.ui.theme.isLightChain
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -544,7 +545,7 @@ fun InfoRow(label: String, value: String) {
 @Composable
 fun ThemeSelectionDialog(
     currentConfig: ThemeConfig,
-    currentPalette: com.app.miklink.data.repository.UserPreferencesRepository.CustomPalette,
+    currentPalette: CustomPalette,
     onDismiss: () -> Unit,
     onSave: (ThemeConfig, Int?, Int?, Int?, Int?) -> Unit
 ) {

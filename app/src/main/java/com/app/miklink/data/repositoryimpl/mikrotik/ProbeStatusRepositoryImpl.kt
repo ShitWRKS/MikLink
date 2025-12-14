@@ -1,12 +1,12 @@
 package com.app.miklink.data.repositoryimpl.mikrotik
 
-import com.app.miklink.core.data.local.room.v1.dao.ProbeConfigDao
-import com.app.miklink.core.data.local.room.v1.model.ProbeConfig
+import com.app.miklink.core.data.repository.probe.ProbeRepository
+import com.app.miklink.core.domain.model.ProbeConfig
 import com.app.miklink.core.data.remote.mikrotik.dto.ProplistRequest
 import com.app.miklink.core.data.remote.mikrotik.service.MikroTikServiceProvider
 import com.app.miklink.core.data.repository.ProbeStatusInfo
 import com.app.miklink.core.data.repository.probe.ProbeStatusRepository
-import com.app.miklink.data.repository.UserPreferencesRepository
+import com.app.miklink.core.data.repository.preferences.UserPreferencesRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
@@ -22,7 +22,7 @@ import javax.inject.Inject
  */
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class ProbeStatusRepositoryImpl @Inject constructor(
-    private val probeConfigDao: ProbeConfigDao,
+    private val probeRepository: ProbeRepository,
     private val serviceProvider: MikroTikServiceProvider,
     private val userPreferencesRepository: UserPreferencesRepository
 ) : ProbeStatusRepository {
@@ -47,23 +47,21 @@ class ProbeStatusRepositoryImpl @Inject constructor(
             }
 
     override fun observeAllProbesWithStatus(): Flow<List<ProbeStatusInfo>> =
-        combine(probeConfigDao.getAllProbes(), userPreferencesRepository.probePollingInterval) { probes, interval ->
-            Pair(probes, interval)
-        }.flatMapLatest { (probes, interval) ->
-            if (probes.isEmpty()) return@flatMapLatest flowOf(emptyList())
+        combine(probeRepository.observeProbeConfig(), userPreferencesRepository.probePollingInterval) { probe, interval ->
+            probe to interval
+        }.flatMapLatest { (probe, interval) ->
+            if (probe == null) return@flatMapLatest flowOf(emptyList())
             tickerFlow(interval).map {
                 withContext(Dispatchers.IO) {
-                    probes.map { probe ->
-                        val isOnline = try {
-                            val api = serviceProvider.build(probe)
-                            val result = api.getSystemResource(ProplistRequest(listOf("board-name")))
-                            result.isNotEmpty()
-                        } catch (e: Exception) {
-                            android.util.Log.w("ProbeStatusRepository", "Sonda @ ${probe.ipAddress} offline: ${e.message}")
-                            false
-                        }
-                        ProbeStatusInfo(probe, isOnline)
+                    val isOnline = try {
+                        val api = serviceProvider.build(probe)
+                        val result = api.getSystemResource(ProplistRequest(listOf("board-name")))
+                        result.isNotEmpty()
+                    } catch (e: Exception) {
+                        android.util.Log.w("ProbeStatusRepository", "Sonda @ ${probe.ipAddress} offline: ${e.message}")
+                        false
                     }
+                    listOf(ProbeStatusInfo(probe, isOnline))
                 }
             }
         }

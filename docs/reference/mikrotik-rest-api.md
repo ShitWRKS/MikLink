@@ -55,4 +55,4 @@ Definiti in `core/data/remote/mikrotik/service/MikroTikApiService.kt`:
 ## Note importanti
 
 - Il parsing dei risultati usa **Moshi**.
-- La determinazione di TDR support dovrebbe essere “source of truth” nel dominio (`core/domain/tdr/TdrCapabilities`) con eventuale cache nel persistence model.
+- La determinazione di TDR support richiede una fonte di verità nel dominio: il vecchio placeholder `core/domain/tdr/TdrCapabilities` è stato rimosso nel Milestone 5 e verrà riprogettato in una futura epic prima di reintrodurre il supporto TDR.

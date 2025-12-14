@@ -1,8 +1,7 @@
 package com.app.miklink.data.repository
 
-import com.app.miklink.core.data.local.room.v1.AppDatabase
-import com.app.miklink.core.data.local.room.v1.dao.ProbeConfigDao
-import com.app.miklink.core.data.local.room.v1.dao.TestProfileDao
+import com.app.miklink.core.data.repository.probe.ProbeRepository
+import com.app.miklink.core.data.repository.test.TestProfileRepository
 import com.squareup.moshi.Moshi
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
@@ -16,16 +15,15 @@ interface BackupManager {
 
 @Singleton
 class BackupManagerImpl @Inject constructor(
-    private val db: AppDatabase,
-    private val probeConfigDao: ProbeConfigDao,
-    private val testProfileDao: TestProfileDao,
+    private val probeRepository: ProbeRepository,
+    private val testProfileRepository: TestProfileRepository,
     private val moshi: Moshi,
     private val txRunner: com.app.miklink.data.repository.TransactionRunner
 ) : BackupManager {
 
     override suspend fun exportConfigToJson(): String {
-        val probes = probeConfigDao.getAllProbes().first()
-        val profiles = testProfileDao.getAllProfiles().first()
+        val probes = listOfNotNull(probeRepository.getProbeConfig())
+        val profiles = testProfileRepository.observeAllProfiles().first()
         val backupData = com.app.miklink.data.repository.BackupData(probes = probes, profiles = profiles)
         val adapter = moshi.adapter(BackupData::class.java)
         return adapter.toJson(backupData)
@@ -54,10 +52,21 @@ class BackupManagerImpl @Inject constructor(
         // Run import inside transaction
         return try {
             txRunner.runInTransaction {
-                probeConfigDao.deleteAll()
-                testProfileDao.deleteAll()
-                probeConfigDao.insertAll(backupData.probes)
-                testProfileDao.insertAll(backupData.profiles)
+                // Delete all existing profiles (probes are singleton, so just save the first one)
+                // Delete all existing profiles
+                testProfileRepository.observeAllProfiles().first().forEach { profile ->
+                    testProfileRepository.deleteProfile(profile)
+                }
+
+                // Save the first probe (singleton pattern)
+                if (backupData.probes.isNotEmpty()) {
+                    probeRepository.saveProbeConfig(backupData.probes.first())
+                }
+                
+                // Insert all profiles
+                backupData.profiles.forEach { profile ->
+                    testProfileRepository.insertProfile(profile)
+                }
             }
             Result.success(Unit)
         } catch (e: Exception) {
@@ -67,10 +76,15 @@ class BackupManagerImpl @Inject constructor(
                 val originalBackup = adapter.fromJson(currentBackupJson)
                 if (originalBackup != null) {
                     txRunner.runInTransaction {
-                        probeConfigDao.deleteAll()
-                        testProfileDao.deleteAll()
-                        probeConfigDao.insertAll(originalBackup.probes)
-                        testProfileDao.insertAll(originalBackup.profiles)
+                        testProfileRepository.observeAllProfiles().first().forEach { profile ->
+                            testProfileRepository.deleteProfile(profile)
+                        }
+                        if (originalBackup.probes.isNotEmpty()) {
+                            probeRepository.saveProbeConfig(originalBackup.probes.first())
+                        }
+                        originalBackup.profiles.forEach { profile ->
+                            testProfileRepository.insertProfile(profile)
+                        }
                     }
                 }
             } catch (ex: Exception) {

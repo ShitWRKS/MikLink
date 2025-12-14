@@ -25,7 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
-import com.app.miklink.core.data.local.room.v1.model.Report
+import com.app.miklink.core.domain.model.TestReport
 import com.app.miklink.ui.history.model.ReportsByClient
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -65,10 +65,24 @@ fun HistoryScreen(
     
     // Repeat test confirmation
     var showRepeatDialog by remember { mutableStateOf(false) }
-    var pendingRepeatReport by remember { mutableStateOf<Report?>(null) }
+    var pendingRepeatReport by remember { mutableStateOf<TestReport?>(null) }
     
     // Single Report Export Dialog Context
-    var singleExportContext by remember { mutableStateOf<Pair<Report, String>?>(null) } // Report, ClientName
+    var singleExportContext by remember { mutableStateOf<Pair<TestReport, String>?>(null) } // Report, ClientName
+
+    val pdfReportTitle by viewModel.pdfReportTitle.collectAsStateWithLifecycle()
+    val pdfHideEmptyColumns by viewModel.pdfHideEmptyColumns.collectAsStateWithLifecycle()
+
+    val exportingClientMessage = stringResource(R.string.history_exporting_client)
+    val exportSuccessMessage = stringResource(R.string.history_export_success)
+    val noPdfAppMessage = stringResource(R.string.history_no_pdf_app)
+    val noFileGeneratedMessage = stringResource(R.string.history_no_file_generated)
+    val exportingSingleMessage = stringResource(R.string.history_exporting_single)
+    val pdfGeneratedMessage = stringResource(R.string.history_pdf_generated)
+    val noPdfViewerMessage = stringResource(R.string.history_no_pdf_viewer)
+    val pdfGenerationErrorMessage = stringResource(R.string.history_pdf_generation_error)
+    val repeatErrorMessage = stringResource(R.string.history_repeat_error)
+    val errorPrefixTemplate = stringResource(R.string.history_error_prefix, "%s")
 
     LaunchedEffect(pdfStatus) {
         if (pdfStatus.isNotBlank()) {
@@ -267,7 +281,7 @@ fun HistoryScreen(
                         },
                         onExportSingleReport = { report ->
                             val clientName = clientData.client?.companyName ?: "Report"
-                            singleExportContext = report to clientName
+                            singleExportContext = Pair(report, clientName)
                         },
                         viewModel = viewModel
                     )
@@ -302,14 +316,9 @@ fun HistoryScreen(
                 }
             )
         }
-        
-    val pdfReportTitle by viewModel.pdfReportTitle.collectAsStateWithLifecycle()
-    val pdfHideEmptyColumns by viewModel.pdfHideEmptyColumns.collectAsStateWithLifecycle()
 
-    // ... inside Scaffold ...
-        
-        // Export Configuration Dialog (Client Level)
-        showExportDialog?.let { clientData ->
+    // Export Configuration Dialog (Client Level)
+    showExportDialog?.let { clientData ->
             PdfExportDialog(
                 clientName = clientData.client?.companyName ?: "Report",
                 globalReportTitle = pdfReportTitle,
@@ -319,7 +328,7 @@ fun HistoryScreen(
                     showExportDialog = null
                     coroutineScope.launch {
                         try {
-                            snackbarHostState.showSnackbar(context.getString(R.string.history_exporting_client))
+                            snackbarHostState.showSnackbar(exportingClientMessage)
                             
                             val pdfFile = viewModel.generatePdfWithITextForClient(clientData, config)
                             
@@ -338,24 +347,26 @@ fun HistoryScreen(
                                 
                                 try {
                                     context.startActivity(intent)
-                                    snackbarHostState.showSnackbar(context.getString(R.string.history_export_success))
+                                    snackbarHostState.showSnackbar(exportSuccessMessage)
                                 } catch (e: android.content.ActivityNotFoundException) {
-                                    snackbarHostState.showSnackbar(context.getString(R.string.history_no_pdf_app))
+                                    snackbarHostState.showSnackbar(noPdfAppMessage)
                                 }
                             } else {
-                                snackbarHostState.showSnackbar(context.getString(R.string.history_no_file_generated))
+                                snackbarHostState.showSnackbar(noFileGeneratedMessage)
                             }
                         } catch (e: Exception) {
                             android.util.Log.e("HistoryPDF", "Export Error", e)
-                            snackbarHostState.showSnackbar(context.getString(R.string.history_error_prefix, e.message ?: ""))
+                            snackbarHostState.showSnackbar(
+                                String.format(Locale.getDefault(), errorPrefixTemplate, e.message ?: "")
+                            )
                         }
                     }
                 }
             )
         }
-        
-        // Export Configuration Dialog (Single Report)
-        singleExportContext?.let { (report, clientName) ->
+
+    // Export Configuration Dialog (Single Report)
+    singleExportContext?.let { (report, clientName) ->
             PdfExportDialog(
                 clientName = clientName,
                 onDismiss = { singleExportContext = null },
@@ -363,7 +374,7 @@ fun HistoryScreen(
                     singleExportContext = null
                     coroutineScope.launch {
                         try {
-                            snackbarHostState.showSnackbar(context.getString(R.string.history_exporting_single))
+                            snackbarHostState.showSnackbar(exportingSingleMessage)
                             val pdfFile = viewModel.generatePdfForSingleReport(report, config)
                             
                             if (pdfFile != null && pdfFile.exists() && pdfFile.length() > 0) {
@@ -379,16 +390,18 @@ fun HistoryScreen(
                                 }
                                 try {
                                     context.startActivity(intent)
-                                    snackbarHostState.showSnackbar(context.getString(R.string.history_pdf_generated))
+                                    snackbarHostState.showSnackbar(pdfGeneratedMessage)
                                 } catch (e: android.content.ActivityNotFoundException) {
-                                    snackbarHostState.showSnackbar(context.getString(R.string.history_no_pdf_viewer))
+                                    snackbarHostState.showSnackbar(noPdfViewerMessage)
                                 }
                             } else {
-                                snackbarHostState.showSnackbar(context.getString(R.string.history_pdf_generation_error))
+                                snackbarHostState.showSnackbar(pdfGenerationErrorMessage)
                             }
                         } catch (e: Exception) {
                              android.util.Log.e("HistoryPDF", "Error generating single PDF", e)
-                             snackbarHostState.showSnackbar(context.getString(R.string.history_error_prefix, e.message ?: ""))
+                             snackbarHostState.showSnackbar(
+                                 String.format(Locale.getDefault(), errorPrefixTemplate, e.message ?: "")
+                             )
                         }
                     }
                 }
@@ -498,9 +511,7 @@ fun HistoryScreen(
                                     if (route != null) {
                                         navController.navigate(route)
                                     } else {
-                                        snackbarHostState.showSnackbar(
-                                            context.getString(R.string.history_repeat_error)
-                                        )
+                                        snackbarHostState.showSnackbar(repeatErrorMessage)
                                     }
                                 }
                             }
@@ -532,9 +543,9 @@ fun ClientReportsCard(
     onToggleExpand: () -> Unit,
     onReportEdit: (Long) -> Unit,
     onReportDelete: (Long) -> Unit,
-    onReportRepeat: (Report) -> Unit,
+    onReportRepeat: (TestReport) -> Unit,
     onExportAll: () -> Unit,
-    onExportSingleReport: (Report) -> Unit = {},
+    onExportSingleReport: (TestReport) -> Unit = {},
     viewModel: HistoryViewModel
 ) {
     Card(
@@ -653,7 +664,7 @@ fun ClientReportsCard(
 
 @Composable
 fun ReportListItem(
-    report: Report,
+    report: TestReport,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     onRepeat: () -> Unit,

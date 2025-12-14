@@ -2,14 +2,15 @@ package com.app.miklink.ui.history
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.app.miklink.core.data.local.room.v1.dao.ClientDao
-import com.app.miklink.core.data.local.room.v1.dao.ProbeConfigDao
-import com.app.miklink.core.data.local.room.v1.dao.ReportDao
-import com.app.miklink.core.data.local.room.v1.dao.TestProfileDao
-import com.app.miklink.core.data.local.room.v1.model.Client
-import com.app.miklink.core.data.local.room.v1.model.Report
+import com.app.miklink.core.data.repository.client.ClientRepository
+import com.app.miklink.core.data.repository.probe.ProbeRepository
+import com.app.miklink.core.data.repository.report.ReportRepository
+import com.app.miklink.core.data.repository.test.TestProfileRepository
+import com.app.miklink.core.domain.model.Client
+import com.app.miklink.core.domain.model.TestReport
 import com.app.miklink.core.data.pdf.PdfGenerator
 import com.app.miklink.core.data.pdf.PdfExportConfig
+import com.app.miklink.core.data.repository.preferences.UserPreferencesRepository
 import com.app.miklink.ui.history.model.ReportsByClient
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -20,12 +21,12 @@ import kotlinx.coroutines.withContext
 
 @HiltViewModel
 class HistoryViewModel @Inject constructor(
-    private val reportDao: ReportDao,
-    private val clientDao: ClientDao,
+    private val reportRepository: ReportRepository,
+    private val clientRepository: ClientRepository,
     private val pdfGenerator: PdfGenerator,
-    private val probeDao: ProbeConfigDao,
-    private val profileDao: TestProfileDao,
-    private val userPreferencesRepository: com.app.miklink.data.repository.UserPreferencesRepository
+    private val probeRepository: ProbeRepository,
+    private val profileRepository: TestProfileRepository,
+    private val userPreferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
 
     val pdfIncludeEmptyTests = userPreferencesRepository.pdfIncludeEmptyTests
@@ -40,10 +41,10 @@ class HistoryViewModel @Inject constructor(
     val pdfHideEmptyColumns = userPreferencesRepository.pdfHideEmptyColumns
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
-    val reports: StateFlow<List<Report>> = reportDao.getAllReports()
+    val reports: StateFlow<List<TestReport>> = reportRepository.observeAllReports()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val clients: StateFlow<List<Client>> = clientDao.getAllClients()
+    val clients: StateFlow<List<Client>> = clientRepository.observeAllClients()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _reportsByClient = MutableStateFlow<List<ReportsByClient>>(emptyList())
@@ -63,8 +64,8 @@ class HistoryViewModel @Inject constructor(
         // Group reports by client with search and filter
         viewModelScope.launch {
             combine(
-                reportDao.getAllReports(),
-                clientDao.getAllClients(),
+                reportRepository.observeAllReports(),
+                clientRepository.observeAllClients(),
                 _searchQuery,
                 _filterStatus
             ) { reports, clients, query, status ->
@@ -112,8 +113,8 @@ class HistoryViewModel @Inject constructor(
     fun deleteReport(reportId: Long) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val report = reportDao.getReportByIdOnce(reportId)
-                report?.let { reportDao.delete(it) }
+                val report = reportRepository.getReport(reportId)
+                report?.let { reportRepository.deleteReport(it) }
             } catch (e: Exception) {
                 android.util.Log.e("HistoryViewModel", "Error deleting report", e)
             }
@@ -123,13 +124,13 @@ class HistoryViewModel @Inject constructor(
     fun duplicateReport(reportId: Long) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val original = reportDao.getReportByIdOnce(reportId)
+                val original = reportRepository.getReport(reportId)
                 original?.let {
                     val duplicate = it.copy(
                         reportId = 0,
                         timestamp = System.currentTimeMillis()
                     )
-                    reportDao.insert(duplicate)
+                    reportRepository.saveReport(duplicate)
                 }
             } catch (e: Exception) {
                 android.util.Log.e("HistoryViewModel", "Error duplicating report", e)
@@ -153,13 +154,11 @@ class HistoryViewModel @Inject constructor(
      * Generate PDF using iText 7 for a single report with custom config.
      */
     suspend fun generatePdfForSingleReport(
-        report: Report,
+        report: TestReport,
         config: PdfExportConfig
     ): java.io.File? {
         // Find client for this report
-        val client = report.clientId?.let { clientId ->
-            clientDao.getClientById(clientId).first()
-        }
+        val client = report.clientId?.let { clientId -> clientRepository.getClient(clientId) }
         
         return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             pdfGenerator.generatePdfReport(listOf(report), client, config)
@@ -179,19 +178,16 @@ class HistoryViewModel @Inject constructor(
      * Returns null if probe or profile cannot be found.
      * Note: ProbeConfig doesn't store a name, so we get the first available probe.
      */
-    suspend fun getRepeatTestRoute(report: Report): String? = withContext(Dispatchers.IO) {
+    suspend fun getRepeatTestRoute(report: TestReport): String? = withContext(Dispatchers.IO) {
         try {
-            // Get first available probe (since ProbeConfig doesn't have a name field)
-            val probe = probeDao.getAllProbes().first().firstOrNull()
-            
-            // Get profile ID by profileName
-            val profile = profileDao.getAllProfiles().first().firstOrNull {
+            val probe = probeRepository.observeProbeConfig().first()
+            val profile = profileRepository.observeAllProfiles().first().firstOrNull {
                 it.profileName == report.profileName
             }
             
             if (probe != null && profile != null && report.clientId != null) {
                 val encodedSocket = android.net.Uri.encode(report.socketName ?: "")
-                "test_execution/${report.clientId}/${probe.probeId}/${profile.profileId}/$encodedSocket"
+                "test_execution/${report.clientId}/${profile.profileId}/$encodedSocket"
             } else {
                 null
             }

@@ -1,6 +1,6 @@
 package com.app.miklink.core.data.repository
 
-import com.app.miklink.core.data.local.room.v1.model.ProbeConfig
+import com.app.miklink.core.domain.model.ProbeConfig
 
 /**
  * Data classes e sealed classes utilizzate dai repository per probe management.

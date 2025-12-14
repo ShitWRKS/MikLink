@@ -195,7 +195,7 @@ fun DashboardScreen(
                                         selectedProfile?.let { profile ->
                                             val encodedSocket = Uri.encode(socketName)
                                             navController.navigate(
-                                                "test_execution/${client.clientId}/${probe.probeId}/${profile.profileId}/$encodedSocket"
+                                                "test_execution/${client.clientId}/${profile.profileId}/$encodedSocket"
                                             )
                                         }
                                     }

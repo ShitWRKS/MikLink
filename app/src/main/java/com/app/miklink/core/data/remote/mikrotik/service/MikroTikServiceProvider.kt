@@ -1,6 +1,6 @@
 package com.app.miklink.core.data.remote.mikrotik.service
 
-import com.app.miklink.core.data.local.room.v1.model.ProbeConfig
+import com.app.miklink.core.domain.model.ProbeConfig
 
 /**
  * Provider per creare istanze di MikroTikApiService per un dato ProbeConfig.

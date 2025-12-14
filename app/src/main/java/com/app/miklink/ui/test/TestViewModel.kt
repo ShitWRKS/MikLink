@@ -4,7 +4,7 @@ import android.net.Uri
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.app.miklink.core.data.local.room.v1.model.Report
+import com.app.miklink.core.domain.model.TestReport
 import com.app.miklink.core.data.repository.report.ReportRepository
 import com.app.miklink.core.domain.test.model.TestEvent
 import com.app.miklink.core.domain.test.model.TestOutcome
@@ -31,8 +31,8 @@ class TestViewModel @Inject constructor(
     private val _log = MutableStateFlow<List<String>>(emptyList())
     val log: StateFlow<List<String>> = _log.asStateFlow()
 
-    private val _uiState = MutableStateFlow<UiState<Report>>(UiState.Idle)
-    val uiState: StateFlow<UiState<Report>> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow<UiState<TestReport>>(UiState.Idle)
+    val uiState: StateFlow<UiState<TestReport>> = _uiState.asStateFlow()
 
     private val _sections = MutableStateFlow<List<TestSection>>(emptyList())
     val sections: StateFlow<List<TestSection>> = _sections.asStateFlow()
@@ -67,7 +67,7 @@ class TestViewModel @Inject constructor(
         }
     }
 
-    fun saveReportToDb(report: Report) {
+    fun saveReportToDb(report: TestReport) {
         viewModelScope.launch {
             reportRepository.saveReport(report)
         }
@@ -89,7 +89,6 @@ class TestViewModel @Inject constructor(
 
     private fun buildPlan(): TestPlan? {
         val clientId = readId("clientId")
-        val probeId = readId("probeId")
         val profileId = readId("profileId")
         val socketNameRaw = savedStateHandle.get<String>("socketName") ?: ""
         val socketName = try {
@@ -98,8 +97,8 @@ class TestViewModel @Inject constructor(
             socketNameRaw
         }
 
-        if (clientId <= 0 || probeId <= 0 || profileId <= 0) {
-            val message = "Parametri di test non validi. client=$clientId probe=$probeId profile=$profileId"
+        if (clientId <= 0 || profileId <= 0) {
+            val message = "Parametri di test non validi. client=$clientId profile=$profileId"
             appendLog(message)
             _uiState.value = UiState.Error("Parametri di navigazione non validi.")
             return null
@@ -107,15 +106,15 @@ class TestViewModel @Inject constructor(
 
         return TestPlan(
             clientId = clientId,
-            probeId = probeId,
             profileId = profileId,
             socketId = socketName,
             notes = null
         )
     }
 
-    private fun buildReport(plan: TestPlan, outcome: TestOutcome): Report {
-        return Report(
+    private fun buildReport(plan: TestPlan, outcome: TestOutcome): TestReport {
+        return TestReport(
+            reportId = 0L,
             clientId = plan.clientId,
             timestamp = System.currentTimeMillis(),
             socketName = plan.socketId,
@@ -123,6 +122,7 @@ class TestViewModel @Inject constructor(
             probeName = null,
             profileName = null,
             overallStatus = outcome.overallStatus,
+            resultFormatVersion = 1,
             resultsJson = outcome.rawResultsJson ?: "{}"
         )
     }

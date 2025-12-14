@@ -146,14 +146,14 @@ fun ProbeListScreen(
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(probesWithStatus, key = { it.probe.probeId }) { probeInfo ->
+                items(probesWithStatus, key = { "probe_singleton" }) { probeInfo ->
                     AnimatedVisibility(
                         visible = true,
                         enter = fadeIn() + slideInVertically()
                     ) {
                         ProbeCard(
                             probeInfo = probeInfo,
-                            onClick = { navController.navigate("probe_edit/${probeInfo.probe.probeId}") }
+                            onClick = { navController.navigate("probe_edit") }
                         )
                     }
                 }

@@ -1,8 +1,9 @@
 package com.app.miklink.data.repositoryimpl
 
 import android.content.Context
-import com.app.miklink.core.data.local.room.v1.model.Client
-import com.app.miklink.core.data.local.room.v1.model.ProbeConfig
+import com.app.miklink.core.domain.model.Client
+import com.app.miklink.core.domain.model.ProbeConfig
+import com.app.miklink.core.domain.model.NetworkMode
 import com.app.miklink.core.data.remote.mikrotik.dto.*
 import com.app.miklink.core.data.remote.mikrotik.service.MikroTikServiceProvider
 import com.app.miklink.core.data.repository.NetworkConfigFeedback
@@ -42,7 +43,7 @@ class NetworkConfigRepositoryImpl @Inject constructor(
             }
         }
 
-        if (effective.networkMode.equals("DHCP", true)) {
+        if (effective.networkMode == NetworkMode.DHCP) {
             // DHCP: verifica se già configurato e bound, altrimenti configura
             val existingDhcp = api.getDhcpClientStatus(iface).firstOrNull()
 

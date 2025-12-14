@@ -1,7 +1,7 @@
 package com.app.miklink.data.repositoryimpl.mikrotik
 
 import android.content.Context
-import com.app.miklink.core.data.local.room.v1.model.ProbeConfig
+import com.app.miklink.core.domain.model.ProbeConfig
 import com.app.miklink.core.data.remote.mikrotik.service.MikroTikServiceProvider
 import com.app.miklink.core.data.repository.ProbeCheckResult
 import com.app.miklink.core.data.repository.probe.ProbeConnectivityRepository

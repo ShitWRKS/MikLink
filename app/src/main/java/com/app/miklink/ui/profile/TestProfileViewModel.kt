@@ -2,8 +2,8 @@ package com.app.miklink.ui.profile
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
-import com.app.miklink.core.data.local.room.v1.dao.TestProfileDao
-import com.app.miklink.core.data.local.room.v1.model.TestProfile
+import com.app.miklink.core.data.repository.test.TestProfileRepository
+import com.app.miklink.core.domain.model.TestProfile
 import com.app.miklink.ui.common.BaseEditViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -12,12 +12,12 @@ import javax.inject.Inject
 
 @HiltViewModel
 class TestProfileViewModel @Inject constructor(
-    private val testProfileDao: TestProfileDao,
+    private val testProfileRepository: TestProfileRepository,
     private val savedStateHandle: SavedStateHandle
 ) : BaseEditViewModel(savedStateHandle, "profileId") {
 
     // For the list screen
-    val profiles: StateFlow<List<TestProfile>> = testProfileDao.getAllProfiles()
+    val profiles: StateFlow<List<TestProfile>> = testProfileRepository.observeAllProfiles()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // --- For the edit screen ---
@@ -37,7 +37,7 @@ class TestProfileViewModel @Inject constructor(
     val runSpeedTest = MutableStateFlow(false)
 
     override suspend fun loadEntity(id: Long) {
-        testProfileDao.getProfileById(id).firstOrNull()?.let { profile ->
+        testProfileRepository.getProfile(id)?.let { profile ->
             profileName.value = profile.profileName
             profileDescription.value = profile.profileDescription ?: ""
             runTdr.value = profile.runTdr
@@ -70,13 +70,13 @@ class TestProfileViewModel @Inject constructor(
                 pingCount = pingCount.value.toIntOrNull()?.coerceIn(1, 20) ?: 4, // validation
                 runSpeedTest = runSpeedTest.value
             )
-            testProfileDao.insert(profile)
+            testProfileRepository.insertProfile(profile)
             markSaved()
         }
     }
 
     fun deleteProfile(profile: TestProfile) {
-        viewModelScope.launch { testProfileDao.delete(profile) }
+        viewModelScope.launch { testProfileRepository.deleteProfile(profile) }
     }
 
     fun fillLastAvailableTarget(value: String) {

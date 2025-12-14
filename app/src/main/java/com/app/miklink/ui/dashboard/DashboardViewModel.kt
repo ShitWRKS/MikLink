@@ -2,16 +2,17 @@ package com.app.miklink.ui.dashboard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.app.miklink.core.data.local.room.v1.dao.ClientDao
-import com.app.miklink.core.data.local.room.v1.dao.ReportDao
-import com.app.miklink.core.data.local.room.v1.dao.TestProfileDao
-import com.app.miklink.core.data.local.room.v1.dao.ProbeConfigDao
-import com.app.miklink.core.data.local.room.v1.model.Client
-import com.app.miklink.core.data.local.room.v1.model.ProbeConfig
-import com.app.miklink.core.data.local.room.v1.model.TestProfile
+import com.app.miklink.core.data.repository.client.ClientRepository
+import com.app.miklink.core.data.repository.report.ReportRepository
+import com.app.miklink.core.data.repository.test.TestProfileRepository
+import com.app.miklink.core.data.repository.probe.ProbeRepository
+import com.app.miklink.core.domain.model.Client
+import com.app.miklink.core.domain.model.ProbeConfig
+import com.app.miklink.core.domain.model.TestProfile
 import com.app.miklink.core.data.repository.probe.ProbeStatusRepository
-import com.app.miklink.data.repository.IdNumberingStrategy
-import com.app.miklink.data.repository.UserPreferencesRepository
+import com.app.miklink.core.data.repository.preferences.UserPreferencesRepository
+import com.app.miklink.core.domain.model.preferences.IdNumberingStrategy
+import com.app.miklink.core.domain.usecase.preferences.ObserveIdNumberingStrategyUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -21,23 +22,24 @@ import javax.inject.Inject
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
-    clientDao: ClientDao,
-    testProfileDao: TestProfileDao,
-    private val reportDao: ReportDao,
-    probeConfigDao: ProbeConfigDao,
+    clientRepository: ClientRepository,
+    testProfileRepository: TestProfileRepository,
+    private val reportRepository: ReportRepository,
+    probeRepository: ProbeRepository,
     private val probeStatusRepository: ProbeStatusRepository,
-    private val userPreferencesRepository: UserPreferencesRepository
+    private val userPreferencesRepository: UserPreferencesRepository,
+    observeIdNumberingStrategyUseCase: ObserveIdNumberingStrategyUseCase
 ) : ViewModel() {
 
     // Data sources
-    val clients: StateFlow<List<Client>> = clientDao.getAllClients()
+    val clients: StateFlow<List<Client>> = clientRepository.observeAllClients()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    // MODIFICATO: sonda unica invece di lista
-    val currentProbe: StateFlow<ProbeConfig?> = probeConfigDao.getSingleProbe()
+    // Sonda unica (singleton)
+    val currentProbe: StateFlow<ProbeConfig?> = probeRepository.observeProbeConfig()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
-    val profiles: StateFlow<List<TestProfile>> = testProfileDao.getAllProfiles()
+    val profiles: StateFlow<List<TestProfile>> = testProfileRepository.observeAllProfiles()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // User selections
@@ -59,7 +61,7 @@ class DashboardViewModel @Inject constructor(
     )
 
     // Osserva la strategia di numerazione ID
-    private val idNumberingStrategy = userPreferencesRepository.idNumberingStrategy
+    private val idNumberingStrategy = observeIdNumberingStrategyUseCase()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), IdNumberingStrategy.CONTINUOUS_INCREMENT)
 
     val dashboardGlowIntensity = userPreferencesRepository.dashboardGlowIntensity
@@ -98,7 +100,7 @@ class DashboardViewModel @Inject constructor(
 
     // Funzione helper per trovare il primo ID disponibile (gap-filling)
     private suspend fun findNextAvailableId(client: Client): Int {
-        val existingReports = reportDao.getReportsForClient(client.clientId).firstOrNull() ?: emptyList()
+        val existingReports = reportRepository.observeReportsByClient(client.clientId).firstOrNull() ?: emptyList()
         
         // Estrai tutti i numeri ID esistenti
         val existingIds = existingReports.mapNotNull { report ->

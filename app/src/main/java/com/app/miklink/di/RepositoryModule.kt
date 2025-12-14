@@ -1,4 +1,4 @@
-package com.app.miklink.di
+﻿package com.app.miklink.di
 
 import com.app.miklink.data.repository.RouteManager
 import com.app.miklink.data.repository.RouteManagerImpl
@@ -6,22 +6,15 @@ import com.app.miklink.data.repository.BackupManager
 import com.app.miklink.data.repository.BackupManagerImpl
 import com.app.miklink.data.repository.TransactionRunner
 import com.app.miklink.data.repository.RoomTransactionRunner
-import com.app.miklink.core.data.local.room.v1.AppDatabase
-import com.app.miklink.core.data.local.room.v1.dao.ClientDao
-import com.app.miklink.core.data.local.room.v1.dao.ProbeConfigDao
-import com.app.miklink.core.data.local.room.v1.dao.ReportDao
-import com.app.miklink.core.data.local.room.v1.dao.TestProfileDao
+import com.app.miklink.data.local.room.MikLinkDatabase
 import dagger.Provides
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
-// removed duplicate import
-import com.app.miklink.domain.usecase.backup.ImportBackupUseCase
-import com.app.miklink.domain.usecase.backup.ImportBackupUseCaseImpl
-import com.app.miklink.core.data.io.FileReader
-import com.app.miklink.core.data.io.impl.ContentResolverFileReader
+import com.app.miklink.core.domain.usecase.backup.ImportBackupUseCase
+import com.app.miklink.core.domain.usecase.backup.ImportBackupUseCaseImpl
 import dagger.hilt.android.qualifiers.ApplicationContext
 import android.content.Context
 import com.app.miklink.core.data.repository.client.ClientRepository
@@ -39,13 +32,27 @@ import com.app.miklink.data.remote.mikrotik.MikroTikServiceProviderImpl
 import com.app.miklink.data.repositoryimpl.mikrotik.DhcpGatewayRepositoryImpl
 import com.app.miklink.data.repositoryimpl.mikrotik.ProbeStatusRepositoryImpl
 import com.app.miklink.data.repositoryimpl.mikrotik.ProbeConnectivityRepositoryImpl
-import com.app.miklink.data.repositoryimpl.roomv1.RoomV1ClientRepository
-import com.app.miklink.data.repositoryimpl.roomv1.RoomV1ProbeRepository
-import com.app.miklink.data.repositoryimpl.roomv1.RoomV1ReportRepository
-import com.app.miklink.data.repositoryimpl.roomv1.RoomV1TestProfileRepository
+import com.app.miklink.data.repositoryimpl.room.RoomClientRepository
+import com.app.miklink.data.repositoryimpl.room.RoomProbeRepository
+import com.app.miklink.data.repositoryimpl.room.RoomReportRepository
+import com.app.miklink.data.repositoryimpl.room.RoomTestProfileRepository
 import com.app.miklink.data.repositoryimpl.mikrotik.MikroTikTestRepositoryImpl
 import com.app.miklink.data.repositoryimpl.NetworkConfigRepositoryImpl
 import com.app.miklink.data.repositoryimpl.PingTargetResolverImpl
+import com.app.miklink.core.data.io.DocumentReader
+import com.app.miklink.core.data.io.DocumentWriter
+import com.app.miklink.data.io.AndroidDocumentReader
+import com.app.miklink.data.io.AndroidDocumentWriter
+import com.app.miklink.core.data.repository.preferences.UserPreferencesRepository
+import com.app.miklink.data.preferences.UserPreferencesRepositoryImpl
+import com.app.miklink.core.domain.usecase.preferences.ObserveThemeConfigUseCase
+import com.app.miklink.core.domain.usecase.preferences.ObserveThemeConfigUseCaseImpl
+import com.app.miklink.core.domain.usecase.preferences.SetThemeConfigUseCase
+import com.app.miklink.core.domain.usecase.preferences.SetThemeConfigUseCaseImpl
+import com.app.miklink.core.domain.usecase.preferences.ObserveIdNumberingStrategyUseCase
+import com.app.miklink.core.domain.usecase.preferences.ObserveIdNumberingStrategyUseCaseImpl
+import com.app.miklink.core.domain.usecase.preferences.SetIdNumberingStrategyUseCase
+import com.app.miklink.core.domain.usecase.preferences.SetIdNumberingStrategyUseCaseImpl
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -59,22 +66,34 @@ abstract class RepositoryModule {
     @Binds
     abstract fun bindImportBackupUseCase(impl: ImportBackupUseCaseImpl): ImportBackupUseCase
 
-    // S5: Repository bindings
+    @Binds
+    abstract fun bindObserveThemeConfigUseCase(impl: ObserveThemeConfigUseCaseImpl): ObserveThemeConfigUseCase
+
+    @Binds
+    abstract fun bindSetThemeConfigUseCase(impl: SetThemeConfigUseCaseImpl): SetThemeConfigUseCase
+
+    @Binds
+    abstract fun bindObserveIdNumberingStrategyUseCase(impl: ObserveIdNumberingStrategyUseCaseImpl): ObserveIdNumberingStrategyUseCase
+
+    @Binds
+    abstract fun bindSetIdNumberingStrategyUseCase(impl: SetIdNumberingStrategyUseCaseImpl): SetIdNumberingStrategyUseCase
+
+    // Repository bindings con nuove implementazioni Room
     @Binds
     @Singleton
-    abstract fun bindClientRepository(impl: RoomV1ClientRepository): ClientRepository
+    abstract fun bindClientRepository(impl: RoomClientRepository): ClientRepository
 
     @Binds
     @Singleton
-    abstract fun bindProbeRepository(impl: RoomV1ProbeRepository): ProbeRepository
+    abstract fun bindProbeRepository(impl: RoomProbeRepository): ProbeRepository
 
     @Binds
     @Singleton
-    abstract fun bindTestProfileRepository(impl: RoomV1TestProfileRepository): TestProfileRepository
+    abstract fun bindTestProfileRepository(impl: RoomTestProfileRepository): TestProfileRepository
 
     @Binds
     @Singleton
-    abstract fun bindReportRepository(impl: RoomV1ReportRepository): ReportRepository
+    abstract fun bindReportRepository(impl: RoomReportRepository): ReportRepository
 
     @Binds
     @Singleton
@@ -104,15 +123,25 @@ abstract class RepositoryModule {
     @Singleton
     abstract fun bindProbeConnectivityRepository(impl: ProbeConnectivityRepositoryImpl): ProbeConnectivityRepository
 
+    @Binds
+    @Singleton
+    abstract fun bindUserPreferencesRepository(impl: UserPreferencesRepositoryImpl): UserPreferencesRepository
+
     companion object {
         @Provides
-        fun provideTransactionRunner(db: AppDatabase): TransactionRunner = RoomTransactionRunner(db)
+        fun provideTransactionRunner(db: MikLinkDatabase): TransactionRunner = RoomTransactionRunner(db)
 
-        @Provides
-        fun provideContentResolverFileReader(@ApplicationContext context: Context): FileReader = ContentResolverFileReader(context)
-        
         @Provides
         @Singleton
         fun provideBackupRepositoryBridge(impl: com.app.miklink.data.repository.BackupRepository): com.app.miklink.core.data.repository.BackupRepository = impl
+
+        @Provides
+        @Singleton
+        fun provideDocumentReader(@ApplicationContext context: Context): DocumentReader = AndroidDocumentReader(context)
+
+        @Provides
+        @Singleton
+        fun provideDocumentWriter(@ApplicationContext context: Context): DocumentWriter = AndroidDocumentWriter(context)
     }
 }
+

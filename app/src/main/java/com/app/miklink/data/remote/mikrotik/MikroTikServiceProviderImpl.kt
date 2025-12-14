@@ -4,7 +4,7 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
-import com.app.miklink.core.data.local.room.v1.model.ProbeConfig
+import com.app.miklink.core.domain.model.ProbeConfig
 import com.app.miklink.core.data.remote.mikrotik.infra.MikroTikServiceFactory
 import com.app.miklink.core.data.remote.mikrotik.service.MikroTikApiService
 import com.app.miklink.core.data.remote.mikrotik.service.MikroTikServiceProvider

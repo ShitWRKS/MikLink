@@ -5,7 +5,7 @@ import androidx.compose.ui.test.*
 import androidx.navigation.compose.rememberNavController
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.app.miklink.R
-import com.app.miklink.core.data.local.room.v1.model.Report
+import com.app.miklink.core.domain.model.TestReport
 import com.app.miklink.ui.test.TestSection
 import com.app.miklink.ui.test.TestSectionCategory
 import com.app.miklink.ui.test.TestSectionType

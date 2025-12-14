@@ -1,8 +1,9 @@
 package com.app.miklink.core.data.repository.test
 
-import com.app.miklink.core.data.local.room.v1.model.Client
-import com.app.miklink.core.data.local.room.v1.model.ProbeConfig
-import com.app.miklink.core.data.local.room.v1.model.TestProfile
+import com.app.miklink.core.domain.model.Client
+import com.app.miklink.core.domain.model.ProbeConfig
+import com.app.miklink.core.domain.model.TestProfile
+import com.app.miklink.core.domain.model.NetworkMode
 import com.app.miklink.data.repositoryimpl.PingTargetResolverImpl
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -20,7 +21,6 @@ class PingTargetResolverContractTest {
     private val resolver: PingTargetResolver = PingTargetResolverImpl(mockDhcpGatewayRepository)
 
     private val testProbe = ProbeConfig(
-        probeId = 1,
         ipAddress = "192.168.1.1",
         username = "admin",
         password = "password",
@@ -34,12 +34,19 @@ class PingTargetResolverContractTest {
     private val testClient = Client(
         clientId = 1,
         companyName = "Test Client",
-        networkMode = "DHCP",
+        location = "Office",
+        notes = null,
+        networkMode = NetworkMode.DHCP,
         staticIp = null,
         staticSubnet = null,
         staticGateway = null,
         staticCidr = null,
-        notes = null,
+        minLinkRate = "0",
+        socketPrefix = "s",
+        socketSuffix = "",
+        socketSeparator = "-",
+        socketNumberPadding = 2,
+        nextIdNumber = 1,
         speedTestServerAddress = null,
         speedTestServerUser = null,
         speedTestServerPassword = null

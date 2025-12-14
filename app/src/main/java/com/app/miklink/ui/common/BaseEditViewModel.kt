@@ -13,10 +13,14 @@ import kotlinx.coroutines.launch
  */
 abstract class BaseEditViewModel(
     savedStateHandle: SavedStateHandle,
-    private val idKey: String = "id"
+    private val idKey: String? = "id"
 ) : ViewModel() {
 
-    protected val entityId: Long = savedStateHandle.get<Long>(idKey) ?: -1L
+    protected val entityId: Long = if (idKey == null) {
+        -1L
+    } else {
+        savedStateHandle.get<Long>(idKey) ?: -1L
+    }
     val isEditing: Boolean = entityId != -1L
 
     private val _isSaved = MutableStateFlow(false)

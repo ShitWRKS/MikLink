@@ -11,5 +11,4 @@ class BackupRepository @Inject constructor(
     // Implementations for the core bridge interface (delegate to manager)
     override suspend fun exportConfigToJson(): String = manager.exportConfigToJson()
     override suspend fun importConfigFromJson(json: String): Result<Unit> = manager.importConfigFromJson(json)
-    override suspend fun importBackupData(backupData: com.app.miklink.data.repository.BackupData): Result<Unit> = manager.importBackupData(backupData)
 }

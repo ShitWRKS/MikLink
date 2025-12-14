@@ -1,5 +1,6 @@
 # Database (baseline)
 
+<<<<<<< HEAD
 Questa pagina descrive lo **schema target** dopo il rebase distruttivo.
 
 ## Decisioni chiave
@@ -13,6 +14,20 @@ Questa pagina descrive lo **schema target** dopo il rebase distruttivo.
 ## Tabelle
 
 ### `clients`
+=======
+## Stato attuale (baseline Room v1)
+
+- Database: `com.app.miklink.data.local.room.MikLinkDatabase`
+- Nome file DB: `miklink`
+- Versione Room: `1`
+- Schema versionato: `app/schemas/com.app.miklink.data.local.room.MikLinkDatabase/1.json`
+
+La posizione dello schema resta definita nei Gradle args:
+
+- `room.schemaLocation = app/schemas` (annotation processor/KSP)
+
+> Nota 2025-12-13: tutte le cartelle legacy `AppDatabase` sono state rimosse dal repo; la sola fonte di verità è MikLinkDatabase.
+>>>>>>> aec31fe18138fb571fc1c1b9dd890bac55425d41
 
 - `clientId` (PK, Long, autoincrement)
 - `companyName` (String, required)
@@ -80,5 +95,26 @@ Per vincoli tecnici Room, esiste una PK interna **non esposta**:
 
 ## Note operative
 
+<<<<<<< HEAD
 - `tdrSupported` è una cache per UI/query: la decisione di “supportato/non supportato” è nel domain (`TdrCapabilities`).
 - Se in futuro serviranno analytics su metriche dei report, si farà una epic dedicata “Report Analytics” (no in baseline).
+=======
+## Guard rails
+
+- Task Gradle `guardLegacySchemas` (root build) fallisce se nel repo ricompaiono i vecchi identificatori Room v1 o l'AppDatabase legacy del modulo data.
+- CI/local scripts devono invocare `./gradlew guardLegacySchemas` quando si toccano schemi Room.
+
+## Rebaseline DB (decisione di progetto)
+
+Il progetto è in sviluppo e **non ci sono dati da preservare**: è accettabile rifare il DB “da zero” per:
+- rimuovere campi legacy (`probeId`, `lastFloor`, `lastRoom`, ecc.)
+- riallineare i layer (Room come infrastruttura in `data/**`)
+- semplificare migrazioni (ripartire da versione 1)
+
+**Importante:** prima di implementare la rebase dobbiamo fissare:
+1) quali dati devono esistere in v1 (Client / Profile / Probe config / Report / altro)
+2) quali relazioni e indici servono (query reali)
+3) quali campi sono “fonte di verità” vs “cache”
+
+Le discrepanze e scelte vanno tracciate in ADR e in `docs/DISCREPANCIES.md`.
+>>>>>>> aec31fe18138fb571fc1c1b9dd890bac55425d41

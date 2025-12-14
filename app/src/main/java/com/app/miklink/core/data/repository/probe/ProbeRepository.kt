@@ -1,11 +1,14 @@
 package com.app.miklink.core.data.repository.probe
 
-import com.app.miklink.core.data.local.room.v1.model.ProbeConfig
+import com.app.miklink.core.domain.model.ProbeConfig
+import kotlinx.coroutines.flow.Flow
 
 /**
- * Repository per accesso ai dati ProbeConfig.
+ * Repository per accesso ai dati ProbeConfig (singleton).
  */
 interface ProbeRepository {
-    suspend fun getProbe(id: Long): ProbeConfig?
+    fun observeProbeConfig(): Flow<ProbeConfig?>
+    suspend fun getProbeConfig(): ProbeConfig?
+    suspend fun saveProbeConfig(config: ProbeConfig)
 }
 

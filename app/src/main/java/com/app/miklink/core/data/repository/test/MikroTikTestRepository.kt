@@ -1,6 +1,6 @@
 package com.app.miklink.core.data.repository.test
 
-import com.app.miklink.core.data.local.room.v1.model.ProbeConfig
+import com.app.miklink.core.domain.model.ProbeConfig
 import com.app.miklink.core.data.remote.mikrotik.dto.CableTestResult
 import com.app.miklink.core.data.remote.mikrotik.dto.MonitorResponse
 import com.app.miklink.core.data.remote.mikrotik.dto.NeighborDetail

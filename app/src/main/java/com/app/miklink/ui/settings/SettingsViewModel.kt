@@ -1,22 +1,25 @@
-package com.app.miklink.ui.settings
+﻿package com.app.miklink.ui.settings
 
-import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.app.miklink.core.data.repository.BackupRepository
-import com.app.miklink.core.data.io.FileReader
-import com.app.miklink.domain.usecase.backup.ImportBackupUseCase
+import com.app.miklink.core.data.io.DocumentDestination
+import com.app.miklink.core.data.io.DocumentReader
+import com.app.miklink.core.domain.usecase.backup.ImportBackupUseCase
+import com.app.miklink.core.data.repository.preferences.UserPreferencesRepository
+import com.app.miklink.core.domain.model.preferences.CustomPalette
+import com.app.miklink.core.domain.model.preferences.IdNumberingStrategy
+import com.app.miklink.core.domain.model.preferences.ThemeConfig
+import com.app.miklink.core.domain.usecase.preferences.ObserveIdNumberingStrategyUseCase
+import com.app.miklink.core.domain.usecase.preferences.ObserveThemeConfigUseCase
+import com.app.miklink.core.domain.usecase.preferences.SetIdNumberingStrategyUseCase
+import com.app.miklink.core.domain.usecase.preferences.SetThemeConfigUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-
-import com.app.miklink.data.repository.IdNumberingStrategy
-import com.app.miklink.data.repository.ThemeConfig
-import com.app.miklink.data.repository.UserPreferencesRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 
@@ -25,14 +28,17 @@ class SettingsViewModel @Inject constructor(
     private val backupRepository: BackupRepository,
     private val importBackupUseCase: ImportBackupUseCase,
     private val userPreferencesRepository: UserPreferencesRepository,
-    private val fileReader: FileReader,
-    @ApplicationContext private val context: Context
+    private val observeThemeConfigUseCase: ObserveThemeConfigUseCase,
+    private val setThemeConfigUseCase: SetThemeConfigUseCase,
+    private val observeIdNumberingStrategyUseCase: ObserveIdNumberingStrategyUseCase,
+    private val setIdNumberingStrategyUseCase: SetIdNumberingStrategyUseCase,
+    private val documentReader: DocumentReader
 ) : ViewModel() {
 
     private val _backupStatus = MutableStateFlow("")
     val backupStatus = _backupStatus.asStateFlow()
 
-    val themeConfig = userPreferencesRepository.themeConfig
+    val themeConfig = observeThemeConfigUseCase()
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -43,10 +49,10 @@ class SettingsViewModel @Inject constructor(
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = UserPreferencesRepository.CustomPalette()
+            initialValue = CustomPalette()
         )
 
-    val idNumberingStrategy = userPreferencesRepository.idNumberingStrategy
+    val idNumberingStrategy = observeIdNumberingStrategyUseCase()
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -55,13 +61,13 @@ class SettingsViewModel @Inject constructor(
 
     fun updateTheme(config: ThemeConfig) {
         viewModelScope.launch {
-            userPreferencesRepository.setTheme(config)
+            setThemeConfigUseCase(config)
         }
     }
 
     fun updateIdNumberingStrategy(strategy: IdNumberingStrategy) {
         viewModelScope.launch {
-            userPreferencesRepository.setIdNumberingStrategy(strategy)
+            setIdNumberingStrategyUseCase(strategy)
         }
     }
 
@@ -157,22 +163,26 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { importConfigSuspend(uri) }
     }
 
-    // Made suspend for better testability — tests can call this directly instead of relying on viewModelScope
+    // Made suspend for better testability â€” tests can call this directly instead of relying on viewModelScope
     suspend fun importConfigSuspend(uri: Uri) {
-        try {
-            val json = fileReader.read(uri)
-            if (!json.isNullOrBlank()) {
-                val result = importBackupUseCase.execute(json)
-                if (result.isSuccess) {
-                    _backupStatus.value = "Configuration restored successfully."
-                } else {
-                    _backupStatus.value = "Error restoring configuration: ${result.exceptionOrNull()?.message}"
-                }
-            } else {
-                _backupStatus.value = "Error: Selected file is empty."
-            }
-        } catch (e: Exception) {
-            _backupStatus.value = "Error restoring configuration: ${e.message}"
+        val readResult = documentReader.readText(DocumentDestination(uriString = uri.toString()))
+        readResult.onFailure { error ->
+            _backupStatus.value = "Error restoring configuration: ${error.message}"
+            return
+        }
+
+        val json = readResult.getOrNull()
+        if (json.isNullOrBlank()) {
+            _backupStatus.value = "Error: Selected file is empty."
+            return
+        }
+
+        val result = importBackupUseCase.execute(json)
+        _backupStatus.value = if (result.isSuccess) {
+            "Configuration restored successfully."
+        } else {
+            "Error restoring configuration: ${result.exceptionOrNull()?.message}"
         }
     }
 }
+

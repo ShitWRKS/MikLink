@@ -1,8 +1,8 @@
 package com.app.miklink.core.domain.test.model
 
-import com.app.miklink.core.data.local.room.v1.model.Client
-import com.app.miklink.core.data.local.room.v1.model.ProbeConfig
-import com.app.miklink.core.data.local.room.v1.model.TestProfile
+import com.app.miklink.core.domain.model.Client
+import com.app.miklink.core.domain.model.ProbeConfig
+import com.app.miklink.core.domain.model.TestProfile
 
 /**
  * Contesto di esecuzione di un test.
@@ -11,8 +11,8 @@ import com.app.miklink.core.data.local.room.v1.model.TestProfile
 data class TestExecutionContext(
     val client: Client,
     val probeConfig: ProbeConfig,
-    val profile: TestProfile,
-    val socketId: String? = null,
-    val notes: String? = null
+    val testProfile: TestProfile,
+    val socketId: String?,
+    val notes: String?
 )
 

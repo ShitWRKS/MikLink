@@ -1,21 +1,18 @@
 package com.app.miklink.core.data.pdf.impl
 
 import android.content.Context
-import com.app.miklink.core.data.local.room.v1.model.Client
-import com.app.miklink.core.data.local.room.v1.model.Report
-import com.app.miklink.core.data.local.room.v1.model.TestProfile
+import com.app.miklink.core.domain.model.Client
+import com.app.miklink.core.domain.model.TestReport
+import com.app.miklink.core.domain.model.TestProfile
 import com.app.miklink.core.data.pdf.ExportColumn
 import com.app.miklink.core.data.pdf.PdfDocumentHelper
 import com.app.miklink.core.data.pdf.PdfExportConfig
 import com.app.miklink.core.data.pdf.PdfGenerator
 import com.app.miklink.core.data.pdf.PdfPageOrientation
 import com.app.miklink.core.data.pdf.parser.ParsedResultsParser
-import com.app.miklink.ui.history.model.ParsedResults
+import com.app.miklink.core.domain.model.report.ReportData
 import com.app.miklink.utils.normalizeLinkSpeed
-import com.app.miklink.utils.normalizeLinkStatus
-import com.app.miklink.utils.normalizeTime
 import com.itextpdf.io.font.constants.StandardFonts
-import com.itextpdf.kernel.colors.ColorConstants
 import com.itextpdf.kernel.colors.DeviceRgb
 import com.itextpdf.kernel.font.PdfFontFactory
 import com.itextpdf.kernel.geom.PageSize
@@ -29,7 +26,6 @@ import com.itextpdf.layout.element.Table
 import com.itextpdf.layout.properties.TextAlignment
 import com.itextpdf.layout.properties.UnitValue
 import com.itextpdf.layout.properties.VerticalAlignment
-import com.squareup.moshi.Moshi
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.io.FileOutputStream
@@ -46,23 +42,8 @@ import javax.inject.Singleton
 @Singleton
 class PdfGeneratorIText @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val moshi: Moshi
+    private val parsedResultsParser: ParsedResultsParser
 ) : PdfGenerator {
-
-    // instantiate a parser helper internally to avoid changing constructor signature that
-    // annotation processors (KSP/Hilt) may attempt to resolve during processing.
-    private val parsedResultsParser: ParsedResultsParser = ParsedResultsParser(moshi)
-
-
-    private data class ColumnFlags(
-        val ping: Boolean,
-        val tdr: Boolean,
-        val speed: Boolean,
-        val linkSpeed: Boolean,
-        val neighbor: Boolean,
-        val showCpuWarning: Boolean
-    )
-    
     // Page number event handler is provided by PdfDocumentHelper.PageNumberEventHandler to avoid duplication
 
     /**
@@ -76,7 +57,7 @@ class PdfGeneratorIText @Inject constructor(
      * Returns a File object pointing to the generated PDF in cache directory.
      */
     override fun generatePdfReport(
-        rawReports: List<Report>,
+        rawReports: List<TestReport>,
         client: Client?,
         config: PdfExportConfig
     ): File? {
@@ -96,9 +77,9 @@ class PdfGeneratorIText @Inject constructor(
             val pdf = com.itextpdf.kernel.pdf.PdfDocument(writer)
             
             val pageSize = if (config.orientation == PdfPageOrientation.PORTRAIT) 
-                com.itextpdf.kernel.geom.PageSize.A4 
+                PageSize.A4 
             else 
-                com.itextpdf.kernel.geom.PageSize.A4.rotate()
+                PageSize.A4.rotate()
                 
             val document = Document(pdf, pageSize)
             document.setMargins(20f, 20f, 60f, 20f) // Increased bottom margin for footer
@@ -128,15 +109,15 @@ class PdfGeneratorIText @Inject constructor(
             addResultsTable(document, filteredReports, config)
 
             // 4. Footer (Signatures, Notes, Warnings) - Fixed at bottom of last page
-            val showCpuWarning = filteredReports.any { r ->
-                 val parsed = parseResults(r.resultsJson)
-                 parsed?.speedTest?.let { st ->
-                     val probe = listOf(
-                         st.status, st.ping, st.jitter, st.loss, st.tcpDownload, st.tcpUpload, st.udpDownload, st.udpUpload, st.warning
-                     ).joinToString(" ") { it ?: "" }
-                     probe.contains("local-cpu-load:100%", ignoreCase = true) ||
-                     probe.contains("remote-cpu-load:100%", ignoreCase = true)
-                 } == true
+            val showCpuWarning = filteredReports.any { report ->
+                val parsed = parseReportData(report.resultsJson)
+                parsed?.speedTest?.let { st ->
+                    val probe = listOf(
+                        st.status, st.ping, st.jitter, st.loss, st.tcpDownload, st.tcpUpload, st.udpDownload, st.udpUpload, st.warning
+                    ).joinToString(" ") { it ?: "" }
+                    probe.contains("local-cpu-load:100%", ignoreCase = true) ||
+                        probe.contains("remote-cpu-load:100%", ignoreCase = true)
+                } == true
             }
             
             val footerTable = helper.createFooterTable(client?.notes, showCpuWarning, config)
@@ -160,7 +141,7 @@ class PdfGeneratorIText @Inject constructor(
      * Delegates to generatePdfReport with a default configuration.
      */
     override fun generateSingleTestPdf(
-        report: Report,
+        report: TestReport,
         client: Client?,
         profile: TestProfile?,
         reportTitle: String
@@ -179,7 +160,7 @@ class PdfGeneratorIText @Inject constructor(
 
 
 
-    private fun addResultsTable(document: Document, reports: List<Report>, config: PdfExportConfig) {
+    private fun addResultsTable(document: Document, reports: List<TestReport>, config: PdfExportConfig) {
         // Section title
         // Note: replaced non-ASCII emoji with ASCII text to ensure consistent iText rendering and avoid font issues
         document.add(Paragraph("Dettaglio Test")
@@ -250,7 +231,7 @@ class PdfGeneratorIText @Inject constructor(
         // Add rows
         val sortedReports = reports.sortedBy { it.timestamp }
         sortedReports.forEachIndexed { index, report ->
-            val parsed = parseResults(report.resultsJson)
+            val parsed = parseReportData(report.resultsJson)
             val df = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
             val bgColor = if (index % 2 == 0) DeviceRgb(255, 255, 255) else DeviceRgb(250, 250, 250)
 
@@ -260,17 +241,17 @@ class PdfGeneratorIText @Inject constructor(
                     ExportColumn.DATE -> table.addCell(helper.createDataCell(df.format(Date(report.timestamp)), bgColor, TextAlignment.CENTER))
                     ExportColumn.STATUS -> table.addCell(helper.createStatusCell(report.overallStatus))
                     ExportColumn.LINK_SPEED -> {
-                        val rate = parsed?.link?.get("rate") ?: parsed?.link?.get("speed")
+                        val rate = parsed?.linkStatus?.rate
                         table.addCell(helper.createDataCell(normalizeLinkSpeed(rate), bgColor, TextAlignment.CENTER))
                     }
                     ExportColumn.NEIGHBOR -> {
-                        val neighbor = parsed?.lldp?.firstOrNull()?.let { n ->
+                        val neighbor = parsed?.neighbors?.firstOrNull()?.let { n ->
                             listOfNotNull(n.identity, n.interfaceName).joinToString(" / ")
                         } ?: "-"
                         table.addCell(helper.createDataCell(neighbor, bgColor, TextAlignment.CENTER))
                     }
                     ExportColumn.PING -> {
-                        val pingValue = parsed?.ping?.lastOrNull()?.let { p ->
+                        val pingValue = parsed?.pingSamples?.lastOrNull()?.let { p ->
                             buildString {
                                 if (!p.avgRtt.isNullOrBlank()) append("avg ${p.avgRtt}")
                                 if (!p.packetLoss.isNullOrBlank()) {
@@ -308,22 +289,22 @@ class PdfGeneratorIText @Inject constructor(
         document.add(table)
     }
 
-    private fun hasDataForColumn(report: Report, col: ExportColumn): Boolean {
+    private fun hasDataForColumn(report: TestReport, col: ExportColumn): Boolean {
         // Socket, Date, Status always have data (or are metadata)
         if (col == ExportColumn.SOCKET || col == ExportColumn.DATE || col == ExportColumn.STATUS) return true
         
-        val parsed = parseResults(report.resultsJson) ?: return false
+        val parsed = parseReportData(report.resultsJson) ?: return false
         
         return when (col) {
             ExportColumn.LINK_SPEED -> {
-                val rate = parsed.link?.get("rate") ?: parsed.link?.get("speed")
-                !rate.isNullOrBlank()
+                !parsed.linkStatus?.rate.isNullOrBlank()
             }
-            ExportColumn.NEIGHBOR -> !parsed.lldp.isNullOrEmpty()
-            ExportColumn.PING -> !parsed.ping.isNullOrEmpty()
-            ExportColumn.TDR -> !parsed.tdr.isNullOrEmpty()
-            ExportColumn.SPEED_TEST -> parsed.speedTest != null && 
-                (!parsed.speedTest.tcpDownload.isNullOrBlank() || !parsed.speedTest.tcpUpload.isNullOrBlank())
+            ExportColumn.NEIGHBOR -> parsed.neighbors.isNotEmpty()
+            ExportColumn.PING -> parsed.pingSamples.isNotEmpty()
+            ExportColumn.TDR -> parsed.tdr.isNotEmpty()
+            ExportColumn.SPEED_TEST -> parsed.speedTest?.let { speedTest ->
+                !speedTest.tcpDownload.isNullOrBlank() || !speedTest.tcpUpload.isNullOrBlank()
+            } == true
             else -> true
         }
     }
@@ -344,8 +325,8 @@ class PdfGeneratorIText @Inject constructor(
         return out?.replace(Regex("[ ]{2,}"), " ")?.trim()?.trim(',') ?: ""
     }
 
-    // Reuse parseResults from original PdfGenerator
-    internal fun parseResults(json: String): ParsedResults? {
+    // Reuse parsed report data helper to keep PdfGenerator focused on rendering
+    internal fun parseReportData(json: String): ReportData? {
         return parsedResultsParser.parse(json)
     }
 }

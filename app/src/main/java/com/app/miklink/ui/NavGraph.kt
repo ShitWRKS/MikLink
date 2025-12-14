@@ -33,10 +33,9 @@ fun NavGraph() {
 
         // Test Execution - use path-segments for robustness
         composable(
-            route = "test_execution/{clientId}/{probeId}/{profileId}/{socketName}",
+            route = "test_execution/{clientId}/{profileId}/{socketName}",
             arguments = listOf(
                 navArgument("clientId") { type = NavType.LongType },
-                navArgument("probeId") { type = NavType.LongType },
                 navArgument("profileId") { type = NavType.LongType },
                 navArgument("socketName") { type = NavType.StringType }
             )
@@ -60,10 +59,7 @@ fun NavGraph() {
         // Probe Routes (DEPRECATO: multi-probe, mantenuto per compatibility)
         // composable("probe_list") { ProbeListScreen(navController) }
         composable("probe_add") { ProbeEditScreen(navController) } // CRASH FIX
-        composable(
-            route = "probe_edit/{probeId}",
-            arguments = listOf(navArgument("probeId") { type = NavType.LongType; defaultValue = -1L })
-        ) { ProbeEditScreen(navController) }
+        composable("probe_edit") { ProbeEditScreen(navController) }  // Singleton: no ID in route
 
         // Profile Routes
         composable("profile_list") { TestProfileListScreen(navController) }

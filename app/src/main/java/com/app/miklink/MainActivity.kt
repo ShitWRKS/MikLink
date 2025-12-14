@@ -8,8 +8,10 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.app.miklink.data.repository.ThemeConfig
-import com.app.miklink.data.repository.UserPreferencesRepository
+import com.app.miklink.core.data.repository.preferences.UserPreferencesRepository
+import com.app.miklink.core.domain.model.preferences.CustomPalette
+import com.app.miklink.core.domain.model.preferences.ThemeConfig
+import com.app.miklink.core.domain.usecase.preferences.ObserveThemeConfigUseCase
 import com.app.miklink.ui.NavGraph
 import com.app.miklink.ui.theme.MikLinkTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -19,6 +21,9 @@ import javax.inject.Inject
 class MainActivity : AppCompatActivity() {
 
     @Inject
+    lateinit var observeThemeConfigUseCase: ObserveThemeConfigUseCase
+
+    @Inject
     lateinit var userPreferencesRepository: UserPreferencesRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -26,11 +31,11 @@ class MainActivity : AppCompatActivity() {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         enableEdgeToEdge()
         setContent {
-            val themeConfig by userPreferencesRepository.themeConfig.collectAsStateWithLifecycle(
+            val themeConfig by observeThemeConfigUseCase().collectAsStateWithLifecycle(
                 initialValue = ThemeConfig.FOLLOW_SYSTEM
             )
             val customPalette by userPreferencesRepository.customPalette.collectAsStateWithLifecycle(
-                initialValue = UserPreferencesRepository.CustomPalette()
+                initialValue = CustomPalette()
             )
 
             val isDarkTheme = when (themeConfig) {

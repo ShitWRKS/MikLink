@@ -1,6 +1,6 @@
 package com.app.miklink.data.repositoryimpl.mikrotik
 
-import com.app.miklink.core.data.local.room.v1.model.ProbeConfig
+import com.app.miklink.core.domain.model.ProbeConfig
 import com.app.miklink.core.data.remote.mikrotik.service.MikroTikServiceProvider
 import com.app.miklink.core.data.repository.test.DhcpGatewayRepository
 import javax.inject.Inject

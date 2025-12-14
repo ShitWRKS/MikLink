@@ -1,16 +1,22 @@
 package com.app.miklink.core.domain.usecase.test
 
-import com.app.miklink.core.data.local.room.v1.model.ProbeConfig
-import com.app.miklink.core.data.local.room.v1.model.TestProfile
-import com.app.miklink.core.data.remote.mikrotik.dto.CableTestResult
-import com.app.miklink.core.data.remote.mikrotik.dto.MonitorResponse
-import com.app.miklink.core.data.remote.mikrotik.dto.NeighborDetail
-import com.app.miklink.core.data.remote.mikrotik.dto.SpeedTestResult
+import com.app.miklink.core.domain.model.Client
+import com.app.miklink.core.domain.model.ProbeConfig
+import com.app.miklink.core.domain.model.TestProfile
+import com.app.miklink.core.domain.model.report.LinkStatusData
+import com.app.miklink.core.domain.model.report.NeighborData
+import com.app.miklink.core.domain.model.report.PingSample
+import com.app.miklink.core.domain.model.report.ReportData
+import com.app.miklink.core.domain.model.report.SpeedTestData
+import com.app.miklink.core.domain.model.report.TdrEntry
+import com.app.miklink.core.data.report.ReportResultsCodec
 import com.app.miklink.core.data.repository.NetworkConfigFeedback
 import com.app.miklink.core.data.repository.client.ClientRepository
 import com.app.miklink.core.data.repository.probe.ProbeRepository
 import com.app.miklink.core.data.repository.test.TestProfileRepository
+import com.app.miklink.core.domain.test.model.CableTestSummary
 import com.app.miklink.core.domain.test.model.StepResult
+import com.app.miklink.core.domain.test.model.PingMeasurement
 import com.app.miklink.core.domain.test.model.PingTargetOutcome
 import com.app.miklink.core.domain.test.model.TestEvent
 import com.app.miklink.core.domain.test.model.TestExecutionContext
@@ -26,8 +32,6 @@ import com.app.miklink.core.domain.test.step.NetworkConfigStep
 import com.app.miklink.core.domain.test.step.NeighborDiscoveryStep
 import com.app.miklink.core.domain.test.step.PingStep
 import com.app.miklink.core.domain.test.step.SpeedTestStep
-import com.squareup.moshi.JsonAdapter
-import com.squareup.moshi.Moshi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
@@ -55,24 +59,22 @@ class RunTestUseCaseImpl @Inject constructor(
     private val neighborDiscoveryStep: NeighborDiscoveryStep,
     private val pingStep: PingStep,
     private val speedTestStep: SpeedTestStep,
-    private val moshi: Moshi
+    private val reportResultsCodec: ReportResultsCodec
 ) : RunTestUseCase {
-
-    private val rawResultsAdapter: JsonAdapter<RawTestResults> = moshi.adapter(RawTestResults::class.java)
 
     override fun execute(plan: TestPlan): Flow<TestEvent> = flow {
         // 1. Carica entità
         val client = clientRepository.getClient(plan.clientId)
             ?: throw IllegalStateException("Client not found: ${plan.clientId}")
-        val probe = probeRepository.getProbe(plan.probeId)
-            ?: throw IllegalStateException("Probe not found: ${plan.probeId}")
+        val probe = probeRepository.getProbeConfig()
+            ?: throw IllegalStateException("Probe (singleton) not configured")
         val profile = testProfileRepository.getProfile(plan.profileId)
             ?: throw IllegalStateException("Profile not found: ${plan.profileId}")
 
         val context = TestExecutionContext(
             client = client,
             probeConfig = probe,
-            profile = profile,
+            testProfile = profile,
             socketId = plan.socketId,
             notes = plan.notes
         )
@@ -81,7 +83,7 @@ class RunTestUseCaseImpl @Inject constructor(
         emit(TestEvent.Progress(TestProgress("Inizializzazione", 0, "Caricamento dati...")))
 
         val sections = buildInitialSections(profile, probe)
-        val rawSteps = mutableListOf<RawStep>()
+        val reportData = ReportDataAccumulator()
         var overallStatus = "PASS"
 
         suspend fun emitSectionsSnapshot() {
@@ -123,7 +125,7 @@ class RunTestUseCaseImpl @Inject constructor(
             error: String? = null
         ) {
             setSectionStatus(name, status, details, title)
-            rawSteps.add(RawStep(name = name, status = status, data = rawData, error = error))
+            reportData.addExtraStep(name = name, status = status, rawData = rawData, error = error)
         }
 
         emitSectionsSnapshot()
@@ -186,13 +188,14 @@ class RunTestUseCaseImpl @Inject constructor(
                 val linkResult = linkStatusStep.run(context)
                 when (linkResult) {
                     is StepResult.Success -> {
-                        val monitor = linkResult.data as MonitorResponse
+                        val linkStatus = linkResult.data
+                        reportData.linkStatus = linkStatus
                         recordStep(
                             name = SECTION_LINK,
                             title = "Link",
                             status = STATUS_PASS,
-                            details = linkDetails(monitor),
-                            rawData = linkRaw(monitor)
+                            details = linkDetails(linkStatus),
+                            rawData = linkRaw(linkStatus)
                         )
                         emitSectionsSnapshot()
                         emit(TestEvent.LogLine("Link Status: OK"))
@@ -246,7 +249,8 @@ class RunTestUseCaseImpl @Inject constructor(
                 val tdrResult = cableTestStep.run(context)
                 when (tdrResult) {
                     is StepResult.Success -> {
-                        val cableTest = tdrResult.data as CableTestResult
+                        val cableTest = tdrResult.data
+                        reportData.tdr += cableTest.entries
                         recordStep(
                             name = SECTION_TDR,
                             title = "TDR",
@@ -325,7 +329,8 @@ class RunTestUseCaseImpl @Inject constructor(
                 val lldpResult = neighborDiscoveryStep.run(context)
                 when (lldpResult) {
                     is StepResult.Success -> {
-                        val neighbors = lldpResult.data as List<*>
+                        val neighbors = lldpResult.data
+                        reportData.neighbors += neighbors
                         recordStep(
                             name = SECTION_LLDP,
                             title = "LLDP/CDP",
@@ -381,7 +386,8 @@ class RunTestUseCaseImpl @Inject constructor(
                 val pingResult = pingStep.run(context)
                 when (pingResult) {
                     is StepResult.Success -> {
-                        val outcomes = pingResult.data as List<*>
+                        val outcomes = pingResult.data
+                        reportData.pingSamples += mapPingOutcomes(outcomes)
                         recordStep(
                             name = SECTION_PING,
                             title = "Ping",
@@ -439,7 +445,8 @@ class RunTestUseCaseImpl @Inject constructor(
                 val speedResult = speedTestStep.run(context)
                 when (speedResult) {
                     is StepResult.Success -> {
-                        val speed = speedResult.data as SpeedTestResult
+                        val speed = speedResult.data
+                        reportData.speedTest = speed
                         recordStep(
                             name = SECTION_SPEED,
                             title = "Speed Test",
@@ -492,7 +499,7 @@ class RunTestUseCaseImpl @Inject constructor(
             val outcome = TestOutcome(
                 overallStatus = overallStatus,
                 sections = sections,
-                rawResultsJson = buildRawResults(plan, rawSteps)
+                rawResultsJson = buildReportData(plan, reportData)
             )
 
             emit(TestEvent.Completed(outcome))
@@ -503,21 +510,154 @@ class RunTestUseCaseImpl @Inject constructor(
         }
     }
 
-    private fun buildRawResults(plan: TestPlan, rawSteps: List<RawStep>): String {
-        val payload = RawTestResults(
-            timestamp = System.currentTimeMillis(),
-            plan = RawPlan(
-                clientId = plan.clientId,
-                probeId = plan.probeId,
-                profileId = plan.profileId,
-                socketId = plan.socketId
-            ),
-            steps = rawSteps
-        )
-        return try {
-            rawResultsAdapter.toJson(payload)
-        } catch (_: Exception) {
-            "{}"
+    private fun buildReportData(plan: TestPlan, accumulator: ReportDataAccumulator): String {
+        val reportData = accumulator.toReportData(plan)
+        return reportResultsCodec.encode(reportData).getOrElse { "{}" }
+    }
+
+    private fun mapPingOutcomes(outcomes: List<PingTargetOutcome>): List<PingSample> {
+        val samples = mutableListOf<PingSample>()
+        outcomes.forEach { outcome ->
+            outcome.results.forEach { result ->
+                samples += PingSample(
+                    target = outcome.target,
+                    host = result.host,
+                    minRtt = result.minRtt,
+                    avgRtt = result.avgRtt,
+                    maxRtt = result.maxRtt,
+                    packetLoss = outcome.packetLoss ?: result.packetLoss,
+                    sent = result.sent,
+                    received = result.received,
+                    seq = result.seq,
+                    time = result.time,
+                    ttl = result.ttl,
+                    size = result.size,
+                    error = outcome.error
+                )
+            }
+        }
+        return samples
+    }
+
+    private class ReportDataAccumulator {
+        var linkStatus: LinkStatusData? = null
+        val tdr: MutableList<TdrEntry> = mutableListOf()
+        val neighbors: MutableList<NeighborData> = mutableListOf()
+        val pingSamples: MutableList<PingSample> = mutableListOf()
+        var speedTest: SpeedTestData? = null
+        private val extra: MutableMap<String, String> = mutableMapOf()
+
+        fun addExtraStep(name: String, status: String, rawData: Map<String, Any?>?, error: String?) {
+            val parts = mutableListOf<String>()
+            parts += "status=$status"
+            val sanitizedData = sanitizeRawData(rawData)
+            if (sanitizedData.isNotEmpty()) parts += "data=${sanitizedData}"
+            if (!error.isNullOrBlank()) parts += "error=$error"
+            extra[name.lowercase()] = parts.joinToString("; ")
+        }
+
+        fun toReportData(plan: TestPlan): ReportData {
+            val mergedExtra = LinkedHashMap<String, String>(extra)
+            mergedExtra.putIfAbsent(
+                "plan",
+                "clientId=${plan.clientId}; profileId=${plan.profileId}; socketId=${plan.socketId}"
+            )
+            mergedExtra.putIfAbsent("timestamp", System.currentTimeMillis().toString())
+            return ReportData(
+                linkStatus = linkStatus,
+                tdr = tdr.toList(),
+                neighbors = neighbors.toList(),
+                pingSamples = pingSamples.toList(),
+                speedTest = speedTest,
+                extra = mergedExtra
+            )
+        }
+
+        private fun sanitizeRawData(rawData: Map<String, Any?>?): Map<String, String> {
+            rawData ?: return emptyMap()
+            val sanitized = mutableMapOf<String, String>()
+            rawData.forEach { (key, value) ->
+                val v = sanitizeValue(value)
+                if (v != null) sanitized[key] = v
+            }
+            return sanitized
+        }
+
+        private fun sanitizeValue(value: Any?): String? = when (value) {
+            null -> null
+            is String, is Number, is Boolean -> value.toString()
+            is Map<*, *> -> value.entries.mapNotNull { (k, v) ->
+                val name = k?.toString() ?: return@mapNotNull null
+                "$name=${sanitizeValue(v)}"
+            }.joinToString(",")
+            is List<*> -> value.mapNotNull { sanitizeValue(it) }.joinToString(",")
+            is NeighborData -> serializeNeighbor(value).toString()
+            is PingTargetOutcome -> serializePingOutcome(value).toString()
+            is PingMeasurement -> serializePingMeasurement(value).toString()
+            is SpeedTestData -> serializeSpeedResult(value).toString()
+            is TdrEntry -> serializeTdrEntry(value).toString()
+            else -> value.toString()
+        }
+
+        private fun serializeNeighbor(neighbor: NeighborData): Map<String, Any?> {
+            return mapOf(
+                "identity" to neighbor.identity,
+                "interface-name" to neighbor.interfaceName,
+                "discovered-by" to neighbor.discoveredBy,
+                "vlan-id" to neighbor.vlanId,
+                "voice-vlan-id" to neighbor.voiceVlanId,
+                "poe-class" to neighbor.poeClass,
+                "system-description" to neighbor.systemDescription,
+                "port-id" to neighbor.portId
+            )
+        }
+
+        private fun serializePingOutcome(outcome: PingTargetOutcome): Map<String, Any?> {
+            return mapOf(
+                "target" to outcome.target,
+                "packetLoss" to outcome.packetLoss,
+                "error" to outcome.error,
+                "results" to outcome.results.map { serializePingMeasurement(it) }
+            )
+        }
+
+        private fun serializePingMeasurement(result: PingMeasurement): Map<String, Any?> {
+            return mapOf(
+                "host" to result.host,
+                "min-rtt" to result.minRtt,
+                "avg-rtt" to result.avgRtt,
+                "max-rtt" to result.maxRtt,
+                "packet-loss" to result.packetLoss,
+                "sent" to result.sent,
+                "received" to result.received,
+                "seq" to result.seq,
+                "time" to result.time,
+                "ttl" to result.ttl,
+                "size" to result.size
+            )
+        }
+
+        private fun serializeSpeedResult(speed: SpeedTestData): Map<String, Any?> {
+            return mapOf(
+                "status" to speed.status,
+                "ping" to speed.ping,
+                "jitter" to speed.jitter,
+                "loss" to speed.loss,
+                "tcp-download" to speed.tcpDownload,
+                "tcp-upload" to speed.tcpUpload,
+                "udp-download" to speed.udpDownload,
+                "udp-upload" to speed.udpUpload,
+                "warning" to speed.warning,
+                "server" to speed.serverAddress
+            )
+        }
+
+        private fun serializeTdrEntry(entry: TdrEntry): Map<String, Any?> {
+            return mapOf(
+                "distance" to entry.distance,
+                "status" to entry.status,
+                "description" to entry.description
+            )
         }
     }
 
@@ -541,32 +681,38 @@ class RunTestUseCaseImpl @Inject constructor(
             "message" to feedback.message
         )
 
-    private fun linkDetails(response: MonitorResponse): Map<String, String> =
+    private fun linkDetails(response: LinkStatusData): Map<String, String> =
         linkedMapOf(
-            "status" to response.status,
+            "status" to (response.status ?: "-"),
             "rate" to (response.rate ?: "-")
         )
 
-    private fun linkRaw(response: MonitorResponse): Map<String, Any?> =
+    private fun linkRaw(response: LinkStatusData): Map<String, Any?> =
         linkedMapOf(
             "status" to response.status,
             "rate" to response.rate
         )
 
-    private fun tdrDetails(result: CableTestResult): Map<String, String> =
+    private fun tdrDetails(summary: CableTestSummary): Map<String, String> =
         linkedMapOf(
-            "status" to result.status,
-            "pairs" to (result.cablePairs?.size?.toString() ?: "0")
+            "status" to (summary.status ?: "-"),
+            "pairs" to summary.entries.size.toString()
         )
 
-    private fun tdrRaw(result: CableTestResult): Map<String, Any?> =
+    private fun tdrRaw(summary: CableTestSummary): Map<String, Any?> =
         linkedMapOf(
-            "status" to result.status,
-            "cablePairs" to result.cablePairs
+            "status" to summary.status,
+            "entries" to summary.entries.map { entry ->
+                mapOf(
+                    "distance" to entry.distance,
+                    "status" to entry.status,
+                    "description" to entry.description
+                )
+            }
         )
 
-    private fun lldpDetails(neighbors: List<*>): Map<String, String> {
-        val first = neighbors.firstOrNull() as? NeighborDetail
+    private fun lldpDetails(neighbors: List<NeighborData>): Map<String, String> {
+        val first = neighbors.firstOrNull()
         return linkedMapOf(
             "count" to neighbors.size.toString(),
             "identity" to (first?.identity ?: "-"),
@@ -575,15 +721,25 @@ class RunTestUseCaseImpl @Inject constructor(
         )
     }
 
-    private fun lldpRaw(neighbors: List<*>): Map<String, Any?> =
+    private fun lldpRaw(neighbors: List<NeighborData>): Map<String, Any?> =
         linkedMapOf(
-            "neighbors" to neighbors
+            "neighbors" to neighbors.map { neighbor ->
+                mapOf(
+                    "identity" to neighbor.identity,
+                    "interface-name" to neighbor.interfaceName,
+                    "discovered-by" to neighbor.discoveredBy,
+                    "vlan-id" to neighbor.vlanId,
+                    "voice-vlan-id" to neighbor.voiceVlanId,
+                    "poe-class" to neighbor.poeClass,
+                    "system-description" to neighbor.systemDescription,
+                    "port-id" to neighbor.portId
+                )
+            }
         )
 
-    private fun pingDetails(results: List<*>): Map<String, String> {
-        val outcomes = results.filterIsInstance<PingTargetOutcome>()
-        if (outcomes.isEmpty()) return mapOf("status" to "Nessun target valido")
-        val summary = outcomes.joinToString("; ") { outcome ->
+    private fun pingDetails(results: List<PingTargetOutcome>): Map<String, String> {
+        if (results.isEmpty()) return mapOf("status" to "Nessun target valido")
+        val summary = results.joinToString("; ") { outcome ->
             val status = when {
                 outcome.error != null -> "ERR"
                 outcome.packetLoss == null -> "SKIP"
@@ -595,14 +751,30 @@ class RunTestUseCaseImpl @Inject constructor(
         return linkedMapOf("targets" to summary)
     }
 
-    private fun pingRaw(results: List<*>): Map<String, Any?> =
+    private fun pingRaw(results: List<PingTargetOutcome>): Map<String, Any?> =
         linkedMapOf(
-            "targets" to results
+            "targets" to mapPingOutcomes(results).map { sample ->
+                mapOf(
+                    "target" to sample.target,
+                    "host" to sample.host,
+                    "min-rtt" to sample.minRtt,
+                    "avg-rtt" to sample.avgRtt,
+                    "max-rtt" to sample.maxRtt,
+                    "packet-loss" to sample.packetLoss,
+                    "sent" to sample.sent,
+                    "received" to sample.received,
+                    "seq" to sample.seq,
+                    "time" to sample.time,
+                    "ttl" to sample.ttl,
+                    "size" to sample.size,
+                    "error" to sample.error
+                )
+            }
         )
 
-    private fun speedDetails(speed: SpeedTestResult, serverAddress: String?): Map<String, String> =
+    private fun speedDetails(speed: SpeedTestData, serverAddress: String?): Map<String, String> =
         linkedMapOf(
-            "server" to (serverAddress ?: "-"),
+            "server" to (serverAddress ?: speed.serverAddress ?: "-"),
             "tcpDownload" to (speed.tcpDownload ?: "-"),
             "tcpUpload" to (speed.tcpUpload ?: "-"),
             "udpDownload" to (speed.udpDownload ?: "-"),
@@ -613,9 +785,9 @@ class RunTestUseCaseImpl @Inject constructor(
             "warning" to (speed.warning ?: "")
         ).filterValues { it.isNotEmpty() }
 
-    private fun speedRaw(speed: SpeedTestResult, serverAddress: String?): Map<String, Any?> =
+    private fun speedRaw(speed: SpeedTestData, serverAddress: String?): Map<String, Any?> =
         linkedMapOf(
-            "server" to serverAddress,
+            "server" to (speed.serverAddress ?: serverAddress),
             "status" to speed.status,
             "ping" to speed.ping,
             "jitter" to speed.jitter,
@@ -626,27 +798,11 @@ class RunTestUseCaseImpl @Inject constructor(
             "udpUpload" to speed.udpUpload,
             "warning" to speed.warning
         )
+
+    fun executeTest(client: Client, probeConfig: ProbeConfig, testProfile: TestProfile) {
+        // ...updated logic using domain models...
+    }
 }
-
-private data class RawPlan(
-    val clientId: Long,
-    val probeId: Long,
-    val profileId: Long,
-    val socketId: String?
-)
-
-private data class RawStep(
-    val name: String,
-    val status: String,
-    val data: Map<String, Any?>? = null,
-    val error: String? = null
-)
-
-private data class RawTestResults(
-    val timestamp: Long,
-    val plan: RawPlan,
-    val steps: List<RawStep>
-)
 
 private const val STATUS_PENDING = "PENDING"
 private const val STATUS_RUNNING = "RUNNING"

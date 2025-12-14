@@ -1,24 +1,16 @@
 pluginManagement {
     repositories {
-        google {
-            content {
-                includeGroupByRegex("com\\.android.*")
-                includeGroupByRegex("com\\.google.*")
-                includeGroupByRegex("androidx.*")
-            }
-        }
+        google()
         mavenCentral()
         gradlePluginPortal()
     }
-}
-
-
-plugins {
-    id("org.gradle.toolchains.foojay-resolver-convention") version "0.9.0"
+    plugins {
+        id("androidx.room") version "2.8.4"
+    }
 }
 
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositoriesMode.set(org.gradle.api.initialization.resolve.RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         google()
         mavenCentral()

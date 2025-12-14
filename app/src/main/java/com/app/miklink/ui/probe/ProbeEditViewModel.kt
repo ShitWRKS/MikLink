@@ -3,8 +3,8 @@ package com.app.miklink.ui.probe
 import androidx.lifecycle.SavedStateHandle
 import com.app.miklink.ui.common.BaseEditViewModel
 import androidx.lifecycle.viewModelScope
-import com.app.miklink.core.data.local.room.v1.dao.ProbeConfigDao
-import com.app.miklink.core.data.local.room.v1.model.ProbeConfig
+import com.app.miklink.core.data.repository.probe.ProbeRepository
+import com.app.miklink.core.domain.model.ProbeConfig
 import com.app.miklink.core.data.repository.ProbeCheckResult
 import com.app.miklink.core.data.repository.probe.ProbeConnectivityRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -14,12 +14,10 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ProbeEditViewModel @Inject constructor(
-    private val probeConfigDao: ProbeConfigDao,
+    private val probeRepository: ProbeRepository,
     private val probeConnectivityRepository: ProbeConnectivityRepository,
     savedStateHandle: SavedStateHandle
-) : BaseEditViewModel(savedStateHandle, "probeId") {
-
-    private val probeId: Long = savedStateHandle.get<Long>("probeId") ?: -1L
+) : BaseEditViewModel(savedStateHandle, idKey = null) {  // null = no ID, singleton probe
 
     val ipAddress = MutableStateFlow("")
     val username = MutableStateFlow("")
@@ -46,7 +44,6 @@ class ProbeEditViewModel @Inject constructor(
         isHttps
     ) { ip, user, pass, https ->
         ProbeConfig(
-            probeId = 0L, // Default value for a temporary verification object
             ipAddress = ip,
             username = user,
             password = pass,
@@ -58,22 +55,19 @@ class ProbeEditViewModel @Inject constructor(
         )
     }
     init {
-        // NUOVO: Carica sonda unica se esiste (navigazione da settings)
+        // Carica sonda unica se esiste (singleton)
         viewModelScope.launch {
-            if (!isEditing) {
-                probeConfigDao.getSingleProbe().firstOrNull()?.let { probe ->
-                    // name was removed from ProbeConfig — not tracked in UI
-                    ipAddress.value = probe.ipAddress
-                    username.value = probe.username
-                    password.value = probe.password
-                    isHttps.value = probe.isHttps
-                    testInterface.value = probe.testInterface
-                    _modelName.value = probe.modelName
-                    _tdrSupported.value = probe.tdrSupported
-                    _isOnline.value = probe.isOnline
-                    if (probe.modelName != null) {
-                        _verificationState.value = VerificationState.Success(probe.modelName, listOfNotNull(probe.testInterface))
-                    }
+            probeRepository.getProbeConfig()?.let { probe ->
+                ipAddress.value = probe.ipAddress
+                username.value = probe.username
+                password.value = probe.password
+                isHttps.value = probe.isHttps
+                testInterface.value = probe.testInterface
+                _modelName.value = probe.modelName
+                _tdrSupported.value = probe.tdrSupported
+                _isOnline.value = probe.isOnline
+                if (probe.modelName != null) {
+                    _verificationState.value = VerificationState.Success(probe.modelName, listOfNotNull(probe.testInterface))
                 }
             }
         }
@@ -91,12 +85,12 @@ class ProbeEditViewModel @Inject constructor(
     }
 
     init {
-        // Trigger loading when editing
-        loadIfEditing()
+        // Non serve più loadIfEditing perché è singleton
     }
 
     override suspend fun loadEntity(id: Long) {
-        probeConfigDao.getProbeById(id).firstOrNull()?.let { probe ->
+        // Singleton: carica direttamente senza ID
+        probeRepository.getProbeConfig()?.let { probe ->
             ipAddress.value = probe.ipAddress
             username.value = probe.username
             password.value = probe.password
@@ -128,7 +122,6 @@ class ProbeEditViewModel @Inject constructor(
     fun onSaveClicked() {
         viewModelScope.launch {
             val probeToSave = ProbeConfig(
-                probeId = if (isEditing) probeId else 1, // force ID=1 for single-probe
                 ipAddress = ipAddress.value,
                 username = username.value,
                 password = password.value,
@@ -138,8 +131,7 @@ class ProbeEditViewModel @Inject constructor(
                 modelName = _modelName.value,
                 tdrSupported = _tdrSupported.value
             )
-            // MODIFICATO: usa upsertSingle per sonda unica
-            probeConfigDao.upsertSingle(probeToSave)
+            probeRepository.saveProbeConfig(probeToSave)
             markSaved()
         }
     }
