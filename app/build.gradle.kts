@@ -4,7 +4,6 @@ plugins {
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.ksp)
-    kotlin("kapt")
     id("androidx.room")
 }
 
@@ -43,10 +42,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kapt {
-        correctErrorTypes = true
-    }
-
     kotlin {
         jvmToolchain(17)
     }
@@ -71,7 +66,7 @@ dependencies {
 
     // Hilt
     implementation(libs.hilt.android)
-    kapt(libs.hilt.compiler)
+    ksp(libs.hilt.compiler)
 
     // Compose
     implementation(platform(libs.androidx.compose.bom))

@@ -5,9 +5,9 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import com.app.miklink.core.domain.model.ProbeConfig
-import com.app.miklink.core.data.remote.mikrotik.infra.MikroTikServiceFactory
-import com.app.miklink.core.data.remote.mikrotik.service.MikroTikApiService
-import com.app.miklink.core.data.remote.mikrotik.service.MikroTikServiceProvider
+import com.app.miklink.data.remote.mikrotik.infra.MikroTikServiceFactory
+import com.app.miklink.data.remote.mikrotik.service.MikroTikApiService
+import com.app.miklink.data.remote.mikrotik.service.MikroTikServiceProvider
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 

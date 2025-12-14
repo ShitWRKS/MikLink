@@ -4,8 +4,8 @@ import android.content.Context
 import com.app.miklink.core.domain.model.Client
 import com.app.miklink.core.domain.model.ProbeConfig
 import com.app.miklink.core.domain.model.NetworkMode
-import com.app.miklink.core.data.remote.mikrotik.dto.*
-import com.app.miklink.core.data.remote.mikrotik.service.MikroTikServiceProvider
+import com.app.miklink.data.remote.mikrotik.dto.*
+import com.app.miklink.data.remote.mikrotik.service.MikroTikServiceProvider
 import com.app.miklink.core.data.repository.NetworkConfigFeedback
 import com.app.miklink.core.data.repository.test.NetworkConfigRepository
 import com.app.miklink.data.repository.RouteManager

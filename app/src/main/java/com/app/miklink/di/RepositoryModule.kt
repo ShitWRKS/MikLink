@@ -27,7 +27,7 @@ import com.app.miklink.core.data.repository.test.PingTargetResolver
 import com.app.miklink.core.data.repository.test.DhcpGatewayRepository
 import com.app.miklink.core.data.repository.probe.ProbeStatusRepository
 import com.app.miklink.core.data.repository.probe.ProbeConnectivityRepository
-import com.app.miklink.core.data.remote.mikrotik.service.MikroTikServiceProvider
+import com.app.miklink.data.remote.mikrotik.service.MikroTikServiceProvider
 import com.app.miklink.data.remote.mikrotik.MikroTikServiceProviderImpl
 import com.app.miklink.data.repositoryimpl.mikrotik.DhcpGatewayRepositoryImpl
 import com.app.miklink.data.repositoryimpl.mikrotik.ProbeStatusRepositoryImpl

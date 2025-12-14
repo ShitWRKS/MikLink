@@ -22,8 +22,9 @@
    - files touched
    - commands run
 ## Pre-flight checks (must do before editing)
-- [ ] `git status` is clean
-- [ ] `./gradlew test` is attempted once (even if it fails today). Record outcome in notes.
+- [x] `git status` is clean
+- [x] `./gradlew test` is attempted once (even if it fails today). Record outcome in notes.  
+  - Outcome: `./gradlew.bat testDebugUnitTest` executed → **BUILD SUCCESSFUL**
 
 ---
 
@@ -32,11 +33,10 @@
 - probe edit route at line ~64–66
 
 ### Tasks
-  to:
   - `test_execution/{clientId}/{profileId}/{socketName}`
-- [ ] Ensure `TestExecutionScreen(navController, vm)` remains unchanged.
+- [x] Ensure `TestExecutionScreen(navController, vm)` remains unchanged.
 
-- [ ] Replace the `probe_add` and `probe_edit/{probeId}` routes with **a single route with no arguments**:
+- [x] Replace the `probe_add` and `probe_edit/{probeId}` routes with **a single route with no arguments**:
   - route name: `probe_config`
   - composable: `ProbeEditScreen(navController)` (keep file/class name for now)
 
@@ -49,17 +49,18 @@
 **File:** `app/src/main/java/com/app/miklink/ui/dashboard/DashboardScreen.kt`  
 **Anchor:** line ~198 contains `probe.probeId`
 
-- [ ] Update the navigate route string to match the new route shape:
+- [x] Update the navigate route string to match the new route shape:
   - `test_execution/<clientId>/<profileId>/<socketName>`
-- [ ] Ensure you no longer interpolate `probe.probeId` anywhere in this file.
+- [x] Ensure you no longer interpolate `probe.probeId` anywhere in this file.
 
 ### 2.2 History → Re-run test route
 **File:** `app/src/main/java/com/app/miklink/ui/history/HistoryViewModel.kt`  
 - line ~185 reads probe via `probeDao.getAllProbes()...`
 
   - Remove the `ProbeConfigDao` dependency from this ViewModel (constructor + imports).
-- [ ] Update route build to:
-- [ ] Ensure no reference to `probe.probeId` remains in this file.
+- [x] Update route build to:
+  - `test_execution/${report.clientId}/${profile.profileId}/$encodedSocket`
+- [x] Ensure no reference to `probe.probeId` remains in this file.
 
 
 
@@ -67,6 +68,8 @@
 
 - [ ] Replace navigation target with:
   - `probe_config`
+ - [x] Replace navigation target with:
+   - `probe_config`
 ---
 
 ## Step 4 — Remove `probeId` from TestViewModel plan creation

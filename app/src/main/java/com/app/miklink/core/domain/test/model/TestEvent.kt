@@ -6,7 +6,6 @@ package com.app.miklink.core.domain.test.model
  */
 sealed class TestEvent {
     data class Progress(val progress: TestProgress) : TestEvent()
-    data class LogLine(val message: String) : TestEvent()
     data class SectionsUpdated(val sections: List<TestSectionResult>) : TestEvent()
     data class Completed(val outcome: TestOutcome) : TestEvent()
     data class Failed(val error: TestError) : TestEvent()

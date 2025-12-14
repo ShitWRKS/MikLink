@@ -39,7 +39,7 @@ class SpeedTestStepImpl @Inject constructor(
     }
 }
 
-private fun com.app.miklink.core.data.remote.mikrotik.dto.SpeedTestResult.toDomain(serverAddress: String?): SpeedTestData {
+private fun com.app.miklink.data.remote.mikrotik.dto.SpeedTestResult.toDomain(serverAddress: String?): SpeedTestData {
     return SpeedTestData(
         status = status,
         ping = ping,

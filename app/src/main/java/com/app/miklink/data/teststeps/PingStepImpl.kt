@@ -104,7 +104,7 @@ class PingStepImpl @Inject constructor(
     }
 }
 
-private fun com.app.miklink.core.data.remote.mikrotik.dto.PingResult.toMeasurement(): PingMeasurement {
+private fun com.app.miklink.data.remote.mikrotik.dto.PingResult.toMeasurement(): PingMeasurement {
     return PingMeasurement(
         host = host,
         minRtt = minRtt,

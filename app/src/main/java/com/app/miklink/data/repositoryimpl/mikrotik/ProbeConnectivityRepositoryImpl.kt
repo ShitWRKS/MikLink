@@ -2,7 +2,7 @@ package com.app.miklink.data.repositoryimpl.mikrotik
 
 import android.content.Context
 import com.app.miklink.core.domain.model.ProbeConfig
-import com.app.miklink.core.data.remote.mikrotik.service.MikroTikServiceProvider
+import com.app.miklink.data.remote.mikrotik.service.MikroTikServiceProvider
 import com.app.miklink.core.data.repository.ProbeCheckResult
 import com.app.miklink.core.data.repository.probe.ProbeConnectivityRepository
 import com.app.miklink.R
@@ -26,7 +26,7 @@ class ProbeConnectivityRepositoryImpl @Inject constructor(
         withContext(Dispatchers.IO) {
             try {
                 val api = serviceProvider.build(probe)
-                val boardName = api.getSystemResource(com.app.miklink.core.data.remote.mikrotik.dto.ProplistRequest(listOf("board-name")))
+                val boardName = api.getSystemResource(com.app.miklink.data.remote.mikrotik.dto.ProplistRequest(listOf("board-name")))
                     .firstOrNull()?.boardName ?: "Unknown Board"
                 val interfacesRaw = api.getEthernetInterfaces()
                 android.util.Log.d("ProbeConnectivityRepository", "checkProbeConnection: Ricevute ${interfacesRaw.size} interfacce dall'API")

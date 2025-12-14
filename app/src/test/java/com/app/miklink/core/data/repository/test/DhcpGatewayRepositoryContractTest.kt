@@ -1,9 +1,9 @@
 package com.app.miklink.core.data.repository.test
 
 import com.app.miklink.core.domain.model.ProbeConfig
-import com.app.miklink.core.data.remote.mikrotik.dto.DhcpClientStatus
-import com.app.miklink.core.data.remote.mikrotik.service.MikroTikApiService
-import com.app.miklink.core.data.remote.mikrotik.service.MikroTikServiceProvider
+import com.app.miklink.data.remote.mikrotik.dto.DhcpClientStatus
+import com.app.miklink.data.remote.mikrotik.service.MikroTikApiService
+import com.app.miklink.data.remote.mikrotik.service.MikroTikServiceProvider
 import com.app.miklink.data.repositoryimpl.mikrotik.DhcpGatewayRepositoryImpl
 import io.mockk.coEvery
 import io.mockk.mockk

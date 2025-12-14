@@ -85,10 +85,7 @@
     <string name="settings_manage_profiles_desc">Add or remove test profiles</string>
     <string name="settings_manage_clients">Manage Clients</string>
     <string name="settings_manage_clients_desc">Manage customer registry</string>
-    <string name="test_toggle_show_raw_logs">Show raw logs</string>
-    <string name="test_toggle_hide_raw_logs">Hide raw logs</string>
-    <string name="test_toggle_show_logs">Show logs</string>
-    <string name="test_toggle_hide_logs">Hide logs</string>
+    <!-- Raw log toggles removed (UI does not display raw logs) -->
     <string name="settings_category_appearance">Appearance</string>
     <string name="settings_theme">Theme</string>
     <string name="settings_theme_auto">Auto (System)</string>

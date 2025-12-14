@@ -29,7 +29,7 @@ class NeighborDiscoveryStepImpl @Inject constructor(
     }
 }
 
-private fun com.app.miklink.core.data.remote.mikrotik.dto.NeighborDetail.toDomain(): NeighborData {
+private fun com.app.miklink.data.remote.mikrotik.dto.NeighborDetail.toDomain(): NeighborData {
     return NeighborData(
         identity = identity,
         interfaceName = interfaceName,

@@ -1,28 +1,83 @@
 package com.app.miklink.ui.test
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.res.stringResource
-import androidx.compose.animation.core.*
-import androidx.compose.ui.draw.scale
+import androidx.compose.material.icons.filled.Cable
+import androidx.compose.material.icons.filled.Cancel
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Devices
+import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.HourglassEmpty
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.PowerInput
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.SettingsEthernet
+import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.Wifi
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.BottomAppBar
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -30,10 +85,16 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.app.miklink.core.domain.model.TestReport
-import com.app.miklink.ui.test.TestSectionCategory.*
-import com.app.miklink.ui.test.TestSectionType.*
-import com.app.miklink.utils.UiState
 import com.app.miklink.ui.common.TestSectionCard
+import com.app.miklink.ui.test.TestSectionCategory.INFO
+import com.app.miklink.ui.test.TestSectionCategory.TEST
+import com.app.miklink.ui.test.TestSectionType.LINK
+import com.app.miklink.ui.test.TestSectionType.LLDP
+import com.app.miklink.ui.test.TestSectionType.NETWORK
+import com.app.miklink.ui.test.TestSectionType.PING
+import com.app.miklink.ui.test.TestSectionType.SPEED
+import com.app.miklink.ui.test.TestSectionType.TDR
+import com.app.miklink.utils.UiState
 
 // Helper per estrarre velocità e CPU load da stringhe come:
 // "91.9Mbps local-cpu-load:100%" -> ("91.9Mbps", "100%")
@@ -55,33 +116,27 @@ private fun isSpeedDetailLabel(label: String): Boolean {
     return l == "tcp download" || l == "tcp upload" || l == "udp download" || l == "udp upload"
 }
 
+private fun isFinalStatus(status: String): Boolean = status.uppercase() in setOf("PASS", "FAIL", "SKIP")
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TestExecutionScreen(
     navController: NavController,
-    viewModel: TestViewModel // injected from NavGraph scoped backStackEntry
+    viewModel: TestViewModel
 ) {
-    val log by viewModel.log.collectAsStateWithLifecycle()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val sections by viewModel.sections.collectAsStateWithLifecycle()
     val isRunning by viewModel.isRunning.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
-    var showRawLog by rememberSaveable { mutableStateOf(false) }
     var showRepeatDialog by remember { mutableStateOf(false) }
-    var hasAutoStarted by remember { mutableStateOf(false) }
+    var hasAutoStarted by rememberSaveable { mutableStateOf(false) }
 
-    // Riabilitazione autostart: avvia il test automaticamente alla prima composizione
-    // ma solo se lo stato è Idle, non in esecuzione, e non è già stato avviato automaticamente
-    LaunchedEffect(Unit) {
+    // Avvio automatico alla prima composizione quando lo stato è Idle
+    LaunchedEffect(uiState, isRunning) {
         if (uiState is UiState.Idle && !isRunning && !hasAutoStarted) {
             hasAutoStarted = true
             viewModel.startTest()
         }
-    }
-
-    LaunchedEffect(log.size) {
-        if (showRawLog) return@LaunchedEffect
-        // autoscroll rimosso per evitare comportamenti strani all'avvio
     }
 
     Scaffold(
@@ -89,17 +144,18 @@ fun TestExecutionScreen(
             CenterAlignedTopAppBar(
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
-                        if (isRunning) {
-                            Icon(Icons.Default.HourglassEmpty, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                            Spacer(Modifier.width(8.dp))
-                            Text("Test in corso...")
-                        } else when (uiState) {
-                            is UiState.Idle -> {
+                        when {
+                            isRunning -> {
+                                Icon(Icons.Default.HourglassEmpty, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                Spacer(Modifier.width(8.dp))
+                                Text("Test in corso...")
+                            }
+                            uiState is UiState.Idle -> {
                                 Icon(Icons.Default.PlayArrow, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                 Spacer(Modifier.width(8.dp))
                                 Text("Pronto per il Test")
                             }
-                            is UiState.Success -> {
+                            uiState is UiState.Success -> {
                                 val report = (uiState as UiState.Success<TestReport>).data
                                 if (report.overallStatus == "PASS") {
                                     Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF4CAF50))
@@ -111,8 +167,12 @@ fun TestExecutionScreen(
                                     Text("Test Fallito")
                                 }
                             }
-                            is UiState.Loading -> { Text("Preparazione test...") }
-                            is UiState.Error -> Text("Errore Test")
+                            uiState is UiState.Loading -> {
+                                Text("Preparazione test...")
+                            }
+                            uiState is UiState.Error -> {
+                                Text("Errore Test")
+                            }
                         }
                     }
                 },
@@ -127,7 +187,6 @@ fun TestExecutionScreen(
                         uiState is UiState.Success && (uiState as UiState.Success<TestReport>).data.overallStatus == "PASS" -> Color(0xFF4CAF50).copy(alpha = 0.2f)
                         uiState is UiState.Success -> Color(0xFFF44336).copy(alpha = 0.2f)
                         uiState is UiState.Error -> MaterialTheme.colorScheme.errorContainer
-                        uiState is UiState.Idle -> MaterialTheme.colorScheme.surface
                         else -> MaterialTheme.colorScheme.surface
                     }
                 )
@@ -173,8 +232,7 @@ fun TestExecutionScreen(
                                 navController.popBackStack()
                             },
                             modifier = Modifier.weight(1f),
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 12.dp),
-                            colors = ButtonDefaults.buttonColors() // rimosso containerColor rosso per coerenza stilistica
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 12.dp)
                         ) {
                             Icon(
                                 if (isFailed) Icons.Default.Warning else Icons.Default.Check,
@@ -191,7 +249,9 @@ fun TestExecutionScreen(
         }
     ) { padding ->
         Column(
-            modifier = Modifier.fillMaxSize().padding(padding),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             when (val state = uiState) {
@@ -199,19 +259,15 @@ fun TestExecutionScreen(
                     TestCompletedView(
                         report = state.data,
                         sections = sections,
-                        log = log,
-                        showRawLog = showRawLog,
-                        onToggleRawLog = { showRawLog = !showRawLog },
                         modifier = Modifier.fillMaxSize()
                     )
                 }
                 is UiState.Loading -> {
                     if (isRunning) {
-                        TestInProgressView(log = log, sections = sections, listState = listState, showRawLog = showRawLog, onToggleRawLog = { showRawLog = !showRawLog })
+                        TestInProgressView(sections = sections, listState = listState)
                     }
                 }
                 is UiState.Idle -> {
-                    // Stato iniziale: mostra messaggio di benvenuto invece dell'header
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -268,8 +324,7 @@ fun TestExecutionScreen(
             }
         }
     }
-    
-    // Repeat test confirmation dialog
+
     if (showRepeatDialog) {
         AlertDialog(
             onDismissRequest = { showRepeatDialog = false },
@@ -334,18 +389,16 @@ fun TestExecutionScreen(
 
 @Composable
 fun TestInProgressView(
-    log: List<String>,
     sections: List<TestSection>,
-    listState: androidx.compose.foundation.lazy.LazyListState,
-    showRawLog: Boolean,
-    onToggleRawLog: () -> Unit,
+    listState: LazyListState,
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier.padding(16.dp).fillMaxWidth(),
+        modifier = modifier
+            .padding(16.dp)
+            .fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Header con progress indicator
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(
@@ -369,7 +422,7 @@ fun TestInProgressView(
                     fontWeight = FontWeight.Bold
                 )
 
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(16.dp))
 
                 LinearProgressIndicator(
                     modifier = Modifier.fillMaxWidth()
@@ -379,19 +432,7 @@ fun TestInProgressView(
 
         Spacer(Modifier.height(16.dp))
 
-        // Toggle log grezzi / sections
-        TextButton(onClick = onToggleRawLog) {
-            Icon(if (showRawLog) Icons.Default.VisibilityOff else Icons.Default.Code, contentDescription = null)
-            Spacer(Modifier.width(6.dp))
-            Text(if (showRawLog) stringResource(id = com.app.miklink.R.string.test_toggle_hide_raw_logs) else stringResource(id = com.app.miklink.R.string.test_toggle_show_raw_logs))
-        }
-
-        Spacer(Modifier.height(8.dp))
-
-        if (showRawLog) {
-            // Raw log
-            RawLogsPane(log = log, modifier = Modifier.fillMaxWidth().weight(1f))
-        } else if (sections.isEmpty()) {
+        if (sections.isEmpty()) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
@@ -401,23 +442,19 @@ fun TestInProgressView(
                 }
             }
         } else {
-            // Calcolare visibleSections per progressive reveal:
-            // includere tutte le sezioni non-pending + la prima pending incontrata
             val visibleSections = remember(sections) {
                 val list = mutableListOf<TestSection>()
                 var pendingIncluded = false
                 for (s in sections) {
                     val status = s.status.uppercase()
                     val isPending = status == "PENDING"
-                    if (!isPending) list.add(s)
-                    else if (!pendingIncluded) {
+                    if (!isPending) list.add(s) else if (!pendingIncluded) {
                         list.add(s)
                         pendingIncluded = true
                     }
                 }
                 list
             }
-
             val infoSections = visibleSections.filter { it.category == INFO }
             val testSections = visibleSections.filter { it.category == TEST }
             LazyColumn(
@@ -426,7 +463,9 @@ fun TestInProgressView(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 if (infoSections.isNotEmpty()) {
-                    item { Text("Informazioni", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) }
+                    item {
+                        Text("Informazioni", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    }
                     items(infoSections) { section ->
                         val (icon, color) = when (section.type) {
                             NETWORK -> Icons.Default.SettingsEthernet to MaterialTheme.colorScheme.primary
@@ -447,7 +486,9 @@ fun TestInProgressView(
                     item { HorizontalDivider() }
                 }
                 if (testSections.isNotEmpty()) {
-                    item { Text("Test", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) }
+                    item {
+                        Text("Test", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    }
                     items(testSections) { section ->
                         val (icon, color) = when (section.type) {
                             LINK -> Icons.Default.Link to MaterialTheme.colorScheme.tertiary
@@ -473,16 +514,9 @@ fun TestInProgressView(
     }
 }
 
-/**
- * Restituisce true se lo status è finale (PASS/FAIL/SKIP)
- */
-private fun isFinalStatus(status: String): Boolean = status.uppercase() in setOf("PASS", "FAIL", "SKIP")
-
 @Composable
 private fun TestSectionDetails(section: TestSection) {
-    // Reuse logic from TestCompletedView for consistency
     if (section.type == PING) {
-        // Packet Loss chip
         val lossText = section.details.firstOrNull { it.label == "Packet Loss" }?.value ?: ""
         if (lossText.isNotBlank() && lossText != "-" && lossText.any { it.isDigit() }) {
             val isZeroLoss = lossText.trim().startsWith("0")
@@ -492,7 +526,7 @@ private fun TestSectionDetails(section: TestSection) {
                 Row(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                     Icon(if (isZeroLoss) Icons.Default.CheckCircle else Icons.Default.Error, contentDescription = null, tint = chipFg, modifier = Modifier.size(14.dp))
                     Spacer(Modifier.width(6.dp))
-                    Text(text = "LOSS ${lossText}", color = chipFg, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                    Text(text = "LOSS $lossText", color = chipFg, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                 }
             }
             Spacer(Modifier.height(8.dp))
@@ -552,14 +586,24 @@ private fun TestSectionDetails(section: TestSection) {
                 }
             }
             d.label.equals("Avviso", ignoreCase = true) -> {
-                Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
                     Text(d.value, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             else -> {
-                Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 2.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
                     Text(d.label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(
                         if (d.label == "reason") TestSkipReasonMapper.getLocalizedReason(d.value) else d.value,
@@ -573,12 +617,27 @@ private fun TestSectionDetails(section: TestSection) {
 }
 
 @Composable
+private fun StatChip(label: String, value: String, icon: ImageVector) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        shape = RoundedCornerShape(12.dp),
+        tonalElevation = 1.dp
+    ) {
+        Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.width(8.dp))
+            Column {
+                Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
+@Composable
 fun TestCompletedView(
     report: TestReport,
     sections: List<TestSection>,
-    log: List<String>,
-    showRawLog: Boolean,
-    onToggleRawLog: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val isPassed = report.overallStatus == "PASS"
@@ -591,7 +650,6 @@ fun TestCompletedView(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
-            // Header risultato
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
@@ -653,7 +711,6 @@ fun TestCompletedView(
 
                     Spacer(Modifier.height(16.dp))
 
-                    // Statistiche rapide
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.Center
@@ -669,7 +726,6 @@ fun TestCompletedView(
         }
 
         item {
-            // Toggle log grezzi / sections
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -680,49 +736,7 @@ fun TestCompletedView(
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
-                TextButton(onClick = onToggleRawLog) {
-                    Icon(if (showRawLog) Icons.Default.VisibilityOff else Icons.Default.Code, contentDescription = null)
-                    Spacer(Modifier.width(6.dp))
-                    Text(if (showRawLog) stringResource(id = com.app.miklink.R.string.test_toggle_hide_logs) else stringResource(id = com.app.miklink.R.string.test_toggle_show_logs), style = MaterialTheme.typography.bodySmall)
-                }
             }
-        }
-
-        if (showRawLog) {
-            item {
-                // FIX: Non possiamo usare LazyColumn dentro LazyColumn
-                // Usiamo Column + verticalScroll per i log nella schermata risultati
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 160.dp, max = 400.dp),
-                    tonalElevation = 2.dp,
-                    shape = RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .verticalScroll(rememberScrollState())
-                            .padding(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        log.forEach { line ->
-                            val color = when {
-                                line.contains("ERRORE", true) || line.contains("FALLITO", true) || line.contains("FAIL", true) -> MaterialTheme.colorScheme.error
-                                line.contains("SUCCESSO", true) || line.contains("PASS", true) -> Color(0xFF2E7D32)
-                                else -> MaterialTheme.colorScheme.onSurface
-                            }
-                            Text(
-                                text = line,
-                                color = color,
-                                style = MaterialTheme.typography.bodySmall,
-                                fontFamily = FontFamily.Monospace
-                            )
-                        }
-                    }
-                }
-            }
-            return@LazyColumn
         }
 
         if (sections.isEmpty()) {
@@ -742,7 +756,6 @@ fun TestCompletedView(
         val infoSections = sections.filter { it.category == INFO }
         val testSections = sections.filter { it.category == TEST }
 
-        // Network info card
         items(infoSections.filter { it.type == NETWORK }) { section ->
             TestSectionCard(
                 title = mapTestSectionTitle(section.type, section.title),
@@ -754,7 +767,6 @@ fun TestCompletedView(
             }
         }
 
-        // LLDP card
         items(infoSections.filter { it.type == LLDP }) { section ->
             TestSectionCard(
                 title = mapTestSectionTitle(section.type, section.title),
@@ -766,7 +778,6 @@ fun TestCompletedView(
             }
         }
 
-        // Link card (single, fixed order)
         item {
             val linkSec = testSections.find { it.type == LINK }
             if (linkSec != null) {
@@ -781,7 +792,6 @@ fun TestCompletedView(
             }
         }
 
-        // Ping card (single, fixed order)
         item {
             val pingSec = testSections.find { it.type == PING }
             if (pingSec != null) {
@@ -798,7 +808,6 @@ fun TestCompletedView(
             }
         }
 
-        // TDR card (single, fixed order)
         item {
             val tdrSec = testSections.find { it.type == TDR }
             if (tdrSec != null) {
@@ -813,7 +822,6 @@ fun TestCompletedView(
             }
         }
 
-        // Speed Test card (single, fixed order)
         item {
             val speedSec = testSections.find { it.type == SPEED }
             if (speedSec != null) {
@@ -825,65 +833,6 @@ fun TestCompletedView(
                 ) {
                     TestSectionDetails(speedSec)
                 }
-            }
-        }
-    }
-}
-
-@Composable
-fun StatChip(
-    label: String,
-    value: String,
-    icon: ImageVector
-) {
-    Surface(
-        shape = RoundedCornerShape(8.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        modifier = Modifier.padding(4.dp)
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                icon,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.primary
-            )
-            Spacer(Modifier.width(8.dp))
-            Column {
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = value,
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun RawLogsPane(log: List<String>, modifier: Modifier = Modifier) {
-    val state = rememberLazyListState()
-    LaunchedEffect(log.size) {
-        if (log.isNotEmpty()) state.animateScrollToItem(log.lastIndex)
-    }
-    Surface(modifier = modifier, tonalElevation = 2.dp, shape = RoundedCornerShape(8.dp), color = MaterialTheme.colorScheme.surfaceVariant) {
-        LazyColumn(state = state, modifier = Modifier.fillMaxWidth().padding(12.dp)) {
-            items(log.size) { idx ->
-                val line = log[idx]
-                val color = when {
-                    line.contains("ERRORE", true) || line.contains("FALLITO", true) || line.contains("FAIL", true) -> MaterialTheme.colorScheme.error
-                    line.contains("SUCCESSO", true) || line.contains("PASS", true) -> Color(0xFF2E7D32)
-                    else -> MaterialTheme.colorScheme.onSurface
-                }
-                Text(line, color = color, style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily.Monospace)
             }
         }
     }

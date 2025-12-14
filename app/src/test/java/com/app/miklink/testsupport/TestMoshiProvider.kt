@@ -1,6 +1,6 @@
 package com.app.miklink.testsupport
 
-import com.app.miklink.core.data.remote.mikrotik.infra.NeighborDetailListAdapter
+import com.app.miklink.data.remote.mikrotik.infra.NeighborDetailListAdapter
 import com.squareup.moshi.FromJson
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.ToJson

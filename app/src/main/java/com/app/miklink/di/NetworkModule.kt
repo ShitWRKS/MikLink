@@ -28,7 +28,7 @@ object NetworkModule {
     @Singleton
     fun provideMoshi(): Moshi {
         return Moshi.Builder()
-            .add(com.app.miklink.core.data.remote.mikrotik.infra.NeighborDetailListAdapter())
+            .add(com.app.miklink.data.remote.mikrotik.infra.NeighborDetailListAdapter())
             .add(object {
                 @FromJson
                 fun fromJson(reader: com.squareup.moshi.JsonReader): Boolean {
@@ -61,14 +61,7 @@ object NetworkModule {
             .build()
     }
 
-    @SuppressLint("CustomX509TrustManager")
-    private fun createUnsafeTrustManager(): X509TrustManager {
-        return object : X509TrustManager {
-            override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
-            override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
-            override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
-        }
-    }
+    // Unsafe trust manager helper removed from global module: trust-all is applied only per-probe
 
     @Provides
     @Singleton
@@ -82,14 +75,6 @@ object NetworkModule {
             .writeTimeout(30, TimeUnit.SECONDS)
             .readTimeout(60, TimeUnit.SECONDS)
             .callTimeout(60, TimeUnit.SECONDS)
-
-        // Trust-all SSL per HTTPS self-signed dei MikroTik (se si usa https)
-        val trustAllCerts = arrayOf<TrustManager>(createUnsafeTrustManager())
-        val sslContext = SSLContext.getInstance("TLS")
-        sslContext.init(null, trustAllCerts, java.security.SecureRandom())
-        builder.sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
-        builder.hostnameVerifier { _, _ -> true }
-
         return builder.build()
     }
 

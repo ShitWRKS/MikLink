@@ -218,7 +218,6 @@ class RunTestUseCaseImplTest {
         if (completedIndex < 0) {
             val eventsDesc = events.map { ev ->
                 when (ev) {
-                    is TestEvent.LogLine -> "LogLine"
                     is TestEvent.Progress -> "Progress"
                     is TestEvent.SectionsUpdated -> "SectionsUpdated(${ev.sections.map { it.type }})"
                     is TestEvent.Failed -> "Failed(${ev.error.message})"

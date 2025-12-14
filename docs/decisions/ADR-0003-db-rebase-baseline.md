@@ -16,7 +16,7 @@ Il refactor punta a semplificare: database “baseline” e single probe.
   - Nome file DB: `miklink`
   - Nessuna migrazione “storica”: si accetta reset durante sviluppo.
 - La configurazione sonda è **una sola** e non espone `probeId`.
-  - Per vincoli tecnici Room esiste una PK **interna** (es. `singletonKey=1`), mai esposta fuori dal layer DB.
+  - Per vincoli tecnici Room esiste una PK **interna** (es. `id=1`), mai esposta fuori dal layer DB.
   - I repository espongono solo:
     - `getProbeConfig(): ProbeConfig?`
     - `saveProbeConfig(config: ProbeConfig)`

@@ -1,6 +1,6 @@
 package com.app.miklink.utils
 
-import com.app.miklink.core.data.remote.mikrotik.dto.NeighborDetail
+import com.app.miklink.data.remote.mikrotik.dto.NeighborDetail
 
 /**
  * Finds the most likely candidate for a directly connected switch from a list of LLDP neighbors.

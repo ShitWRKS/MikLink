@@ -1,4 +1,4 @@
-package com.app.miklink.core.data.remote.mikrotik.golden
+package com.app.miklink.data.remote.mikrotik.golden
 
 import com.app.miklink.testsupport.FixtureLoader
 import com.app.miklink.testsupport.TestMoshiProvider

@@ -37,7 +37,7 @@ class CableTestStepImpl @Inject constructor(
     }
 }
 
-private fun com.app.miklink.core.data.remote.mikrotik.dto.CableTestResult.toSummary(): CableTestSummary {
+private fun com.app.miklink.data.remote.mikrotik.dto.CableTestResult.toSummary(): CableTestSummary {
     val entries = cablePairs.orEmpty().mapNotNull { pair ->
         val distance = pair["distance"] ?: pair["len"] ?: pair["length"]
         val status = pair["status"] ?: pair["state"] ?: pair["result"]

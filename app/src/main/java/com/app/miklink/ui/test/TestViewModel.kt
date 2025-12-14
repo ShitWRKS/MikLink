@@ -28,8 +28,7 @@ class TestViewModel @Inject constructor(
     private val reportRepository: ReportRepository
 ) : ViewModel() {
 
-    private val _log = MutableStateFlow<List<String>>(emptyList())
-    val log: StateFlow<List<String>> = _log.asStateFlow()
+    // Logs removed from UI; keep Execution state only
 
     private val _uiState = MutableStateFlow<UiState<TestReport>>(UiState.Idle)
     val uiState: StateFlow<UiState<TestReport>> = _uiState.asStateFlow()
@@ -46,7 +45,6 @@ class TestViewModel @Inject constructor(
         val plan = buildPlan() ?: return
 
         viewModelScope.launch {
-            _log.value = emptyList()
             _sections.value = emptyList()
             _uiState.value = UiState.Loading
             _isRunning.value = true
@@ -57,11 +55,12 @@ class TestViewModel @Inject constructor(
                 }
                 .collect { event ->
                     when (event) {
-                        is TestEvent.LogLine -> appendLog(event.message)
-                        is TestEvent.Progress -> appendLog("${event.progress.currentStep}: ${event.progress.message}")
                         is TestEvent.SectionsUpdated -> _sections.value = mapSections(event.sections)
                         is TestEvent.Completed -> handleCompletion(plan, event.outcome)
                         is TestEvent.Failed -> handleFailure(event.error.message)
+                        else -> {
+                            // Ignore raw log/progress events for the UI (kept internal to UseCase)
+                        }
                     }
                 }
         }
@@ -83,7 +82,6 @@ class TestViewModel @Inject constructor(
     private fun handleFailure(message: String?) {
         _isRunning.value = false
         val errorMessage = message ?: "Errore sconosciuto"
-        appendLog("ERRORE: $errorMessage")
         _uiState.value = UiState.Error(errorMessage)
     }
 
@@ -99,7 +97,6 @@ class TestViewModel @Inject constructor(
 
         if (clientId <= 0 || profileId <= 0) {
             val message = "Parametri di test non validi. client=$clientId profile=$profileId"
-            appendLog(message)
             _uiState.value = UiState.Error("Parametri di navigazione non validi.")
             return null
         }
@@ -158,7 +155,5 @@ class TestViewModel @Inject constructor(
             ?: -1L
     }
 
-    private fun appendLog(message: String) {
-        _log.value = _log.value + message
-    }
+    // appendLog removed: raw execution logs are not surfaced to the UI anymore
 }

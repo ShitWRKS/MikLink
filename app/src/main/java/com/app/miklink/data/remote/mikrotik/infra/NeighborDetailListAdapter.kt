@@ -1,6 +1,6 @@
-package com.app.miklink.core.data.remote.mikrotik.infra
+package com.app.miklink.data.remote.mikrotik.infra
 
-import com.app.miklink.core.data.remote.mikrotik.dto.NeighborDetail
+import com.app.miklink.data.remote.mikrotik.dto.NeighborDetail
 
 import com.squareup.moshi.FromJson
 import com.squareup.moshi.JsonReader

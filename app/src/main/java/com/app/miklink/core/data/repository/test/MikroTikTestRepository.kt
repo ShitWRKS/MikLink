@@ -1,11 +1,11 @@
 package com.app.miklink.core.data.repository.test
 
 import com.app.miklink.core.domain.model.ProbeConfig
-import com.app.miklink.core.data.remote.mikrotik.dto.CableTestResult
-import com.app.miklink.core.data.remote.mikrotik.dto.MonitorResponse
-import com.app.miklink.core.data.remote.mikrotik.dto.NeighborDetail
-import com.app.miklink.core.data.remote.mikrotik.dto.PingResult
-import com.app.miklink.core.data.remote.mikrotik.dto.SpeedTestResult
+import com.app.miklink.data.remote.mikrotik.dto.CableTestResult
+import com.app.miklink.data.remote.mikrotik.dto.MonitorResponse
+import com.app.miklink.data.remote.mikrotik.dto.NeighborDetail
+import com.app.miklink.data.remote.mikrotik.dto.PingResult
+import com.app.miklink.data.remote.mikrotik.dto.SpeedTestResult
 
 /**
  * Repository per operazioni MikroTik usate dai test.
@@ -70,6 +70,6 @@ interface MikroTikTestRepository {
      * @param probe Configurazione della probe
      * @return SystemResource (board-name, ecc.)
      */
-    suspend fun systemResource(probe: ProbeConfig): com.app.miklink.core.data.remote.mikrotik.dto.SystemResource
+    suspend fun systemResource(probe: ProbeConfig): com.app.miklink.data.remote.mikrotik.dto.SystemResource
 }
 

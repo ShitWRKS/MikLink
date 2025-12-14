@@ -1,9 +1,9 @@
 package com.app.miklink.data.repository
 
-import com.app.miklink.core.data.remote.mikrotik.service.MikroTikApiService
-import com.app.miklink.core.data.remote.mikrotik.dto.RouteAdd
-import com.app.miklink.core.data.remote.mikrotik.dto.RouteEntry
-import com.app.miklink.core.data.remote.mikrotik.dto.NumbersRequest
+import com.app.miklink.data.remote.mikrotik.service.MikroTikApiService
+import com.app.miklink.data.remote.mikrotik.dto.RouteAdd
+import com.app.miklink.data.remote.mikrotik.dto.RouteEntry
+import com.app.miklink.data.remote.mikrotik.dto.NumbersRequest
 
 /**
  * Abstraction for route management operations on MikroTik devices.

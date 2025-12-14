@@ -2,8 +2,8 @@ package com.app.miklink.data.repositoryimpl.mikrotik
 
 import com.app.miklink.core.data.repository.probe.ProbeRepository
 import com.app.miklink.core.domain.model.ProbeConfig
-import com.app.miklink.core.data.remote.mikrotik.dto.ProplistRequest
-import com.app.miklink.core.data.remote.mikrotik.service.MikroTikServiceProvider
+import com.app.miklink.data.remote.mikrotik.dto.ProplistRequest
+import com.app.miklink.data.remote.mikrotik.service.MikroTikServiceProvider
 import com.app.miklink.core.data.repository.ProbeStatusInfo
 import com.app.miklink.core.data.repository.probe.ProbeStatusRepository
 import com.app.miklink.core.data.repository.preferences.UserPreferencesRepository

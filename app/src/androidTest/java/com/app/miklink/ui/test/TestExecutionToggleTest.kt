@@ -39,32 +39,12 @@ class TestExecutionToggleTest {
             TestCompletedView(
                 report = sampleReport,
                 sections = listOf(TestSection(TestSectionCategory.TEST, TestSectionType.PING, "Ping", "PASS", listOf(TestDetail("Loss", "0%")))),
-                log = listOf("RAW LOG: SAMPLE LINE"),
-                showRawLog = showRawLogState.value,
-                onToggleRawLog = { showRawLogState.value = !showRawLogState.value },
                 modifier = androidx.compose.ui.Modifier.fillMaxSize()
             )
         }
-
-        val showLabel = composeRule.activity.getString(R.string.test_toggle_show_logs)
-        val hideLabel = composeRule.activity.getString(R.string.test_toggle_hide_logs)
-
-        // Initially the sections should be present (Ping card title)
+        // The toggles and raw logs have been removed: sections should be present and raw log should not be displayed
         composeRule.onNodeWithText("Ping").assertIsDisplayed()
-
-        // Click the toggle button
-        composeRule.onNodeWithText(showLabel).performClick()
-        composeRule.waitForIdle()
-
-        // After toggle, raw log text should be visible
-        composeRule.onNodeWithText("RAW LOG: SAMPLE LINE").assertIsDisplayed()
-
-        // Toggle back
-        composeRule.onNodeWithText(hideLabel).performClick()
-        composeRule.waitForIdle()
-
-        // Sections visible again
-        composeRule.onNodeWithText("Ping").assertIsDisplayed()
+        composeRule.onNodeWithText("RAW LOG: SAMPLE LINE").assertDoesNotExist()
     }
 
     @Test
@@ -72,33 +52,13 @@ class TestExecutionToggleTest {
         composeRule.setContent {
             val showRawLogState = remember { mutableStateOf(false) }
             TestInProgressView(
-                log = listOf("RAW LOG: SAMPLE IN PROGRESS"),
                 sections = listOf(TestSection(TestSectionCategory.TEST, TestSectionType.PING, "Ping", "PASS", listOf(TestDetail("Loss", "0%")))),
                 listState = androidx.compose.foundation.lazy.rememberLazyListState(),
-                showRawLog = showRawLogState.value,
-                onToggleRawLog = { showRawLogState.value = !showRawLogState.value },
                 modifier = androidx.compose.ui.Modifier.fillMaxSize()
             )
         }
-
-        val showRawLabel = composeRule.activity.getString(R.string.test_toggle_show_raw_logs)
-        val hideRawLabel = composeRule.activity.getString(R.string.test_toggle_hide_raw_logs)
-
-        // Initially the section card should be present
+        // Toggles/raw logs removed: section should be present and raw log should not exist
         composeRule.onNodeWithText("Ping").assertIsDisplayed()
-
-        // Click the toggle to show raw logs
-        composeRule.onNodeWithText(showRawLabel).performClick()
-        composeRule.waitForIdle()
-
-        // Raw log should be visible
-        composeRule.onNodeWithText("RAW LOG: SAMPLE IN PROGRESS").assertIsDisplayed()
-
-        // Toggle back to sections
-        composeRule.onNodeWithText(hideRawLabel).performClick()
-        composeRule.waitForIdle()
-
-        // Section visible again
-        composeRule.onNodeWithText("Ping").assertIsDisplayed()
+        composeRule.onNodeWithText("RAW LOG: SAMPLE IN PROGRESS").assertDoesNotExist()
     }
 }

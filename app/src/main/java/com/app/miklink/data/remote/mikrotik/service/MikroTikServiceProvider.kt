@@ -1,4 +1,4 @@
-package com.app.miklink.core.data.remote.mikrotik.service
+package com.app.miklink.data.remote.mikrotik.service
 
 import com.app.miklink.core.domain.model.ProbeConfig
 
