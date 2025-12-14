@@ -10,6 +10,7 @@ Questa pagina descrive lo **stato attuale “as-is”** del database, allineato 
 - Room database: `com.app.miklink.data.local.room.MikLinkDatabase`
 - Nome file DB: `miklink`
 - Room schemaVersion: `1`
+- Migrazioni Room: nessuna; fallback non configurato (rebase distruttivo se cambia la versione)
 - Policy refactor DB: **rebase distruttivo** (reset accettato durante sviluppo; vedi ADR-0003)
 
 ## Single probe (probe_config)

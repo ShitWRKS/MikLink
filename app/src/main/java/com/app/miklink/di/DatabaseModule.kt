@@ -29,9 +29,6 @@ object DatabaseModule {
         @ApplicationContext context: Context,
         testProfileDaoProvider: Provider<TestProfileDao>
     ): MikLinkDatabase {
-        // Tabula rasa: elimina il vecchio DB
-        context.deleteDatabase("miklink-db")
-        
         return Room.databaseBuilder(
             context,
             MikLinkDatabase::class.java,

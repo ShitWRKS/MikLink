@@ -8,9 +8,9 @@ package com.app.miklink.core.domain.report
  * - Provide helper functions to extract metrics for reporting
  *
  * Design decision:
- * - In DB v2, `Report.resultsJson` remains a single JSON column. The transformation of
- *   `resultsJson` into structured columns or analytics-ready formats is deferred to a
- *   future epic named `Report Analytics`.
+ * - The current schema keeps `resultsJson` as a single JSON column. Transformations into
+ *   structured columns or analytics-ready formats are deferred to a future epic named
+ *   `Report Analytics`.
  */
 interface ReportAggregator {
     // fun aggregate(resultsJson: String): AggregatedReport

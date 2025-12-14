@@ -57,3 +57,17 @@ Evidenze precedenti rimosse:
 - UI: toggle + pannello "raw logs" (TestExecutionScreen)
 - Domain: evento log (TestEvent.LogLine)
 - String resources dedicate ai log
+
+---
+
+## D-005 — DB legacy / migrazioni (EPIC-0002)
+
+Stato: **RISOLTO** ✅
+
+Evidenze (solo comandi/output):
+
+- `git grep -n "miklink-db" app/src/main/java` → **0 occorrenze**
+- `git grep -nE "\bv1\b|\bv2\b|Database_v2|Migrations\.kt|Migration\b|AutoMigration" app/src/main/java` → **0 occorrenze**
+- `./gradlew testDebugUnitTest` → **BUILD SUCCESSFUL**
+- `./gradlew assembleDebug` → **BUILD SUCCESSFUL**
+- `./gradlew assembleRelease` → **BUILD SUCCESSFUL**
