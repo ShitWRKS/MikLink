@@ -1,44 +1,36 @@
 # MikLink — Documentazione
 
-Questa cartella contiene **la documentazione “di riferimento”** per MikLink.
-L'obiettivo è ridurre il drift tipico del vibe-coding: pochi documenti, aggiornati, con decisioni tracciate.
+Questa cartella è la **source of truth** per:
 
-## Navigazione
+- architettura target (SOLID / clean)
+- decisioni non negoziabili (ADR)
+- riferimento tecnico (DB, dipendenze, test, fixtures)
+- discrepanze misurate tra docs e codice
 
+> Regola: se una decisione cambia, si crea/aggiorna un **ADR**.  
+> Regola: `DISCREPANCIES.md` contiene **solo evidenze**, non proposte.
+
+## Indice
+
+### Decisioni (ADR)
+- [ADR-0001 — Sonda unica (rimozione probeId)](decisions/ADR-0001-single-probe.md)
+- [ADR-0002 — Toggle HTTPS + trust-all consapevole](decisions/ADR-0002-https-toggle-trust-all.md)
+- [ADR-0003 — Rebase DB (baseline) + probe singleton interno](decisions/ADR-0003-db-rebase-baseline.md)
+- [ADR-0004 — Socket ID “Lite”](decisions/ADR-0004-socket-id-lite.md)
+- [ADR-0005 — Rimozione Logs dallo scope](decisions/ADR-0005-remove-logs.md)
+
+### Spiegazioni
 - [Architettura](explanation/architecture.md)
-- [V1 — Obiettivi e confini](explanation/v1-scope.md)
-- [Struttura del progetto](reference/project-structure.md)
-- [Database](reference/database.md)
-- [MikroTik REST API](reference/mikrotik-rest-api.md)
+- [V1 — obiettivi e confini](explanation/v1-scope.md)
+
+### Riferimenti
+- [Project structure (canone)](reference/project-structure.md)
+- [Database (baseline)](reference/database.md)
+- [Dipendenze](reference/dependencies.md)
 - [Testing](reference/testing.md)
 - [Fixtures](reference/fixtures.md)
-- [Dipendenze](reference/dependencies.md)
-- How-to:
-  - [Aggiungere un golden test](howto/add-golden-test.md)
-- Decisioni (ADR):
-  - [ADR-0001 — Sonda unica](decisions/ADR-0001-single-probe.md)
-  - [ADR-0002 — HTTP/HTTPS + trust-all](decisions/ADR-0002-https-toggle-trust-all.md)
-- [Discrepanze Docs vs Codice](DISCREPANCIES.md)
+- [MikroTik REST API](reference/mikrotik-rest-api.md)
 
-## Come eseguire
-
-### Build & test (da CLI)
-
-```bash
-./gradlew test
-./gradlew connectedAndroidTest
-```
-
-### Info toolchain (dallo stato attuale della codebase)
-
-- **AGP**: 8.13.1
-- **Kotlin**: 2.1.0
-- **compileSdk / targetSdk / minSdk**: 36 / 36 / 26
-
-> Nota: i numeri qui sopra sono quelli presenti *oggi* nei file Gradle della repo.
-
-## Regole anti-drift
-
-- Le decisioni architetturali vivono in `docs/decisions/` (ADR).
-- Le regole di layering stanno in `docs/explanation/architecture.md`.
-- Se qualcosa non torna tra docs e codice: aggiornare `docs/DISCREPANCIES.md` (e poi sistemare).
+### Operativo
+- [Discrepanze (docs vs codice)](DISCREPANCIES.md)
+- [How-to: aggiungere un golden test](howto/add-golden-test.md)

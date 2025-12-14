@@ -1,77 +1,84 @@
-# Database
+# Database (baseline)
 
-## Stato attuale (Room v1)
+Questa pagina descrive lo **schema target** dopo il rebase distruttivo.
 
-- Database: `com.app.miklink.core.data.local.room.v1.AppDatabase`
-- Nome file DB: `miklink-db`
-- Versione Room: `13`
-- `exportSchema = true`
+## Decisioni chiave
 
-La posizione dello schema è configurata nei Gradle args:
+- Nome file DB: `miklink`
+- Room schemaVersion: `1`
+- Nessuna migrazione: se lo schema cambia durante lo sviluppo, si accetta reset (vedi ADR-0003).
+- **Single probe**: la configurazione sonda è unica e non espone `probeId`.
+- `Report.resultsJson` resta una **singola colonna JSON**.
 
-- `room.schemaLocation = app/schemas` (annotation processor)
-- `room.schemaLocation = app/schemas` (KSP)
+## Tabelle
 
-> Buona pratica: versionare la cartella `schemas/` nel VCS (ma non includerla nel packaging dell'app).
+### `clients`
 
-### Entities
+- `clientId` (PK, Long, autoincrement)
+- `companyName` (String, required)
+- `location` (String?, default "Sede")
+- `notes` (String?)
+- `networkMode` (Enum/String: DHCP | Static)
+- `staticIp` (String?)
+- `staticSubnet` (String?)  *(se mantenuta in lite; valutabile deprecazione futura)*
+- `staticGateway` (String?)
+- `staticCidr` (String?) *(preferita quando disponibile)*
+- `minLinkRate` (String) *(threshold PASS: "10M","100M","1G","10G")*
+- **Socket-ID Lite**
+  - `socketPrefix` (String)
+  - `socketSeparator` (String)
+  - `socketNumberPadding` (Int)
+  - `socketSuffix` (String)
+  - `nextIdNumber` (Int)
+- Speed test (opzionale)
+  - `speedTestServerAddress` (String?)
+  - `speedTestServerUser` (String?)
+  - `speedTestServerPassword` (String?)
 
-**Client** (`clients`)
+**Rimossi:** `lastFloor`, `lastRoom` (legacy).
 
-Campi principali (v1):
-- `clientId: Long` (PK autogen)
-- `companyName: String` (indicizzato)
-- `location: String?`
-- `notes: String?`
-- `networkMode: String` (es. DHCP / Static)
-- `staticIp/staticSubnet/staticGateway` (legacy)
-- `staticCidr: String?` (preferito)
-- Socket ID formatting:
-  - `socketPrefix`, `socketSuffix`, `socketSeparator`, `socketNumberPadding`, `nextIdNumber`
-- Legacy da rimuovere: `lastFloor`, `lastRoom`
-- Speed test (server):
-  - `speedTestServerAddress`, `speedTestServerUser`, `speedTestServerPassword`
+### `probe_config` (singleton interno)
 
-**ProbeConfig** (`probe_config`)
+La UI e il domain trattano la probe config come **unica**.
 
-- `probeId: Long` (PK autogen) — **legacy**: target = sonda unica senza probeId
-- `ipAddress`, `username`, `password`
-- `testInterface`
-- `isOnline`
-- `modelName`
-- `tdrSupported` (cache)
-- `isHttps` (toggle UI: http/https)
+Per vincoli tecnici Room, esiste una PK interna **non esposta**:
 
-**TestProfile** (`test_profiles`)
+- `singletonKey` (Int, PK) → valore fisso `1`
+- `ipAddress` (String)
+- `username` (String)
+- `password` (String)
+- `testInterface` (String)
+- `isOnline` (Boolean)
+- `modelName` (String?)
+- `tdrSupported` (Boolean) *(cache; fonte di verità = domain TdrCapabilities)*
+- `isHttps` (Boolean)
 
-- `profileId`, `profileName`, `profileDescription`
-- flags: `runTdr`, `runLinkStatus`, `runLldp`, `runPing`, `runSpeedTest`
-- ping targets: `pingTarget1..3`, `pingCount`
+### `test_profiles`
 
-**Report** (`test_reports`)
+- `profileId` (PK, Long, autoincrement)
+- `profileName` (String)
+- `profileDescription` (String?)
+- `runTdr` (Boolean)
+- `runLinkStatus` (Boolean)
+- `runLldp` (Boolean)
+- `runPing` (Boolean)
+- `pingTarget1`/`2`/`3` (String?)
+- `pingCount` (Int, default 4)
+- `runSpeedTest` (Boolean)
 
-- `reportId`
-- `clientId` (nullable)
-- `timestamp`
-- `socketName`, `notes`
-- `probeName`, `profileName` (stringhe)
-- `overallStatus`
-- `resultsJson` (payload serializzato)
+### `test_reports`
 
-### Seed iniziale
+- `reportId` (PK, Long, autoincrement)
+- `clientId` (Long?, FK opzionale)
+- `timestamp` (Long)
+- `socketName` (String?)
+- `notes` (String?)
+- `probeName` (String?)
+- `profileName` (String?)
+- `overallStatus` (String)
+- `resultsJson` (String)  ✅ **singola colonna JSON**
 
-Nel `DatabaseModule` viene eseguito un seed di profili di default all'`onCreate()` del DB.
+## Note operative
 
-## Rebaseline DB (decisione di progetto)
-
-Il progetto è in sviluppo e **non ci sono dati da preservare**: è accettabile rifare il DB “da zero” per:
-- rimuovere campi legacy (`probeId`, `lastFloor`, `lastRoom`, ecc.)
-- riallineare i layer (Room come infrastruttura in `data/**`)
-- semplificare migrazioni (ripartire da versione 1)
-
-**Importante:** prima di implementare la rebase dobbiamo fissare:
-1) quali dati devono esistere in v1 (Client / Profile / Probe config / Report / altro)
-2) quali relazioni e indici servono (query reali)
-3) quali campi sono “fonte di verità” vs “cache”
-
-Le discrepanze e scelte vanno tracciate in ADR e in `docs/DISCREPANCIES.md`.
+- `tdrSupported` è una cache per UI/query: la decisione di “supportato/non supportato” è nel domain (`TdrCapabilities`).
+- Se in futuro serviranno analytics su metriche dei report, si farà una epic dedicata “Report Analytics” (no in baseline).

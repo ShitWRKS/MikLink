@@ -1,30 +1,42 @@
 # Testing
 
-## Standard attuale (baseline v1)
+Questa pagina definisce la policy test durante il refactor.
 
-Per la v1, consideriamo **standard** e “bussola”:
+## Suite “bussola” (anti-regressione)
 
-1) **Golden parsing tests** (fixture RouterOS + Moshi)  
-2) **Quality tests**:
+Sono considerati **non negoziabili**:
+
+1) **Golden parsing tests** (fixture RouterOS + Moshi)
+2) **Quality tests**
    - scan hardcoded strings
    - coverage italiano delle stringhe
 
-Altri test presenti (contract/placeholder, Compose, migration) restano nel repo, ma:
-- i contract test `@Ignore` sono **placeholder per feature future**;
-- i test di migrazione DB possono diventare irrilevanti se scegliamo un “DB rebaseline” (reset).
+Altri test (contract placeholder, Compose UI test, migration) possono essere presenti,
+ma non devono guidare scelte architetturali se in conflitto con ADR/architettura.
+
+## Quando eseguire i test
+
+Durante una unità di lavoro (epic/PR) è accettabile che:
+- compilazione o test falliscano temporaneamente
+
+Alla fine della unità di lavoro è obbligatorio che:
+- `./gradlew test` sia **verde**
+- se si toccano UI/Room: `./gradlew connectedAndroidTest` quando possibile
+
+Se un test fallisce perché è cambiata l'intenzione:
+- non “aggiustare” alla cieca
+- registrare evidenza in `docs/DISCREPANCIES.md`
+- decidere tramite aggiornamento scope o ADR
 
 ## Dove sono i test
 
 - Unit test (JVM): `app/src/test/...`
-  - `core/data/remote/mikrotik/golden/*GoldenParsingTest.kt`
-  - `quality/*`
-- Instrumentation (device): `app/src/androidTest/...`
-  - test Compose e (attualmente) test migrazione Room
+- Instrumentation tests: `app/src/androidTest/...`
 
-## Come eseguire
+## Comandi
 
 ```bash
-# unit test (include golden + quality)
+# unit test
 ./gradlew test
 
 # instrumentation
@@ -33,9 +45,9 @@ Altri test presenti (contract/placeholder, Compose, migration) restano nel repo,
 
 ## Linee guida
 
-- I golden test devono rimanere deterministici:
+- Golden test deterministici:
   - fixture JSON versionate
   - parsing con Moshi (provider test dedicato)
-- I quality test devono fallire se:
-  - compaiono stringhe hardcoded in UI invece di `strings.xml`
-  - mancano traduzioni IT dove richiesto
+- Quality test:
+  - fallire se compaiono stringhe hardcoded in UI
+  - fallire se mancano traduzioni IT dove richiesto

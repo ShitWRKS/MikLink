@@ -1,61 +1,65 @@
 # DISCREPANCIES (Docs vs Codice)
 
-Questo file serve per tracciare **evidenze** (non proposte) quando la documentazione non riflette lo stato reale della codebase o viceversa.
+Questo file contiene **solo evidenze** tra docs e codice.  
+Non contiene proposte o soluzioni (quelle vanno in epic/PR).
 
 ## Regole
 
-- Una discrepanza = un blocco.
-- Nessuna proposta di fix qui (quelle vanno in issue/epic).
-- Includere sempre path e simboli (classi/funzioni) coinvolti.
+- Una discrepanza = un blocco con:
+  - data
+  - evidenza (path + simboli)
+  - perché è una discrepanza (rispetto a quale doc/ADR)
 
 ---
 
-## Discrepanze note (iniziali)
+## Discrepanze note (da risolvere nel refactor)
 
-### 1) UI dipende da Room (DAO/entity)
+### D-001 — `probeId` ancora presente nel flow
 
-- **Doc dice:** `ui/**` non importa `core.data.local.room.*`
-- **Codice mostra:** diversi file in `ui/**` importano `ClientDao`, `ReportDao`, `ProbeConfig`, `TestProfile`, ecc.
-- **Impatto:** alto (rompe layering)
+- **Data:** 2025-12-14
+- **Docs:** ADR-0001, ADR-0003
+- **Evidenze (esempi):**
+  - `app/src/main/java/com/app/miklink/ui/NavGraph.kt` route `test_execution/{clientId}/{probeId}/...`
+  - `app/src/main/java/com/app/miklink/core/domain/test/model/TestPlan.kt` contiene `probeId`
+  - `app/src/main/java/com/app/miklink/core/data/local/room/v1/model/ProbeConfig.kt` PK `probeId`
 
-Esempi (non esaustivi):
-- `app/src/main/java/com/app/miklink/ui/client/ClientEditViewModel.kt`
-- `app/src/main/java/com/app/miklink/ui/history/HistoryViewModel.kt`
+### D-002 — HTTPS trust-all applicato globalmente
 
-### 2) Domain non è ancora “puro”
+- **Data:** 2025-12-14
+- **Docs:** ADR-0002
+- **Evidenze (esempi):**
+  - `app/src/main/java/com/app/miklink/di/NetworkModule.kt` configura SSL trust-all e hostnameVerifier senza gating su `isHttps`
 
-- **Doc dice:** `core/domain/**` non importa Room/Retrofit/Moshi
-- **Codice mostra:** import da Room model e/o Moshi/DTO in alcuni file domain/usecase
-- **Impatto:** alto
+### D-003 — PDF dipende da UI model
 
-Esempi:
-- `core/domain/test/model/TestExecutionContext.kt`
-- `core/domain/usecase/test/RunTestUseCaseImpl.kt`
+- **Data:** 2025-12-14
+- **Docs:** `explanation/architecture.md` (Results canonical)
+- **Evidenze (esempi):**
+  - `app/src/main/java/com/app/miklink/core/data/pdf/impl/PdfGeneratorIText.kt` importa `com.app.miklink.ui.history.model.ParsedResults`
+  - `app/src/main/java/com/app/miklink/core/data/pdf/parser/ParsedResultsParser.kt` ritorna `ParsedResults`
 
-### 3) probeId ancora presente nel flow UI
+### D-004 — UI dipende da DTO remoti per i risultati
 
-- **Doc/ADR dice:** sonda unica, `probeId` legacy
-- **Codice mostra:** route/args ancora includono `probeId`
-- **Impatto:** medio/alto
+- **Data:** 2025-12-14
+- **Docs:** `explanation/architecture.md` (Results canonical)
+- **Evidenze (esempi):**
+  - `app/src/main/java/com/app/miklink/ui/history/model/ParsedResults.kt` importa DTO MikroTik
 
-Esempio:
-- `ui/NavGraph.kt` (route `test_execution/{clientId}/{probeId}/{profileId}/{socketName}`)
+### D-005 — DB “v1/v2” e migrazioni ancora presenti
 
-### 4) PDF dipende da UI e Room entity
+- **Data:** 2025-12-14
+- **Docs:** ADR-0003, `reference/database.md`
+- **Evidenze (esempi):**
+  - `core.data.local.room.v1.AppDatabase` con version 13
+  - `Migrations.kt` e `MigrationTest.kt`
+  - nome DB file `miklink-db`
 
-- **Doc dice:** PDF dovrebbe consumare modelli normalizzati di dominio
-- **Codice mostra:** `PdfGeneratorIText` importa `ui.history.model.ParsedResults` e entity Room v1
-- **Impatto:** medio
+### D-006 — Cartelle non canoniche presenti
 
-Esempio:
-- `core/data/pdf/impl/PdfGeneratorIText.kt`
+- **Data:** 2025-12-14
+- **Docs:** `reference/project-structure.md`
+- **Evidenze (esempi):**
+  - `feature/**` presente
+  - `domain/**` top-level presente
+  - `data/repositoryimpl/roomv1/**` presente
 
----
-
-## Discrepanze aperte (template)
-
-### X) [DOC] <file.md>#<sezione>
-- **Doc dice:** ...
-- **Codice mostra:** (path + simbolo)
-- **Impatto:** basso/medio/alto
-- **Note:** ...

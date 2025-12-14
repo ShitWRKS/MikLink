@@ -1,42 +1,54 @@
-# Struttura del progetto
+# Project structure (canone)
 
-Questa pagina descrive la struttura **attuale** dei package principali e la struttura **target** (quella su cui basare ogni nuovo codice).
+Questa pagina è **normativa**: descrive la struttura ammessa e le regole di naming/import.
 
-## Moduli Gradle
+> Se una cartella/file non rispetta il canone, va migrata o rimossa (nessuna eccezione senza ADR).
 
-- Un solo modulo applicativo: `app/`
+## Struttura canonica
 
-## Package principali
+```
+app/src/main/java/com/app/miklink/
+  core/
+    domain/
+      model/
+      usecase/
+      ...
+    data/
+      # SOLO ports/contratti
+      repository/
+      gateway/
+      provider/
+      ...
+  data/
+    # Implementazioni infra + mapper
+    db/
+    remote/
+    repositoryimpl/
+    parser/
+    ...
+  ui/
+    # Compose + ViewModel + UiState + mapper domain->ui
+  di/
+    # Wiring DI
+```
 
-Base package: `com.app.miklink`
+## Cartelle non canoniche
 
-- `core/`
-  - `core/domain/**` — dominio puro (regole + use case + modelli)
-  - `core/data/**` — contratti (repository/gateway/provider) e tipi neutri
-  - `core/presentation/**` — contratti/pattern UI-agnostic (minimo, se serve)
+- `feature/**` → da eliminare/migrare (non usare per nuove feature)
+- `domain/**` top-level → da migrare in `core/domain/**`
+- qualunque cartella con suffissi `v1/`, `v2/` → vietata (usa Room schemaVersion, non naming)
 
-- `data/`
-  - `data/repositoryimpl/**` — implementazioni dei repository (es. Room, MikroTik)
-  - (target) ulteriori adapter/mapper infra-only
+## Regole di responsabilità
 
-- `di/`
-  - Moduli Hilt (Database, Network, Repository, PDF, ecc.)
+- `core/domain/**`: puro business. Niente Android, niente rete, niente DB.
+- `core/data/**`: solo interfacce/ports. Niente implementazioni.
+- `data/**`: DB/rete/PDF + mapper/parsing.
+- `ui/**`: solo presentazione.
+- `di/**`: solo wiring.
 
-- `ui/`
-  - Compose + ViewModel + state e mapper UI
+## Checklist di revisione rapida
 
-## Cartelle presenti ma “in migrazione”
-
-- `legacy/`  
-- `domain/` (top-level, fuori dal canone `core/domain/**`)
-- `feature/` (struttura parallela a `ui/`)
-
-**Regola pratica:** nessun nuovo codice dovrebbe nascere qui; si migra verso i layer canonici e poi si elimina.
-
-## Convenzioni
-
-- **Domain models**: in `core/domain/**/model`
-- **Use cases**: in `core/domain/usecase/**`
-- **Repository interfaces**: in `core/data/repository/**`
-- **Repository implementations**: in `data/repositoryimpl/**`
-- **Room**: è considerata infrastruttura ⇒ deve vivere in `data/**` (target).
+- Un file in `core/domain/**` ha import `android.*`? → **errore**
+- Un file in `ui/**` importa `room`/`dao`/`entity`? → **errore**
+- Un file in `data/**` importa `ui/**`? → **errore**
+- Esiste `probeId` in qualsiasi file Kotlin? → **errore**
