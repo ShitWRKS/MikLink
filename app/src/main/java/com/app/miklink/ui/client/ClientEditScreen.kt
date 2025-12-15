@@ -1,3 +1,9 @@
+/*
+ * Purpose: Compose screen for creating/updating clients and previewing socket-id formatting consistently with domain policy.
+ * Inputs: ClientEditViewModel state (company details, network mode, socket prefix/separator/padding/suffix, speed test credentials) and navigation controller.
+ * Outputs: Persisted client via view model actions and live previews for socket-id and speed test target.
+ * Notes: Socket preview delegates to SocketIdLite.format to align with ADR-0004 separators; UI remains stateless beyond local expansion toggles.
+ */
 package com.app.miklink.ui.client
 
 import androidx.compose.foundation.BorderStroke
@@ -20,7 +26,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.app.miklink.core.domain.model.NetworkMode
-import java.util.Locale
+import com.app.miklink.core.domain.policy.socketid.SocketIdLite
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,10 +65,13 @@ fun ClientEditScreen(
 
     // Preview computations
     val socketPreview = remember(socketPrefix, socketSeparator, socketNumberPadding, socketSuffix) {
-        val paddedNumber = String.format(Locale.US, "%0${socketNumberPadding}d", 1)
-        val prefixPart = if (socketPrefix.isNotBlank()) "${socketPrefix}${socketSeparator}" else ""
-        val suffixPart = if (socketSuffix.isNotBlank()) "${socketSeparator}${socketSuffix}" else ""
-        "${prefixPart}${paddedNumber}${suffixPart}"
+        SocketIdLite.format(
+            prefix = socketPrefix,
+            separator = socketSeparator,
+            numberPadding = socketNumberPadding,
+            suffix = socketSuffix,
+            idNumber = 1
+        )
     }
 
     val speedTestPreview = remember(speedTestServerAddress) {

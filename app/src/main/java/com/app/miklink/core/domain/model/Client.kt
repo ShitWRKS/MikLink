@@ -1,4 +1,12 @@
+/*
+ * Purpose: Domain model for client configuration including socket-id formatting fields used across the app.
+ * Inputs: Client properties such as network configuration, socket prefix/separator/padding/suffix, and speed test settings.
+ * Outputs: Immutable client instances and deterministic socket-id formatting via socketNameFor().
+ * Notes: Remains pure Kotlin; socketNameFor delegates to SocketIdLite to keep ADR-0004 formatting consistent across layers.
+ */
 package com.app.miklink.core.domain.model
+
+import com.app.miklink.core.domain.policy.socketid.SocketIdLite
 
 data class Client(
     val clientId: Long,
@@ -30,6 +38,11 @@ enum class NetworkMode {
  * This function is pure and does not mutate state.
  */
 fun Client.socketNameFor(idNumber: Int): String {
-    val paddedNumber = String.format(java.util.Locale.US, "%0${this.socketNumberPadding}d", idNumber)
-    return "${this.socketPrefix}${this.socketSeparator}${paddedNumber}${this.socketSeparator}${this.socketSuffix}"
+    return SocketIdLite.format(
+        prefix = socketPrefix,
+        separator = socketSeparator,
+        numberPadding = socketNumberPadding,
+        suffix = socketSuffix,
+        idNumber = idNumber
+    )
 }

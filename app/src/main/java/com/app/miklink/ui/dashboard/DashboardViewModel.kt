@@ -1,3 +1,9 @@
+/*
+ * Purpose: Provide dashboard state (clients, probe status, profiles) and deterministic socket name suggestions.
+ * Inputs: Client/test profile/probe repositories, report history, probe status stream, user preferences, and id numbering strategy.
+ * Outputs: StateFlows for UI (clients, profiles, probe, online state, socket suggestion, glow intensity) plus gap-filling socket id helper.
+ * Notes: Uses SocketIdLite policy for formatting/parsing to align dashboard suggestions with ADR-0004 and keep logic pure inside ViewModel.
+ */
 package com.app.miklink.ui.dashboard
 
 import androidx.lifecycle.ViewModel
@@ -12,12 +18,12 @@ import com.app.miklink.core.domain.model.ProbeConfig
 import com.app.miklink.core.domain.model.TestProfile
 import com.app.miklink.core.data.repository.probe.ProbeStatusRepository
 import com.app.miklink.core.data.repository.preferences.UserPreferencesRepository
+import com.app.miklink.core.domain.policy.socketid.SocketIdLite
 import com.app.miklink.core.domain.model.preferences.IdNumberingStrategy
 import com.app.miklink.core.domain.usecase.preferences.ObserveIdNumberingStrategyUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import java.util.Locale
 import javax.inject.Inject
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
@@ -101,23 +107,11 @@ class DashboardViewModel @Inject constructor(
     // Funzione helper per trovare il primo ID disponibile (gap-filling)
     private suspend fun findNextAvailableId(client: Client): Int {
         val existingReports = reportRepository.observeReportsByClient(client.clientId).firstOrNull() ?: emptyList()
-        
-        // Estrai tutti i numeri ID esistenti
+
         val existingIds = existingReports.mapNotNull { report ->
-            report.socketName?.removePrefix(client.socketPrefix)?.toIntOrNull()
-        }.sorted()
-
-        // Trova il primo gap
-        var expectedId = 1
-        for (existingId in existingIds) {
-            if (existingId != expectedId) {
-                // Trovato un gap
-                return expectedId
-            }
-            expectedId++
+            val socketName = report.socketName ?: return@mapNotNull null
+            SocketIdLite.parseIdNumber(socketName, client.socketPrefix, client.socketSeparator)
         }
-
-        // Nessun gap trovato, usa il prossimo numero dopo l'ultimo
-        return existingIds.lastOrNull()?.plus(1) ?: 1
+        return SocketIdLite.firstMissingPositive(existingIds)
     }
 }

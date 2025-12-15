@@ -1,3 +1,9 @@
+/*
+ * Purpose: Configure MikroTik network settings for a probe according to client preferences (DHCP or static) without legacy AppRepository coupling.
+ * Inputs: Application context for strings, MikroTikServiceProvider to build API, RouteManager for route cleanup, client/probe data.
+ * Outputs: NetworkConfigFeedback describing applied mode/address/gateway/dns and messages; performs side effects on MikroTik API.
+ * Notes: Purely Android/data layer; keeps domain models untouched and respects Clean boundaries.
+ */
 package com.app.miklink.data.repositoryimpl
 
 import android.content.Context
@@ -21,7 +27,7 @@ import javax.inject.Inject
  * Replica la logica di AppRepository.applyClientNetworkConfig mantenendo lo stesso comportamento.
  */
 class NetworkConfigRepositoryImpl @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val serviceProvider: MikroTikServiceProvider,
     private val routeManager: RouteManager
 ) : NetworkConfigRepository {

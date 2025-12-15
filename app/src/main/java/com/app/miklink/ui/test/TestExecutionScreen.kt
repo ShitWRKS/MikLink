@@ -1,3 +1,9 @@
+/*
+ * Purpose: Compose screen for executing tests, showing live section progress, and handling completion actions (repeat/save/close).
+ * Inputs: TestViewModel state flows (uiState, sections, isRunning), navigation controller, and mapped TestSection details.
+ * Outputs: UI updates for section cards, progress indicators, dialogs, and save/repeat triggers back to the view model.
+ * Notes: Displays all planned sections (including PENDING) to avoid hidden steps and keeps logic UI-only without domain side effects.
+ */
 package com.app.miklink.ui.test
 
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -442,21 +448,8 @@ fun TestInProgressView(
                 }
             }
         } else {
-            val visibleSections = remember(sections) {
-                val list = mutableListOf<TestSection>()
-                var pendingIncluded = false
-                for (s in sections) {
-                    val status = s.status.uppercase()
-                    val isPending = status == "PENDING"
-                    if (!isPending) list.add(s) else if (!pendingIncluded) {
-                        list.add(s)
-                        pendingIncluded = true
-                    }
-                }
-                list
-            }
-            val infoSections = visibleSections.filter { it.category == INFO }
-            val testSections = visibleSections.filter { it.category == TEST }
+            val infoSections = sections.filter { it.category == INFO }
+            val testSections = sections.filter { it.category == TEST }
             LazyColumn(
                 state = listState,
                 modifier = Modifier.fillMaxWidth(),

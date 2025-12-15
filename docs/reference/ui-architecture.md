@@ -24,6 +24,10 @@ Shared:
 - `ui/components/` for truly global composables (buttons, dialogs, etc.)
 - `ui/common/` for shared state primitives (UiState, Result mapping, formatters)
 
+### Current vs Target
+- **Target:** feature-first slices under `ui/feature/<feature>/` with co-located screen/VM/state/components.
+- **Current:** legacy structure still uses folders like `ui/test/*`, `ui/client/*`, `ui/dashboard/*`; treated as in-migration while keeping boundaries (no data imports, use cases/ports only).
+
 ## Rules
 
 1) **No data-layer imports**

@@ -26,16 +26,30 @@ La formattazione è pure function nel dominio:
 Regola:
 
 - `padded = idNumber` formattato con zero-padding in base a `socketNumberPadding`
-- `socketName = prefix + separator + padded + separator + suffix`
-
-> Nota: la funzione concatena sempre entrambi i separatori (anche se prefix/suffix sono vuoti).  
-> Fonte: `core/domain/model/Client.kt`.
+- I separatori sono inseriti solo se c’è contenuto adiacente:
+  - se `prefix` non è vuoto → `prefix + separator + padded`
+  - se `suffix` non è vuoto → `padded + separator + suffix`
+  - se entrambi presenti → `prefix + separator + padded + separator + suffix`
+  - se entrambi vuoti → `padded` puro
+> Nota: il separatore non viene mostrato dopo il numero se `suffix` è vuoto e non viene mostrato prima del numero se `prefix` è vuoto.
 
 ### Incremento `nextIdNumber`
 
 - Il contatore si incrementa **solo** quando un report salvato ha `overallStatus == "PASS"` ed è salvato dal **flow di run-test**.
 - L'incremento è applicato nel use case `SaveTestReportUseCase`; il repository Room rimane CRUD e non muta `Client`.
 - Percorsi di duplicazione/import/restore devono usare il repository raw (senza incrementare).
+
+### Parsing (fill-gaps e suggerimenti dashboard)
+
+- Parsing è gestito dal policy `SocketIdLite.parseIdNumber(socketName, prefix, separator)`.
+- Formato atteso: separatori presenti solo quando c’è contenuto adiacente (allineato alla formattazione attuale).
+- Regole:
+  - se `prefix` non è vuoto il nome deve iniziare con `prefix + separator`;
+  - con `prefix` vuoto viene tollerato (solo in lettura) un separatore iniziale legacy;
+  - il segmento numerico è la parte prima del prossimo separatore (se presente) o fino alla fine stringa;
+  - restituisce `Int?` da `toIntOrNull()` (supporta padding con zeri).
+- Se il nome non rispetta il formato o contiene segmenti non numerici, ritorna `null` e l'id viene ignorato (sicuro per fill-gaps).
+- Usato da dashboard per strategia `FILL_GAPS` e mantiene coerenza con la preview di Settings e con il formato aggiornato.
 
 ## Conseguenze
 

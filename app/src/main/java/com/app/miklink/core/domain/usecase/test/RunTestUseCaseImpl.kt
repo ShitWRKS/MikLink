@@ -1,3 +1,9 @@
+/*
+ * Purpose: Execute network certification test plans, orchestrating domain steps and emitting UI/reporting events.
+ * Inputs: Client/probe/profile repositories, test step executors (network, link, TDR, LLDP, ping, speed), and TestPlan parameters via execute().
+ * Outputs: Flow<TestEvent> with progress/section snapshots, accumulated ReportData serialized through ReportResultsCodec, and mapped UI-ready details.
+ * Notes: Domain layer remains framework-free; ping details aggregation surfaces Packet Loss/RTT summaries required by UI cards.
+ */
 package com.app.miklink.core.domain.usecase.test
 
 import com.app.miklink.core.domain.model.Client
@@ -36,6 +42,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
 import java.util.LinkedHashMap
+import java.util.Locale
 
 /**
  * Implementazione di RunTestUseCase.
@@ -715,19 +722,8 @@ class RunTestUseCaseImpl @Inject constructor(
             }
         )
 
-    private fun pingDetails(results: List<PingTargetOutcome>): Map<String, String> {
-        if (results.isEmpty()) return mapOf("status" to "Nessun target valido")
-        val summary = results.joinToString("; ") { outcome ->
-            val status = when {
-                outcome.error != null -> "ERR"
-                outcome.packetLoss == null -> "SKIP"
-                outcome.packetLoss.filter { it.isDigit() || it == '.' }.toDoubleOrNull()?.let { it > 0.0 } == true -> "LOSS"
-                else -> "OK"
-            }
-            "${outcome.target}:$status"
-        }
-        return linkedMapOf("targets" to summary)
-    }
+    private fun pingDetails(results: List<PingTargetOutcome>): Map<String, String> =
+        pingDetailsSummary(results)
 
     private fun pingRaw(results: List<PingTargetOutcome>): Map<String, Any?> =
         linkedMapOf(
@@ -794,6 +790,83 @@ private const val SECTION_TDR = "TDR"
 private const val SECTION_LLDP = "LLDP"
 private const val SECTION_PING = "PING"
 private const val SECTION_SPEED = "SPEED"
+
+internal fun pingDetailsSummary(results: List<PingTargetOutcome>): LinkedHashMap<String, String> {
+    if (results.isEmpty()) return linkedMapOf("status" to "Nessun target valido")
+
+    val summaryParts = mutableListOf<String>()
+    val perTargetLines = LinkedHashMap<String, String>()
+
+    val lossValues = mutableListOf<Double>()
+    val minValues = mutableListOf<Double>()
+    val avgValues = mutableListOf<Double>()
+    val maxValues = mutableListOf<Double>()
+
+    results.forEach { outcome ->
+        val targetLoss = outcome.packetLoss?.let(::parseNumeric) ?: outcome.results.mapNotNull { parseNumeric(it.packetLoss) }.maxOrNull()
+        val targetMin = outcome.results.mapNotNull { parseNumeric(it.minRtt) }.minOrNull()
+        val targetAvg = outcome.results.mapNotNull { parseNumeric(it.avgRtt) }.averageOrNull()
+        val targetMax = outcome.results.mapNotNull { parseNumeric(it.maxRtt) }.maxOrNull()
+
+        targetLoss?.let { lossValues += it }
+        targetMin?.let { minValues += it }
+        targetAvg?.let { avgValues += it }
+        targetMax?.let { maxValues += it }
+
+        val status = when {
+            outcome.error != null -> "ERR"
+            targetLoss == null -> "SKIP"
+            targetLoss > 0.0 -> "LOSS"
+            else -> "OK"
+        }
+        summaryParts += "${outcome.target}:$status"
+
+        val targetKey = "Target ${outcome.target}"
+        val targetValue = if (outcome.error != null) {
+            "ERR: ${outcome.error}"
+        } else {
+            val lossText = formatLossValue(targetLoss)
+            val minText = formatRttValue(targetMin)
+            val avgText = formatRttValue(targetAvg)
+            val maxText = formatRttValue(targetMax)
+            "loss=$lossText min=$minText avg=$avgText max=$maxText"
+        }
+        perTargetLines[targetKey] = targetValue
+    }
+
+    val details = linkedMapOf<String, String>()
+    // Aggregation rules: worst-case loss uses the maximum parsed loss; RTT min/max are global min/max; average is the mean of parsed averages.
+    details["Packet Loss"] = formatLossValue(lossValues.maxOrNull())
+    details["Min RTT"] = formatRttValue(minValues.minOrNull())
+    details["Avg RTT"] = formatRttValue(avgValues.averageOrNull())
+    details["Max RTT"] = formatRttValue(maxValues.maxOrNull())
+    details["targets"] = summaryParts.joinToString("; ")
+    details.putAll(perTargetLines)
+    return details
+}
+
+private fun parseNumeric(raw: String?): Double? {
+    val cleaned = raw?.filter { it.isDigit() || it == '.' } ?: return null
+    if (cleaned.isBlank()) return null
+    return cleaned.toDoubleOrNull()
+}
+
+private fun Iterable<Double>.averageOrNull(): Double? = if (none()) null else average()
+
+private fun formatLossValue(value: Double?): String {
+    value ?: return "-"
+    return "${formatNumber(value)}%"
+}
+
+private fun formatRttValue(value: Double?): String {
+    value ?: return "-"
+    return "${formatNumber(value)}ms"
+}
+
+private fun formatNumber(value: Double): String {
+    val rounded = String.format(Locale.US, "%.2f", value)
+    return rounded.trimEnd('0').trimEnd('.')
+}
 
 private fun buildInitialSections(profile: TestProfile, probe: ProbeConfig): MutableList<TestSectionResult> {
     val sections = mutableListOf<TestSectionResult>()
@@ -867,4 +940,3 @@ private fun sectionsSnapshot(source: List<TestSectionResult>): List<TestSectionR
         section.copy(details = LinkedHashMap(section.details))
     }
 }
-

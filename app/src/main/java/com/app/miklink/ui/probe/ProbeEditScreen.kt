@@ -1,3 +1,9 @@
+/*
+ * Purpose: Compose screen to edit probe configuration (IP/auth, HTTPS, test interface) with verification flow.
+ * Inputs: ProbeEditViewModel state (address, credentials, https toggle, verification results), NavController for navigation.
+ * Outputs: Saves probe via view model, renders interface dropdown after verification, provides user actions for verify/save.
+ * Notes: Uses Material3 exposed dropdown; deprecated MenuAnchorType replaced with ExposedDropdownMenuAnchorType to avoid warnings.
+ */
 package com.app.miklink.ui.probe
 
 import androidx.compose.foundation.layout.*
@@ -19,6 +25,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.compose.ui.res.stringResource
 import com.app.miklink.R
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -123,7 +130,7 @@ fun ProbeEditScreen(
                             readOnly = true,
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                             modifier = Modifier
-                                .menuAnchor(MenuAnchorType.PrimaryNotEditable, true)
+                                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, true)
                                 .fillMaxWidth(),
                             singleLine = true
                         )
