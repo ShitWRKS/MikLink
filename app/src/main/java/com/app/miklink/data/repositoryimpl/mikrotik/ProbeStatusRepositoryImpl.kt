@@ -9,7 +9,7 @@ package com.app.miklink.data.repositoryimpl.mikrotik
 import com.app.miklink.core.data.repository.probe.ProbeRepository
 import com.app.miklink.core.domain.model.ProbeConfig
 import com.app.miklink.data.remote.mikrotik.dto.ProplistRequest
-import com.app.miklink.data.remote.mikrotik.service.MikroTikServiceProvider
+import com.app.miklink.data.remote.mikrotik.service.MikroTikCallExecutor
 import com.app.miklink.core.data.repository.ProbeStatusInfo
 import com.app.miklink.core.data.repository.probe.ProbeStatusRepository
 import com.app.miklink.core.data.repository.preferences.UserPreferencesRepository
@@ -29,7 +29,7 @@ import javax.inject.Inject
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class ProbeStatusRepositoryImpl @Inject constructor(
     private val probeRepository: ProbeRepository,
-    private val serviceProvider: MikroTikServiceProvider,
+    private val callExecutor: MikroTikCallExecutor,
     private val userPreferencesRepository: UserPreferencesRepository
 ) : ProbeStatusRepository {
 
@@ -39,9 +39,10 @@ class ProbeStatusRepositoryImpl @Inject constructor(
                 flow {
                     while (true) {
                         val isOnline = try {
-                            val api = serviceProvider.build(probe)
-                            api.getSystemResource(ProplistRequest(listOf("board-name")))
-                                .any { !it.boardName.isNullOrBlank() }
+                            callExecutor.execute(probe) { api ->
+                                api.getSystemResource(ProplistRequest(listOf("board-name")))
+                                    .any { !it.boardName.isNullOrBlank() }
+                            }.value
                         } catch (_: HttpException) {
                             false
                         } catch (_: Exception) {
@@ -61,9 +62,10 @@ class ProbeStatusRepositoryImpl @Inject constructor(
             tickerFlow(interval).map {
                 withContext(Dispatchers.IO) {
                     val isOnline = try {
-                        val api = serviceProvider.build(probe)
-                        val result = api.getSystemResource(ProplistRequest(listOf("board-name")))
-                        result.any { !it.boardName.isNullOrBlank() }
+                        callExecutor.execute(probe) { api ->
+                            val result = api.getSystemResource(ProplistRequest(listOf("board-name")))
+                            result.any { !it.boardName.isNullOrBlank() }
+                        }.value
                     } catch (e: Exception) {
                         android.util.Log.w("ProbeStatusRepository", "Sonda @ ${probe.ipAddress} offline: ${e.message}")
                         false

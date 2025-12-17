@@ -13,6 +13,7 @@ import com.app.miklink.core.domain.model.ProbeConfig
 import com.app.miklink.data.remote.mikrotik.dto.IpAddressAdd
 import com.app.miklink.data.remote.mikrotik.dto.RouteAdd
 import com.app.miklink.data.remote.mikrotik.service.MikroTikApiService
+import com.app.miklink.data.remote.mikrotik.service.MikroTikCallExecutor
 import com.app.miklink.data.remote.mikrotik.service.MikroTikServiceProvider
 import com.app.miklink.data.repository.RouteManager
 import io.mockk.coEvery
@@ -28,7 +29,8 @@ class NetworkConfigRepositoryImplTest {
     private val api: MikroTikApiService = mockk(relaxed = true)
     private val serviceProvider: MikroTikServiceProvider = mockk()
     private val routeManager: RouteManager = mockk(relaxed = true)
-    private val repo = NetworkConfigRepositoryImpl(context, serviceProvider, routeManager)
+    private val callExecutor = MikroTikCallExecutor(serviceProvider)
+    private val repo = NetworkConfigRepositoryImpl(context, callExecutor, routeManager)
 
     private val probe = ProbeConfig(
         ipAddress = "192.168.0.10",

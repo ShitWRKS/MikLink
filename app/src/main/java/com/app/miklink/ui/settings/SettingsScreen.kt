@@ -1,6 +1,6 @@
 /*
  * Purpose: Render the MikLink settings experience with navigation to management screens and feature toggles.
- * Inputs: NavController for navigation and SettingsViewModel state (theme, preferences, ids, probe tuning).
+ * Inputs: NavController for navigation and SettingsViewModel state (preferences, ids, probe tuning).
  * Outputs: Compose UI that updates user preferences and routes to configuration flows.
  * Notes: Filtering mode selector is intentionally non-interactive until requirements are finalized.
  */
@@ -22,7 +22,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -30,15 +29,9 @@ import androidx.navigation.NavController
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.*
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.ui.res.stringResource
 import com.app.miklink.R
-import com.app.miklink.core.domain.model.preferences.CustomPalette
 import com.app.miklink.core.domain.model.preferences.IdNumberingStrategy
-import com.app.miklink.core.domain.model.preferences.ThemeConfig
-import com.app.miklink.ui.theme.isLightChain
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,17 +39,9 @@ fun SettingsScreen(
     navController: NavController,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
-    val themeConfig by viewModel.themeConfig.collectAsStateWithLifecycle()
     val idNumberingStrategy by viewModel.idNumberingStrategy.collectAsStateWithLifecycle()
-    
-    var showThemeDialog by remember { mutableStateOf(false) }
-    var showIdStrategyDialog by remember { mutableStateOf(false) }
 
-    val themeLabel = when (themeConfig) {
-        ThemeConfig.FOLLOW_SYSTEM -> "Auto"
-        ThemeConfig.LIGHT -> "Chiaro"
-        ThemeConfig.DARK -> "Scuro"
-    }
+    var showIdStrategyDialog by remember { mutableStateOf(false) }
 
     val idStrategyLabel = when (idNumberingStrategy) {
         IdNumberingStrategy.CONTINUOUS_INCREMENT -> "Continuo"
@@ -251,32 +236,6 @@ fun SettingsScreen(
                 )
             }
 
-            // Sezione Aspetto
-            SettingsSection(
-                title = stringResource(R.string.settings_category_appearance),
-                icon = Icons.Default.Palette
-            ) {
-                SettingsCard(
-                    headline = stringResource(R.string.settings_theme),
-                    subtitle = "Chiaro, Scuro o Auto",
-                    leadingIcon = Icons.Default.DarkMode,
-                    onClick = { showThemeDialog = true },
-                    trailingContent = {
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = MaterialTheme.colorScheme.secondaryContainer
-                        ) {
-                            Text(
-                                text = themeLabel,
-                                style = MaterialTheme.typography.labelSmall,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                            )
-                        }
-                    }
-                )
-            }
-
-            
             // Sezione Report PDF
             SettingsSection(
                 title = stringResource(R.string.settings_category_pdf),
@@ -364,19 +323,6 @@ fun SettingsScreen(
             // Spacer finale
             Spacer(Modifier.height(16.dp))
         }
-    }
-
-    if (showThemeDialog) {
-        ThemeSelectionDialog(
-            currentConfig = themeConfig,
-            currentPalette = viewModel.customPalette.collectAsStateWithLifecycle().value,
-            onDismiss = { showThemeDialog = false },
-            onSave = { config, primary, secondary, background, content ->
-                viewModel.updateTheme(config)
-                viewModel.updateCustomPalette(primary, secondary, background, content)
-                showThemeDialog = false
-            }
-        )
     }
 
     if (showIdStrategyDialog) {
@@ -546,165 +492,3 @@ fun InfoRow(label: String, value: String) {
         )
     }
 }
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-fun ThemeSelectionDialog(
-    currentConfig: ThemeConfig,
-    currentPalette: CustomPalette,
-    onDismiss: () -> Unit,
-    onSave: (ThemeConfig, Int?, Int?, Int?, Int?) -> Unit
-) {
-    var selectedConfig by remember { mutableStateOf(currentConfig) }
-    var primaryColor by remember { mutableStateOf(currentPalette.primary) }
-    var secondaryColor by remember { mutableStateOf(currentPalette.secondary) }
-    var backgroundColor by remember { mutableStateOf(currentPalette.background) }
-    var customContentColor by remember { mutableStateOf(currentPalette.content) }
-
-    // Presets
-    data class Preset(val name: String, val primary: Int, val secondary: Int, val background: Int? = null, val content: Int? = null)
-    val presets = listOf(
-        Preset("Inspired", 0xFF37474F.toInt(), 0xFF0066CC.toInt()), // Changed Secondary to Blue to avoid Red
-        Preset("Classic Blue", 0xFF0066CC.toInt(), 0xFF004C99.toInt()),
-        Preset("Alarm Orange", 0xFFEF6C00.toInt(), 0xFFE65100.toInt(), 0xFF121212.toInt(), 0xFFFFFFFF.toInt())
-    )
-
-    // Common Colors for Grid (Removed Reds/Greens)
-    val colors = listOf(
-        0xFF37474F, 0xFF0066CC, 0xFFEF6C00, // Presets
-        0xFF7B1FA2, 0xFF512DA8, 0xFF303F9F, // Purples/Pinks
-        0xFF0288D1, 0xFF0097A7, 0xFF00796B, // Blues
-        0xFFAFB42B, 0xFFFBC02D, 0xFFFFA000, 0xFFF57C00, // Yellows/Oranges
-        0xFF5D4037, 0xFF616161, 0xFF455A64, 0xFFFFFFFF, 0xFF000000  // Greys + White/Black for Content
-    ).map { it.toInt() }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            TextButton(onClick = { onSave(selectedConfig, primaryColor, secondaryColor, backgroundColor, customContentColor) }) {
-                Text(stringResource(R.string.save)) // Using save/applica context
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
-            }
-        },
-        title = { Text(stringResource(R.string.settings_custom_colors)) },
-        text = {
-            Column(
-                modifier = Modifier
-                    .verticalScroll(rememberScrollState())
-                    .fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // Mode Selector
-                Column {
-                    Text("Modalità", style = MaterialTheme.typography.labelMedium)
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                        ThemeConfig.entries.forEach { config ->
-                            FilterChip(
-                                selected = selectedConfig == config,
-                                onClick = { selectedConfig = config },
-                                label = { 
-                                    Text(when(config) {
-                                        ThemeConfig.FOLLOW_SYSTEM -> "Auto"
-                                        ThemeConfig.LIGHT -> "Light"
-                                        ThemeConfig.DARK -> "Dark"
-                                    })
-                                }
-                            )
-                        }
-                    }
-                }
-
-                HorizontalDivider()
-
-                // Presets
-                Column {
-                    Text("Presets", style = MaterialTheme.typography.labelMedium)
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        presets.forEach { preset ->
-                            SuggestionChip(
-                                onClick = {
-                                    primaryColor = preset.primary
-                                    secondaryColor = preset.secondary
-                                    backgroundColor = preset.background
-                                    customContentColor = preset.content
-                                },
-                                label = { Text(preset.name) },
-                                icon = {
-                                    Box(
-                                        Modifier
-                                            .size(12.dp)
-                                            .clip(CircleShape)
-                                            .background(Color(preset.primary))
-                                    )
-                                }
-                            )
-                        }
-                    }
-                }
-
-                HorizontalDivider()
-
-                // Custom Colors
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(stringResource(R.string.settings_custom_colors), style = MaterialTheme.typography.labelMedium)
-                    
-                    // Primary Picker
-                    ColorPickerRow("Primario", colors, primaryColor) { primaryColor = it }
-                    
-                    // Secondary Picker
-                    ColorPickerRow("Secondario", colors, secondaryColor) { secondaryColor = it }
-
-                    // Background Picker
-                    ColorPickerRow("Sfondo (Opzionale)", colors, backgroundColor) { 
-                        backgroundColor = if (backgroundColor == it) null else it 
-                    }
-                    
-                    // Content Picker
-                    ColorPickerRow("Testo/Icone (Opzionale)", colors, customContentColor) { 
-                        customContentColor = if (customContentColor == it) null else it 
-                    }
-                }
-            }
-        }
-    )
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-fun ColorPickerRow(label: String, colors: List<Int>, selectedColor: Int?, onSelect: (Int) -> Unit) {
-    Column {
-        Text(label, style = MaterialTheme.typography.bodySmall)
-        Spacer(Modifier.height(4.dp))
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            colors.forEach { colorInt ->
-                val color = Color(colorInt)
-                Box(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clip(CircleShape)
-                        .background(color)
-                        .clickable { onSelect(colorInt) }
-                        .then(
-                            if (selectedColor == colorInt) Modifier.background(Color.White.copy(alpha = 0.5f)) else Modifier
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (selectedColor == colorInt) {
-                        Icon(Icons.Default.Check, null, tint = if (isLightChain(color)) Color.Black else Color.White, modifier = Modifier.size(16.dp))
-                    }
-                }
-            }
-        }
-    }
-}
-

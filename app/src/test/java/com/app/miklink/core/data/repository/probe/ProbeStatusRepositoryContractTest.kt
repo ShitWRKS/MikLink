@@ -10,8 +10,10 @@ import com.app.miklink.core.domain.model.ProbeConfig
 import com.app.miklink.data.remote.mikrotik.dto.ProplistRequest
 import com.app.miklink.data.remote.mikrotik.dto.SystemResource
 import com.app.miklink.data.remote.mikrotik.service.MikroTikApiService
+import com.app.miklink.data.remote.mikrotik.service.MikroTikCallExecutor
 import com.app.miklink.data.remote.mikrotik.service.MikroTikServiceProvider
 import com.app.miklink.core.data.repository.preferences.UserPreferencesRepository
+import com.app.miklink.core.data.repository.probe.ProbeRepository
 import com.app.miklink.data.repositoryimpl.mikrotik.ProbeStatusRepositoryImpl
 import io.mockk.coEvery
 import io.mockk.every
@@ -33,9 +35,10 @@ class ProbeStatusRepositoryContractTest {
     private val mockServiceProvider = mockk<MikroTikServiceProvider>()
     private val mockApiService = mockk<MikroTikApiService>()
     private val mockUserPreferencesRepository = mockk<UserPreferencesRepository>()
+    private val callExecutor = MikroTikCallExecutor(mockServiceProvider)
     private val repository: ProbeStatusRepository = ProbeStatusRepositoryImpl(
         mockProbeRepository,
-        mockServiceProvider,
+        callExecutor,
         mockUserPreferencesRepository
     )
 

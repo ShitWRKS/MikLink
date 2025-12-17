@@ -12,6 +12,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertDoesNotExist
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -129,5 +130,39 @@ class TestExecutionToggleTest {
         composeRule.onNodeWithText("Network").assertIsDisplayed()
         composeRule.onNodeWithText("Ping").assertIsDisplayed()
         composeRule.onNodeWithText("Speed Test").assertIsDisplayed()
+    }
+
+    @Test
+    fun ping_targets_render_as_structured_list() {
+        composeRule.setContent {
+            TestCompletedView(
+                report = sampleReport,
+                sections = listOf(
+                    TestSection(
+                        TestSectionCategory.TEST,
+                        TestSectionType.PING,
+                        "Ping",
+                        "FAIL",
+                        listOf(
+                            TestDetail("Packet Loss", "10%"),
+                            TestDetail("Min RTT", "5ms"),
+                            TestDetail("Avg RTT", "6ms"),
+                            TestDetail("Max RTT", "8ms"),
+                            TestDetail("Target 8.8.8.8", "loss=10% min=5ms avg=6ms max=8ms"),
+                            TestDetail("Target 1.1.1.1", "ERR: timeout")
+                        )
+                    )
+                ),
+                logs = emptyList(),
+                showLogs = false,
+                onToggleLogs = {},
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+
+        composeRule.onNodeWithText("Packet Loss").assertIsDisplayed()
+        composeRule.onNodeWithText("Target 8.8.8.8").assertIsDisplayed()
+        composeRule.onNodeWithText("5ms").assertIsDisplayed()
+        composeRule.onNodeWithText("ERR: timeout").assertIsDisplayed()
     }
 }

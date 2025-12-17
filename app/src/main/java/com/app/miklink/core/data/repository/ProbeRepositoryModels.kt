@@ -12,7 +12,13 @@ import com.app.miklink.core.domain.model.ProbeConfig
 data class ProbeStatusInfo(val probe: ProbeConfig, val isOnline: Boolean)
 
 sealed class ProbeCheckResult {
-    data class Success(val boardName: String, val interfaces: List<String>) : ProbeCheckResult()
+    data class Success(
+        val boardName: String,
+        val interfaces: List<String>,
+        val effectiveIsHttps: Boolean,
+        val didFallbackToHttp: Boolean,
+        val warning: String? = null
+    ) : ProbeCheckResult()
     data class Error(val message: String) : ProbeCheckResult()
 }
 
@@ -24,4 +30,3 @@ data class NetworkConfigFeedback(
     val dns: String?,
     val message: String
 )
-

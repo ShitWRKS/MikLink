@@ -120,6 +120,14 @@ fun ProbeEditScreen(
                 }
                 is VerificationState.Success -> {
                     Text("Board: ${state.boardName ?: "Unknown"}", style = MaterialTheme.typography.bodyLarge)
+                    state.warning?.let { warning ->
+                        Text(
+                            text = warning,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.tertiary
+                        )
+                        Spacer(Modifier.height(4.dp))
+                    }
 
                     var expanded by remember { mutableStateOf(false) }
                     ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {

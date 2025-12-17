@@ -19,9 +19,7 @@ import com.app.miklink.core.domain.model.ProbeConfig
 import com.app.miklink.core.domain.model.TestProfile
 import com.app.miklink.core.domain.model.TestReport
 import com.app.miklink.core.domain.model.socketNameFor
-import com.app.miklink.core.domain.model.preferences.CustomPalette
 import com.app.miklink.core.domain.model.preferences.IdNumberingStrategy
-import com.app.miklink.core.domain.model.preferences.ThemeConfig
 import com.app.miklink.core.domain.usecase.preferences.ObserveIdNumberingStrategyUseCase
 import com.app.miklink.testsupport.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -141,17 +139,13 @@ class DashboardViewModelTest {
     }
 
     private class FakeUserPreferencesRepository : UserPreferencesRepository {
-        override val themeConfig: Flow<ThemeConfig> = flowOf(ThemeConfig.FOLLOW_SYSTEM)
         override val idNumberingStrategy: Flow<IdNumberingStrategy> = flowOf(IdNumberingStrategy.CONTINUOUS_INCREMENT)
-        override val customPalette: Flow<CustomPalette> = flowOf(CustomPalette(null, null, null, null))
         override val pdfIncludeEmptyTests: Flow<Boolean> = flowOf(false)
         override val pdfSelectedColumns: Flow<Set<String>> = flowOf(emptySet())
         override val pdfReportTitle: Flow<String> = flowOf("")
         override val pdfHideEmptyColumns: Flow<Boolean> = flowOf(false)
         override val dashboardGlowIntensity: Flow<Float> = flowOf(0.5f)
         override val probePollingInterval: Flow<Long> = flowOf(5000)
-        override suspend fun setCustomPalette(primary: Int?, secondary: Int?, background: Int?, content: Int?) {}
-        override suspend fun setTheme(themeConfig: ThemeConfig) {}
         override suspend fun setIdNumberingStrategy(strategy: IdNumberingStrategy) {}
         override suspend fun setPdfIncludeEmptyTests(include: Boolean) {}
         override suspend fun setPdfSelectedColumns(columns: Set<String>) {}

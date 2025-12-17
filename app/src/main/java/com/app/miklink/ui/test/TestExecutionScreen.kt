@@ -557,32 +557,9 @@ fun TestInProgressView(
 @Composable
 private fun TestSectionDetails(section: TestSection) {
     val sectionId = SectionId.fromTestSectionType(section.type)
-    val formattedDetails = section.details.mapNotNull { detail ->
-        if (detail.label == "---" || detail.label.startsWith("Ping #")) null
-        else SectionDetailFormatter.format(sectionId, detail.label, detail.value)
-    }
-
     if (section.type == PING) {
-        val lossDetail = formattedDetails.firstOrNull { detail ->
-            when (val label = detail.label) {
-                is UiText.Resource -> label.resId == R.string.detail_label_packet_loss
-                is UiText.Dynamic -> label.value.equals("Packet Loss", ignoreCase = true)
-            }
-        }
-        val lossText = lossDetail?.value?.asString() ?: ""
-        if (lossText.isNotBlank() && lossText != "-" && lossText.any { it.isDigit() }) {
-            val isZeroLoss = lossText.trim().startsWith("0")
-            val chipBg = if (isZeroLoss) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.errorContainer
-            val chipFg = if (isZeroLoss) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onErrorContainer
-            Surface(color = chipBg, shape = RoundedCornerShape(12.dp)) {
-                Row(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(if (isZeroLoss) Icons.Default.CheckCircle else Icons.Default.Error, contentDescription = null, tint = chipFg, modifier = Modifier.size(14.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text(text = "LOSS $lossText", color = chipFg, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                }
-            }
-            Spacer(Modifier.height(8.dp))
-        }
+        PingSectionDetails(section, sectionId)
+        return
     }
 
     section.details.forEach { d ->
@@ -598,31 +575,6 @@ private fun TestSectionDetails(section: TestSection) {
                     color = MaterialTheme.colorScheme.primary
                 )
                 Spacer(Modifier.height(4.dp))
-            }
-            d.label.startsWith("Ping #") -> {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp)
-                        .background(
-                            MaterialTheme.colorScheme.surfaceVariant,
-                            RoundedCornerShape(4.dp)
-                        )
-                        .padding(8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        d.label,
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Text(
-                        d.value,
-                        style = MaterialTheme.typography.bodySmall,
-                        fontFamily = FontFamily.Monospace,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
             }
             else -> {
                 val formatted = SectionDetailFormatter.format(sectionId, d.label, d.value) ?: return@forEach
@@ -669,6 +621,156 @@ private fun TestSectionDetails(section: TestSection) {
                             )
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+private data class PingTargetRowData(
+    val name: String,
+    val loss: String?,
+    val min: String?,
+    val avg: String?,
+    val max: String?,
+    val error: String?
+)
+
+@Composable
+private fun PingSectionDetails(section: TestSection, sectionId: SectionId) {
+    val summaryKeys = listOf("Packet Loss", "Min RTT", "Avg RTT", "Max RTT")
+    val summaryDetails = summaryKeys.mapNotNull { key ->
+        val rawDetail = section.details.firstOrNull { it.label.equals(key, ignoreCase = true) } ?: return@mapNotNull null
+        SectionDetailFormatter.format(sectionId, rawDetail.label, rawDetail.value)
+    }
+
+    if (summaryDetails.isNotEmpty()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            summaryDetails.forEach { detail ->
+                val labelText = detail.label.asString()
+                StatChip(
+                    label = labelText,
+                    value = detail.value.asString(),
+                    icon = iconForPingStat(labelText)
+                )
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+    }
+
+    val targets = section.details.filter { it.label.startsWith("Target ") }
+    if (targets.isNotEmpty()) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            targets.map { parsePingTargetDetail(it) }.forEach { target ->
+                PingTargetRow(target)
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+    }
+
+    val consumedLabels = summaryKeys + targets.map { it.label } + listOf("targets")
+    section.details.filterNot { detail ->
+        detail.label == "---" || consumedLabels.any { consumed -> detail.label.equals(consumed, ignoreCase = true) }
+    }.forEach { detail ->
+        val formatted = SectionDetailFormatter.format(sectionId, detail.label, detail.value) ?: return@forEach
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 2.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(formatted.label.asString(), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                formatted.value.asString(),
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
+
+private fun iconForPingStat(label: String): ImageVector =
+    when {
+        label.contains("loss", ignoreCase = true) -> Icons.Default.Warning
+        label.contains("min", ignoreCase = true) -> Icons.Default.Speed
+        label.contains("avg", ignoreCase = true) -> Icons.Default.Speed
+        label.contains("max", ignoreCase = true) -> Icons.Default.Speed
+        else -> Icons.Default.Info
+    }
+
+private fun parsePingTargetDetail(detail: TestDetail): PingTargetRowData {
+    val name = detail.label.removePrefix("Target").trim()
+    val raw = detail.value
+    if (raw.startsWith("ERR", ignoreCase = true)) {
+        val error = raw.substringAfter(":", raw).trim().ifBlank { raw }
+        return PingTargetRowData(name, null, null, null, null, error)
+    }
+    val values = mutableMapOf<String, String>()
+    raw.split(" ", ";").map { it.trim() }.filter { it.contains("=") }.forEach { token ->
+        val parts = token.split("=", limit = 2)
+        if (parts.size == 2) {
+            values[parts[0].lowercase()] = parts[1]
+        }
+    }
+    return PingTargetRowData(
+        name = name,
+        loss = values["loss"],
+        min = values["min"],
+        avg = values["avg"],
+        max = values["max"],
+        error = null
+    )
+}
+
+@Composable
+private fun PingTargetRow(data: PingTargetRowData) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        shape = RoundedCornerShape(8.dp),
+        tonalElevation = 1.dp
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Target ${data.name}", fontWeight = FontWeight.Bold)
+                if (data.error == null) {
+                    Text(
+                        data.loss ?: "-",
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            if (data.error != null) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text(data.error, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                }
+            } else {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("Min", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(data.min ?: "-", fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold)
+                }
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("Avg", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(data.avg ?: "-", fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold)
+                }
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("Max", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(data.max ?: "-", fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold)
                 }
             }
         }

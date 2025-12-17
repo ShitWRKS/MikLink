@@ -78,7 +78,12 @@ class ProbeEditViewModel @Inject constructor(
                 _tdrSupported.value = probe.tdrSupported
                 _isOnline.value = probe.isOnline
                 if (probe.modelName != null) {
-                    _verificationState.value = VerificationState.Success(probe.modelName, listOfNotNull(probe.testInterface))
+                    _verificationState.value = VerificationState.Success(
+                        boardName = probe.modelName,
+                        interfaces = listOfNotNull(probe.testInterface),
+                        didFallbackToHttp = false,
+                        warning = null
+                    )
                 }
             }
         }
@@ -118,11 +123,19 @@ class ProbeEditViewModel @Inject constructor(
 
             when (val result = probeConnectivityRepository.checkProbeConnection(tempProbe)) {
                 is ProbeCheckResult.Success -> {
+                    if (result.didFallbackToHttp) {
+                        isHttps.value = false
+                    }
                     _isOnline.value = true
                     _tdrSupported.value = Compatibility.isTdrSupported(result.boardName)
                     _modelName.value = result.boardName
                     testInterface.value = result.interfaces.firstOrNull() ?: ""
-                    _verificationState.value = VerificationState.Success(result.boardName, result.interfaces)
+                    _verificationState.value = VerificationState.Success(
+                        boardName = result.boardName,
+                        interfaces = result.interfaces,
+                        didFallbackToHttp = result.didFallbackToHttp,
+                        warning = result.warning
+                    )
                 }
                 is ProbeCheckResult.Error -> {
                     _isOnline.value = false
@@ -153,6 +166,11 @@ class ProbeEditViewModel @Inject constructor(
 sealed class VerificationState {
     object Idle : VerificationState()
     object Loading : VerificationState()
-    data class Success(val boardName: String?, val interfaces: List<String>) : VerificationState()
+    data class Success(
+        val boardName: String?,
+        val interfaces: List<String>,
+        val didFallbackToHttp: Boolean,
+        val warning: String?
+    ) : VerificationState()
     data class Error(val message: String) : VerificationState()
 }

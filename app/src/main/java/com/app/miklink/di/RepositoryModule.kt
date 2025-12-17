@@ -24,12 +24,8 @@ import com.app.miklink.core.domain.usecase.backup.ImportBackupUseCase
 import com.app.miklink.core.domain.usecase.backup.ImportBackupUseCaseImpl
 import com.app.miklink.core.domain.usecase.preferences.ObserveIdNumberingStrategyUseCase
 import com.app.miklink.core.domain.usecase.preferences.ObserveIdNumberingStrategyUseCaseImpl
-import com.app.miklink.core.domain.usecase.preferences.ObserveThemeConfigUseCase
-import com.app.miklink.core.domain.usecase.preferences.ObserveThemeConfigUseCaseImpl
 import com.app.miklink.core.domain.usecase.preferences.SetIdNumberingStrategyUseCase
 import com.app.miklink.core.domain.usecase.preferences.SetIdNumberingStrategyUseCaseImpl
-import com.app.miklink.core.domain.usecase.preferences.SetThemeConfigUseCase
-import com.app.miklink.core.domain.usecase.preferences.SetThemeConfigUseCaseImpl
 import com.app.miklink.data.io.AndroidDocumentReader
 import com.app.miklink.data.io.AndroidDocumentWriter
 import com.app.miklink.data.local.room.MikLinkDatabase
@@ -73,12 +69,6 @@ abstract class RepositoryModule {
 
     @Binds
     abstract fun bindImportBackupUseCase(impl: ImportBackupUseCaseImpl): ImportBackupUseCase
-
-    @Binds
-    abstract fun bindObserveThemeConfigUseCase(impl: ObserveThemeConfigUseCaseImpl): ObserveThemeConfigUseCase
-
-    @Binds
-    abstract fun bindSetThemeConfigUseCase(impl: SetThemeConfigUseCaseImpl): SetThemeConfigUseCase
 
     @Binds
     abstract fun bindObserveIdNumberingStrategyUseCase(impl: ObserveIdNumberingStrategyUseCaseImpl): ObserveIdNumberingStrategyUseCase

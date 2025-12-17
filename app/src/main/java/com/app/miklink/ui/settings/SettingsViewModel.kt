@@ -8,13 +8,9 @@ import com.app.miklink.core.data.io.DocumentDestination
 import com.app.miklink.core.data.io.DocumentReader
 import com.app.miklink.core.domain.usecase.backup.ImportBackupUseCase
 import com.app.miklink.core.data.repository.preferences.UserPreferencesRepository
-import com.app.miklink.core.domain.model.preferences.CustomPalette
 import com.app.miklink.core.domain.model.preferences.IdNumberingStrategy
-import com.app.miklink.core.domain.model.preferences.ThemeConfig
 import com.app.miklink.core.domain.usecase.preferences.ObserveIdNumberingStrategyUseCase
-import com.app.miklink.core.domain.usecase.preferences.ObserveThemeConfigUseCase
 import com.app.miklink.core.domain.usecase.preferences.SetIdNumberingStrategyUseCase
-import com.app.miklink.core.domain.usecase.preferences.SetThemeConfigUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -28,8 +24,6 @@ class SettingsViewModel @Inject constructor(
     private val backupRepository: BackupRepository,
     private val importBackupUseCase: ImportBackupUseCase,
     private val userPreferencesRepository: UserPreferencesRepository,
-    private val observeThemeConfigUseCase: ObserveThemeConfigUseCase,
-    private val setThemeConfigUseCase: SetThemeConfigUseCase,
     private val observeIdNumberingStrategyUseCase: ObserveIdNumberingStrategyUseCase,
     private val setIdNumberingStrategyUseCase: SetIdNumberingStrategyUseCase,
     private val documentReader: DocumentReader
@@ -38,32 +32,12 @@ class SettingsViewModel @Inject constructor(
     private val _backupStatus = MutableStateFlow("")
     val backupStatus = _backupStatus.asStateFlow()
 
-    val themeConfig = observeThemeConfigUseCase()
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = ThemeConfig.FOLLOW_SYSTEM
-        )
-
-    val customPalette = userPreferencesRepository.customPalette
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = CustomPalette()
-        )
-
     val idNumberingStrategy = observeIdNumberingStrategyUseCase()
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = IdNumberingStrategy.CONTINUOUS_INCREMENT
         )
-
-    fun updateTheme(config: ThemeConfig) {
-        viewModelScope.launch {
-            setThemeConfigUseCase(config)
-        }
-    }
 
     fun updateIdNumberingStrategy(strategy: IdNumberingStrategy) {
         viewModelScope.launch {
@@ -123,12 +97,6 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun updateCustomPalette(primary: Int?, secondary: Int?, background: Int?, content: Int? = null) {
-        viewModelScope.launch {
-            userPreferencesRepository.setCustomPalette(primary, secondary, background, content)
-        }
-    }
-
     val dashboardGlowIntensity = userPreferencesRepository.dashboardGlowIntensity
         .stateIn(
             scope = viewModelScope,
@@ -185,4 +153,3 @@ class SettingsViewModel @Inject constructor(
         }
     }
 }
-

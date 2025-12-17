@@ -14,6 +14,7 @@ import com.app.miklink.data.remote.mikrotik.dto.ProplistRequest
 import com.app.miklink.data.remote.mikrotik.dto.SystemResource
 import com.app.miklink.data.remote.mikrotik.service.MikroTikApiService
 import com.app.miklink.data.remote.mikrotik.service.MikroTikServiceProvider
+import com.app.miklink.data.remote.mikrotik.service.MikroTikCallExecutor
 import com.app.miklink.core.data.repository.ProbeCheckResult
 import com.app.miklink.data.repositoryimpl.mikrotik.ProbeConnectivityRepositoryImpl
 import io.mockk.coEvery
@@ -35,9 +36,10 @@ class ProbeConnectivityRepositoryContractTest {
     private val mockContext = mockk<Context>(relaxed = true)
     private val mockServiceProvider = mockk<MikroTikServiceProvider>()
     private val mockApiService = mockk<MikroTikApiService>()
+    private val callExecutor = MikroTikCallExecutor(mockServiceProvider)
     private val repository: ProbeConnectivityRepository = ProbeConnectivityRepositoryImpl(
         mockContext,
-        mockServiceProvider
+        callExecutor
     )
 
     private val testProbe = ProbeConfig(
@@ -67,6 +69,7 @@ class ProbeConnectivityRepositoryContractTest {
             EthernetInterface(name = "ether1"),
             EthernetInterface(name = "ether2")
         )
+        every { mockContext.getString(R.string.probe_verify_http_fallback_warning) } returns "Fallback HTTP"
 
         // When
         val result = repository.checkProbeConnection(testProbe)
@@ -78,6 +81,9 @@ class ProbeConnectivityRepositoryContractTest {
         assertEquals(2, success.interfaces.size)
         assertTrue(success.interfaces.contains("ether1"))
         assertTrue(success.interfaces.contains("ether2"))
+        assertFalse(success.didFallbackToHttp)
+        assertFalse(success.effectiveIsHttps)
+        assertNull(success.warning)
     }
 
     @Test
@@ -93,6 +99,7 @@ class ProbeConnectivityRepositoryContractTest {
             mockk(relaxed = true)
         )
         every { mockContext.getString(any()) } returns "Connection failed"
+        every { mockContext.getString(R.string.probe_verify_http_fallback_warning) } returns "Fallback HTTP"
 
         // When
         val result = repository.checkProbeConnection(testProbe)
@@ -165,6 +172,7 @@ class ProbeConnectivityRepositoryContractTest {
             SystemResource(boardName = "RB4011")
         )
         coEvery { mockHttpApi.getEthernetInterfaces() } returns listOf(EthernetInterface(name = "ether1"))
+        every { mockContext.getString(R.string.probe_verify_http_fallback_warning) } returns "HTTPS failed, used HTTP"
 
         val result = repository.checkProbeConnection(httpsProbe)
 
@@ -172,6 +180,9 @@ class ProbeConnectivityRepositoryContractTest {
         val success = result as ProbeCheckResult.Success
         assertEquals("RB4011", success.boardName)
         assertEquals(listOf("ether1"), success.interfaces)
+        assertTrue(success.didFallbackToHttp)
+        assertFalse(success.effectiveIsHttps)
+        assertEquals("HTTPS failed, used HTTP", success.warning)
     }
 
     @Test
@@ -190,6 +201,7 @@ class ProbeConnectivityRepositoryContractTest {
         coEvery { mockHttpApi.getSystemResource(any<ProplistRequest>()) } throws HttpException(mockk(relaxed = true))
         every { mockContext.getString(R.string.error_probe_connection_unknown) } returns "Fallback"
         every { mockContext.getString(R.string.error_probe_connection_tls_handshake) } returns "TLS handshake failed guidance"
+        every { mockContext.getString(R.string.probe_verify_http_fallback_warning) } returns "Fallback warning"
 
         val result = repository.checkProbeConnection(httpsProbe)
 

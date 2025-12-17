@@ -31,7 +31,10 @@ class ProbeEditViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val fakeProbeRepository = FakeProbeRepository()
-    private val fakeConnectivityRepository = FakeProbeConnectivityRepository(boardName = "hAP ax^2", interfaces = listOf("ether1", "ether2"))
+    private val fakeConnectivityRepository = FakeProbeConnectivityRepository(
+        boardName = "hAP ax^2",
+        interfaces = listOf("ether1", "ether2")
+    )
 
     @Test
     fun `verify success persists board name when saving`() = runTest {
@@ -71,6 +74,34 @@ class ProbeEditViewModelTest {
         assertEquals("ether1", reloaded.testInterface.value)
     }
 
+    @Test
+    fun `verify fallback toggles https off and surfaces warning`() = runTest {
+        val viewModel = ProbeEditViewModel(
+            probeRepository = fakeProbeRepository,
+            probeConnectivityRepository = FakeProbeConnectivityRepository(
+                boardName = "RB5009",
+                interfaces = listOf("ether1"),
+                didFallbackToHttp = true,
+                warning = "fallback-http"
+            ),
+            savedStateHandle = SavedStateHandle()
+        )
+
+        viewModel.ipAddress.value = "10.0.0.1"
+        viewModel.username.value = "admin"
+        viewModel.password.value = "pass"
+        viewModel.isHttps.value = true
+
+        viewModel.onVerifyClicked()
+        advanceUntilIdle()
+
+        assertTrue(viewModel.verificationState.value is VerificationState.Success)
+        val state = viewModel.verificationState.value as VerificationState.Success
+        assertTrue(state.didFallbackToHttp)
+        assertEquals("fallback-http", state.warning)
+        assertEquals(false, viewModel.isHttps.value)
+    }
+
     private class FakeProbeRepository : ProbeRepository {
         private val state = MutableStateFlow<ProbeConfig?>(null)
         var lastSaved: ProbeConfig? = null
@@ -87,10 +118,18 @@ class ProbeEditViewModelTest {
 
     private class FakeProbeConnectivityRepository(
         private val boardName: String,
-        private val interfaces: List<String>
+        private val interfaces: List<String>,
+        private val didFallbackToHttp: Boolean = false,
+        private val warning: String? = null
     ) : ProbeConnectivityRepository {
         override suspend fun checkProbeConnection(probe: ProbeConfig): ProbeCheckResult {
-            return ProbeCheckResult.Success(boardName = boardName, interfaces = interfaces)
+            return ProbeCheckResult.Success(
+                boardName = boardName,
+                interfaces = interfaces,
+                effectiveIsHttps = probe.isHttps && !didFallbackToHttp,
+                didFallbackToHttp = didFallbackToHttp,
+                warning = warning
+            )
         }
     }
 }

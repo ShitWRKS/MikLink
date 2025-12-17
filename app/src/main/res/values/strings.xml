@@ -28,6 +28,7 @@
     <string name="error_unknown">An unknown error occurred</string>
     <string name="error_probe_connection_unknown">An unknown error occurred while connecting to the probe.</string>
     <string name="error_probe_connection_tls_handshake">HTTPS handshake failed: TLS/cipher incompatible or certificate rejected. Install a valid certificate on RouterOS or switch to HTTP.</string>
+    <string name="probe_verify_http_fallback_warning">HTTPS handshake failed. Verification completed via HTTP fallback.</string>
     <string name="error_static_cidr_missing">CIDR address missing</string>
     <string name="error_static_gateway_missing">Gateway missing for static config</string>
     <string name="error_cable_test_timeout">Timeout during cable-test (>%1$ds). Command may take longer on this model.</string>
