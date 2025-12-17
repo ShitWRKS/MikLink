@@ -1780,25 +1780,36 @@ class UserPreferencesRepositoryImpl @Inject constructor(
 ==================== BEGIN FILE ====================
 PATH: app/src/main/java/com/app/miklink/data/remote/mikrotik/dto/MikroTikDto.kt
 TYPE: TEXT
-SIZE: 3984
-SHA256: 5f48e8e7330b8c4316cf831f9007bc3f622783e5565b7c4aa514e1b5ba8d2d5f
+SIZE: 4407
+SHA256: 03d68c961da4732af0c05f08cbfd5a45fdddcc1f4fdef58b31dbf08dd61120f0
 ==================== END HEADER ====================
 /*
  * Purpose: Moshi DTOs for MikroTik RouterOS requests and responses used by the data layer.
  * Inputs: Raw JSON payloads from MikroTik HTTP APIs mapped with explicit field targets.
  * Outputs: Typed request/response models consumed by MikroTik repositories and services.
  */
+/*
+ * Purpose: Define MikroTik REST DTOs used by the data layer for requests and responses.
+ * Inputs: Serialized JSON payloads from RouterOS REST endpoints.
+ * Outputs: Typed request/response models consumed by repositories and mappers.
+ * Notes: Keep field annotations aligned with RouterOS expectations (e.g., `.proplist`).
+ */
 package com.app.miklink.data.remote.mikrotik.dto
 
 import com.squareup.moshi.Json
+import com.squareup.moshi.JsonClass
 
 // General request wrappers
-data class ProplistRequest(@field:Json(name = ".proplist") val proplist: List<String>)
+data class ProplistRequest(
+    @param:Json(name = ".proplist")
+    val proplist: List<String>
+)
 data class InterfaceNameRequest(@field:Json(name = "?interface") val interfaceName: String)
 data class NumbersRequest(@field:Json(name = "numbers") val numbers: String)
 
 // System / Interface responses
-data class SystemResource(@field:Json(name = "board-name") val boardName: String? = null)
+@JsonClass(generateAdapter = true)
+data class SystemResource(@param:Json(name = "board-name") val boardName: String? = null)
 data class EthernetInterface(@field:Json(name = "name") val name: String)
 
 // DHCP client
@@ -1989,8 +2000,8 @@ class AuthInterceptor @Inject constructor() : Interceptor {
 ==================== BEGIN FILE ====================
 PATH: app/src/main/java/com/app/miklink/data/remote/mikrotik/infra/MikroTikServiceFactory.kt
 TYPE: TEXT
-SIZE: 3289
-SHA256: 04e1becaccb3d81972ad7aa013e1eff77fa005e2273a7946ee0252b2a916029a
+SIZE: 3407
+SHA256: 6c7ab25b87314768c485cca407892b4871bdacb3c736a4ea43d1c22b2f3d3ff8
 ==================== END HEADER ====================
 package com.app.miklink.data.remote.mikrotik.infra
 
@@ -2035,6 +2046,7 @@ class MikroTikServiceFactory @Inject constructor(
             // If the probe is configured to use HTTPS, allow connecting to self-signed
             // MikroTik devices by using a permissive TrustManager on this client only.
             // Note: keep this logic local to avoid introducing new global abstractions.
+            // This bypasses cert/hostname checks only; TLS handshake still fails if cipher/protocol is unsupported.
             if (probe.isHttps) {
                 val trustAllCerts = arrayOf<javax.net.ssl.TrustManager>(
                     object : javax.net.ssl.X509TrustManager {
@@ -3095,8 +3107,8 @@ class MikroTikTestRepositoryImpl @Inject constructor(
 ==================== BEGIN FILE ====================
 PATH: app/src/main/java/com/app/miklink/data/repositoryimpl/mikrotik/ProbeConnectivityRepositoryImpl.kt
 TYPE: TEXT
-SIZE: 2717
-SHA256: c940b7cadfccff8b5fcd0ef63cb72631e7bb1e4fe1a6293051831f0405f708fe
+SIZE: 5029
+SHA256: 9d1ebd2d0f033e90d60d85be9386fecb26ccb83909ef8285ddbe87c0dbffb7e6
 ==================== END HEADER ====================
 /*
  * Purpose: Check MikroTik probe connectivity and surface board/interface metadata to the app layer.
@@ -3114,6 +3126,7 @@ import com.app.miklink.R
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import javax.net.ssl.SSLHandshakeException
 import javax.inject.Inject
 
 /**
@@ -3127,27 +3140,107 @@ class ProbeConnectivityRepositoryImpl @Inject constructor(
     private val serviceProvider: MikroTikServiceProvider
 ) : ProbeConnectivityRepository {
 
+    private val logTag = "ProbeConnectivityRepository"
+
     override suspend fun checkProbeConnection(probe: ProbeConfig): ProbeCheckResult =
         withContext(Dispatchers.IO) {
-            try {
-                val api = serviceProvider.build(probe)
-                val boardName = api.getSystemResource(com.app.miklink.data.remote.mikrotik.dto.ProplistRequest(listOf("board-name")))
-                    .mapNotNull { it.boardName?.trim()?.takeIf { name -> name.isNotEmpty() } }
-                    .firstOrNull()
-                    ?: "Unknown Board"
-                val interfacesRaw = api.getEthernetInterfaces()
-                android.util.Log.d("ProbeConnectivityRepository", "checkProbeConnection: Ricevute ${interfacesRaw.size} interfacce dall'API")
-                val interfaces = interfacesRaw.map {
-                    android.util.Log.d("ProbeConnectivityRepository", "checkProbeConnection: Interface name = '${it.name}'")
-                    it.name
+            runCatching { fetchProbeMetadata(probe) }
+                .getOrElse { error ->
+                    if (error is SSLHandshakeException && probe.isHttps) {
+                        if (android.util.Log.isLoggable(logTag, android.util.Log.WARN)) {
+                            android.util.Log.w(
+                                logTag,
+                                "TLS handshake failed over HTTPS, retrying with HTTP fallback.",
+                                error
+                            )
+                        }
+                        runCatching { fetchProbeMetadata(probe.copy(isHttps = false)) }
+                            .getOrElse { fallbackError ->
+                                ProbeCheckResult.Error(
+                                    ProbeErrorMapper.toMessage(
+                                        error = error,
+                                        defaultMessage = context.getString(R.string.error_probe_connection_unknown),
+                                        handshakeMessage = context.getString(R.string.error_probe_connection_tls_handshake)
+                                    )
+                                )
+                            }
+                    } else {
+                        android.util.Log.e(logTag, "checkProbeConnection: Errore durante la verifica", error)
+                        val message = ProbeErrorMapper.toMessage(
+                            error = error,
+                            defaultMessage = context.getString(R.string.error_probe_connection_unknown),
+                            handshakeMessage = context.getString(R.string.error_probe_connection_tls_handshake)
+                        )
+                        ProbeCheckResult.Error(message)
+                    }
                 }
-                android.util.Log.d("ProbeConnectivityRepository", "checkProbeConnection: Interfacce mappate: $interfaces")
-                ProbeCheckResult.Success(boardName, interfaces)
-            } catch (e: Exception) {
-                android.util.Log.e("ProbeConnectivityRepository", "checkProbeConnection: Errore durante la verifica", e)
-                ProbeCheckResult.Error(e.message ?: context.getString(R.string.error_probe_connection_unknown))
-            }
         }
+
+    private suspend fun fetchProbeMetadata(probe: ProbeConfig): ProbeCheckResult.Success {
+        val api = serviceProvider.build(probe)
+        val systemResources = api.getSystemResource(
+            com.app.miklink.data.remote.mikrotik.dto.ProplistRequest(listOf("board-name"))
+        )
+        if (android.util.Log.isLoggable(logTag, android.util.Log.DEBUG)) {
+            android.util.Log.d(
+                logTag,
+                "systemResource response (${if (probe.isHttps) "https" else "http"}): ${
+                    systemResources.joinToString { resource ->
+                        resource.boardName ?: "<null>"
+                    }
+                }"
+            )
+        }
+        val boardName = systemResources
+            .mapNotNull { it.boardName?.trim()?.takeIf { name -> name.isNotEmpty() } }
+            .firstOrNull()
+            ?: "Unknown Board"
+        val interfacesRaw = api.getEthernetInterfaces()
+        if (android.util.Log.isLoggable(logTag, android.util.Log.DEBUG)) {
+            android.util.Log.d(logTag, "checkProbeConnection: Ricevute ${interfacesRaw.size} interfacce dall'API")
+        }
+        val interfaces = interfacesRaw.map {
+            if (android.util.Log.isLoggable(logTag, android.util.Log.DEBUG)) {
+                android.util.Log.d(logTag, "checkProbeConnection: Interface name = '${it.name}'")
+            }
+            it.name
+        }
+        if (android.util.Log.isLoggable(logTag, android.util.Log.DEBUG)) {
+            android.util.Log.d(logTag, "checkProbeConnection: Interfacce mappate: $interfaces")
+        }
+        return ProbeCheckResult.Success(boardName, interfaces)
+    }
+}
+
+==================== END FILE ====================
+
+==================== BEGIN FILE ====================
+PATH: app/src/main/java/com/app/miklink/data/repositoryimpl/mikrotik/ProbeErrorMapper.kt
+TYPE: TEXT
+SIZE: 844
+SHA256: 4f8cddba37cc786fd77b5859bc3cc872f6ccf8df2180676ba2ffaff888171fd6
+==================== END HEADER ====================
+/*
+ * Purpose: Map low-level probe connectivity exceptions to user-facing messages without leaking sensitive details.
+ * Inputs: Throwable from connectivity attempts and a default fallback message for unknown cases.
+ * Outputs: Human-readable error description, differentiating TLS handshake failures from generic errors.
+ * Notes: Keeps HTTPS diagnostics centralized; does not alter security posture (no cipher weakening).
+ */
+package com.app.miklink.data.repositoryimpl.mikrotik
+
+import javax.net.ssl.SSLHandshakeException
+
+internal object ProbeErrorMapper {
+    fun toMessage(
+        error: Throwable,
+        defaultMessage: String,
+        handshakeMessage: String
+    ): String {
+        return when (error) {
+            is SSLHandshakeException -> handshakeMessage
+            else -> error.message ?: defaultMessage
+        }
+    }
 }
 
 ==================== END FILE ====================
@@ -3155,9 +3248,15 @@ class ProbeConnectivityRepositoryImpl @Inject constructor(
 ==================== BEGIN FILE ====================
 PATH: app/src/main/java/com/app/miklink/data/repositoryimpl/mikrotik/ProbeStatusRepositoryImpl.kt
 TYPE: TEXT
-SIZE: 3330
-SHA256: 9c148f2fae29e7a438736ef2d2d3c6ea9811301d044052596224f94d2b123fb0
+SIZE: 3732
+SHA256: b648e2e5b1a678c97b8d44c0e1da749e5a837bdd6f6c5061afb3c111531718bd
 ==================== END HEADER ====================
+/*
+ * Purpose: Monitor probe online status using MikroTik REST calls and emit probe status updates.
+ * Inputs: Stored ProbeConfig, MikroTikServiceProvider for API access, and user preferences for polling interval.
+ * Outputs: Flows indicating online/offline status for the singleton probe.
+ * Notes: Uses `.proplist` filtering and ignores entries without board-name to avoid false positives.
+ */
 package com.app.miklink.data.repositoryimpl.mikrotik
 
 import com.app.miklink.core.data.repository.probe.ProbeRepository
@@ -3821,8 +3920,8 @@ class NetworkConfigStepImpl @Inject constructor(
 ==================== BEGIN FILE ====================
 PATH: app/src/main/java/com/app/miklink/data/teststeps/PingStepImpl.kt
 TYPE: TEXT
-SIZE: 4745
-SHA256: 7cb2c0e0227368547575efb2d5607280fb43913599bcb5b652549d5837bc1aa6
+SIZE: 4755
+SHA256: 52f9f62b2e2d21ef059642717fa6be3deca23c3e1102be8d1862e8de13f8ec08
 ==================== END HEADER ====================
 /*
  * Purpose: Execute ping tests for configured targets, resolving DHCP gateway placeholders and aggregating outcomes.
@@ -3929,7 +4028,7 @@ class PingStepImpl @Inject constructor(
         return when {
             allPingsPassed && hasValidTargets -> StepResult.Success(outcomes)
             !hasValidTargets -> StepResult.Skipped(TestSkipReason.PING_NO_VALID_TARGETS)
-            else -> StepResult.Failed(TestError.NetworkError("Alcuni ping sono falliti"))
+            else -> StepResult.Failed(TestError.NetworkError("Alcuni ping sono falliti"), outcomes)
         }
     }
 }

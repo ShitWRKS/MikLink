@@ -15,11 +15,11 @@ import org.junit.Test
 
 class NeighborGoldenParsingTest {
     data class GoldenNeighbor(
-        @field:Json(name = "mac-address") val macAddress: String?,
-        @field:Json(name = "discovered-by") val discoveredBy: String?,
-        @field:Json(name = "system-caps") val systemCaps: String?,
-        @field:Json(name = "interface") val iface: String?,
-        @field:Json(name = "interface-name") val interfaceName: String?
+        @param:Json(name = "mac-address") val macAddress: String?,
+        @param:Json(name = "discovered-by") val discoveredBy: String?,
+        @param:Json(name = "system-caps") val systemCaps: String?,
+        @param:Json(name = "interface") val iface: String?,
+        @param:Json(name = "interface-name") val interfaceName: String?
     )
 
     @Test

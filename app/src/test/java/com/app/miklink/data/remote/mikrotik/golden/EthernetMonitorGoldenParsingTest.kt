@@ -19,7 +19,7 @@ class EthernetMonitorGoldenParsingTest {
         val name: String?,
         val status: String?,
         val rate: String?,
-        @field:Json(name = "full-duplex") val fullDuplex: String?
+        @param:Json(name = "full-duplex") val fullDuplex: String?
     )
 
     @Test

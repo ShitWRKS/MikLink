@@ -425,14 +425,27 @@ class RunTestUseCaseImpl @Inject constructor(
                     is StepResult.Failed -> {
                         overallStatus = "FAIL"
                         val message = pingResult.error.message
-                        recordStep(
-                            name = SECTION_PING,
-                            title = "Ping",
-                            status = STATUS_FAIL,
-                            details = mapOf("error" to (message ?: "Unknown error")),
-                            rawData = mapOf("error" to message),
-                            error = message
-                        )
+                        val outcomes = pingResult.data
+                        if (!outcomes.isNullOrEmpty()) {
+                            reportData.pingSamples += mapPingOutcomes(outcomes)
+                            recordStep(
+                                name = SECTION_PING,
+                                title = "Ping",
+                                status = STATUS_FAIL,
+                                details = pingDetails(outcomes),
+                                rawData = pingRaw(outcomes),
+                                error = message
+                            )
+                        } else {
+                            recordStep(
+                                name = SECTION_PING,
+                                title = "Ping",
+                                status = STATUS_FAIL,
+                                details = mapOf("error" to (message ?: "Unknown error")),
+                                rawData = mapOf("error" to message),
+                                error = message
+                            )
+                        }
                         emitSectionsSnapshot()
                         emitLog("[Ping] FAIL ${message ?: "unknown error"}")
                     }

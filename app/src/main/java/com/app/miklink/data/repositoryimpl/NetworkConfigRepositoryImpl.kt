@@ -145,9 +145,12 @@ class NetworkConfigRepositoryImpl @Inject constructor(
                 context.getString(R.string.error_static_cidr_missing)
             }
 
-            api.addIpAddress(IpAddressAdd(address = cidr, `interface` = iface))
             val gw = effective.staticGateway
                 ?: error(context.getString(R.string.error_static_gateway_missing))
+
+            validateStaticInput(cidr, gw)
+
+            api.addIpAddress(IpAddressAdd(address = cidr, `interface` = iface))
             api.addRoute(RouteAdd(dstAddress = "0.0.0.0/0", gateway = gw, comment = "MikLink_Auto"))
 
             return NetworkConfigFeedback(
@@ -159,5 +162,50 @@ class NetworkConfigRepositoryImpl @Inject constructor(
                 message = context.getString(R.string.status_static_configured)
             )
         }
+    }
+
+    private fun validateStaticInput(cidr: String, gateway: String) {
+        require(isValidCidr(cidr)) {
+            "Invalid CIDR: $cidr. Use ip/prefix (e.g., 192.168.0.100/24) or a valid netmask."
+        }
+        require(isValidIpv4(gateway)) {
+            "Invalid gateway IPv4 address: $gateway"
+        }
+    }
+
+    private fun isValidCidr(value: String): Boolean {
+        val parts = value.split("/")
+        if (parts.size != 2) return false
+        val ipPart = parts[0]
+        if (!isValidIpv4(ipPart)) return false
+        val suffix = parts[1]
+        val prefixLength = suffix.toIntOrNull()
+        if (prefixLength != null) {
+            return prefixLength in 0..32
+        }
+        return isValidSubnetMask(suffix)
+    }
+
+    private fun isValidIpv4(address: String): Boolean {
+        val parts = address.split(".")
+        if (parts.size != 4) return false
+        return parts.all { part ->
+            val num = part.toIntOrNull() ?: return false
+            num in 0..255
+        }
+    }
+
+    private fun isValidSubnetMask(mask: String): Boolean {
+        val parts = mask.split(".")
+        if (parts.size != 4) return false
+        var value = 0
+        for (part in parts) {
+            val num = part.toIntOrNull() ?: return false
+            if (num !in 0..255) return false
+            value = (value shl 8) or num
+        }
+        if (value == 0) return false
+        val inverted = value.inv()
+        return (inverted + 1) and inverted == 0
     }
 }

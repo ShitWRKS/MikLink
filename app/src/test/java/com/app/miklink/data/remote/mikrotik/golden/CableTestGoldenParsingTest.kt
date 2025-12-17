@@ -18,7 +18,7 @@ class CableTestGoldenParsingTest {
     data class GoldenCableTest(
         val name: String?,
         val status: String?,
-        @field:Json(name = "cable-pairs") val cablePairs: String?
+        @param:Json(name = "cable-pairs") val cablePairs: String?
     )
 
     @Test

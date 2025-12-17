@@ -1,3 +1,9 @@
+/*
+ * Purpose: Verify SaveTestReportUseCase increments client nextIdNumber for all saved reports and keeps mappings deterministic.
+ * Inputs: Fake repositories with configurable Client state and TestReport objects simulating PASS/FAIL outcomes.
+ * Outputs: Assertions on updated Client.nextIdNumber to guard socket suggestion freshness after saves.
+ * Notes: Increment policy must apply regardless of PASS/FAIL when incrementClientCounter is true.
+ */
 package com.app.miklink.data.repositoryimpl.room
 
 import com.app.miklink.core.data.repository.client.ClientRepository
@@ -101,7 +107,7 @@ class SocketIdLiteIncrementTest {
     }
 
     @Test
-    fun `FAIL does not increment`() = runBlocking {
+    fun `FAIL also increments`() = runBlocking {
         val client = Client(
             clientId = 2L,
             companyName = "Y",
@@ -139,7 +145,7 @@ class SocketIdLiteIncrementTest {
         useCase(report)
 
         val updated = fakeClientRepo.getClient(client.clientId)!!
-        assertEquals(10, updated.nextIdNumber)
+        assertEquals(11, updated.nextIdNumber)
     }
 
     @Test

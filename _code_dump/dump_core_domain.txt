@@ -531,9 +531,15 @@ data class PingMeasurement(
 ==================== BEGIN FILE ====================
 PATH: app/src/main/java/com/app/miklink/core/domain/test/model/StepResult.kt
 TYPE: TEXT
-SIZE: 336
-SHA256: 727e81306f2b3c94080d90812ffebdf71a8e5f32cf4bd48ae355222975c90fec
+SIZE: 733
+SHA256: 2d81c2fa330f6de2247070a8b0328e0d16cd1a1b9a37d88ea1a793e02ebc4629
 ==================== END HEADER ====================
+/*
+ * Purpose: Represent outcomes of individual test steps in a type-safe way.
+ * Inputs: Optional success payload, skip reason, or typed TestError with optional partial data.
+ * Outputs: Sealed variants consumed by use cases to drive flow control and UI/reporting.
+ * Notes: Failed variant can carry partial data (e.g., ping outcomes) to surface details even on errors.
+ */
 package com.app.miklink.core.domain.test.model
 
 /**
@@ -542,9 +548,8 @@ package com.app.miklink.core.domain.test.model
 sealed class StepResult<out T> {
     data class Success<T>(val data: T) : StepResult<T>()
     data class Skipped(val reason: String) : StepResult<Nothing>()
-    data class Failed(val error: TestError) : StepResult<Nothing>()
+    data class Failed<T>(val error: TestError, val data: T? = null) : StepResult<T>()
 }
-
 
 ==================== END FILE ====================
 
@@ -1147,8 +1152,8 @@ interface RunTestUseCase {
 ==================== BEGIN FILE ====================
 PATH: app/src/main/java/com/app/miklink/core/domain/usecase/test/RunTestUseCaseImpl.kt
 TYPE: TEXT
-SIZE: 43131
-SHA256: 0f1a1de68c2933aae13c8e626855db38b753651d233e7ec8d1d3552641d71767
+SIZE: 43826
+SHA256: f774ae965363526bdb5693739eb676d793306f10d8f3468ceea4be01fb246e30
 ==================== END HEADER ====================
 /*
  * Purpose: Execute network certification test plans, orchestrating domain steps and emitting UI/reporting events.
@@ -1577,14 +1582,27 @@ class RunTestUseCaseImpl @Inject constructor(
                     is StepResult.Failed -> {
                         overallStatus = "FAIL"
                         val message = pingResult.error.message
-                        recordStep(
-                            name = SECTION_PING,
-                            title = "Ping",
-                            status = STATUS_FAIL,
-                            details = mapOf("error" to (message ?: "Unknown error")),
-                            rawData = mapOf("error" to message),
-                            error = message
-                        )
+                        val outcomes = pingResult.data
+                        if (!outcomes.isNullOrEmpty()) {
+                            reportData.pingSamples += mapPingOutcomes(outcomes)
+                            recordStep(
+                                name = SECTION_PING,
+                                title = "Ping",
+                                status = STATUS_FAIL,
+                                details = pingDetails(outcomes),
+                                rawData = pingRaw(outcomes),
+                                error = message
+                            )
+                        } else {
+                            recordStep(
+                                name = SECTION_PING,
+                                title = "Ping",
+                                status = STATUS_FAIL,
+                                details = mapOf("error" to (message ?: "Unknown error")),
+                                rawData = mapOf("error" to message),
+                                error = message
+                            )
+                        }
                         emitSectionsSnapshot()
                         emitLog("[Ping] FAIL ${message ?: "unknown error"}")
                     }

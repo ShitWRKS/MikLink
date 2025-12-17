@@ -1,8 +1,8 @@
 /*
- * Purpose: Persist a test report and apply the Socket-ID increment policy for successful run-test flows.
+ * Purpose: Persist a test report and apply the Socket-ID increment policy for run-test flows.
  * Inputs: TestReport to save and a flag indicating whether the client counter should be updated.
  * Outputs: Database identifier of the saved report.
- * Notes: Duplication/import flows should call the repository directly to avoid unintended increments.
+ * Notes: Duplication/import flows should call the repository directly to avoid unintended increments. Increments now happen on any saved result (PASS/FAIL) when enabled.
  */
 package com.app.miklink.core.domain.usecase.report
 
@@ -22,8 +22,7 @@ class SaveTestReportUseCaseImpl @Inject constructor(
     override suspend fun invoke(report: TestReport, incrementClientCounter: Boolean): Long {
         val id = reportRepository.saveReport(report)
 
-        val shouldIncrement = incrementClientCounter && report.overallStatus.equals("PASS", ignoreCase = true)
-        if (shouldIncrement) {
+        if (incrementClientCounter) {
             val clientId = report.clientId
             if (clientId != null) {
                 val client = clientRepository.getClient(clientId)

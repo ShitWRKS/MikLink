@@ -1,9 +1,4 @@
 /*
- * Purpose: Moshi DTOs for MikroTik RouterOS requests and responses used by the data layer.
- * Inputs: Raw JSON payloads from MikroTik HTTP APIs mapped with explicit field targets.
- * Outputs: Typed request/response models consumed by MikroTik repositories and services.
- */
-/*
  * Purpose: Define MikroTik REST DTOs used by the data layer for requests and responses.
  * Inputs: Serialized JSON payloads from RouterOS REST endpoints.
  * Outputs: Typed request/response models consumed by repositories and mappers.
@@ -19,17 +14,17 @@ data class ProplistRequest(
     @param:Json(name = ".proplist")
     val proplist: List<String>
 )
-data class InterfaceNameRequest(@field:Json(name = "?interface") val interfaceName: String)
-data class NumbersRequest(@field:Json(name = "numbers") val numbers: String)
+data class InterfaceNameRequest(@param:Json(name = "?interface") val interfaceName: String)
+data class NumbersRequest(@param:Json(name = "numbers") val numbers: String)
 
 // System / Interface responses
 @JsonClass(generateAdapter = true)
 data class SystemResource(@param:Json(name = "board-name") val boardName: String? = null)
-data class EthernetInterface(@field:Json(name = "name") val name: String)
+data class EthernetInterface(@param:Json(name = "name") val name: String)
 
 // DHCP client
 data class DhcpClientStatus(
-    @field:Json(name = ".id") val id: String? = null,
+    @param:Json(name = ".id") val id: String? = null,
     val disabled: String? = null,
     val status: String? = null,
     val address: String? = null,
@@ -39,58 +34,70 @@ data class DhcpClientStatus(
 
 // IP address management
 data class IpAddressEntry(
-    @field:Json(name = ".id") val id: String? = null,
+    @param:Json(name = ".id") val id: String? = null,
     val address: String? = null,
-    @field:Json(name = "interface") val iface: String? = null
+    @param:Json(name = "interface") val iface: String? = null
 )
 
-data class IpAddressAdd(@field:Json(name = "address") val address: String, @field:Json(name = "interface") val `interface`: String)
+data class IpAddressAdd(
+    @param:Json(name = "address") val address: String,
+    @param:Json(name = "interface") val `interface`: String
+)
 
 // Routes
 data class RouteEntry(
-    @field:Json(name = ".id") val id: String? = null,
-    @field:Json(name = "dst-address") val dstAddress: String? = null,
+    @param:Json(name = ".id") val id: String? = null,
+    @param:Json(name = "dst-address") val dstAddress: String? = null,
     val gateway: String? = null,
     val comment: String? = null
 )
 
 data class RouteAdd(
-    @field:Json(name = "dst-address") val dstAddress: String,
+    @param:Json(name = "dst-address") val dstAddress: String,
     val gateway: String,
     val comment: String? = null
 )
 
 // DHCP client add
-data class DhcpClientAdd(@field:Json(name = "interface") val `interface`: String, @field:Json(name = "use-peer-dns") val usePeerDns: String = "yes")
+data class DhcpClientAdd(
+    @param:Json(name = "interface") val `interface`: String,
+    @param:Json(name = "use-peer-dns") val usePeerDns: String = "yes"
+)
 
 // Cable test
 data class CableTestRequest(
-    @field:Json(name = "numbers") val numbers: String,
+    @param:Json(name = "numbers") val numbers: String,
     val duration: String = "5s"
 )
 
 data class CableTestResult(
-    @field:Json(name = "cable-pairs") val cablePairs: List<Map<String, String>>?,
+    @param:Json(name = "cable-pairs") val cablePairs: List<Map<String, String>>?,
     val status: String
 )
 
 // Link monitor
-data class MonitorRequest(@field:Json(name = "numbers") val numbers: String, @field:Json(name = "once") val once: Boolean = true)
+data class MonitorRequest(
+    @param:Json(name = "numbers") val numbers: String,
+    @param:Json(name = "once") val once: Boolean = true
+)
 data class MonitorResponse(val status: String, val rate: String?)
 
 // Neighbor / LLDP
-data class NeighborRequest(@field:Json(name = "?.query") val query: List<String>, @field:Json(name = ".proplist") val proplist: List<String>)
+data class NeighborRequest(
+    @param:Json(name = "?.query") val query: List<String>,
+    @param:Json(name = ".proplist") val proplist: List<String>
+)
 
 data class NeighborDetail(
     val identity: String?,
-    @field:Json(name = "interface-name") val interfaceName: String?,
-    @field:Json(name = "system-caps-enabled") val systemCaps: String?,
-    @field:Json(name = "discovered-by") val discoveredBy: String?,
-    @field:Json(name = "vlan-id") val vlanId: String? = null,
-    @field:Json(name = "voice-vlan-id") val voiceVlanId: String? = null,
-    @field:Json(name = "poe-class") val poeClass: String? = null,
-    @field:Json(name = "system-description") val systemDescription: String? = null,
-    @field:Json(name = "port-id") val portId: String? = null
+    @param:Json(name = "interface-name") val interfaceName: String?,
+    @param:Json(name = "system-caps-enabled") val systemCaps: String?,
+    @param:Json(name = "discovered-by") val discoveredBy: String?,
+    @param:Json(name = "vlan-id") val vlanId: String? = null,
+    @param:Json(name = "voice-vlan-id") val voiceVlanId: String? = null,
+    @param:Json(name = "poe-class") val poeClass: String? = null,
+    @param:Json(name = "system-description") val systemDescription: String? = null,
+    @param:Json(name = "port-id") val portId: String? = null
 )
 
 // Ping
@@ -101,11 +108,11 @@ data class PingRequest(
 )
 
 data class PingResult(
-    @field:Json(name = "avg-rtt") val avgRtt: String?,
+    @param:Json(name = "avg-rtt") val avgRtt: String?,
     val host: String?,
-    @field:Json(name = "max-rtt") val maxRtt: String?,
-    @field:Json(name = "min-rtt") val minRtt: String?,
-    @field:Json(name = "packet-loss") val packetLoss: String?,
+    @param:Json(name = "max-rtt") val maxRtt: String?,
+    @param:Json(name = "min-rtt") val minRtt: String?,
+    @param:Json(name = "packet-loss") val packetLoss: String?,
     val received: String?,
     val sent: String?,
     val seq: String?,

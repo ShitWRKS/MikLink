@@ -103,7 +103,7 @@ class PingStepImpl @Inject constructor(
         return when {
             allPingsPassed && hasValidTargets -> StepResult.Success(outcomes)
             !hasValidTargets -> StepResult.Skipped(TestSkipReason.PING_NO_VALID_TARGETS)
-            else -> StepResult.Failed(TestError.NetworkError("Alcuni ping sono falliti"))
+            else -> StepResult.Failed(TestError.NetworkError("Alcuni ping sono falliti"), outcomes)
         }
     }
 }

@@ -15,8 +15,8 @@ import org.junit.Test
 
 class BridgeHostGoldenParsingTest {
     data class GoldenBridgeHost(
-        @field:Json(name = "mac-address") val macAddress: String?,
-        @field:Json(name = "on-interface") val onInterface: String?
+        @param:Json(name = "mac-address") val macAddress: String?,
+        @param:Json(name = "on-interface") val onInterface: String?
     )
 
     @Test

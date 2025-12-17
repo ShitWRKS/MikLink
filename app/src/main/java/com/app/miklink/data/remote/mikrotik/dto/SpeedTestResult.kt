@@ -8,13 +8,13 @@ package com.app.miklink.data.remote.mikrotik.dto
 import com.squareup.moshi.Json
 
 data class SpeedTestResult(
-    @field:Json(name = "status") val status: String?,
-    @field:Json(name = "ping-min-avg-max") val ping: String?,
-    @field:Json(name = "jitter-min-avg-max") val jitter: String?,
-    @field:Json(name = "loss") val loss: String?,
-    @field:Json(name = "tcp-download") val tcpDownload: String?,
-    @field:Json(name = "tcp-upload") val tcpUpload: String?,
-    @field:Json(name = "udp-download") val udpDownload: String?,
-    @field:Json(name = "udp-upload") val udpUpload: String?,
-    @field:Json(name = ".about") val warning: String? // Messaggio CPU warning
+    @param:Json(name = "status") val status: String?,
+    @param:Json(name = "ping-min-avg-max") val ping: String?,
+    @param:Json(name = "jitter-min-avg-max") val jitter: String?,
+    @param:Json(name = "loss") val loss: String?,
+    @param:Json(name = "tcp-download") val tcpDownload: String?,
+    @param:Json(name = "tcp-upload") val tcpUpload: String?,
+    @param:Json(name = "udp-download") val udpDownload: String?,
+    @param:Json(name = "udp-upload") val udpUpload: String?,
+    @param:Json(name = ".about") val warning: String? // Messaggio CPU warning
 )

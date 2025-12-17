@@ -360,7 +360,7 @@ fun DashboardScreen(
                             icon = Icons.Default.Business,
                             isSelected = selectedClient == client,
                             onClick = {
-                                viewModel.selectedClient.value = client
+                                viewModel.onClientSelected(client)
                                 showClientSheet = false
                             }
                         )

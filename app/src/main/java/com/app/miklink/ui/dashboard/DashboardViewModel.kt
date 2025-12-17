@@ -50,7 +50,10 @@ class DashboardViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // User selections
-    val selectedClient = MutableStateFlow<Client?>(null)
+    private val selectedClientId = MutableStateFlow<Long?>(null)
+    val selectedClient: StateFlow<Client?> = combine(clients, selectedClientId) { list, id ->
+        if (id == null) null else list.firstOrNull { it.clientId == id }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
     // RIMOSSO: val selectedProbe (ora usa currentProbe)
     val selectedProfile = MutableStateFlow<TestProfile?>(null)
     val socketName = MutableStateFlow("")
@@ -102,6 +105,10 @@ class DashboardViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    fun onClientSelected(client: Client?) {
+        selectedClientId.value = client?.clientId
     }
 
     // Funzione helper per trovare il primo ID disponibile (gap-filling)

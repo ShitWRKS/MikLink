@@ -8,8 +8,8 @@ package com.app.miklink.data.remote.mikrotik.dto
 import com.squareup.moshi.Json
 
 data class SpeedTestRequest(
-    @field:Json(name = "address") val address: String,
-    @field:Json(name = "user") val user: String,
-    @field:Json(name = "password") val password: String,
-    @field:Json(name = "test-duration") val testDuration: String = "5"
+    @param:Json(name = "address") val address: String,
+    @param:Json(name = "user") val user: String,
+    @param:Json(name = "password") val password: String,
+    @param:Json(name = "test-duration") val testDuration: String = "5"
 )

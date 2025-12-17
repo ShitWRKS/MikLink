@@ -14,7 +14,7 @@ import org.junit.Test
 class SystemResourceGoldenParsingTest {
 
     data class GoldenSystemResource(
-        @field:Json(name = "board-name") val boardName: String?,
+        @param:Json(name = "board-name") val boardName: String?,
         val version: String?
     )
 
