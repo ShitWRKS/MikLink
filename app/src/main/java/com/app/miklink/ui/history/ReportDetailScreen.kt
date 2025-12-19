@@ -96,6 +96,8 @@ import java.util.Locale
 import java.io.File
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.FileProvider
+import com.app.miklink.ui.theme.MikLinkThemeTokens
+import com.app.miklink.ui.theme.softGlow
 
 @Composable
 fun ReportDetailScreen(
@@ -307,8 +309,18 @@ fun ReportDetailScreen(
 @Composable
 private fun ReportHero(report: TestReport, results: ReportData?, modifier: Modifier = Modifier) {
     val isFailed = report.overallStatus != "PASS"
-    val accent = if (isFailed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
-    val background = accent.copy(alpha = 0.1f)
+    val semantic = MikLinkThemeTokens.semantic
+    val accent = when {
+        isFailed -> semantic.failure
+        report.overallStatus.equals("RUNNING", ignoreCase = true) -> semantic.running
+        else -> semantic.success
+    }
+    val background = MaterialTheme.colorScheme.surfaceVariant
+    val onAccent = when {
+        isFailed -> semantic.onFailureContainer
+        report.overallStatus.equals("RUNNING", ignoreCase = true) -> semantic.onRunningContainer
+        else -> semantic.onSuccessContainer
+    }
     OutlinedCard(
         modifier = modifier,
         colors = CardDefaults.outlinedCardColors(containerColor = background)
@@ -323,11 +335,7 @@ private fun ReportHero(report: TestReport, results: ReportData?, modifier: Modif
             androidx.compose.foundation.layout.Box(
                 modifier = Modifier
                     .size(96.dp)
-                    .drawBehind {
-                        val radius = size.minDimension / 2
-                        drawCircle(color = accent.copy(alpha = 0.18f), radius = radius * 1.6f, center = center)
-                        drawCircle(color = accent.copy(alpha = 0.1f), radius = radius * 2f, center = center)
-                    }
+                    .softGlow(color = accent, radius = 52.dp, maxAlpha = 0.24f)
                     .clip(androidx.compose.foundation.shape.CircleShape)
                     .background(accent)
                     .testTag("report_hero_icon"),
@@ -336,7 +344,7 @@ private fun ReportHero(report: TestReport, results: ReportData?, modifier: Modif
                 Icon(
                     imageVector = if (isFailed) Icons.Default.Cancel else Icons.Default.CheckCircle,
                     contentDescription = null,
-                    tint = Color.White,
+                    tint = onAccent,
                     modifier = Modifier.size(48.dp)
                 )
             }

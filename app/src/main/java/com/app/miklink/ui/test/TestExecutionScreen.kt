@@ -98,6 +98,8 @@ import com.app.miklink.ui.feature.test_details.renderers.SpeedSectionRenderer
 import com.app.miklink.ui.feature.test_details.renderers.TdrSectionRenderer
 import com.app.miklink.ui.test.components.RawLogsPane
 import com.app.miklink.ui.test.components.TestExecutionTags
+import com.app.miklink.ui.theme.MikLinkThemeTokens
+import com.app.miklink.ui.theme.softGlow
 import com.app.miklink.utils.UiState
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -188,21 +190,22 @@ private fun LegacyTopBar(
     isRunning: Boolean,
     onBack: () -> Unit
 ) {
+    val semantic = MikLinkThemeTokens.semantic
     val (title, icon, container) = when {
         isRunning -> Triple(
             stringResource(id = R.string.test_execution_running_topbar),
             Icons.Default.HourglassEmpty,
-            MaterialTheme.colorScheme.primaryContainer
+            semantic.runningContainer
         )
         uiState is UiState.Success && uiState.data.overallStatus == "PASS" -> Triple(
             stringResource(id = R.string.test_execution_completed_title_pass),
             Icons.Default.CheckCircle,
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+            semantic.successContainer
         )
         uiState is UiState.Success -> Triple(
             stringResource(id = R.string.test_execution_completed_title_fail),
             Icons.Default.Error,
-            MaterialTheme.colorScheme.error.copy(alpha = 0.2f)
+            semantic.failureContainer
         )
         uiState is UiState.Error -> Triple(
             stringResource(id = R.string.test_execution_title_error),
@@ -220,6 +223,13 @@ private fun LegacyTopBar(
             MaterialTheme.colorScheme.surface
         )
     }
+    val contentColor = when {
+        isRunning -> semantic.onRunningContainer
+        uiState is UiState.Success && uiState.data.overallStatus == "PASS" -> semantic.onSuccessContainer
+        uiState is UiState.Success -> semantic.onFailureContainer
+        uiState is UiState.Error -> MaterialTheme.colorScheme.onErrorContainer
+        else -> MaterialTheme.colorScheme.onSurface
+    }
 
     CenterAlignedTopAppBar(
         title = {
@@ -227,7 +237,7 @@ private fun LegacyTopBar(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center
             ) {
-                Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Icon(icon, contentDescription = null, tint = contentColor)
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(title, fontWeight = FontWeight.SemiBold)
             }
@@ -241,7 +251,10 @@ private fun LegacyTopBar(
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = container
+            containerColor = container,
+            titleContentColor = contentColor,
+            navigationIconContentColor = contentColor,
+            actionIconContentColor = contentColor
         )
     )
 }
@@ -360,42 +373,13 @@ private fun LegacyCompletedContent(
 
 @Composable
 private fun InProgressHeroCard(modifier: Modifier = Modifier) {
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(80.dp),
-                strokeWidth = 6.dp
-            )
-            Text(
-                text = stringResource(id = R.string.test_execution_running_hero_title),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
-            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-        }
-    }
-}
-
-@Composable
-private fun CompletedHeroCard(
-    socketName: String,
-    isFailed: Boolean,
-    modifier: Modifier = Modifier
-) {
-    val accent = if (isFailed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
-    val background = accent.copy(alpha = 0.1f)
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = background)
+    val semantic = MikLinkThemeTokens.semantic
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Column(
             modifier = Modifier
@@ -407,11 +391,57 @@ private fun CompletedHeroCard(
             Box(
                 modifier = Modifier
                     .size(96.dp)
-                    .drawBehind {
-                        val radius = size.minDimension / 2
-                        drawCircle(color = accent.copy(alpha = 0.22f), radius = radius * 1.4f, center = center)
-                        drawCircle(color = accent.copy(alpha = 0.12f), radius = radius * 1.8f, center = center)
-                    }
+                    .softGlow(color = semantic.runningGlow, radius = 120.dp, maxAlpha = 0.28f, breathe = true)
+                    .background(semantic.running, shape = CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(72.dp),
+                    strokeWidth = 6.dp,
+                    color = semantic.onRunningContainer
+                )
+            }
+            Text(
+                text = stringResource(id = R.string.test_execution_running_hero_title),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+            LinearProgressIndicator(
+                modifier = Modifier.fillMaxWidth(),
+                color = semantic.running,
+                trackColor = semantic.runningContainer
+            )
+        }
+    }
+}
+
+@Composable
+private fun CompletedHeroCard(
+    socketName: String,
+    isFailed: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val semantic = MikLinkThemeTokens.semantic
+    val accent = if (isFailed) semantic.failure else semantic.success
+    val onAccent = if (isFailed) semantic.onFailureContainer else semantic.onSuccessContainer
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+            Box(
+                modifier = Modifier
+                    .size(96.dp)
+                    .softGlow(color = accent, radius = 110.dp, maxAlpha = 0.22f, breathe = false)
                     .clip(CircleShape)
                     .background(accent),
                 contentAlignment = Alignment.Center
@@ -419,7 +449,7 @@ private fun CompletedHeroCard(
                 Icon(
                     imageVector = if (isFailed) Icons.Default.Cancel else Icons.Default.CheckCircle,
                     contentDescription = null,
-                    tint = Color.White,
+                    tint = onAccent,
                     modifier = Modifier.size(52.dp)
                 )
             }
@@ -439,36 +469,6 @@ private fun CompletedHeroCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
             )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center
-            ) {
-                StatChip(
-                    label = stringResource(id = R.string.test_execution_stat_socket),
-                    value = socketName,
-                    icon = Icons.Default.Link
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun StatChip(label: String, value: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
-    Surface(
-        shape = RoundedCornerShape(10.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
-            Column {
-                Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(value, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
-            }
         }
     }
 }
@@ -629,13 +629,16 @@ private fun statusLabel(status: TestSectionStatus): String =
 
 @Composable
 private fun statusTint(status: TestSectionStatus): Color =
-    when (status) {
-        TestSectionStatus.PASS -> MaterialTheme.colorScheme.primary
-        TestSectionStatus.FAIL -> MaterialTheme.colorScheme.error
-        TestSectionStatus.RUNNING -> MaterialTheme.colorScheme.tertiary
-        TestSectionStatus.SKIP -> MaterialTheme.colorScheme.outline
-        TestSectionStatus.INFO -> MaterialTheme.colorScheme.secondary
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    run {
+        val semantic = MikLinkThemeTokens.semantic
+        when (status) {
+            TestSectionStatus.PASS -> semantic.success
+            TestSectionStatus.FAIL -> semantic.failure
+            TestSectionStatus.RUNNING -> semantic.running
+            TestSectionStatus.SKIP -> MaterialTheme.colorScheme.outline
+            TestSectionStatus.INFO -> MaterialTheme.colorScheme.secondary
+            else -> MaterialTheme.colorScheme.onSurfaceVariant
+        }
     }
 
 @Composable
@@ -645,6 +648,7 @@ private fun LegacyBottomActionBar(
     onRepeat: () -> Unit,
     onSave: () -> Unit
 ) {
+    val semantic = MikLinkThemeTokens.semantic
     BottomAppBar(containerColor = MaterialTheme.colorScheme.surfaceContainer) {
         Row(
             modifier = Modifier
@@ -681,15 +685,15 @@ private fun LegacyBottomActionBar(
                     .weight(1f)
                     .testTag(TestExecutionTags.BOTTOM_SAVE),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isFailed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                    containerColor = if (isFailed) semantic.failure else semantic.success,
+                    contentColor = if (isFailed) semantic.onFailure else semantic.onSuccess
                 ),
                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 12.dp)
             ) {
                 Icon(
                     if (isFailed) Icons.Default.Error else Icons.Default.Check,
                     contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = Color.White
+                    modifier = Modifier.size(16.dp)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(stringResource(id = R.string.test_execution_action_save), maxLines = 1, style = MaterialTheme.typography.labelMedium)

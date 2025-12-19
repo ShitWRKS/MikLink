@@ -40,6 +40,7 @@ import com.app.miklink.core.domain.test.model.TestRunSnapshot
 import com.app.miklink.core.domain.test.model.TestSectionSnapshot
 import com.app.miklink.core.domain.test.model.TestSectionStatus
 import com.app.miklink.core.domain.test.model.TestSectionId
+import com.app.miklink.ui.theme.MikLinkThemeTokens
 
 @Composable
 fun TestDetailsContent(
@@ -70,6 +71,7 @@ private fun SectionCard(
     section: TestSectionSnapshot,
     registry: SectionRendererRegistry
 ) {
+    val semantic = MikLinkThemeTokens.semantic
     val renderer = registry.rendererFor(section.id)
     val defaultTitle = when (section.id) {
         TestSectionId.NETWORK -> stringResource(id = R.string.section_network)
@@ -79,6 +81,14 @@ private fun SectionCard(
         TestSectionId.PING -> stringResource(id = R.string.section_ping)
         TestSectionId.SPEED -> stringResource(id = R.string.section_speed)
         else -> section.id.name
+    }
+    val statusTone = when (section.status) {
+        TestSectionStatus.PASS -> semantic.successContainer to semantic.onSuccessContainer
+        TestSectionStatus.FAIL -> semantic.failureContainer to semantic.onFailureContainer
+        TestSectionStatus.RUNNING -> semantic.runningContainer to semantic.onRunningContainer
+        TestSectionStatus.SKIP -> MaterialTheme.colorScheme.surfaceVariant to MaterialTheme.colorScheme.onSurfaceVariant
+        TestSectionStatus.INFO -> MaterialTheme.colorScheme.surfaceVariant to MaterialTheme.colorScheme.onSurfaceVariant
+        else -> MaterialTheme.colorScheme.surfaceVariant to MaterialTheme.colorScheme.onSurfaceVariant
     }
     Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         val (icon, tint) = iconForSection(section.id)
@@ -101,14 +111,14 @@ private fun SectionCard(
                     Text(
                         text = statusLabel(section.status),
                         style = MaterialTheme.typography.labelMedium,
-                        color = tint
+                        color = statusTone.second
                     )
                 }
             }
             SectionStatusPill(
                 label = statusChipLabel(section.status),
-                background = tint.copy(alpha = 0.12f),
-                contentColor = tint
+                background = statusTone.first,
+                contentColor = statusTone.second
             )
         }
         section.warning?.takeIf { it.isNotBlank() }?.let { warning ->
@@ -128,18 +138,12 @@ private fun SectionStatusPill(
     background: Color,
     contentColor: Color
 ) {
-    Surface(
-        color = background,
-        contentColor = contentColor,
-        shape = RoundedCornerShape(50)
-    ) {
-        Text(
-            text = label,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.SemiBold
-        )
-    }
+    Text(
+        text = label,
+        color = contentColor,
+        style = MaterialTheme.typography.labelMedium,
+        fontWeight = FontWeight.SemiBold
+    )
 }
 
 @Composable

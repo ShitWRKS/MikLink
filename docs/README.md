@@ -23,6 +23,7 @@ Documentazione “docs-as-code” mantenuta insieme al codice.
 - MikroTik REST API: `reference/mikrotik-rest-api.md`
 - Testing: `reference/testing.md`
 - Backup format: `reference/backup-format.md`
+- UI theme: `reference/ui-theme.md`
 
 ## Struttura progetto e naming
 

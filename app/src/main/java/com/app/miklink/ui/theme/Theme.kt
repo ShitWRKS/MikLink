@@ -1,39 +1,119 @@
+/*
+ * Purpose: Provide MikLink MaterialTheme with system-driven light/dark, semantic status tokens, and safe window styling.
+ * Inputs: Theme toggles (darkTheme, dynamicColor) and optional custom color overrides for white-label scenarios.
+ * Outputs: Composition-local MaterialTheme plus MikLinkThemeTokens.semantic for consistent PASS/FAIL/RUNNING usage.
+ */
 package com.app.miklink.ui.theme
 
 import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.*
+import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.runtime.Immutable
 import androidx.core.view.WindowCompat
 
-private val DarkColorScheme = darkColorScheme(
-    primary = MikLinkPrimaryLight,
-    onPrimary = Color.Black,
-    secondary = MikLinkSecondary,
-    onSecondary = Color.White,
-    background = TechDarkBackground,
-    surface = TechDarkSurface,
-    onBackground = Color(0xFFE0E0E0),
-    onSurface = Color(0xFFE0E0E0)
+@Immutable
+data class MikLinkSemanticColors(
+    val success: Color,
+    val onSuccess: Color,
+    val successContainer: Color,
+    val onSuccessContainer: Color,
+    val successGlow: Color,
+    val failure: Color,
+    val onFailure: Color,
+    val failureContainer: Color,
+    val onFailureContainer: Color,
+    val failureGlow: Color,
+    val running: Color,
+    val onRunning: Color,
+    val runningContainer: Color,
+    val onRunningContainer: Color,
+    val runningGlow: Color
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = MikLinkPrimary,
-    onPrimary = Color.White,
+    primary = MikLinkPrimaryLight,
+    onPrimary = MikLinkOnPrimaryLight,
+    primaryContainer = MikLinkPrimaryContainerLight,
+    onPrimaryContainer = MikLinkOnPrimaryContainerLight,
     secondary = MikLinkSecondary,
-    onSecondary = Color.White,
+    onSecondary = MikLinkOnPrimary,
     background = TechLightBackground,
     surface = TechLightSurface,
-    onBackground = Neutral900,
-    onSurface = Neutral900
+    surfaceVariant = TechLightSurfaceVariant,
+    onBackground = TechLightTextHigh,
+    onSurface = TechLightTextHigh,
+    onSurfaceVariant = TechLightTextMedium,
+    outline = TechLightOutline
 )
+
+private val DarkColorScheme = darkColorScheme(
+    primary = MikLinkPrimaryDark,
+    onPrimary = MikLinkOnPrimaryDark,
+    primaryContainer = MikLinkPrimaryContainerDark,
+    onPrimaryContainer = MikLinkOnPrimaryContainerDark,
+    secondary = MikLinkSecondary,
+    onSecondary = MikLinkOnPrimary,
+    background = TechDarkBackground,
+    surface = TechDarkSurface,
+    surfaceVariant = TechDarkSurfaceVariant,
+    onBackground = TechTextHigh,
+    onSurface = TechTextHigh,
+    onSurfaceVariant = TechTextMedium,
+    outline = TechDarkOutline
+)
+
+private val LightSemanticColors = MikLinkSemanticColors(
+    success = StatusSuccess,
+    onSuccess = StatusOnSuccess,
+    successContainer = StatusSuccessContainer,
+    onSuccessContainer = StatusOnSuccessContainer,
+    successGlow = GlowSuccess,
+    failure = StatusFailure,
+    onFailure = StatusOnFailure,
+    failureContainer = StatusFailureContainer,
+    onFailureContainer = StatusOnFailureContainer,
+    failureGlow = GlowFailure,
+    running = StatusRunningLight,
+    onRunning = StatusOnRunningLight,
+    runningContainer = StatusRunningLightContainer,
+    onRunningContainer = StatusOnRunningLightContainer,
+    runningGlow = GlowRunning
+)
+
+private val DarkSemanticColors = MikLinkSemanticColors(
+    success = StatusSuccess,
+    onSuccess = StatusOnSuccess,
+    successContainer = StatusSuccessContainer,
+    onSuccessContainer = StatusOnSuccessContainer,
+    successGlow = GlowSuccess,
+    failure = StatusFailure,
+    onFailure = StatusOnFailure,
+    failureContainer = StatusFailureContainer,
+    onFailureContainer = StatusOnFailureContainer,
+    failureGlow = GlowFailure,
+    running = StatusRunningDark,
+    onRunning = StatusOnRunningDark,
+    runningContainer = StatusRunningDarkContainer,
+    onRunningContainer = StatusOnRunningDarkContainer,
+    runningGlow = GlowRunning
+)
+
+private val LocalSemanticColors = staticCompositionLocalOf { LightSemanticColors }
 
 @Composable
 fun MikLinkTheme(
@@ -71,6 +151,8 @@ fun MikLinkTheme(
         }
     }
 
+    val semanticColors = remember(darkTheme) { if (darkTheme) DarkSemanticColors else LightSemanticColors }
+
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
@@ -81,11 +163,13 @@ fun MikLinkTheme(
         }
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content
-    )
+    CompositionLocalProvider(LocalSemanticColors provides semanticColors) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = Typography,
+            content = content
+        )
+    }
 }
 
 fun buildCustomColorScheme(
@@ -99,7 +183,7 @@ fun buildCustomColorScheme(
     val secondary = secondaryColor?.let { Color(it) } ?: primary
     val background = backgroundColor?.let { Color(it) } ?: if (isDark) TechDarkBackground else TechLightBackground
     val surface = backgroundColor?.let { Color(it) } ?: if (isDark) TechDarkSurface else TechLightSurface
-    val onBackground = customContentColor?.let { Color(it) } ?: if (isDark) Color.White else Neutral900
+    val onBackground = customContentColor?.let { Color(it) } ?: if (isDark) Color.White else TechLightTextHigh
     val onSurface = onBackground
     val onPrimary = primary.contrastColor()
     val onSecondary = secondary.contrastColor()
@@ -139,4 +223,9 @@ fun isLightChain(color: Color): Boolean {
 
 private fun Color.contrastColor(): Color {
     return if (getLuminance(this) > 0.5) Color.Black else Color.White
+}
+
+object MikLinkThemeTokens {
+    val semantic: MikLinkSemanticColors
+        @Composable get() = LocalSemanticColors.current
 }

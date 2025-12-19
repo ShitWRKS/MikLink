@@ -1,3 +1,8 @@
+/*
+ * Purpose: Display animated splash with brand assets and transition to dashboard after intro animations.
+ * Inputs: NavController for navigation; relies on Coil image loader for GIF rendering.
+ * Outputs: Navigates to dashboard after animation and shows branding text/assets with theme colors.
+ */
 package com.app.miklink.ui.splash
 
 import androidx.compose.animation.core.Animatable
@@ -24,6 +29,7 @@ import androidx.navigation.NavController
 import com.app.miklink.R
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import com.app.miklink.ui.theme.JetBrainsMono
 import coil.ImageLoader
 import coil.decode.GifDecoder
 import coil.decode.ImageDecoderDecoder
@@ -141,7 +147,7 @@ fun SplashScreen(navController: NavController) {
                 text = "Featured By",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
-                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                fontFamily = JetBrainsMono,
                 letterSpacing = 2.sp
             )
 
@@ -172,7 +178,8 @@ fun SplashScreen(navController: NavController) {
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = androidx.compose.ui.text.font.FontWeight.Black,
                     color = MaterialTheme.colorScheme.primary,
-                    letterSpacing = 1.sp
+                    letterSpacing = 1.sp,
+                    fontFamily = JetBrainsMono
                 )
             }
 
@@ -182,7 +189,6 @@ fun SplashScreen(navController: NavController) {
             androidx.compose.material3.Text(
                 text = "'cause shit always works",
                 style = MaterialTheme.typography.bodySmall,
-                fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
             )
         }

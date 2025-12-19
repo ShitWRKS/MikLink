@@ -32,6 +32,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.res.stringResource
 import com.app.miklink.R
 import com.app.miklink.core.domain.model.preferences.IdNumberingStrategy
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -172,9 +173,11 @@ fun SettingsScreen(
                     }
                     Slider(
                         value = seconds,
-                        onValueChange = { viewModel.updateProbePollingInterval((it * 1000).toLong()) },
+                        onValueChange = { raw ->
+                            val roundedSeconds = raw.roundToInt().coerceIn(2, 30)
+                            viewModel.updateProbePollingInterval((roundedSeconds * 1000).toLong())
+                        },
                         valueRange = 2f..30f,
-                        steps = 27, // 1s increments (30-2 = 28 steps? 2,3...30 = 29 values -> 28 steps)
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -210,7 +213,6 @@ fun SettingsScreen(
                         value = glowIntensity,
                         onValueChange = { viewModel.updateDashboardGlowIntensity(it) },
                         valueRange = 0f..1f,
-                        steps = 19, // 5% increments
                         modifier = Modifier.fillMaxWidth()
                     )
                 }

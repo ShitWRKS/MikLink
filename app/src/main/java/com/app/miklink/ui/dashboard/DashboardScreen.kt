@@ -137,7 +137,11 @@ fun DashboardScreen(
                         FilledTonalButton(
                             onClick = { navController.navigate("history") },
                             modifier = Modifier.padding(end = 8.dp),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                            colors = ButtonDefaults.filledTonalButtonColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
                         ) {
                             Icon(
                                 Icons.Default.Description,

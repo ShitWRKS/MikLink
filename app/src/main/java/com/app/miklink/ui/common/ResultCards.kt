@@ -1,3 +1,8 @@
+/*
+ * Purpose: Reusable cards for test sections with consistent semantic status chips and expandable details.
+ * Inputs: Section title/status/icon and composable content plus optional test tags and expand behavior.
+ * Outputs: Card styled with MikLink semantic colors for PASS/FAIL/RUNNING and status chip rendering.
+ */
 package com.app.miklink.ui.common
 
 import androidx.compose.animation.AnimatedVisibility
@@ -16,27 +21,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.res.stringResource
 import com.app.miklink.R
+import com.app.miklink.ui.theme.MikLinkThemeTokens
+import com.app.miklink.ui.components.ResultStatusLabel
 
 @Composable
 private fun StatusChip(status: String) {
-    val (bg, fg, ic) = when (status.uppercase()) {
-        "PASS" -> Triple(Color(0xFFE8F5E9), Color(0xFF2E7D32), Icons.Default.Check) // Green Container, Green Text
-        "FAIL" -> Triple(MaterialTheme.colorScheme.errorContainer, MaterialTheme.colorScheme.onErrorContainer, Icons.Default.Close)
-        "PARTIAL", "INFO" -> Triple(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.onSurfaceVariant, Icons.Default.Info)
-        "SKIPPED" -> Triple(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.onSurfaceVariant, Icons.Default.SkipNext)
-        else -> Triple(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.onSurfaceVariant, Icons.Default.Info)
-    }
-    Surface(color = bg, shape = MaterialTheme.shapes.small) {
-        Row(modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-            Icon(ic, contentDescription = null, tint = fg, modifier = Modifier.size(14.dp))
-            Spacer(Modifier.width(4.dp))
-            Text(status.uppercase(), color = fg, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-        }
-    }
+    ResultStatusLabel(status = status)
 }
 
 /**

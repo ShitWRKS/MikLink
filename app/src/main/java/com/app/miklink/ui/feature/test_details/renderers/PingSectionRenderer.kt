@@ -39,6 +39,8 @@ import com.app.miklink.core.domain.test.model.TestSectionSnapshot
 import com.app.miklink.ui.feature.test_details.SectionRenderer
 import com.app.miklink.ui.test.components.TestExecutionTags
 import androidx.compose.ui.platform.testTag
+import com.app.miklink.ui.theme.MonoLabel
+import com.app.miklink.ui.theme.MikLinkThemeTokens
 
 class PingSectionRenderer : SectionRenderer {
     @Composable
@@ -59,6 +61,7 @@ class PingSectionRenderer : SectionRenderer {
 
     @Composable
     private fun PingTargetBlock(target: String, samples: List<PingSample>) {
+        val semantic = MikLinkThemeTokens.semantic
         val resolvedHost = samples.firstNotNullOfOrNull { it.host?.takeIf { host -> host.isNotBlank() } }
         val rawLoss = samples.lastOrNull { !it.packetLoss.isNullOrBlank() }?.packetLoss ?: "-"
         val lossText = when {
@@ -72,9 +75,9 @@ class PingSectionRenderer : SectionRenderer {
         val avg = samples.firstNotNullOfOrNull { it.avgRtt?.takeIf { value -> value.isNotBlank() } } ?: "-"
         val max = samples.firstNotNullOfOrNull { it.maxRtt?.takeIf { value -> value.isNotBlank() } } ?: "-"
         val lossChipColors = if (lossText.trim().startsWith("0")) {
-            MaterialTheme.colorScheme.primaryContainer to MaterialTheme.colorScheme.onPrimaryContainer
+            semantic.successContainer to semantic.onSuccessContainer
         } else {
-            MaterialTheme.colorScheme.errorContainer to MaterialTheme.colorScheme.onErrorContainer
+            semantic.failureContainer to semantic.onFailureContainer
         }
 
         Column(
@@ -153,8 +156,7 @@ class PingSectionRenderer : SectionRenderer {
                                 sample.time ?: "-",
                                 sample.ttl ?: "-"
                             ),
-                            style = MaterialTheme.typography.bodySmall,
-                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                            style = MonoLabel
                         )
                     }
                 }

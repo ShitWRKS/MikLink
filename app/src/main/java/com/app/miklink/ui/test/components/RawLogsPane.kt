@@ -24,9 +24,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.app.miklink.ui.theme.MikLinkThemeTokens
+import com.app.miklink.ui.theme.MonoBody
 
 @Composable
 fun RawLogsPane(
@@ -38,13 +39,14 @@ fun RawLogsPane(
     colorize: Boolean = false,
     minHeight: Dp = 140.dp,
     maxHeight: Dp = 260.dp
-) {
-    val listState = rememberLazyListState()
+    ) {
+        val listState = rememberLazyListState()
+        val semantic = MikLinkThemeTokens.semantic
 
-    LaunchedEffect(logs.size) {
-        if (autoScroll && logs.isNotEmpty()) {
-            listState.scrollToItem(logs.lastIndex)
-        }
+        LaunchedEffect(logs.size) {
+            if (autoScroll && logs.isNotEmpty()) {
+                listState.scrollToItem(logs.lastIndex)
+            }
     }
 
     Surface(
@@ -81,16 +83,15 @@ fun RawLogsPane(
                 ) {
                     itemsIndexed(logs) { index, line ->
                         val color = when {
-                            colorize && line.contains("ERRORE", true) -> MaterialTheme.colorScheme.error
-                            colorize && line.contains("FAIL", true) -> MaterialTheme.colorScheme.error
-                            colorize && line.contains("FALLITO", true) -> MaterialTheme.colorScheme.error
-                            colorize && (line.contains("SUCCESSO", true) || line.contains("PASS", true)) -> MaterialTheme.colorScheme.primary
+                            colorize && line.contains("ERRORE", true) -> semantic.failure
+                            colorize && line.contains("FAIL", true) -> semantic.failure
+                            colorize && line.contains("FALLITO", true) -> semantic.failure
+                            colorize && (line.contains("SUCCESSO", true) || line.contains("PASS", true)) -> semantic.success
                             else -> MaterialTheme.colorScheme.onSurfaceVariant
                         }
                         Text(
                             text = line,
-                            style = MaterialTheme.typography.bodySmall,
-                            fontFamily = FontFamily.Monospace,
+                            style = MonoBody,
                             color = color,
                             modifier = Modifier
                                 .fillMaxWidth()

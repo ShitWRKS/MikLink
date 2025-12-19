@@ -1,3 +1,8 @@
+/*
+ * Purpose: Render test history list with filters, grouping by client, export/repeat actions, and inline PDF operations.
+ * Inputs: HistoryViewModel state (reports, filters, pdf status), NavController, and user interactions for repeat/delete/export.
+ * Outputs: Composable history UI with semantic status chips/badges and navigation/actions callbacks.
+ */
 package com.app.miklink.ui.history
 
 import android.app.Activity
@@ -27,6 +32,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.app.miklink.core.domain.model.TestReport
 import com.app.miklink.ui.history.model.ReportsByClient
+import com.app.miklink.ui.theme.MikLinkThemeTokens
+import com.app.miklink.ui.components.ResultStatusLabel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -49,6 +56,7 @@ fun HistoryScreen(
 ) {
     val reportsByClient by viewModel.reportsByClient.collectAsStateWithLifecycle()
     val pdfStatus by viewModel.pdfStatus.collectAsStateWithLifecycle()
+    val semantic = MikLinkThemeTokens.semantic
 
     var expandedClientId by remember { mutableStateOf<Long?>(null) }
     var showDeleteDialog by remember { mutableStateOf<Long?>(null) }
@@ -156,8 +164,12 @@ fun HistoryScreen(
                             { Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp)) }
                         } else null,
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = androidx.compose.ui.graphics.Color(0xFF4CAF50).copy(alpha = 0.2f),
-                            selectedLabelColor = androidx.compose.ui.graphics.Color(0xFF4CAF50)
+                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            iconColor = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     )
                     FilterChip(
@@ -168,8 +180,12 @@ fun HistoryScreen(
                             { Icon(Icons.Default.Cancel, contentDescription = null, modifier = Modifier.size(18.dp)) }
                         } else null,
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = androidx.compose.ui.graphics.Color(0xFFF44336).copy(alpha = 0.2f),
-                            selectedLabelColor = androidx.compose.ui.graphics.Color(0xFFF44336)
+                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            iconColor = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     )
                 }
@@ -548,6 +564,7 @@ fun ClientReportsCard(
     onExportSingleReport: (TestReport) -> Unit = {},
     viewModel: HistoryViewModel
 ) {
+    val semantic = MikLinkThemeTokens.semantic
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(4.dp)
@@ -576,7 +593,7 @@ fun ClientReportsCard(
                         }
                         if (clientData.passedTests > 0) {
                             Badge(
-                                containerColor = androidx.compose.ui.graphics.Color(0xFF4CAF50).copy(alpha = 0.2f)
+                                containerColor = semantic.successContainer
                             ) {
                                 Row(
                                     horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -586,11 +603,11 @@ fun ClientReportsCard(
                                         Icons.Default.CheckCircle,
                                         contentDescription = null,
                                         modifier = Modifier.size(14.dp),
-                                        tint = androidx.compose.ui.graphics.Color(0xFF4CAF50)
+                                        tint = semantic.onSuccessContainer
                                     )
                                     Text(
                                         "${clientData.passedTests}",
-                                        color = androidx.compose.ui.graphics.Color(0xFF4CAF50),
+                                        color = semantic.onSuccessContainer,
                                         fontWeight = FontWeight.Bold
                                     )
                                 }
@@ -598,7 +615,7 @@ fun ClientReportsCard(
                         }
                         if (clientData.failedTests > 0) {
                             Badge(
-                                containerColor = androidx.compose.ui.graphics.Color(0xFFF44336).copy(alpha = 0.2f)
+                                containerColor = semantic.failureContainer
                             ) {
                                 Row(
                                     horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -608,11 +625,11 @@ fun ClientReportsCard(
                                         Icons.Default.Cancel,
                                         contentDescription = null,
                                         modifier = Modifier.size(14.dp),
-                                        tint = androidx.compose.ui.graphics.Color(0xFFF44336)
+                                        tint = semantic.onFailureContainer
                                     )
                                     Text(
                                         "${clientData.failedTests}",
-                                        color = androidx.compose.ui.graphics.Color(0xFFF44336),
+                                        color = semantic.onFailureContainer,
                                         fontWeight = FontWeight.Bold
                                     )
                                 }
@@ -671,6 +688,7 @@ fun ReportListItem(
     onExportPdf: () -> Unit = {}
 ) {
     var showMenu by remember { mutableStateOf(false) }
+    val semantic = MikLinkThemeTokens.semantic
     
     Row(
         modifier = Modifier
@@ -697,34 +715,7 @@ fun ReportListItem(
 
         Spacer(Modifier.width(8.dp))
 
-        // Enhanced Pass/Fail badge
-        Surface(
-            shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
-            color = if (report.overallStatus == "PASS")
-                androidx.compose.ui.graphics.Color(0xFF4CAF50)
-            else
-                androidx.compose.ui.graphics.Color(0xFFF44336),
-            modifier = Modifier.padding(end = 8.dp)
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Icon(
-                    imageVector = if (report.overallStatus == "PASS") Icons.Default.CheckCircle else Icons.Default.Cancel,
-                    contentDescription = null,
-                    tint = androidx.compose.ui.graphics.Color.White,
-                    modifier = Modifier.size(14.dp)
-                )
-                Text(
-                    report.overallStatus,
-                    fontWeight = FontWeight.Bold,
-                    color = androidx.compose.ui.graphics.Color.White,
-                    style = MaterialTheme.typography.labelMedium
-                )
-            }
-        }
+        ResultStatusLabel(status = report.overallStatus)
 
         // Action buttons: PDF, Repeat, Overflow menu
         Row(verticalAlignment = Alignment.CenterVertically) {
