@@ -30,14 +30,13 @@ class ProbeEditViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    private val fakeProbeRepository = FakeProbeRepository()
-    private val fakeConnectivityRepository = FakeProbeConnectivityRepository(
-        boardName = "hAP ax^2",
-        interfaces = listOf("ether1", "ether2")
-    )
-
     @Test
     fun `verify success persists board name when saving`() = runTest {
+        val fakeProbeRepository = FakeProbeRepository()
+        val fakeConnectivityRepository = FakeProbeConnectivityRepository(
+            boardName = "hAP ax^2",
+            interfaces = listOf("ether1", "ether2")
+        )
         val viewModel = ProbeEditViewModel(
             probeRepository = fakeProbeRepository,
             probeConnectivityRepository = fakeConnectivityRepository,
@@ -76,6 +75,7 @@ class ProbeEditViewModelTest {
 
     @Test
     fun `verify fallback toggles https off and surfaces warning`() = runTest {
+        val fakeProbeRepository = FakeProbeRepository()
         val viewModel = ProbeEditViewModel(
             probeRepository = fakeProbeRepository,
             probeConnectivityRepository = FakeProbeConnectivityRepository(
@@ -95,8 +95,9 @@ class ProbeEditViewModelTest {
         viewModel.onVerifyClicked()
         advanceUntilIdle()
 
-        assertTrue(viewModel.verificationState.value is VerificationState.Success)
-        val state = viewModel.verificationState.value as VerificationState.Success
+        val verificationState = viewModel.verificationState.value
+        assertTrue("Expected success state, got $verificationState", verificationState is VerificationState.Success)
+        val state = verificationState as VerificationState.Success
         assertTrue(state.didFallbackToHttp)
         assertEquals("fallback-http", state.warning)
         assertEquals(false, viewModel.isHttps.value)

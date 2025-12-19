@@ -4,7 +4,7 @@
  * Outputs: User-facing error strings that distinguish TLS handshake issues from generic failures.
  * Notes: Prevents regressions where HTTPS failures become opaque or misleading.
  */
-package com.app.miklink.data.repositoryimpl.mikrotik
+package com.app.miklink.data.repository.mikrotik
 
 import org.junit.Assert.assertTrue
 import org.junit.Assert.assertEquals

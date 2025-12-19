@@ -1,7 +1,7 @@
 /*
- * Purpose: Validate TestViewModel maps domain events to UI state flows for sections, reports, and logs.
+ * Purpose: Validate TestViewModel maps domain events to UI state flows for snapshots, reports, and logs.
  * Inputs: Synthetic TestEvent streams emitted via a fake RunTestUseCase and SavedStateHandle navigation args.
- * Outputs: Assertions on section status progression, UiState transitions, and log accumulation.
+ * Outputs: Assertions on snapshot progression, UiState transitions, and log accumulation.
  */
 package com.app.miklink.ui.test
 
@@ -11,7 +11,11 @@ import com.app.miklink.core.domain.test.model.TestEvent
 import com.app.miklink.core.domain.test.model.TestOutcome
 import com.app.miklink.core.domain.test.model.TestPlan
 import com.app.miklink.core.domain.test.model.TestProgress
-import com.app.miklink.core.domain.test.model.TestSectionResult
+import com.app.miklink.core.domain.test.model.TestProgressKey
+import com.app.miklink.core.domain.test.model.TestRunSnapshot
+import com.app.miklink.core.domain.test.model.TestSectionId
+import com.app.miklink.core.domain.test.model.TestSectionSnapshot
+import com.app.miklink.core.domain.test.model.TestSectionStatus
 import com.app.miklink.core.domain.usecase.test.RunTestUseCase
 import com.app.miklink.core.domain.model.TestReport
 import com.app.miklink.core.domain.usecase.report.SaveTestReportUseCase
@@ -46,7 +50,7 @@ class TestViewModelTest {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun `sections state updates progressively from domain events`() = runTest {
+    fun `snapshot state updates progressively from domain events`() = runTest {
         val events = MutableSharedFlow<TestEvent>()
         val useCase = object : RunTestUseCase {
             override fun execute(plan: TestPlan): Flow<TestEvent> = events
@@ -65,39 +69,51 @@ class TestViewModelTest {
         viewModel.startTest()
         advanceUntilIdle()
 
-        val pendingSections = listOf(
-            TestSectionResult(type = "NETWORK", title = "Network", status = "PENDING"),
-            TestSectionResult(type = "LINK", title = "Link", status = "PENDING")
+        val pendingSnapshot = TestRunSnapshot(
+            sections = listOf(
+                TestSectionSnapshot(id = TestSectionId.NETWORK, status = TestSectionStatus.PENDING),
+                TestSectionSnapshot(id = TestSectionId.LINK, status = TestSectionStatus.PENDING)
+            ),
+            progress = TestProgressKey.PREPARING,
+            percent = 0
         )
-        events.emit(TestEvent.SectionsUpdated(pendingSections))
+        events.emit(TestEvent.SnapshotUpdated(pendingSnapshot))
         advanceUntilIdle()
 
-        assertEquals(2, viewModel.sections.value.size)
-        assertTrue(viewModel.sections.value.all { it.status == "PENDING" })
+        assertEquals(2, viewModel.snapshot.value?.sections?.size)
+        assertTrue(viewModel.snapshot.value?.sections?.all { it.status == TestSectionStatus.PENDING } == true)
 
-        val runningSections = listOf(
-            TestSectionResult(type = "NETWORK", title = "Network", status = "RUNNING"),
-            TestSectionResult(type = "LINK", title = "Link", status = "PENDING")
+        val runningSnapshot = pendingSnapshot.copy(
+            sections = listOf(
+                TestSectionSnapshot(id = TestSectionId.NETWORK, status = TestSectionStatus.RUNNING),
+                TestSectionSnapshot(id = TestSectionId.LINK, status = TestSectionStatus.PENDING)
+            ),
+            progress = TestProgressKey.NETWORK_CONFIG,
+            percent = 20
         )
-        events.emit(TestEvent.SectionsUpdated(runningSections))
+        events.emit(TestEvent.SnapshotUpdated(runningSnapshot))
         advanceUntilIdle()
 
-        val currentStatuses = viewModel.sections.value.associate { it.type.name to it.status }
-        assertEquals("RUNNING", currentStatuses["NETWORK"])
-        assertEquals("PENDING", currentStatuses["LINK"])
+        val currentStatuses = viewModel.snapshot.value?.sections?.associate { it.id.name to it.status }
+        assertEquals(TestSectionStatus.RUNNING, currentStatuses?.get("NETWORK"))
+        assertEquals(TestSectionStatus.PENDING, currentStatuses?.get("LINK"))
 
-        val finalSections = listOf(
-            TestSectionResult(type = "NETWORK", title = "Network", status = "PASS"),
-            TestSectionResult(type = "LINK", title = "Link", status = "FAIL", details = mapOf("error" to "link down"))
+        val finalSnapshot = runningSnapshot.copy(
+            sections = listOf(
+                TestSectionSnapshot(id = TestSectionId.NETWORK, status = TestSectionStatus.PASS),
+                TestSectionSnapshot(id = TestSectionId.LINK, status = TestSectionStatus.FAIL, warning = "link down")
+            ),
+            progress = TestProgressKey.COMPLETED,
+            percent = 100
         )
-        events.emit(TestEvent.SectionsUpdated(finalSections))
+        events.emit(TestEvent.SnapshotUpdated(finalSnapshot))
         advanceUntilIdle()
 
         events.emit(
             TestEvent.Completed(
                 TestOutcome(
                     overallStatus = "FAIL",
-                    sections = finalSections,
+                    finalSnapshot = finalSnapshot,
                     rawResultsJson = "{}"
                 )
             )
@@ -106,8 +122,8 @@ class TestViewModelTest {
 
         val uiState = viewModel.uiState.value
         assertTrue(uiState is UiState.Success<TestReport>)
-        val sectionsStatuses = viewModel.sections.value.map { it.status }
-        assertEquals(listOf("PASS", "FAIL"), sectionsStatuses)
+        val sectionsStatuses = viewModel.snapshot.value?.sections?.map { it.status }
+        assertEquals(listOf(TestSectionStatus.PASS, TestSectionStatus.FAIL), sectionsStatuses)
 
         viewModel.viewModelScope.cancel()
     }

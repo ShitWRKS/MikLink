@@ -1,17 +1,11 @@
 /*
- * Purpose: Compose screen for executing tests, showing live section progress, and handling completion actions (repeat/save/close).
- * Inputs: TestViewModel state flows (uiState, sections, isRunning), navigation controller, and mapped TestSection details.
- * Outputs: UI updates for section cards, progress indicators, dialogs, and save/repeat triggers back to the view model.
- * Notes: Displays all planned sections (including PENDING) to avoid hidden steps and keeps logic UI-only without domain side effects.
+ * Purpose: Compose screen for live/completed test execution with legacy UI restored atop the typed snapshot pipeline.
+ * Inputs: TestViewModel state flows (uiState, snapshot, logs, isRunning) and NavController for navigation.
+ * Outputs: Presentation for running/completed hero, logs toggle, section cards via renderers, and repeat/save actions.
+ * Notes: Keeps renderer registry + snapshot intact; all policies are pure UI (ordering, visibility, expandability).
  */
 package com.app.miklink.ui.test
 
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,9 +20,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -38,16 +29,18 @@ import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.HourglassEmpty
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.PowerInput
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.SettingsEthernet
 import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material3.AlertDialog
@@ -57,11 +50,11 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -75,63 +68,37 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.app.miklink.R
 import com.app.miklink.core.domain.model.TestReport
+import com.app.miklink.core.domain.test.model.TestRunSnapshot
+import com.app.miklink.core.domain.test.model.TestSectionId
+import com.app.miklink.core.domain.test.model.TestSectionSnapshot
+import com.app.miklink.core.domain.test.model.TestSectionStatus
 import com.app.miklink.ui.common.TestSectionCard
-import com.app.miklink.ui.common.UiText
-import com.app.miklink.ui.common.asString
-import com.app.miklink.ui.test.TestSectionCategory.INFO
-import com.app.miklink.ui.test.TestSectionCategory.TEST
-import com.app.miklink.ui.test.TestSectionType.LINK
-import com.app.miklink.ui.test.TestSectionType.LLDP
-import com.app.miklink.ui.test.TestSectionType.NETWORK
-import com.app.miklink.ui.test.TestSectionType.PING
-import com.app.miklink.ui.test.TestSectionType.SPEED
-import com.app.miklink.ui.test.TestSectionType.TDR
+import com.app.miklink.ui.feature.test_details.SectionRendererRegistry
+import com.app.miklink.ui.feature.test_details.renderers.LinkSectionRenderer
+import com.app.miklink.ui.feature.test_details.renderers.NetworkSectionRenderer
+import com.app.miklink.ui.feature.test_details.renderers.NeighborsSectionRenderer
+import com.app.miklink.ui.feature.test_details.renderers.PingSectionRenderer
+import com.app.miklink.ui.feature.test_details.renderers.SpeedSectionRenderer
+import com.app.miklink.ui.feature.test_details.renderers.TdrSectionRenderer
 import com.app.miklink.ui.test.components.RawLogsPane
 import com.app.miklink.ui.test.components.TestExecutionTags
-import com.app.miklink.ui.format.SectionDetailFormatter
-import com.app.miklink.ui.format.SectionId
 import com.app.miklink.utils.UiState
-
-// Helper per estrarre velocità e CPU load da stringhe come:
-// "91.9Mbps local-cpu-load:100%" -> ("91.9Mbps", "100%")
-private fun parseSpeedAndLoad(fullText: String?): Pair<String, String?> {
-    if (fullText.isNullOrBlank()) return "-" to null
-    val trimmed = fullText.trim()
-    val speed = trimmed.split(" ").firstOrNull()?.trim().orEmpty()
-    val marker = "local-cpu-load:"
-    val idx = trimmed.indexOf(marker, ignoreCase = true)
-    val load = if (idx >= 0) {
-        val after = trimmed.substring(idx + marker.length).trim()
-        after.split(" ", "\n", "\t").firstOrNull()?.trim()?.ifBlank { null }
-    } else null
-    return (if (speed.isBlank()) "-" else speed) to load
-}
-
-private fun isSpeedDetailLabel(label: String): Boolean {
-    val l = label.lowercase()
-    return l == "tcp download" || l == "tcp upload" || l == "udp download" || l == "udp upload"
-}
-
-private fun isFinalStatus(status: String): Boolean = status.uppercase() in setOf("PASS", "FAIL", "SKIP")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -140,16 +107,14 @@ fun TestExecutionScreen(
     viewModel: TestViewModel
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val sections by viewModel.sections.collectAsStateWithLifecycle()
+    val snapshot by viewModel.snapshot.collectAsStateWithLifecycle()
     val isRunning by viewModel.isRunning.collectAsStateWithLifecycle()
     val logs by viewModel.logs.collectAsStateWithLifecycle()
-    val listState = rememberLazyListState()
+    var showLogs by remember { mutableStateOf(false) }
     var showRepeatDialog by remember { mutableStateOf(false) }
-    var hasAutoStarted by rememberSaveable { mutableStateOf(false) }
-    var showRawLogs by rememberSaveable { mutableStateOf(false) }
-    var showLogs by rememberSaveable { mutableStateOf(false) }
+    var hasAutoStarted by remember { mutableStateOf(false) }
+    val rendererRegistry = rememberRendererRegistry()
 
-    // Avvio automatico alla prima composizione quando lo stato è Idle
     LaunchedEffect(uiState, isRunning) {
         if (uiState is UiState.Idle && !isRunning && !hasAutoStarted) {
             hasAutoStarted = true
@@ -159,886 +124,731 @@ fun TestExecutionScreen(
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
-                        when {
-                            isRunning -> {
-                                Icon(Icons.Default.HourglassEmpty, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                Spacer(Modifier.width(8.dp))
-                                Text("Test in corso...")
-                            }
-                            uiState is UiState.Idle -> {
-                                Icon(Icons.Default.PlayArrow, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                Spacer(Modifier.width(8.dp))
-                                Text("Pronto per il Test")
-                            }
-                            uiState is UiState.Success -> {
-                                val report = (uiState as UiState.Success<TestReport>).data
-                                if (report.overallStatus == "PASS") {
-                                    Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF4CAF50))
-                                    Spacer(Modifier.width(8.dp))
-                                    Text("Test Completato")
-                                } else {
-                                    Icon(Icons.Default.Cancel, contentDescription = null, tint = Color(0xFFF44336))
-                                    Spacer(Modifier.width(8.dp))
-                                    Text("Test Fallito")
-                                }
-                            }
-                            uiState is UiState.Loading -> {
-                                Text("Preparazione test...")
-                            }
-                            uiState is UiState.Error -> {
-                                Text("Errore Test")
-                            }
-                        }
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(id = com.app.miklink.R.string.back))
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = when {
-                        isRunning -> MaterialTheme.colorScheme.primaryContainer
-                        uiState is UiState.Success && (uiState as UiState.Success<TestReport>).data.overallStatus == "PASS" -> Color(0xFF4CAF50).copy(alpha = 0.2f)
-                        uiState is UiState.Success -> Color(0xFFF44336).copy(alpha = 0.2f)
-                        uiState is UiState.Error -> MaterialTheme.colorScheme.errorContainer
-                        else -> MaterialTheme.colorScheme.surface
-                    }
-                )
+            LegacyTopBar(
+                uiState = uiState,
+                isRunning = isRunning,
+                onBack = { navController.popBackStack() }
             )
         },
         bottomBar = {
             if (uiState is UiState.Success) {
                 val report = (uiState as UiState.Success<TestReport>).data
-                val isFailed = report.overallStatus != "PASS"
-                BottomAppBar(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 8.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        OutlinedButton(
-                            onClick = { navController.popBackStack() },
-                            modifier = Modifier.weight(1f),
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 12.dp)
-                        ) {
-                            Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(Modifier.width(4.dp))
-                            Text("CHIUDI", maxLines = 1, style = MaterialTheme.typography.labelMedium)
-                        }
-
-                        OutlinedButton(
-                            onClick = { showRepeatDialog = true },
-                            modifier = Modifier.weight(1f),
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 12.dp)
-                        ) {
-                            Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(Modifier.width(4.dp))
-                            Text("RIPETI", maxLines = 1, style = MaterialTheme.typography.labelMedium)
-                        }
-
-                        Button(
-                            onClick = {
-                                viewModel.saveReportToDb(report)
-                                navController.popBackStack()
-                            },
-                            modifier = Modifier.weight(1f),
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 12.dp)
-                        ) {
-                            Icon(
-                                if (isFailed) Icons.Default.Warning else Icons.Default.Check,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp),
-                                tint = Color.White
-                            )
-                            Spacer(Modifier.width(4.dp))
-                            Text("SALVA", maxLines = 1, style = MaterialTheme.typography.labelMedium)
-                        }
+                LegacyBottomActionBar(
+                    isFailed = report.overallStatus != "PASS",
+                    onClose = { navController.popBackStack() },
+                    onRepeat = { showRepeatDialog = true },
+                    onSave = {
+                        viewModel.saveReportToDb(report)
+                        navController.popBackStack()
                     }
-                }
+                )
             }
         }
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            when (val state = uiState) {
-                is UiState.Success -> {
-                    TestCompletedView(
-                        report = state.data,
-                        sections = sections,
-                        logs = logs,
-                        showLogs = showLogs,
-                        onToggleLogs = { showLogs = !showLogs },
-                        modifier = Modifier.fillMaxSize()
-                    )
-                }
-                is UiState.Loading -> {
-                    if (isRunning) {
-                        TestInProgressView(
-                            sections = sections,
-                            listState = listState,
-                            logs = logs,
-                            showRawLogs = showRawLogs,
-                            onToggleRawLogs = { showRawLogs = !showRawLogs },
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    }
-                }
-                is UiState.Idle -> {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer
-                        )
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(24.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.PlayArrow,
-                                contentDescription = null,
-                                modifier = Modifier.size(48.dp),
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                            Text(
-                                "Test di Certificazione MikLink",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold,
-                                textAlign = TextAlign.Center
-                            )
-                            Text(
-                                "Clicca 'AVVIA TEST' per iniziare la certificazione del dispositivo",
-                                style = MaterialTheme.typography.bodyMedium,
-                                textAlign = TextAlign.Center,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                            )
-                        }
-                    }
-                }
-                is UiState.Error -> {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer
-                        )
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Icon(Icons.Default.Error, contentDescription = null, tint = MaterialTheme.colorScheme.error)
-                            Spacer(Modifier.height(8.dp))
-                            Text(state.message, color = MaterialTheme.colorScheme.onErrorContainer)
-                        }
-                    }
-                }
-            }
+        when (val state = uiState) {
+            is UiState.Success -> LegacyCompletedContent(
+                report = state.data,
+                snapshot = snapshot,
+                logs = logs,
+                showLogs = showLogs,
+                onToggleLogs = { showLogs = !showLogs },
+                rendererRegistry = rendererRegistry,
+                modifier = Modifier.padding(padding)
+            )
+            is UiState.Error -> ErrorState(
+                message = state.message,
+                modifier = Modifier.padding(padding)
+            )
+            else -> LegacyRunningContent(
+                snapshot = snapshot,
+                logs = logs,
+                showLogs = showLogs,
+                onToggleLogs = { showLogs = !showLogs },
+                rendererRegistry = rendererRegistry,
+                modifier = Modifier.padding(padding)
+            )
         }
     }
 
     if (showRepeatDialog) {
-        AlertDialog(
-            onDismissRequest = { showRepeatDialog = false },
-            icon = {
-                Icon(
-                    Icons.Default.Warning,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.size(32.dp)
-                )
-            },
-            title = {
-                Text(
-                    "Ripetere il test?",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
-            },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        "Attenzione: ripetendo il test verranno persi i dati attuali.",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        "Assicurati di:",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        "• Riposizionarti sulla stessa presa",
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                    Text(
-                        "• Verificare la connessione del cavo",
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showRepeatDialog = false
-                        viewModel.startTest()
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error
-                    )
-                ) {
-                    Text("Ripeti Test")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showRepeatDialog = false }) {
-                    Text("Annulla")
-                }
+        LegacyRepeatDialog(
+            onDismiss = { showRepeatDialog = false },
+            onConfirm = {
+                showRepeatDialog = false
+                viewModel.startTest()
             }
         )
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TestInProgressView(
-    sections: List<TestSection>,
-    listState: LazyListState,
-    logs: List<String>,
-    showRawLogs: Boolean,
-    onToggleRawLogs: () -> Unit,
-    modifier: Modifier = Modifier
+private fun LegacyTopBar(
+    uiState: UiState<TestReport>,
+    isRunning: Boolean,
+    onBack: () -> Unit
 ) {
-    Column(
-        modifier = modifier
-            .padding(16.dp)
-            .fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer
-            )
-        ) {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+    val (title, icon, container) = when {
+        isRunning -> Triple(
+            stringResource(id = R.string.test_execution_running_topbar),
+            Icons.Default.HourglassEmpty,
+            MaterialTheme.colorScheme.primaryContainer
+        )
+        uiState is UiState.Success && uiState.data.overallStatus == "PASS" -> Triple(
+            stringResource(id = R.string.test_execution_completed_title_pass),
+            Icons.Default.CheckCircle,
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+        )
+        uiState is UiState.Success -> Triple(
+            stringResource(id = R.string.test_execution_completed_title_fail),
+            Icons.Default.Error,
+            MaterialTheme.colorScheme.error.copy(alpha = 0.2f)
+        )
+        uiState is UiState.Error -> Triple(
+            stringResource(id = R.string.test_execution_title_error),
+            Icons.Default.Error,
+            MaterialTheme.colorScheme.errorContainer
+        )
+        uiState is UiState.Idle -> Triple(
+            stringResource(id = R.string.test_execution_title_ready),
+            Icons.Default.PlayArrow,
+            MaterialTheme.colorScheme.surface
+        )
+        else -> Triple(
+            stringResource(id = R.string.test_execution_title_running),
+            Icons.Default.Info,
+            MaterialTheme.colorScheme.surface
+        )
+    }
+
+    CenterAlignedTopAppBar(
+        title = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
             ) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(80.dp),
-                    strokeWidth = 6.dp
-                )
-
-                Spacer(Modifier.height(16.dp))
-
-                Text(
-                    text = "Test in esecuzione...",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Spacer(Modifier.height(16.dp))
-
-                LinearProgressIndicator(
-                    modifier = Modifier.fillMaxWidth()
+                Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(title, fontWeight = FontWeight.SemiBold)
+            }
+        },
+        navigationIcon = {
+            IconButton(onClick = onBack) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = stringResource(id = R.string.back)
                 )
             }
-        }
-
-        Spacer(Modifier.height(16.dp))
-
-        TextButton(
-            onClick = onToggleRawLogs,
-            modifier = Modifier
-                .align(Alignment.End)
-                .testTag(TestExecutionTags.IN_PROGRESS_TOGGLE)
-        ) {
-            Text(
-                text = if (showRawLogs) stringResource(id = com.app.miklink.R.string.test_toggle_hide_raw_logs) else stringResource(
-                    id = com.app.miklink.R.string.test_toggle_show_raw_logs
-                )
-            )
-        }
-
-        if (showRawLogs) {
-            RawLogsPane(
-                logs = logs,
-                emptyLabel = stringResource(id = com.app.miklink.R.string.test_logs_empty),
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(Modifier.height(12.dp))
-        }
-
-        if (sections.isEmpty()) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-            ) {
-                Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("In attesa dei risultati...", style = MaterialTheme.typography.bodyMedium)
-                }
-            }
-        } else {
-            val infoSections = sections.filter { it.category == INFO }
-            val testSections = sections.filter { it.category == TEST }
-            LazyColumn(
-                state = listState,
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                if (infoSections.isNotEmpty()) {
-                    item {
-                        Text("Informazioni", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    }
-                    items(infoSections) { section ->
-                        val (icon, color) = when (section.type) {
-                            NETWORK -> Icons.Default.SettingsEthernet to MaterialTheme.colorScheme.primary
-                            LLDP -> Icons.Default.Devices to MaterialTheme.colorScheme.secondary
-                            else -> Icons.Default.Info to MaterialTheme.colorScheme.onSurfaceVariant
-                        }
-                        val expandable = isFinalStatus(section.status)
-                        TestSectionCard(
-                            title = mapTestSectionTitle(section.type, section.title),
-                            status = section.status,
-                            icon = icon,
-                            statusColor = color,
-                            expandable = expandable
-                        ) {
-                            if (expandable) TestSectionDetails(section)
-                        }
-                    }
-                    item { HorizontalDivider() }
-                }
-                if (testSections.isNotEmpty()) {
-                    item {
-                        Text("Test", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    }
-                    items(testSections) { section ->
-                        val (icon, color) = when (section.type) {
-                            LINK -> Icons.Default.Link to MaterialTheme.colorScheme.tertiary
-                            PING -> Icons.Default.Wifi to Color(0xFF2196F3)
-                            TDR -> Icons.Default.Cable to MaterialTheme.colorScheme.primary
-                            SPEED -> Icons.Default.Speed to Color(0xFFFF9800)
-                            else -> Icons.Default.Info to MaterialTheme.colorScheme.onSurfaceVariant
-                        }
-                        val expandable = isFinalStatus(section.status)
-                        TestSectionCard(
-                            title = mapTestSectionTitle(section.type, section.title),
-                            status = section.status,
-                            icon = icon,
-                            statusColor = color,
-                            expandable = expandable
-                        ) {
-                            if (expandable) TestSectionDetails(section)
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun TestSectionDetails(section: TestSection) {
-    val sectionId = SectionId.fromTestSectionType(section.type)
-    if (section.type == PING) {
-        PingSectionDetails(section, sectionId)
-        return
-    }
-
-    section.details.forEach { d ->
-        when {
-            d.label == "---" -> {
-                Spacer(Modifier.height(8.dp))
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    d.value,
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Spacer(Modifier.height(4.dp))
-            }
-            else -> {
-                val formatted = SectionDetailFormatter.format(sectionId, d.label, d.value) ?: return@forEach
-                val labelText = formatted.label.asString()
-                val valueText = formatted.value.asString()
-                when {
-                    isSpeedDetailLabel(labelText) -> {
-                        val (speed, load) = parseSpeedAndLoad(valueText)
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text(labelText)
-                            Text(speed, fontWeight = FontWeight.Bold)
-                        }
-                        if (!load.isNullOrBlank()) {
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text("CPU Load")
-                                Text(load, fontWeight = FontWeight.Bold)
-                            }
-                        }
-                    }
-                    labelText.equals("Avviso", ignoreCase = true) || labelText.equals(stringResource(id = R.string.detail_label_warning), ignoreCase = true) -> {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(18.dp))
-                            Spacer(Modifier.width(8.dp))
-                            Text(valueText, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
-                    else -> {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 2.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(labelText, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text(
-                                valueText,
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-private data class PingTargetRowData(
-    val name: String,
-    val loss: String?,
-    val min: String?,
-    val avg: String?,
-    val max: String?,
-    val error: String?
-)
-
-@Composable
-private fun PingSectionDetails(section: TestSection, sectionId: SectionId) {
-    val summaryKeys = listOf("Packet Loss", "Min RTT", "Avg RTT", "Max RTT")
-    val summaryDetails = summaryKeys.mapNotNull { key ->
-        val rawDetail = section.details.firstOrNull { it.label.equals(key, ignoreCase = true) } ?: return@mapNotNull null
-        SectionDetailFormatter.format(sectionId, rawDetail.label, rawDetail.value)
-    }
-
-    if (summaryDetails.isNotEmpty()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            summaryDetails.forEach { detail ->
-                val labelText = detail.label.asString()
-                StatChip(
-                    label = labelText,
-                    value = detail.value.asString(),
-                    icon = iconForPingStat(labelText)
-                )
-            }
-        }
-        Spacer(Modifier.height(8.dp))
-    }
-
-    val targets = section.details.filter { it.label.startsWith("Target ") }
-    if (targets.isNotEmpty()) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            targets.map { parsePingTargetDetail(it) }.forEach { target ->
-                PingTargetRow(target)
-            }
-        }
-        Spacer(Modifier.height(8.dp))
-    }
-
-    val consumedLabels = summaryKeys + targets.map { it.label } + listOf("targets")
-    section.details.filterNot { detail ->
-        detail.label == "---" || consumedLabels.any { consumed -> detail.label.equals(consumed, ignoreCase = true) }
-    }.forEach { detail ->
-        val formatted = SectionDetailFormatter.format(sectionId, detail.label, detail.value) ?: return@forEach
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 2.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(formatted.label.asString(), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(
-                formatted.value.asString(),
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Bold
-            )
-        }
-    }
-}
-
-private fun iconForPingStat(label: String): ImageVector =
-    when {
-        label.contains("loss", ignoreCase = true) -> Icons.Default.Warning
-        label.contains("min", ignoreCase = true) -> Icons.Default.Speed
-        label.contains("avg", ignoreCase = true) -> Icons.Default.Speed
-        label.contains("max", ignoreCase = true) -> Icons.Default.Speed
-        else -> Icons.Default.Info
-    }
-
-private fun parsePingTargetDetail(detail: TestDetail): PingTargetRowData {
-    val name = detail.label.removePrefix("Target").trim()
-    val raw = detail.value
-    if (raw.startsWith("ERR", ignoreCase = true)) {
-        val error = raw.substringAfter(":", raw).trim().ifBlank { raw }
-        return PingTargetRowData(name, null, null, null, null, error)
-    }
-    val values = mutableMapOf<String, String>()
-    raw.split(" ", ";").map { it.trim() }.filter { it.contains("=") }.forEach { token ->
-        val parts = token.split("=", limit = 2)
-        if (parts.size == 2) {
-            values[parts[0].lowercase()] = parts[1]
-        }
-    }
-    return PingTargetRowData(
-        name = name,
-        loss = values["loss"],
-        min = values["min"],
-        avg = values["avg"],
-        max = values["max"],
-        error = null
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = container
+        )
     )
 }
 
 @Composable
-private fun PingTargetRow(data: PingTargetRowData) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        shape = RoundedCornerShape(8.dp),
-        tonalElevation = 1.dp
-    ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("Target ${data.name}", fontWeight = FontWeight.Bold)
-                if (data.error == null) {
-                    Text(
-                        data.loss ?: "-",
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-            if (data.error != null) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text(data.error, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-                }
-            } else {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("Min", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(data.min ?: "-", fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold)
-                }
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("Avg", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(data.avg ?: "-", fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold)
-                }
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("Max", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(data.max ?: "-", fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun StatChip(label: String, value: String, icon: ImageVector) {
-    Surface(
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        shape = RoundedCornerShape(12.dp),
-        tonalElevation = 1.dp
-    ) {
-        Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(Modifier.width(8.dp))
-            Column {
-                Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
-            }
-        }
-    }
-}
-
-@Composable
-fun TestCompletedView(
-    report: TestReport,
-    sections: List<TestSection>,
+private fun LegacyRunningContent(
+    snapshot: TestRunSnapshot?,
     logs: List<String>,
     showLogs: Boolean,
     onToggleLogs: () -> Unit,
+    rendererRegistry: SectionRendererRegistry,
     modifier: Modifier = Modifier
 ) {
-    val isPassed = report.overallStatus == "PASS"
-    val resultColor = if (isPassed) com.app.miklink.ui.theme.TechGreen else com.app.miklink.ui.theme.TechRed
-    val backgroundColor = resultColor.copy(alpha = 0.1f)
-
+    val ordered = TestSectionDisplayPolicy.ordered(snapshot?.sections.orEmpty())
+    val visible = TestSectionDisplayPolicy.visibleForRunning(ordered)
     LazyColumn(
-        modifier = modifier,
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp),
+        contentPadding = PaddingValues(vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = backgroundColor
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    val infiniteTransition = rememberInfiniteTransition(label = "status_pulse")
-                    val glowAlpha by infiniteTransition.animateFloat(
-                        initialValue = 0.35f,
-                        targetValue = 0.75f,
-                        animationSpec = infiniteRepeatable(
-                            animation = tween(1200, easing = FastOutSlowInEasing),
-                            repeatMode = RepeatMode.Reverse
-                        ),
-                        label = "glow_alpha"
-                    )
-                    val glowRadius by infiniteTransition.animateFloat(
-                        initialValue = 0f,
-                        targetValue = 22f,
-                        animationSpec = infiniteRepeatable(
-                            animation = tween(1200, easing = FastOutSlowInEasing),
-                            repeatMode = RepeatMode.Reverse
-                        ),
-                        label = "glow_radius"
-                    )
-
-                    Box(
-                        modifier = Modifier
-                            .size(96.dp)
-                            .drawBehind {
-                                drawCircle(
-                                    color = resultColor.copy(alpha = glowAlpha),
-                                    radius = (size.minDimension / 2f) + glowRadius
-                                )
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(80.dp)
-                                .clip(CircleShape)
-                                .background(resultColor),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                if (isPassed) Icons.Default.CheckCircle else Icons.Default.Cancel,
-                                contentDescription = null,
-                                modifier = Modifier.size(48.dp),
-                                tint = Color.White
-                            )
-                        }
-                    }
-
-                    Spacer(Modifier.height(16.dp))
-
-                    Text(
-                        text = if (isPassed) "TEST SUPERATO" else "TEST FALLITO",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = resultColor
-                    )
-
-                    Spacer(Modifier.height(8.dp))
-
-                    Text(
-                        text = if (isPassed)
-                            "Tutti i test sono stati completati con successo"
-                        else
-                            "Alcuni test hanno rilevato problemi",
-                        style = MaterialTheme.typography.bodyMedium,
-                        textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    Spacer(Modifier.height(16.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        StatChip(
-                            label = "Presa",
-                            value = report.socketName ?: "N/A",
-                            icon = Icons.Default.PowerInput
-                        )
-                    }
-                }
-            }
+            InProgressHeroCard(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag(TestExecutionTags.HERO_RUNNING)
+            )
         }
-
         item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Dettagli Test",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                TextButton(
-                    onClick = onToggleLogs,
-                    modifier = Modifier.testTag(TestExecutionTags.COMPLETED_TOGGLE)
-                ) {
-                    Text(
-                        text = if (showLogs) stringResource(id = com.app.miklink.R.string.test_toggle_hide_logs) else stringResource(
-                            id = com.app.miklink.R.string.test_toggle_show_logs
-                        )
-                    )
-                }
-            }
+            LogsToggleButton(
+                labelOn = stringResource(id = R.string.test_toggle_hide_raw_logs),
+                labelOff = stringResource(id = R.string.test_toggle_show_raw_logs),
+                showing = showLogs,
+                onToggle = onToggleLogs,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag(TestExecutionTags.IN_PROGRESS_TOGGLE)
+            )
         }
-
         if (showLogs) {
             item {
-                RawLogsPane(
+                LogsBox(
                     logs = logs,
-                    emptyLabel = stringResource(id = com.app.miklink.R.string.test_logs_empty),
-                    modifier = Modifier.fillMaxWidth(),
-                    title = stringResource(id = com.app.miklink.R.string.test_logs_title)
+                    autoScroll = false,
+                    colorize = false,
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
-        }
-
-        if (sections.isEmpty()) {
+        } else {
             item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("Dettagli non disponibili...", style = MaterialTheme.typography.bodyMedium)
-                    }
-                }
-            }
-            return@LazyColumn
-        }
-
-        val infoSections = sections.filter { it.category == INFO }
-        val testSections = sections.filter { it.category == TEST }
-
-        items(infoSections.filter { it.type == NETWORK }) { section ->
-            TestSectionCard(
-                title = mapTestSectionTitle(section.type, section.title),
-                status = section.status,
-                icon = Icons.Default.SettingsEthernet,
-                statusColor = MaterialTheme.colorScheme.primary
-            ) {
-                TestSectionDetails(section)
-            }
-        }
-
-        items(infoSections.filter { it.type == LLDP }) { section ->
-            TestSectionCard(
-                title = mapTestSectionTitle(section.type, section.title),
-                status = section.status,
-                icon = Icons.Default.Devices,
-                statusColor = MaterialTheme.colorScheme.secondary
-            ) {
-                TestSectionDetails(section)
-            }
-        }
-
-        item {
-            val linkSec = testSections.find { it.type == LINK }
-            if (linkSec != null) {
-                TestSectionCard(
-                    title = linkSec.title,
-                    status = linkSec.status,
-                    icon = Icons.Default.Link,
-                    statusColor = MaterialTheme.colorScheme.tertiary
-                ) {
-                    TestSectionDetails(linkSec)
-                }
-            }
-        }
-
-        item {
-            val pingSec = testSections.find { it.type == PING }
-            if (pingSec != null) {
-                val expandByDefault = !pingSec.status.equals("PASS", ignoreCase = true)
-                TestSectionCard(
-                    title = pingSec.title,
-                    status = pingSec.status,
-                    icon = Icons.Default.Wifi,
-                    statusColor = Color(0xFF2196F3),
-                    initialExpanded = expandByDefault
-                ) {
-                    TestSectionDetails(pingSec)
-                }
-            }
-        }
-
-        item {
-            val tdrSec = testSections.find { it.type == TDR }
-            if (tdrSec != null) {
-                TestSectionCard(
-                    title = tdrSec.title,
-                    status = tdrSec.status,
-                    icon = Icons.Default.Cable,
-                    statusColor = MaterialTheme.colorScheme.primary
-                ) {
-                    TestSectionDetails(tdrSec)
-                }
-            }
-        }
-
-        item {
-            val speedSec = testSections.find { it.type == SPEED }
-            if (speedSec != null) {
-                TestSectionCard(
-                    title = speedSec.title,
-                    status = speedSec.status,
-                    icon = Icons.Default.Speed,
-                    statusColor = Color(0xFFFF9800)
-                ) {
-                    TestSectionDetails(speedSec)
-                }
+                TestSectionList(
+                    sections = visible,
+                    rendererRegistry = rendererRegistry
+                )
             }
         }
     }
+}
+
+@Composable
+private fun LegacyCompletedContent(
+    report: TestReport,
+    snapshot: TestRunSnapshot?,
+    logs: List<String>,
+    showLogs: Boolean,
+    onToggleLogs: () -> Unit,
+    rendererRegistry: SectionRendererRegistry,
+    modifier: Modifier = Modifier
+) {
+    val sections = TestSectionDisplayPolicy.ordered(snapshot?.sections.orEmpty())
+    val isFailed = report.overallStatus != "PASS"
+    LazyColumn(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp),
+        contentPadding = PaddingValues(bottom = 88.dp, top = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        item {
+            CompletedHeroCard(
+                socketName = report.socketName ?: "-",
+                isFailed = isFailed,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag(TestExecutionTags.HERO_COMPLETED)
+            )
+        }
+        item {
+            DetailsHeaderRow(
+                showLogs = showLogs,
+                onToggle = onToggleLogs
+            )
+        }
+        if (showLogs) {
+            item {
+                LogsBox(
+                    logs = logs,
+                    autoScroll = true,
+                    colorize = true,
+                    minHeight = 160.dp,
+                    maxHeight = 400.dp,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        } else {
+            item {
+                TestSectionList(
+                    sections = sections,
+                    rendererRegistry = rendererRegistry
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun InProgressHeroCard(modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(80.dp),
+                strokeWidth = 6.dp
+            )
+            Text(
+                text = stringResource(id = R.string.test_execution_running_hero_title),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+        }
+    }
+}
+
+@Composable
+private fun CompletedHeroCard(
+    socketName: String,
+    isFailed: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val accent = if (isFailed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+    val background = accent.copy(alpha = 0.1f)
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(containerColor = background)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(96.dp)
+                    .drawBehind {
+                        val radius = size.minDimension / 2
+                        drawCircle(color = accent.copy(alpha = 0.22f), radius = radius * 1.4f, center = center)
+                        drawCircle(color = accent.copy(alpha = 0.12f), radius = radius * 1.8f, center = center)
+                    }
+                    .clip(CircleShape)
+                    .background(accent),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = if (isFailed) Icons.Default.Cancel else Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(52.dp)
+                )
+            }
+            Text(
+                text = if (isFailed) stringResource(id = R.string.test_execution_completed_hero_fail) else stringResource(
+                    id = R.string.test_execution_completed_hero_pass
+                ),
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = accent
+            )
+            Text(
+                text = if (isFailed) stringResource(id = R.string.test_execution_completed_subtitle_fail) else stringResource(
+                    id = R.string.test_execution_completed_subtitle_pass
+                ),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                StatChip(
+                    label = stringResource(id = R.string.test_execution_stat_socket),
+                    value = socketName,
+                    icon = Icons.Default.Link
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatChip(label: String, value: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
+    Surface(
+        shape = RoundedCornerShape(10.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+            Column {
+                Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(value, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
+@Composable
+private fun DetailsHeaderRow(
+    showLogs: Boolean,
+    onToggle: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = stringResource(id = R.string.test_execution_details_title),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
+        LogsToggleButton(
+            labelOn = stringResource(id = R.string.test_toggle_hide_logs),
+            labelOff = stringResource(id = R.string.test_toggle_show_logs),
+            showing = showLogs,
+            onToggle = onToggle,
+            modifier = Modifier.testTag(TestExecutionTags.COMPLETED_TOGGLE)
+        )
+    }
+}
+
+@Composable
+private fun LogsToggleButton(
+    labelOn: String,
+    labelOff: String,
+    showing: Boolean,
+    onToggle: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    TextButton(onClick = onToggle, modifier = modifier) {
+        Icon(
+            imageVector = if (showing) Icons.Default.VisibilityOff else Icons.Default.Code,
+            contentDescription = null
+        )
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(if (showing) labelOn else labelOff)
+    }
+}
+
+@Composable
+private fun LogsBox(
+    logs: List<String>,
+    autoScroll: Boolean,
+    colorize: Boolean,
+    modifier: Modifier = Modifier,
+    minHeight: Dp = 140.dp,
+    maxHeight: Dp = 260.dp
+) {
+    RawLogsPane(
+        logs = logs,
+        emptyLabel = stringResource(id = R.string.test_logs_empty),
+        title = stringResource(id = R.string.test_logs_title),
+        modifier = modifier.testTag(TestExecutionTags.LOGS_BOX),
+        autoScroll = autoScroll,
+        colorize = colorize,
+        minHeight = minHeight,
+        maxHeight = maxHeight
+    )
+}
+
+@Composable
+private fun TestSectionList(
+    sections: List<TestSectionSnapshot>,
+    rendererRegistry: SectionRendererRegistry
+) {
+    if (sections.isEmpty()) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+            Text(
+                text = stringResource(id = R.string.test_execution_no_details),
+                modifier = Modifier.padding(16.dp),
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
+        return
+    }
+    val info = sections.filter { it.id == TestSectionId.NETWORK || it.id == TestSectionId.NEIGHBORS }
+    val tests = sections.filter { it.id !in listOf(TestSectionId.NETWORK, TestSectionId.NEIGHBORS) }
+
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        if (info.isNotEmpty()) {
+            Text(
+                text = stringResource(id = R.string.test_execution_group_info),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            info.forEach { section ->
+                SectionCard(section, rendererRegistry)
+            }
+            HorizontalDivider()
+        }
+        if (tests.isNotEmpty()) {
+            Text(
+                text = stringResource(id = R.string.test_execution_group_tests),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            tests.forEach { section ->
+                SectionCard(section, rendererRegistry)
+            }
+        }
+    }
+}
+
+@Composable
+private fun SectionCard(
+    section: TestSectionSnapshot,
+    rendererRegistry: SectionRendererRegistry
+) {
+    val expandable = TestSectionDisplayPolicy.isExpandable(section.status)
+    val sectionTag = "${TestExecutionTags.SECTION_CARD_PREFIX}_${section.id.name.lowercase()}"
+    TestSectionCard(
+        title = section.title ?: section.id.name,
+        status = statusLabel(section.status),
+        icon = sectionIcon(section.id),
+        statusColor = statusTint(section.status),
+        expandable = expandable,
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag(sectionTag)
+    ) {
+        rendererRegistry.rendererFor(section.id).Render(section, Modifier.fillMaxWidth())
+    }
+}
+
+@Composable
+private fun sectionIcon(id: TestSectionId): androidx.compose.ui.graphics.vector.ImageVector =
+    when (id) {
+        TestSectionId.NETWORK -> Icons.Default.SettingsEthernet
+        TestSectionId.LINK -> Icons.Default.Link
+        TestSectionId.TDR -> Icons.Default.Cable
+        TestSectionId.NEIGHBORS -> Icons.Default.Devices
+        TestSectionId.PING -> Icons.Default.Wifi
+        TestSectionId.SPEED -> Icons.Default.Speed
+        else -> Icons.Default.Error
+    }
+
+@Composable
+private fun statusLabel(status: TestSectionStatus): String =
+    when (status) {
+        TestSectionStatus.PASS -> stringResource(id = R.string.status_pass)
+        TestSectionStatus.FAIL -> stringResource(id = R.string.status_fail)
+        TestSectionStatus.SKIP -> stringResource(id = R.string.status_skip)
+        TestSectionStatus.RUNNING -> stringResource(id = R.string.test_execution_status_chip_running)
+        TestSectionStatus.INFO -> stringResource(id = R.string.status_info)
+        else -> status.name
+    }
+
+@Composable
+private fun statusTint(status: TestSectionStatus): Color =
+    when (status) {
+        TestSectionStatus.PASS -> MaterialTheme.colorScheme.primary
+        TestSectionStatus.FAIL -> MaterialTheme.colorScheme.error
+        TestSectionStatus.RUNNING -> MaterialTheme.colorScheme.tertiary
+        TestSectionStatus.SKIP -> MaterialTheme.colorScheme.outline
+        TestSectionStatus.INFO -> MaterialTheme.colorScheme.secondary
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
+@Composable
+private fun LegacyBottomActionBar(
+    isFailed: Boolean,
+    onClose: () -> Unit,
+    onRepeat: () -> Unit,
+    onSave: () -> Unit
+) {
+    BottomAppBar(containerColor = MaterialTheme.colorScheme.surfaceContainer) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            OutlinedButton(
+                onClick = onClose,
+                modifier = Modifier
+                    .weight(1f)
+                    .testTag(TestExecutionTags.BOTTOM_CLOSE),
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 12.dp)
+            ) {
+                Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(stringResource(id = R.string.test_execution_action_close), maxLines = 1, style = MaterialTheme.typography.labelMedium)
+            }
+            OutlinedButton(
+                onClick = onRepeat,
+                modifier = Modifier
+                    .weight(1f)
+                    .testTag(TestExecutionTags.BOTTOM_REPEAT),
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 12.dp)
+            ) {
+                Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(stringResource(id = R.string.test_execution_action_repeat_short), maxLines = 1, style = MaterialTheme.typography.labelMedium)
+            }
+            Button(
+                onClick = onSave,
+                modifier = Modifier
+                    .weight(1f)
+                    .testTag(TestExecutionTags.BOTTOM_SAVE),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isFailed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                ),
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 12.dp)
+            ) {
+                Icon(
+                    if (isFailed) Icons.Default.Error else Icons.Default.Check,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = Color.White
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(stringResource(id = R.string.test_execution_action_save), maxLines = 1, style = MaterialTheme.typography.labelMedium)
+            }
+        }
+    }
+}
+
+@Composable
+private fun LegacyRepeatDialog(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = {
+            Icon(
+                Icons.Default.Warning,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.error
+            )
+        },
+        title = { Text(text = stringResource(id = R.string.test_execution_repeat_title), fontWeight = FontWeight.Bold) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(stringResource(id = R.string.test_execution_repeat_body))
+                Text(stringResource(id = R.string.test_execution_repeat_warning_one), style = MaterialTheme.typography.bodySmall)
+                Text(stringResource(id = R.string.test_execution_repeat_warning_two), style = MaterialTheme.typography.bodySmall)
+            }
+        },
+        confirmButton = {
+            Button(onClick = onConfirm) {
+                Text(stringResource(id = R.string.test_execution_action_repeat_long))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(id = R.string.cancel))
+            }
+        }
+    )
+}
+
+@Composable
+private fun ErrorState(
+    message: String,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Error,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.error
+            )
+            Text(
+                text = stringResource(id = R.string.test_execution_title_error),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
+    }
+}
+
+@Composable
+private fun rememberRendererRegistry(): SectionRendererRegistry {
+    return remember {
+        SectionRendererRegistry(
+            renderers = mapOf(
+                TestSectionId.NETWORK to NetworkSectionRenderer(),
+                TestSectionId.LINK to LinkSectionRenderer(),
+                TestSectionId.TDR to TdrSectionRenderer(),
+                TestSectionId.NEIGHBORS to NeighborsSectionRenderer(),
+                TestSectionId.PING to PingSectionRenderer(),
+                TestSectionId.SPEED to SpeedSectionRenderer()
+            )
+        )
+    }
+}
+
+@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
+@Composable
+private fun PreviewExecutionRunning() {
+    val registry = rememberRendererRegistry()
+    LegacyRunningContent(
+        snapshot = TestRunSnapshot(
+            sections = listOf(
+                TestSectionSnapshot(TestSectionId.NETWORK, TestSectionStatus.PASS, title = "Network"),
+                TestSectionSnapshot(TestSectionId.NEIGHBORS, TestSectionStatus.PASS, title = "LLDP/CDP"),
+                TestSectionSnapshot(TestSectionId.LINK, TestSectionStatus.RUNNING, title = "Link")
+            ),
+            percent = 35
+        ),
+        logs = listOf("[Init] Avvio test", "[Link] in corso"),
+        showLogs = false,
+        onToggleLogs = {},
+        rendererRegistry = registry
+    )
+}
+
+@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
+@Composable
+private fun PreviewExecutionCompleted() {
+    val registry = rememberRendererRegistry()
+    LegacyCompletedContent(
+        report = TestReport(
+            reportId = 1,
+            clientId = 1,
+            timestamp = System.currentTimeMillis(),
+            socketName = "Presa 12",
+            notes = "",
+            probeName = "Probe",
+            profileName = "Default",
+            overallStatus = "PASS",
+            resultsJson = ""
+        ),
+        snapshot = TestRunSnapshot(
+            sections = listOf(
+                TestSectionSnapshot(TestSectionId.NETWORK, TestSectionStatus.PASS, title = "Network"),
+                TestSectionSnapshot(TestSectionId.LINK, TestSectionStatus.PASS, title = "Link"),
+                TestSectionSnapshot(
+                    id = TestSectionId.PING,
+                    status = TestSectionStatus.PASS,
+                    title = "Ping",
+                    payload = com.app.miklink.core.domain.test.model.TestSectionPayload.Ping(
+                        samples = listOf(
+                            com.app.miklink.core.domain.model.report.PingSample(
+                                target = "DHCP_GATEWAY",
+                                host = "192.168.1.1",
+                                avgRtt = "10ms",
+                                minRtt = "8ms",
+                                maxRtt = "12ms",
+                                packetLoss = "0%",
+                                sent = "5",
+                                seq = "0",
+                                time = "10ms",
+                                ttl = "64"
+                            )
+                        )
+                    )
+                )
+            ),
+            percent = 100
+        ),
+        logs = listOf("[Result] PASS", "Ping target=DHCP_GATEWAY loss=0%"),
+        showLogs = true,
+        onToggleLogs = {},
+        rendererRegistry = registry
+    )
 }

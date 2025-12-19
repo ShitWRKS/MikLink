@@ -54,9 +54,9 @@ app/src/main/java/com/app/miklink/data/remote/mikrotik/dto/SpeedTestRequest.kt
 
 app/src/main/java/com/app/miklink/data/remote/mikrotik/dto/SpeedTestResult.kt
 
-app/src/main/java/com/app/miklink/data/repositoryimpl/mikrotik/MikroTikTestRepositoryImpl.kt
+app/src/main/java/com/app/miklink/data/repository/mikrotik/MikroTikTestRepositoryRemote.kt
 
-app/src/main/java/com/app/miklink/data/repositoryimpl/mikrotik/ProbeConnectivityRepositoryImpl.kt
+app/src/main/java/com/app/miklink/data/repository/mikrotik/MikroTikProbeConnectivityRepository.kt
 
 Also add a quick search-based sweep for the same pattern in nearby files (e.g., AndroidDocumentReader.kt), so we don’t fix only the currently-reported subset and leave landmines for the next build variant.
 

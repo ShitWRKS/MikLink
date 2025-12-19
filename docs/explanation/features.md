@@ -138,17 +138,16 @@ This document describes *what the app does* and the end‑to‑end flow for each
 **Format**
 - See `reference/backup-format.md` and ADR-0006.
 
-## 8) Preferences (theme + id numbering strategy)
+## 8) Preferences (id numbering)
 
-**Goal:** persist user preferences.
+**Goal:** persist user preferences for report/test numbering. Tema unico runtime (nessuna impostazione tema).
 
 **Preferences**
-- Theme: `ThemeConfig` + optional `CustomPalette`
 - ID numbering: `IdNumberingStrategy` (continuous vs fill-gaps)
 
 **UI**
-- `SettingsScreen` (+ theme UI controls)
+- `SettingsScreen` (controlli numerazione ID)
 
 **Contracts**
 - `UserPreferencesRepository` (port)
-- Use cases: `ObserveThemeConfigUseCase`, `SetThemeConfigUseCase`, `ObserveIdNumberingStrategyUseCase`, `SetIdNumberingStrategyUseCase`
+- Use cases: `ObserveIdNumberingStrategyUseCase`, `SetIdNumberingStrategyUseCase`

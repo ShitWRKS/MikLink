@@ -1,8 +1,8 @@
 /*
  * Purpose: Orchestrate test execution UI state and delegate report persistence through domain use cases.
  * Inputs: SavedStateHandle navigation args (clientId, profileId, socketName) and RunTestUseCase events.
- * Outputs: UiState/TestSection/log flows for the UI and persisted reports via SaveTestReportUseCase.
- * Notes: Keeps UI free from repository details; persistence policy (Socket-ID increment) lives in the use case; log buffer is UI-only.
+ * Outputs: UiState/log flows plus typed TestRunSnapshot for the UI and persisted reports via SaveTestReportUseCase.
+ * Notes: Keeps UI free from repository details; persistence policy (Socket-ID increment) lives in the use case; log buffer is UI-only per ADR-0011.
  */
 package com.app.miklink.ui.test
 
@@ -15,12 +15,11 @@ import com.app.miklink.core.domain.test.logging.ExecutionLogBuffer
 import com.app.miklink.core.domain.test.model.TestEvent
 import com.app.miklink.core.domain.test.model.TestOutcome
 import com.app.miklink.core.domain.test.model.TestPlan
-import com.app.miklink.core.domain.test.model.TestSectionResult
+import com.app.miklink.core.domain.test.model.TestRunSnapshot
 import com.app.miklink.core.domain.usecase.report.SaveTestReportUseCase
 import com.app.miklink.core.domain.usecase.test.RunTestUseCase
 import com.app.miklink.utils.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
-import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -40,8 +39,8 @@ class TestViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<UiState<TestReport>>(UiState.Idle)
     val uiState: StateFlow<UiState<TestReport>> = _uiState.asStateFlow()
 
-    private val _sections = MutableStateFlow<List<TestSection>>(emptyList())
-    val sections: StateFlow<List<TestSection>> = _sections.asStateFlow()
+    private val _snapshot = MutableStateFlow<TestRunSnapshot?>(null)
+    val snapshot: StateFlow<TestRunSnapshot?> = _snapshot.asStateFlow()
 
     private val _isRunning = MutableStateFlow(false)
     val isRunning: StateFlow<Boolean> = _isRunning.asStateFlow()
@@ -56,7 +55,7 @@ class TestViewModel @Inject constructor(
         val plan = buildPlan() ?: return
 
         viewModelScope.launch {
-            _sections.value = emptyList()
+            _snapshot.value = null
             _uiState.value = UiState.Loading
             _isRunning.value = true
             logBuffer.clear()
@@ -70,8 +69,13 @@ class TestViewModel @Inject constructor(
                     when (event) {
                         is TestEvent.Progress -> appendLog("[${event.progress.currentStep}] ${event.progress.message}")
                         is TestEvent.LogLine -> appendLog(event.message)
-                        is TestEvent.SectionsUpdated -> _sections.value = mapSections(event.sections)
-                        is TestEvent.Completed -> handleCompletion(plan, event.outcome)
+                        is TestEvent.SnapshotUpdated -> {
+                            _snapshot.value = event.snapshot
+                        }
+                        is TestEvent.Completed -> {
+                            _snapshot.value = event.outcome.finalSnapshot
+                            handleCompletion(plan, event.outcome)
+                        }
                         is TestEvent.Failed -> handleFailure(event.error.message)
                     }
                 }
@@ -86,7 +90,7 @@ class TestViewModel @Inject constructor(
 
     private fun handleCompletion(plan: TestPlan, outcome: TestOutcome) {
         _isRunning.value = false
-        _sections.value = mapSections(outcome.sections)
+        _snapshot.value = outcome.finalSnapshot
         val report = buildReport(plan, outcome)
         _uiState.value = UiState.Success(report)
     }
@@ -133,31 +137,6 @@ class TestViewModel @Inject constructor(
             resultFormatVersion = 1,
             resultsJson = outcome.rawResultsJson ?: "{}"
         )
-    }
-
-    private fun mapSections(results: List<TestSectionResult>): List<TestSection> {
-        return results.map { result ->
-            val type = mapSectionType(result.type)
-            TestSection(
-                category = mapCategory(type),
-                type = type,
-                title = result.title.ifBlank { type.name },
-                status = result.status,
-                details = result.details.map { (label, value) -> TestDetail(label = label, value = value) }
-            )
-        }
-    }
-
-    private fun mapSectionType(rawType: String): TestSectionType {
-        val normalized = rawType.trim().uppercase(Locale.ROOT)
-        return TestSectionType.values().firstOrNull { it.name == normalized } ?: TestSectionType.NETWORK
-    }
-
-    private fun mapCategory(type: TestSectionType): TestSectionCategory {
-        return when (type) {
-            TestSectionType.NETWORK, TestSectionType.LLDP -> TestSectionCategory.INFO
-            else -> TestSectionCategory.TEST
-        }
     }
 
     private fun appendLog(line: String) {

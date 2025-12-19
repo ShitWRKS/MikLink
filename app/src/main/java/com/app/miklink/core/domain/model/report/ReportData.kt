@@ -51,7 +51,16 @@ data class SpeedTestData(
     val serverAddress: String? = null
 )
 
+data class NetworkData(
+    val mode: String? = null,
+    val address: String? = null,
+    val gateway: String? = null,
+    val dns: String? = null,
+    val message: String? = null
+)
+
 data class ReportData(
+    val network: NetworkData? = null,
     val linkStatus: LinkStatusData? = null,
     val tdr: List<TdrEntry> = emptyList(),
     val neighbors: List<NeighborData> = emptyList(),

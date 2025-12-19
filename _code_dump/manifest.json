@@ -1,0 +1,2004 @@
+﻿[
+    {
+        "path":  ".github/copilot-instructions.md",
+        "type":  "TEXT",
+        "size":  8651,
+        "sha256":  "39fd1a867bb1702d4c751184d822e0db17d14b2a9366d02e06177fc95c62bf55",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  ".gitignore",
+        "type":  "TEXT",
+        "size":  750,
+        "sha256":  "b29e5366f9ccde39d8144cbae3e43b211938e9b3731dde090d6bf5fed501c83e",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  ".run/app.run.xml",
+        "type":  "TEXT",
+        "size":  3857,
+        "sha256":  "f5ad5ad9de1330fecb7f080977b4bdbea383b2ab890088a8cf0c297dd24b036c",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/.gitignore",
+        "type":  "TEXT",
+        "size":  6,
+        "sha256":  "5c3174b74edc6f2b9e0743594b8bd3c7f31e4f4405758cc9872b3fe1de1d28b4",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/build.gradle.kts",
+        "type":  "TEXT",
+        "size":  3471,
+        "sha256":  "74278aefb96fdbfe20882d6b2fa53485842aa3f90cc7aa2bbb7d0593323cdabb",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/schemas/com.app.miklink.data.local.room.MikLinkDatabase/1.json",
+        "type":  "TEXT",
+        "size":  13057,
+        "sha256":  "1a44c0f3e37ab841cbefaa8b66987ea3a0f58d68569e1114997ebcd55ae250c7",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/androidTest/AndroidManifest.xml",
+        "type":  "TEXT",
+        "size":  201,
+        "sha256":  "369dba9b81b943104e3f635961298f26f9045942d0cfb71dcc66a254483043dc",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/androidTest/java/com/app/miklink/ExampleInstrumentedTest.kt",
+        "type":  "TEXT",
+        "size":  680,
+        "sha256":  "9411af31869b77be6f626e1cec367bc874f2dc0278c5cbaeeb28b54b4a7c4a6f",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/androidTest/java/com/app/miklink/ui/history/ReportDetailScreenLocalTest.kt",
+        "type":  "TEXT",
+        "size":  2961,
+        "sha256":  "af465172dc83019754ed6d160a8cc1e5f925f4495b5ab591ddc8259b063eae09",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/androidTest/java/com/app/miklink/ui/history/ReportDetailScreenTest.kt",
+        "type":  "TEXT",
+        "size":  3153,
+        "sha256":  "1948b25386efab1817e9645783eab68bd8d093c99e63a4a681e628c17247f4c9",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/AndroidManifest.xml",
+        "type":  "TEXT",
+        "size":  1932,
+        "sha256":  "f369096288e7f63fa165da865881b73b3751354fdfc6e386ce2727ed588d6ce5",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/data/io/DocumentDestination.kt",
+        "type":  "TEXT",
+        "size":  95,
+        "sha256":  "22e4735c5ad0ef1e67502554562b19f8d15196160df1d59a1c1c2655adbac36d",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/data/io/DocumentReader.kt",
+        "type":  "TEXT",
+        "size":  140,
+        "sha256":  "a64da3fcde716c38dd47a575784dd25c19f348b5e43f48e8507e7701857ec4b2",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/data/io/DocumentWriter.kt",
+        "type":  "TEXT",
+        "size":  176,
+        "sha256":  "c70bf7bb5d60229672fc950765dc06ea32dc4196a387a97faf643fafc318c530",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/data/pdf/PdfExportConfig.kt",
+        "type":  "TEXT",
+        "size":  709,
+        "sha256":  "b4e3b81efa96a89072d30fbdad1ede916be4b35d9ce3e6e63b1a5fc309069174",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/data/pdf/PdfGenerator.kt",
+        "type":  "TEXT",
+        "size":  686,
+        "sha256":  "cd3377454997fd753bd479cb696d57fd045ce8b31fb6e6274045ef513c7d181a",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/data/report/ReportResultsCodec.kt",
+        "type":  "TEXT",
+        "size":  241,
+        "sha256":  "d9a9ae4a331586fe45efec9aa4d38fe6e36584f4fde2174225854b47908ae1f3",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/data/repository/BackupRepository.kt",
+        "type":  "TEXT",
+        "size":  272,
+        "sha256":  "5686606880a9fe1e32d895990ab6432a9fd2c15f58d079c4eefa3392bc1617b8",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/data/repository/client/ClientRepository.kt",
+        "type":  "TEXT",
+        "size":  470,
+        "sha256":  "4a63eaef6050011c2fe0d3b473d63072e495d60981d556c2c50ea5dd035a261b",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/data/repository/preferences/UserPreferencesRepository.kt",
+        "type":  "TEXT",
+        "size":  952,
+        "sha256":  "47535afba11f6b5246fe74e202315b33121fd64f80f0c20d276ca1725e14dd53",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/data/repository/probe/ProbeConnectivityRepository.kt",
+        "type":  "TEXT",
+        "size":  1557,
+        "sha256":  "f696dea0e3dba2e10a71c955250915f6ba48203f955dd828f21a9dc8c88d2bf6",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/data/repository/probe/ProbeRepository.kt",
+        "type":  "TEXT",
+        "size":  403,
+        "sha256":  "6efbf9349be94623c1d33fafd458a95ad19ec9339ff2232695703a858437c095",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/data/repository/probe/ProbeStatusRepository.kt",
+        "type":  "TEXT",
+        "size":  1860,
+        "sha256":  "a1552537b488368a6ee930d17d2610a85db4bbd04ea1b3618de814f32693b85b",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/data/repository/ProbeRepositoryModels.kt",
+        "type":  "TEXT",
+        "size":  957,
+        "sha256":  "694f43b8ad652302fd12daa8cfd07291452a7a927ae509f2f279c3ecec5d9b1c",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/data/repository/report/ReportRepository.kt",
+        "type":  "TEXT",
+        "size":  518,
+        "sha256":  "7aa0095ca13c1ef35c98f0fc5a8d9eabff423bcd0bdc759bffde5517d90f921a",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/data/repository/test/DhcpGatewayRepository.kt",
+        "type":  "TEXT",
+        "size":  742,
+        "sha256":  "3d5be8e83c0808034ed1b3a69abd3372857e4e790b7e9242a7c636892b34b424",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/data/repository/test/MikroTikTestRepository.kt",
+        "type":  "TEXT",
+        "size":  1540,
+        "sha256":  "7c073a60dfd4f99f5a303103b400efb3727391b1b1b8c50f2cbf4629d39ea417",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/data/repository/test/NetworkConfigRepository.kt",
+        "type":  "TEXT",
+        "size":  1134,
+        "sha256":  "f911e28f1cae3cdfcea7e28ccf0627533869f4c0ce3fc39afc2386c50e11e212",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/data/repository/test/PingTargetResolver.kt",
+        "type":  "TEXT",
+        "size":  851,
+        "sha256":  "c74693e02157ef91c8988fe1fca4f1d86f1ace24160d70f0d94192488c261cd9",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/data/repository/test/TestProfileRepository.kt",
+        "type":  "TEXT",
+        "size":  516,
+        "sha256":  "a6ca97db3a5398a5670e47831c9175038a0ee15760d126a37a398a8f2dddd949",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/domain/model/Client.kt",
+        "type":  "TEXT",
+        "size":  1652,
+        "sha256":  "f19d45911f706ce4c6858b9672ac8e77198f52a4637c6045a2b378faf4814984",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/domain/model/preferences/IdNumberingStrategy.kt",
+        "type":  "TEXT",
+        "size":  136,
+        "sha256":  "e9b9fd3b4f06bcbec0866c5c2170343034b1fdd958c94dde78bfd2ae48f3bdaa",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/domain/model/ProbeConfig.kt",
+        "type":  "TEXT",
+        "size":  302,
+        "sha256":  "229cbfa5742c2e779bba0844c3f505e45914748a2c81b6712a6c4741d2398786",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/domain/model/report/ReportData.kt",
+        "type":  "TEXT",
+        "size":  1961,
+        "sha256":  "c36b7c8851fd3418ff79f407cae7cf6b9fc3874c07307cfc014b35a95d3d0283",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/domain/model/TestProfile.kt",
+        "type":  "TEXT",
+        "size":  429,
+        "sha256":  "894e2be7922bfe58126688b3cee897d7874acc848f2804cdcaafc76922fb7dab",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/domain/model/TestReport.kt",
+        "type":  "TEXT",
+        "size":  369,
+        "sha256":  "43eab33f2a7075df2c830beffa7143206e533ef76f6947cf7aa95fc1f030340a",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/domain/policy/socketid/SocketIdLite.kt",
+        "type":  "TEXT",
+        "size":  2528,
+        "sha256":  "2a6a4cbf27b90f223bdb1f7e9c0867d7154e81c969c0a38f812f25c40152d9f5",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/domain/report/ReportAggregator.kt",
+        "type":  "TEXT",
+        "size":  695,
+        "sha256":  "f3af59c6231cf3e8d81a7b3f2eaaa93d1e2613f9dfcfcb24f8feac94953b5b00",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/domain/test/logging/ExecutionLogBuffer.kt",
+        "type":  "TEXT",
+        "size":  1407,
+        "sha256":  "db27f0a05c044e909fb0f97b54e756270dba8adb3ebaade9453dc2ce3fa20a90",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/domain/test/logging/ExecutionLogsConfig.kt",
+        "type":  "TEXT",
+        "size":  490,
+        "sha256":  "c4ecae36398f7193095f1948d4cc852417b481040453d9caad86561d6388e61e",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/domain/test/logging/LogSanitizer.kt",
+        "type":  "TEXT",
+        "size":  1628,
+        "sha256":  "5fe2bd0130886a35f10137d488001894d28c5bf6f44ef9430da1d3a11807f7ac",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/domain/test/model/CableTestSummary.kt",
+        "type":  "TEXT",
+        "size":  269,
+        "sha256":  "164695585fa3f400fbdf5300ebce45b78614d13236634aeb4dfe1692cf38adb1",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/domain/test/model/PingTargetOutcome.kt",
+        "type":  "TEXT",
+        "size":  547,
+        "sha256":  "86f66528e0fb757813432be33fecfead296ea77aaaeb62a17e3064df420cab25",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/domain/test/model/StepResult.kt",
+        "type":  "TEXT",
+        "size":  733,
+        "sha256":  "2d81c2fa330f6de2247070a8b0328e0d16cd1a1b9a37d88ea1a793e02ebc4629",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/domain/test/model/TestError.kt",
+        "type":  "TEXT",
+        "size":  904,
+        "sha256":  "c4587d4b9145e3cca8dbc9c2852778db5c1821ee031738708aa424b2c7b46810",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/domain/test/model/TestEvent.kt",
+        "type":  "TEXT",
+        "size":  812,
+        "sha256":  "d730d3f7b4589845ab5f6f4713c32d7f9afbf0351c88fdc13f8a18ed7f544bf6",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/domain/test/model/TestExecutionContext.kt",
+        "type":  "TEXT",
+        "size":  520,
+        "sha256":  "a7dcb51c5dfead08a60d48e2b4ac053b1fbdd4d80c2097a0f3c7697a1aa08872",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/domain/test/model/TestOutcome.kt",
+        "type":  "TEXT",
+        "size":  767,
+        "sha256":  "d88a851bdf69f07b95ba5632a2eab0a9202232131ad3f1e30f438cdfa6663746",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/domain/test/model/TestPlan.kt",
+        "type":  "TEXT",
+        "size":  452,
+        "sha256":  "eee5c60a86d61b43120a6c376f0b1b4ef75e3066ad79c9af5ef8092a287eadb8",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/domain/test/model/TestProgress.kt",
+        "type":  "TEXT",
+        "size":  327,
+        "sha256":  "814509dfa481b3fe8a6c83ffe703de0d090fc9f311ea770dad0c7e856ed48331",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/domain/test/model/TestRunSnapshot.kt",
+        "type":  "TEXT",
+        "size":  2182,
+        "sha256":  "2686901194252ec7058bc8cafdf92fa9ee1bdbe5fcfd0d68cb35cf9dded8967c",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/domain/test/model/TestSkipReason.kt",
+        "type":  "TEXT",
+        "size":  704,
+        "sha256":  "25d149ed9a50534d45e84487526d1b63b4fb96b7a242d4531bcc43a860be1cd8",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/domain/test/step/CableTestStep.kt",
+        "type":  "TEXT",
+        "size":  413,
+        "sha256":  "74b3237d7002f10f8e44b4fd30af45a746d5fb43315baaaa55c41683584a0896",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/domain/test/step/LinkStatusStep.kt",
+        "type":  "TEXT",
+        "size":  417,
+        "sha256":  "07a80708aaf8a2679f8d38300b5321c58ef60fe429454f54ad029957bb62dede",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/domain/test/step/NeighborDiscoveryStep.kt",
+        "type":  "TEXT",
+        "size":  420,
+        "sha256":  "7a2cdb5cb1c7d297968ac90d819d68a26fd0205a597fc476676dde6e46b29790",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/domain/test/step/NetworkConfigStep.kt",
+        "type":  "TEXT",
+        "size":  474,
+        "sha256":  "5cbf134a686404ba30553e284b4c8b41bdc24a4714de80a475520d0bfaabbf77",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/domain/test/step/PingStep.kt",
+        "type":  "TEXT",
+        "size":  425,
+        "sha256":  "2cac58455e8871354a408f850429139d7d1f01c153acbe3469d19957490acb6d",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/domain/test/step/SpeedTestStep.kt",
+        "type":  "TEXT",
+        "size":  395,
+        "sha256":  "2a7a5b0a5cb7daa68a773a1bfb05b6663fa8b9497d1ec8875d8536fb15803295",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/domain/usecase/backup/ImportBackupUseCase.kt",
+        "type":  "TEXT",
+        "size":  703,
+        "sha256":  "a085f7e520968054375f6bf5def4adc8d715378049ffb211cbf4259bd3135ea3",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/domain/usecase/client/SaveClientUseCase.kt",
+        "type":  "TEXT",
+        "size":  1085,
+        "sha256":  "2b3d854367b25be589de7c32c30c600cb7952b8656e0174e93ee7588ccd19370",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/domain/usecase/preferences/ObserveIdNumberingStrategyUseCase.kt",
+        "type":  "TEXT",
+        "size":  671,
+        "sha256":  "02dfc16e8fe2f06faf9f0830ad5275b6257a36b6321fddc4bb29e71ae514029c",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/domain/usecase/preferences/SetIdNumberingStrategyUseCase.kt",
+        "type":  "TEXT",
+        "size":  671,
+        "sha256":  "f7b509b9cb86d0d200a9f7ad03c32b2c3f7b550cc509d16c7db8075c348d2cb7",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/domain/usecase/report/ParseReportResultsUseCase.kt",
+        "type":  "TEXT",
+        "size":  524,
+        "sha256":  "4ec45ae637c993d7b3ee2ef6c4b2c7c7b2fa35cd6d477679c00a385b0673831b",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/domain/usecase/report/SaveTestReportUseCase.kt",
+        "type":  "TEXT",
+        "size":  1593,
+        "sha256":  "881cb0ce53430f1af52ddd56a151a35165b64bc7302a026d093d978a8d51db64",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/domain/usecase/test/RunTestUseCase.kt",
+        "type":  "TEXT",
+        "size":  405,
+        "sha256":  "bdd57a1c9c0e236cd748eeb368be327f084230b7f9cf0906aabf052a2c9ba86d",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/domain/usecase/test/RunTestUseCaseImpl.kt",
+        "type":  "TEXT",
+        "size":  40880,
+        "sha256":  "4a344879d87c9117dd07b9a90bc653d3bf029a6ef88808304cf37ff01de92c68",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/core/domain/usecase/testprofile/SaveTestProfileUseCase.kt",
+        "type":  "TEXT",
+        "size":  1150,
+        "sha256":  "4619bb1199e53e168b7a7593a27c15f53510d35524ae7aa0a8db58c82cf724b7",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/io/AndroidDocumentReader.kt",
+        "type":  "TEXT",
+        "size":  1235,
+        "sha256":  "fd9a745bb6d1cdd0a5d4eb8b389bd363e0fab6e440ae8a249735e818ccc8bc7d",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/io/AndroidDocumentWriter.kt",
+        "type":  "TEXT",
+        "size":  1315,
+        "sha256":  "804173fc53864600b048e22467ae61c961b2b063e6e0e2a1b0fa31de417b4ac6",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/local/room/dao/ClientDao.kt",
+        "type":  "TEXT",
+        "size":  625,
+        "sha256":  "e0cf899e97a6922dda12994f1446245998b636e0c56d2bb839aadef64a8f976e",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/local/room/dao/ProbeConfigDao.kt",
+        "type":  "TEXT",
+        "size":  519,
+        "sha256":  "8621d3f4cfe713321769c581a5ec0e0ce2de629117861dad8a01d2e5aefaf43a",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/local/room/dao/TestProfileDao.kt",
+        "type":  "TEXT",
+        "size":  697,
+        "sha256":  "621fab20a63089c8a982403f996c642e6bfe3b7bb8a6f59b19570794efa59877",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/local/room/dao/TestReportDao.kt",
+        "type":  "TEXT",
+        "size":  788,
+        "sha256":  "9698ed3a0bc3524bcfb4b387f99d501211747868e195f67da3dc8a0c1f3a4567",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/local/room/entity/ClientEntity.kt",
+        "type":  "TEXT",
+        "size":  875,
+        "sha256":  "d3fb1571190c382f7e66ae989d4d8b7aeec6d708285108c89cd6ef7b36b3df75",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/local/room/entity/ProbeConfigEntity.kt",
+        "type":  "TEXT",
+        "size":  476,
+        "sha256":  "57ff8b6d6ddf83cfd7b2db12a73cb3e8911f15ffc9735c507592ab3a1fd8d031",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/local/room/entity/TestProfileEntity.kt",
+        "type":  "TEXT",
+        "size":  584,
+        "sha256":  "10ed53de29b4267b8a141f068cb622507b8583a124e25e2253725590d77c9ba2",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/local/room/entity/TestReportEntity.kt",
+        "type":  "TEXT",
+        "size":  702,
+        "sha256":  "28e35d13a77736454900b44dad31c9692cb0cffdaa9653bb38bce43895b9565f",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/local/room/mapper/ClientMapper.kt",
+        "type":  "TEXT",
+        "size":  1894,
+        "sha256":  "f84306ce85b6c0516fb074588e6db8304b60829586d4b67468810b48ce5abb1e",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/local/room/mapper/ProbeConfigMapper.kt",
+        "type":  "TEXT",
+        "size":  895,
+        "sha256":  "67483922fc38f78dc668afa39f1ddb6f33ca4c95b503b99edba0014b4bb87da9",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/local/room/mapper/TestProfileMapper.kt",
+        "type":  "TEXT",
+        "size":  1181,
+        "sha256":  "3017e1c83389c6cd9222c0e7da45ab08e6fdf7740c7903d8f27baee69a2e1fb8",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/local/room/mapper/TestReportMapper.kt",
+        "type":  "TEXT",
+        "size":  1029,
+        "sha256":  "b71409c7b3d07877c49acf5cd6711a557492b22559d863ae4b6bc452047b93fc",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/local/room/MikLinkDatabase.kt",
+        "type":  "TEXT",
+        "size":  1058,
+        "sha256":  "a3acae870b00c31fb11a96f26a62f3ba75d8ef4dd70d5e03a8455ad4f76be2c8",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/pdf/impl/PdfGeneratorIText.kt",
+        "type":  "TEXT",
+        "size":  13651,
+        "sha256":  "6b61e3c14ccb335c9b36fe0d8fd8bc19196e148d03e2f441e315b8f1dd8175eb",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/pdf/PdfDocumentHelper.kt",
+        "type":  "TEXT",
+        "size":  9079,
+        "sha256":  "ebd65aa377eb409da082da586602a0687e9718fd30a5d494b45b23987a935346",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/preferences/UserPreferencesRepositoryImpl.kt",
+        "type":  "TEXT",
+        "size":  4244,
+        "sha256":  "6ed64b9b43c8023b30a5a6e643ccc640c24eb0d349afbc5023695242f33b8477",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/remote/mikrotik/dto/MikroTikDto.kt",
+        "type":  "TEXT",
+        "size":  4176,
+        "sha256":  "5733fa039c260086a5c2d2d0ce1cea20378e56d74983e28f93f00f91e2b25313",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/remote/mikrotik/dto/SpeedTestRequest.kt",
+        "type":  "TEXT",
+        "size":  611,
+        "sha256":  "68ba0f7da7788686eecc051011cda82692dbdc0bfd59eae71d1c52d860c4bf33",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/remote/mikrotik/dto/SpeedTestResult.kt",
+        "type":  "TEXT",
+        "size":  931,
+        "sha256":  "ce9adfe62d2e292066d0ab9fb3f19b07eb1263707acf4a7aeb12e6e608355535",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/remote/mikrotik/infra/AuthInterceptor.kt",
+        "type":  "TEXT",
+        "size":  866,
+        "sha256":  "1dd49eb9935d7daa9ec897dfdd57e47f3ba9740b0280c315f77dbde50e3ff9bf",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/remote/mikrotik/infra/MikroTikServiceFactory.kt",
+        "type":  "TEXT",
+        "size":  3407,
+        "sha256":  "6c7ab25b87314768c485cca407892b4871bdacb3c736a4ea43d1c22b2f3d3ff8",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/remote/mikrotik/infra/NeighborDetailListAdapter.kt",
+        "type":  "TEXT",
+        "size":  4145,
+        "sha256":  "b0bc860eff0017681c918d241686a875db6ebd6b0dcba03f09504e3e32b5de7c",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/remote/mikrotik/mapper/MikroTikTestMappers.kt",
+        "type":  "TEXT",
+        "size":  3053,
+        "sha256":  "9c9c4f135b48cffe2aeb8402510ea408932124313a0962e0d9f31e581c2302fd",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/remote/mikrotik/MikroTikServiceProviderImpl.kt",
+        "type":  "TEXT",
+        "size":  1949,
+        "sha256":  "7c3b97781049db082012eb2c6e2c06b64504e45fa590dbe829acfb9936e99c1b",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/remote/mikrotik/service/MikroTikApiService.kt",
+        "type":  "TEXT",
+        "size":  2716,
+        "sha256":  "6f10115a3d162a5ffc7b558b2accc85e4409b56ff1bcf70877650d114df553c1",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/remote/mikrotik/service/MikroTikCallExecutor.kt",
+        "type":  "TEXT",
+        "size":  6306,
+        "sha256":  "e06deeaed10572d1b39d7ae0b733fbccbb33da8d580c2c19227ffc1de5c6155d",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/remote/mikrotik/service/MikroTikServiceProvider.kt",
+        "type":  "TEXT",
+        "size":  650,
+        "sha256":  "c69fdd347e40876bd41ba24cefb0178024c0b121b7e299f9816811e6cd8e0160",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/report/codec/MoshiReportResultsCodec.kt",
+        "type":  "TEXT",
+        "size":  2431,
+        "sha256":  "6312698d8c1c5673a6b476c37f10dea25372351c414d9c92253df3733f32908d",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/repository/BackupData.kt",
+        "type":  "TEXT",
+        "size":  1626,
+        "sha256":  "ef567561bedb995ebe811cf2202ea0ba0c4f0e65eb6816ff48cbed45fb635360",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/repository/BackupManager.kt",
+        "type":  "TEXT",
+        "size":  10132,
+        "sha256":  "298bdc7c071c1c02a0f28144c222df540f062bc3dadff6593a2cbce33577e994",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/repository/DefaultBackupRepository.kt",
+        "type":  "TEXT",
+        "size":  821,
+        "sha256":  "eac37df3747bc5edc7a28535737ea5acd465bd7f6d04a49380827567d88a4615",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/repository/mikrotik/MikroTikDhcpGatewayRepository.kt",
+        "type":  "TEXT",
+        "size":  1887,
+        "sha256":  "ad700d435df8cf4c730fd1471b1c41b5e9d6d34a633f9eac91cbd45cd1eb904d",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/repository/mikrotik/MikroTikNetworkConfigRepository.kt",
+        "type":  "TEXT",
+        "size":  9649,
+        "sha256":  "a69a9eaf6807b97de7479e49847b6bb451e7844753b3d6cd4873f548ec8b0302",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/repository/mikrotik/MikroTikProbeConnectivityRepository.kt",
+        "type":  "TEXT",
+        "size":  5372,
+        "sha256":  "880e91f5c88e0c556125274aa6452ba2f985c2bd3e61ef36291cf4a24b024adc",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/repository/mikrotik/MikroTikProbeStatusRepository.kt",
+        "type":  "TEXT",
+        "size":  4352,
+        "sha256":  "964d73eb99e9f510ba20d6fb65a2d502227fe9e683ab47c83b211909cab1e52b",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/repository/mikrotik/MikroTikTestRepositoryRemote.kt",
+        "type":  "TEXT",
+        "size":  5620,
+        "sha256":  "23a80d0b59274e699152e193a7729505028ab2b0ba696e80e11738c4bd5a96ff",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/repository/mikrotik/ProbeErrorMapper.kt",
+        "type":  "TEXT",
+        "size":  823,
+        "sha256":  "0e042ea2d350ecbe313c923e5ec4a1bb8fcfc01d26040b46c42495400fb6d86c",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/repository/RouteManager.kt",
+        "type":  "TEXT",
+        "size":  2475,
+        "sha256":  "b5445ccf1741c4587f736acfe5c1033f68e2f673a367ac73e8c04445ec77a26d",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/repository/TransactionRunner.kt",
+        "type":  "TEXT",
+        "size":  433,
+        "sha256":  "f5d9f39ef8e5aaad89feea04be76c4cd1a02962c8822fe6086a21631176ce94f",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/repositoryimpl/PingTargetResolverImpl.kt",
+        "type":  "TEXT",
+        "size":  1098,
+        "sha256":  "941c5f0cf166f96e5d65731dff340c8427d5e4989d11d25d4488c839f22e261d",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/repositoryimpl/room/RoomClientRepository.kt",
+        "type":  "TEXT",
+        "size":  1194,
+        "sha256":  "d2bd2b62e94fd24339d82893610f6b96ee1a12f56d59de92dc37f9c54bd44e1a",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/repositoryimpl/room/RoomProbeRepository.kt",
+        "type":  "TEXT",
+        "size":  978,
+        "sha256":  "722a5e5a5cf8cd5db59f8d736fc59060d717d8424430c0aa7fa97eeeeb7585e5",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/repositoryimpl/room/RoomReportRepository.kt",
+        "type":  "TEXT",
+        "size":  1685,
+        "sha256":  "7ecc72f01ff51e5d589e74e4faa73bfc1fb6320d91c12b0652f2a21b9ee5310f",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/repositoryimpl/room/RoomTestProfileRepository.kt",
+        "type":  "TEXT",
+        "size":  1288,
+        "sha256":  "5c1eee98a10893748b0ddb58cd3e77bf5513b9d6ffb9e41c9b4396699c9cc916",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/teststeps/CableTestStepImpl.kt",
+        "type":  "TEXT",
+        "size":  2030,
+        "sha256":  "74f09dc021261450a436b385cf6e40b53f127180d82d7b8803a8887ea4766e61",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/teststeps/LinkStatusStepImpl.kt",
+        "type":  "TEXT",
+        "size":  1589,
+        "sha256":  "a8e68157f5d9ead0ccbdb491cd6f8c0f0ed519dc7e596638082e497535fb8e8d",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/teststeps/NeighborDiscoveryStepImpl.kt",
+        "type":  "TEXT",
+        "size":  1532,
+        "sha256":  "e0289fc4fe1bb84fe2ada29f63a7f9fb887bd03a9447381e38fa729b98b638e3",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/teststeps/NetworkConfigStepImpl.kt",
+        "type":  "TEXT",
+        "size":  1664,
+        "sha256":  "9b47f86e8e8babb67e87ae8f1398313fc596c2bc95b2457ef0e0dc454ca99218",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/teststeps/PingStepImpl.kt",
+        "type":  "TEXT",
+        "size":  4755,
+        "sha256":  "52f9f62b2e2d21ef059642717fa6be3deca23c3e1102be8d1862e8de13f8ec08",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/data/teststeps/SpeedTestStepImpl.kt",
+        "type":  "TEXT",
+        "size":  2087,
+        "sha256":  "40a877a75bb6a1d20a398530acafc296fdb48f1e566a408d9c40d498c0a26951",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/di/DatabaseModule.kt",
+        "type":  "TEXT",
+        "size":  3572,
+        "sha256":  "9b34247bf97e376ed83c926a5f876fb14d2a63738d3bfbabc79535dd01e42b6a",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/di/DataStoreModule.kt",
+        "type":  "TEXT",
+        "size":  778,
+        "sha256":  "837e27e1dbe19202381babe35ce80df6ae5904dac1756baa114d30b6d6844792",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/di/NetworkModule.kt",
+        "type":  "TEXT",
+        "size":  3313,
+        "sha256":  "58d4a30faf845d52c87c49744b0e58ca47c24db484ef06ff1f2fabc7cedce613",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/di/PdfModule.kt",
+        "type":  "TEXT",
+        "size":  476,
+        "sha256":  "ae302531efa6163c6f05da473f36cf2045468ac4a85773c41acf4704e322638e",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/di/ReportModule.kt",
+        "type":  "TEXT",
+        "size":  1393,
+        "sha256":  "94bf15b207c84dde296d51ea3a1ad3adbb5d6da7da34b9312c92ee4d6e19bafc",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/di/RepositoryModule.kt",
+        "type":  "TEXT",
+        "size":  6353,
+        "sha256":  "c794c43f8193250755a9026529e16084d3de772220c4f765ddc9198e065af3cc",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/di/TestRunnerModule.kt",
+        "type":  "TEXT",
+        "size":  1240,
+        "sha256":  "d467354756e4f3d0e5d840968ee3c55294c268466395c6e620c9207522243378",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/di/UseCaseModule.kt",
+        "type":  "TEXT",
+        "size":  1093,
+        "sha256":  "cf74127c2b92f323c4f152cc63bbdbad2c0fa570c986630acdead0126c84f7c9",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/MainActivity.kt",
+        "type":  "TEXT",
+        "size":  906,
+        "sha256":  "78e9984c19013bb5d83b1d1a9ffe9e87e6aedf58383c072622da2acb2b317c4f",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/MikLinkApplication.kt",
+        "type":  "TEXT",
+        "size":  161,
+        "sha256":  "752077eee415ffb1e897fe4dea15c41613ef44224cb5058f180b430c5337b900",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/client/ClientEditScreen.kt",
+        "type":  "TEXT",
+        "size":  21016,
+        "sha256":  "974e132a9fc0aba438d383428af2ccdbf5fa8482da6ad5a2001c53f9a1639526",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/client/ClientEditViewModel.kt",
+        "type":  "TEXT",
+        "size":  8648,
+        "sha256":  "1ae802d7256754ced295a69b646561fa3a7214103f36e26b8c70c614b5e76fe9",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/client/ClientListScreen.kt",
+        "type":  "TEXT",
+        "size":  12178,
+        "sha256":  "dcb8ea14809bb75c6a06883f4f003fca4869c366fd4ad03ef821f1009dc6ffae",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/client/ClientListViewModel.kt",
+        "type":  "TEXT",
+        "size":  2466,
+        "sha256":  "1b46e52433917fc5c1f29ccb971e6b83759b52a5c4f488e90a33a1cf887f64ae",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/common/BaseEditViewModel.kt",
+        "type":  "TEXT",
+        "size":  1709,
+        "sha256":  "dec964324994156bf9da6523d79bc549d5040eeb472fabee19177aa7142fa2a0",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/common/ResultCards.kt",
+        "type":  "TEXT",
+        "size":  4752,
+        "sha256":  "27f1a3f8e69c33838b4e3181c0218d81f0b68dc34955d623196539aa1f3d2d49",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/common/UiText.kt",
+        "type":  "TEXT",
+        "size":  1154,
+        "sha256":  "44da3be242a44e724e0d99cf65a876a4ad65b1230fb597ba6ce1cb9c659e2c50",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/components/IconContainer.kt",
+        "type":  "TEXT",
+        "size":  1597,
+        "sha256":  "5363c50c4d1ffcff17b54c1f1fa787613aae536987e98c90f576252090701b62",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/components/InfoCard.kt",
+        "type":  "TEXT",
+        "size":  2942,
+        "sha256":  "e10f5fdc97778e54fc74ea404dbb3d2215b156417a2ea1ea4ec5149f3b4ef402",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/components/MinimalListItem.kt",
+        "type":  "TEXT",
+        "size":  4046,
+        "sha256":  "208c882155e1ddb2dcd41c1b60a4f293da3bd7ea406b8184307dacebfc462527",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/components/ModernCard.kt",
+        "type":  "TEXT",
+        "size":  2139,
+        "sha256":  "9708fd244e114369ee92868080cdeb838af1eee0d8df96f132e4541adad5ff76",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/components/ModernSearchBar.kt",
+        "type":  "TEXT",
+        "size":  3484,
+        "sha256":  "2ef8a179ba2d80d552c15ca581d51ea0fefdb9207e4c685302ff2fcd9f77e2bd",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/components/StatusBadge.kt",
+        "type":  "TEXT",
+        "size":  1998,
+        "sha256":  "7994fd9c6c66ca56c78b3de717579491b3cf67a4724be37a9f59b05e33be4ca7",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/components/ValueDisplay.kt",
+        "type":  "TEXT",
+        "size":  1639,
+        "sha256":  "5a438b035454e6822eb995883f3c1e414c72f88ddb531aa9153580fb45bb200c",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/dashboard/DashboardScreen.kt",
+        "type":  "TEXT",
+        "size":  23498,
+        "sha256":  "c17a0ba91a4507201ff99b79a201d66830b3039a3f4cfd65ba2c7d9dd06b023b",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/dashboard/DashboardViewModel.kt",
+        "type":  "TEXT",
+        "size":  5983,
+        "sha256":  "a51aa782d76ba5a82c51b63896436fcd0f648c917c7b7884e62f78f497eb6bf0",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/feature/test_details/renderers/LinkSectionRenderer.kt",
+        "type":  "TEXT",
+        "size":  2223,
+        "sha256":  "d77699f75818473ae6ac519f5142c2e944ac33ccecea22e5f9c3a11f035d3681",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/feature/test_details/renderers/NeighborsSectionRenderer.kt",
+        "type":  "TEXT",
+        "size":  2571,
+        "sha256":  "0d17d40ef9dda476bcd7e9de2c3a7c953245424aa62621ff21d0a3ac6a3160e6",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/feature/test_details/renderers/NetworkSectionRenderer.kt",
+        "type":  "TEXT",
+        "size":  2507,
+        "sha256":  "fed84af8179a29faa46cd0a0c7909a4403e747a130ab1c16c9144f2f95266724",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/feature/test_details/renderers/PingSectionRenderer.kt",
+        "type":  "TEXT",
+        "size":  5724,
+        "sha256":  "6a8ed1524447a280d8afb38ee7be9d6f4c8d997d46a1da0a786af7ac9ef24029",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/feature/test_details/renderers/SpeedSectionRenderer.kt",
+        "type":  "TEXT",
+        "size":  2974,
+        "sha256":  "f896a89668651cfd852cbcd22466f242e5192b863158e86ac7ee53df9368340c",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/feature/test_details/renderers/TdrSectionRenderer.kt",
+        "type":  "TEXT",
+        "size":  2137,
+        "sha256":  "32bd3ed0844719c0792d6eef6f91e50cd77b8c9c0c84e4af8efbb0d6d54a45be",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/feature/test_details/ReportDataToSnapshotMapper.kt",
+        "type":  "TEXT",
+        "size":  4632,
+        "sha256":  "7bee81ca2986dfbda79a83fc3742ba9a8fd071b00808bfe1276356d3fd56aad9",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/feature/test_details/SectionRendererRegistry.kt",
+        "type":  "TEXT",
+        "size":  1211,
+        "sha256":  "1e0d01fefd426322287714c10241625f5ef4b61fec41bb589c20513e8cf0ea77",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/feature/test_details/TestDetailsContent.kt",
+        "type":  "TEXT",
+        "size":  7488,
+        "sha256":  "cee7251b987fadf40c95b924b30d156dae2a1325a0301ffb581d3e6c627e47c1",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/history/HistoryScreen.kt",
+        "type":  "TEXT",
+        "size":  37155,
+        "sha256":  "cef064f9482e089b59783da5729fc5e6b3a079ce0f7161afa850a58f0184f2e6",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/history/HistoryViewModel.kt",
+        "type":  "TEXT",
+        "size":  8244,
+        "sha256":  "232aff86e419826608396143fc676436fd832096d98fe37fd41098b0ca810e95",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/history/model/ReportsByClient.kt",
+        "type":  "TEXT",
+        "size":  506,
+        "sha256":  "d0bade144b335b26a3855cb61a88c5da6a74f2a86c983bee63cc6dff289cc670",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/history/PdfExportDialog.kt",
+        "type":  "TEXT",
+        "size":  10196,
+        "sha256":  "0e63f8162b571404831f6bdac3d90a77a92503f14cfd6a7760fb861c211b5212",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/history/ReportDetailScreen.kt",
+        "type":  "TEXT",
+        "size":  8984,
+        "sha256":  "84f34275480e5cbf849df30096eb452911ae62faa559b4659a26e4c81a28d8ff",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/history/ReportDetailScreenContract.kt",
+        "type":  "TEXT",
+        "size":  659,
+        "sha256":  "b498c9b28197c3ac6b5726e423fe4f2aaeb888edb520a9f6623ef25405186aac",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/history/ReportDetailViewModel.kt",
+        "type":  "TEXT",
+        "size":  5874,
+        "sha256":  "90220c7c01cfdbb4630a72da8a210648df3749d8b1f299b76ac84fab509559bb",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/NavExtensions.kt",
+        "type":  "TEXT",
+        "size":  610,
+        "sha256":  "757a706e0b7cd9e51dd4e80a85b2d6569821379493838348dce915b6081daee3",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/NavGraph.kt",
+        "type":  "TEXT",
+        "size":  3680,
+        "sha256":  "74927c55792842fbd4dd2a3898e7d83c2617157532efbb4ccfd27851503119b2",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/probe/ProbeEditScreen.kt",
+        "type":  "TEXT",
+        "size":  8486,
+        "sha256":  "7644e299d329e22a9e3b76e8d4140cd6f7e4ffd34755c6c43370c8d7eccca5df",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/probe/ProbeEditUiState.kt",
+        "type":  "TEXT",
+        "size":  424,
+        "sha256":  "1db68de952862f7812d158ae9e98b9054b293e5919d1b52a26e2d296625716e8",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/probe/ProbeEditViewModel.kt",
+        "type":  "TEXT",
+        "size":  7750,
+        "sha256":  "952b0665d6c60e37da6fa6710adfb2a999585a3fe521352d5a3df725d5cdb771",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/profile/TestProfileEditScreen.kt",
+        "type":  "TEXT",
+        "size":  19210,
+        "sha256":  "ea52c256dd01046345fe7b309a96d4ce0646ebae9f110cb5a0048b7d485f83e4",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/profile/TestProfileListScreen.kt",
+        "type":  "TEXT",
+        "size":  12447,
+        "sha256":  "af8fe0ce79c0b910ec52a109c6eaf3d1f95e8b7a722551c6b8bbcb4ef9f80971",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/profile/TestProfileViewModel.kt",
+        "type":  "TEXT",
+        "size":  4633,
+        "sha256":  "916c972947a3d5cacbebe11f844a20e96915085267c0acbf5df67d2b52a1da71",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/settings/PdfSettingsScreen.kt",
+        "type":  "TEXT",
+        "size":  7300,
+        "sha256":  "1caaaf8ff1f106a608ca058fd76004bfea2c92ecfa1364889204fda5e156f570",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/settings/SettingsScreen.kt",
+        "type":  "TEXT",
+        "size":  21670,
+        "sha256":  "90f523ea1ebec6fb681532878dead38d149c715a480c06e5fb06594fb0b5b98d",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/settings/SettingsViewModel.kt",
+        "type":  "TEXT",
+        "size":  5745,
+        "sha256":  "6aeed62cc53a32a8241f93a26cb4affad6bf0010b4b32a45dde81cbdf22be099",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/splash/SplashScreen.kt",
+        "type":  "TEXT",
+        "size":  7540,
+        "sha256":  "dad9aa4ebe28f02845298301adef98f084798e80f1cb7e9cacbba4f3a92499bb",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/test/components/RawLogsPane.kt",
+        "type":  "TEXT",
+        "size":  3630,
+        "sha256":  "347fd10adbd1defb9e643578c3a9a9efd4283a313f5a0e694ac0e9e973dd562e",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/test/components/TestExecutionTags.kt",
+        "type":  "TEXT",
+        "size":  636,
+        "sha256":  "0ed9b9d6d55cf7edb069bbca556e3f4c64cdc53b07fc0dfad3644d910071b618",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/test/TestExecutionScreen.kt",
+        "type":  "TEXT",
+        "size":  27922,
+        "sha256":  "8558301c37e8559bd0c26c3e56d97dc9aeee23c95cdadca65057a1cf1c180427",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/test/TestViewModel.kt",
+        "type":  "TEXT",
+        "size":  5878,
+        "sha256":  "a80d14b0d69fd53fcafbfd6507308629beab0fee8d6d0aa09e02585bd0bb542b",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/theme/Color.kt",
+        "type":  "TEXT",
+        "size":  991,
+        "sha256":  "1da8b8e0358f7b21711fcba52dd319df03f0363760f1e7ea6287e54d4be8d967",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/theme/Spacing.kt",
+        "type":  "TEXT",
+        "size":  822,
+        "sha256":  "952b1e2c491c6d8494c9b14ec1f239c8611848f84e47b8d5ff13e6a3f20c7605",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/theme/Theme.kt",
+        "type":  "TEXT",
+        "size":  4738,
+        "sha256":  "15499c7008f4a49a7f3b73e7e305030277db880e1a146f8e86bf5c1a9d5903ab",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/ui/theme/Type.kt",
+        "type":  "TEXT",
+        "size":  984,
+        "sha256":  "fd618a992a6bc53ea4f6d05e2209ec4afdce5e72d889d589b95a827228f4be72",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/utils/Compatibility.kt",
+        "type":  "TEXT",
+        "size":  1611,
+        "sha256":  "c440588e598ddaf7ce82d582917cb5162fb9a0ca51e28c0b20723bb0e49e1d48",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/utils/ConnectivityProvider.kt",
+        "type":  "TEXT",
+        "size":  2130,
+        "sha256":  "26f598eb5f7781c379419762f241e8c46edf49422c8cadfdfd79ded4a7371f2f",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/utils/LinkUtils.kt",
+        "type":  "TEXT",
+        "size":  1449,
+        "sha256":  "cfb13ef0e3a55172dcd3cbdf338d94da57f3c8ed6ab2a4a38aced18b06679056",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/utils/NetworkValidator.kt",
+        "type":  "TEXT",
+        "size":  2083,
+        "sha256":  "ac1d5db4b2e182f3372b485f9646309c11bf51c858cc0fa7761d969540eee8cd",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/utils/RateParser.kt",
+        "type":  "TEXT",
+        "size":  2705,
+        "sha256":  "d606ea83e200b453b7102a3610a9b19bf437c0faaf45eeec619e26ce9e92be1a",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/utils/TimeUtils.kt",
+        "type":  "TEXT",
+        "size":  2576,
+        "sha256":  "977ff227ae74b421a6f379fee26ca8460b98eac947ac8786c065e3cde02431d6",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/java/com/app/miklink/utils/UiState.kt",
+        "type":  "TEXT",
+        "size":  273,
+        "sha256":  "a3a8c36355653b4c8548ef39bf44de365dabcbf3e3b5636a68d7cf44ed72386f",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/res/drawable/ic_launcher_background.xml",
+        "type":  "TEXT",
+        "size":  342,
+        "sha256":  "0ad86828b7d0626d06c63ac6c15426fc74e91f06ba7a23e0524b1efb2b9e561f",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/res/drawable/ic_launcher_foreground.xml",
+        "type":  "TEXT",
+        "size":  995,
+        "sha256":  "dc228c6b6cefdaf22d02b951920bec940f59ddc7c02cb6b459abcee0097e8573",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/res/drawable/ic_launcher_monochrome.xml",
+        "type":  "TEXT",
+        "size":  995,
+        "sha256":  "dc228c6b6cefdaf22d02b951920bec940f59ddc7c02cb6b459abcee0097e8573",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/res/values/colors.xml",
+        "type":  "TEXT",
+        "size":  65,
+        "sha256":  "22f303091b555d902a2bde8b19d17ad87aa07b52a984a08e4d72214b0a25e54d",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/res/values/strings.xml",
+        "type":  "TEXT",
+        "size":  17297,
+        "sha256":  "f5281665830755635ea33bb33f29d266656736f30827d757db8f3bbe3d4a1917",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/res/values/themes.xml",
+        "type":  "TEXT",
+        "size":  358,
+        "sha256":  "fa8ad21276f1d8cc8b8e2541a8c98b05e7e3127d197cb8cf8a4c0bfe193e43b0",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/res/values-it/strings.xml",
+        "type":  "TEXT",
+        "size":  17708,
+        "sha256":  "d65739d0c5057cb4f82ea2952e368abf5b65e7779cfca337e786b5f25a098c50",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/res/values-night/themes.xml",
+        "type":  "TEXT",
+        "size":  288,
+        "sha256":  "e1a9b70b8cc6e21f29124ad7568953c4c285b949de4cbaece5ad849b1c7ada99",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/res/xml/backup_rules.xml",
+        "type":  "TEXT",
+        "size":  478,
+        "sha256":  "6cf1a27e6807b1d24e41d3fbe7ddc1bfe1f42226027964f6eaf477d71b43b283",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/res/xml/data_extraction_rules.xml",
+        "type":  "TEXT",
+        "size":  524,
+        "sha256":  "89d0e0eb3b45cb843332cc62237b9d5ceb7095dd62f2b4577e5e2a79504d8abb",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/res/xml/file_paths.xml",
+        "type":  "TEXT",
+        "size":  213,
+        "sha256":  "f9173b04cd7d8e0fbde14701e03ec078a265d9d71b414f3712687a7af60f91d8",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/main/res/xml/locales_config.xml",
+        "type":  "TEXT",
+        "size":  198,
+        "sha256":  "9e0ab3c1e5f064c874a9fb73f35d7e6ed6cbb8f3f7918d87d5534d7eeec42835",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/test/java/com/app/miklink/core/data/repository/probe/ProbeConnectivityRepositoryContractTest.kt",
+        "type":  "TEXT",
+        "size":  10555,
+        "sha256":  "8313a8ec0dd1f721670f422e0f09c421dc47bdba17535b178c8560145bdb9815",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/test/java/com/app/miklink/core/data/repository/probe/ProbeStatusRepositoryContractTest.kt",
+        "type":  "TEXT",
+        "size":  3649,
+        "sha256":  "5daa06d3c20eac832589ac92dfded9b6171da4cdf3f894566e9819fee3029f8e",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/test/java/com/app/miklink/core/data/repository/test/DhcpGatewayRepositoryContractTest.kt",
+        "type":  "TEXT",
+        "size":  4362,
+        "sha256":  "0ca7e0c0d3a00720edebd9424981ad7cb8ebe289dbe4b4da157c77f3735778f5",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/test/java/com/app/miklink/core/data/repository/test/PingTargetResolverContractTest.kt",
+        "type":  "TEXT",
+        "size":  3986,
+        "sha256":  "2cc58c418286c2b7cec96b7645526a262d70eb5887a1dcdd0d9ec58edce980d5",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/test/java/com/app/miklink/core/domain/policy/socketid/SocketIdLiteTest.kt",
+        "type":  "TEXT",
+        "size":  3398,
+        "sha256":  "c7b6055db82bf537f386960e791a1fcbf96e8b78718b13fcd7d29d7b515787b7",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/test/java/com/app/miklink/core/domain/tdr/CableTestInterpreterContractTest.kt",
+        "type":  "TEXT",
+        "size":  401,
+        "sha256":  "7cec684b548b4d9197755403677e878c27fc70bdddf20104178494337fc4ad3a",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/test/java/com/app/miklink/core/domain/test/logging/ExecutionLogBufferTest.kt",
+        "type":  "TEXT",
+        "size":  1917,
+        "sha256":  "f563bc15eb2ed4fcb62f41f49ae4ed91e5c89533002bbd5d112793b3fc8e4b0a",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/test/java/com/app/miklink/core/domain/test/logging/LogSanitizerTest.kt",
+        "type":  "TEXT",
+        "size":  1308,
+        "sha256":  "cf8e600171c0936e4033f15eee1d12de35d75adceaf878107ab8b51734f45a1a",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/test/java/com/app/miklink/core/domain/usecase/client/SaveClientUseCaseTest.kt",
+        "type":  "TEXT",
+        "size":  2649,
+        "sha256":  "6a21c0f5e472104786b4ce4bf95840ca3ba217970239a0ba5e44e62165cd368c",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/test/java/com/app/miklink/core/domain/usecase/test/RunTestUseCaseImplTest.kt",
+        "type":  "TEXT",
+        "size":  9030,
+        "sha256":  "ffdd9fc999e942c142fcb8ca3a431461b8929644500edda686df01eaf59c64bc",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/test/java/com/app/miklink/core/domain/usecase/testprofile/SaveTestProfileUseCaseTest.kt",
+        "type":  "TEXT",
+        "size":  2499,
+        "sha256":  "06dc14af2d710cbb4b9d2a015564bc24c0cfd92715a5e74d82d67a868a0eacb0",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/test/java/com/app/miklink/data/remote/mikrotik/dto/MikroTikJsonAdaptersTest.kt",
+        "type":  "TEXT",
+        "size":  1869,
+        "sha256":  "84446e17147a98ed99e9b7018b94f5fa065651ca4be2fb7d53c5d4b72e489258",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/test/java/com/app/miklink/data/remote/mikrotik/dto/ProplistRequestSerializationTest.kt",
+        "type":  "TEXT",
+        "size":  954,
+        "sha256":  "f809b4a6e9c819a8430ef2a4e40fc4656684611931ce0da43a58e15a2c7531af",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/test/java/com/app/miklink/data/remote/mikrotik/dto/SystemResourceJsonTest.kt",
+        "type":  "TEXT",
+        "size":  753,
+        "sha256":  "3baef7431a8ec61a8ad502831d0378baf35215d80d7b877ce1e4aa4f36c3809d",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/test/java/com/app/miklink/data/remote/mikrotik/golden/BridgeHostGoldenParsingTest.kt",
+        "type":  "TEXT",
+        "size":  1407,
+        "sha256":  "f85360b937cd9b9d62f11fe6513a789c4561cd58dcef211dbbc347acb2c30978",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/test/java/com/app/miklink/data/remote/mikrotik/golden/BridgePortGoldenParsingTest.kt",
+        "type":  "TEXT",
+        "size":  1050,
+        "sha256":  "2f8ab77c6bd58d2662ad61095cbfb66d87e84e283b8c2d43ef7773b6698037c6",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/test/java/com/app/miklink/data/remote/mikrotik/golden/BridgeVlanGoldenParsingTest.kt",
+        "type":  "TEXT",
+        "size":  798,
+        "sha256":  "b46f97b348ef26a05084d79abeb17daf474dacf332a9509f8a8c04e62a472faa",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/test/java/com/app/miklink/data/remote/mikrotik/golden/CableTestGoldenParsingTest.kt",
+        "type":  "TEXT",
+        "size":  2101,
+        "sha256":  "979cf10a47af2c6459f05017173a347ed440e61d18502bd0acf20e81a17ff187",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/test/java/com/app/miklink/data/remote/mikrotik/golden/EthernetMonitorGoldenParsingTest.kt",
+        "type":  "TEXT",
+        "size":  2187,
+        "sha256":  "c0484abb8283d506afad090f14f437a337d8a2867f93d67a8ec33f306e6225e8",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/test/java/com/app/miklink/data/remote/mikrotik/golden/NeighborGoldenParsingTest.kt",
+        "type":  "TEXT",
+        "size":  1852,
+        "sha256":  "875ec96bf0d46ec5e06070f2246bda81958e585e4c2e43d1ebc47bfc2ccdfb8c",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/test/java/com/app/miklink/data/remote/mikrotik/golden/SystemResourceGoldenParsingTest.kt",
+        "type":  "TEXT",
+        "size":  1153,
+        "sha256":  "0046b86bf1481a4e94c1969224f01b6e7e34c7dbd1ae662f2c626647d901a722",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/test/java/com/app/miklink/data/remote/mikrotik/service/MikroTikCallExecutorTest.kt",
+        "type":  "TEXT",
+        "size":  4111,
+        "sha256":  "64f1982efafdb9c0a0f7503f46046ea92fdd64fc618b4f9cd5fecf6ec97c95f7",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/test/java/com/app/miklink/data/repository/BackupManagerTest.kt",
+        "type":  "TEXT",
+        "size":  10105,
+        "sha256":  "cc7a2063c9064e55434b5fb2ff0b9a23c4c8d232c729247779d98eefe90fe44a",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/test/java/com/app/miklink/data/repository/mikrotik/MikroTikRepositoryTransportGuardTest.kt",
+        "type":  "TEXT",
+        "size":  2061,
+        "sha256":  "c5acee728d653a016a5cb4ed223fc8172d2ee06f6dc929fd0fe405cd16a50e9c",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/test/java/com/app/miklink/data/repository/mikrotik/NetworkConfigRepositoryTest.kt",
+        "type":  "TEXT",
+        "size":  5038,
+        "sha256":  "5bf3fac8222c6c04fab8aed5922d74f1f14fb408e35abb0f8c2766ad73581c27",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/test/java/com/app/miklink/data/repository/mikrotik/ProbeErrorMapperTest.kt",
+        "type":  "TEXT",
+        "size":  1305,
+        "sha256":  "ca48383ee67dc6e01d3346e1492b3a7fc283de88857fed0182583c34240886f1",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/test/java/com/app/miklink/data/repositoryimpl/room/SocketIdLiteIncrementTest.kt",
+        "type":  "TEXT",
+        "size":  7030,
+        "sha256":  "f103053fcb5375e24d594fa604e4e0ac79497b0047ec79fe7655888a7908d3cc",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/test/java/com/app/miklink/quality/HardcodedStringsScanTest.kt",
+        "type":  "TEXT",
+        "size":  3589,
+        "sha256":  "71e160a1d2b440818258758ed20b4295bac6a98b48d087ae1d896a0518ecd3b3",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/test/java/com/app/miklink/quality/NoLegacyTestContractScanTest.kt",
+        "type":  "TEXT",
+        "size":  1854,
+        "sha256":  "e00611f4d8e505eba5244116ec03c76d28d1152ba8dd2779697925f3753d87af",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/test/java/com/app/miklink/quality/StringsItalianCoverageTest.kt",
+        "type":  "TEXT",
+        "size":  2162,
+        "sha256":  "dca38e8964ff5a426ed302ff3943fbd32ccc1dcf52966337791c2fe77437b79c",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/test/java/com/app/miklink/testsupport/FixtureLoader.kt",
+        "type":  "TEXT",
+        "size":  440,
+        "sha256":  "09897751c72d516049b56044641a9e3e84c62cb56275242269f95645bb4802d8",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/test/java/com/app/miklink/testsupport/MainDispatcherRule.kt",
+        "type":  "TEXT",
+        "size":  760,
+        "sha256":  "55c7b4c95a81ce8fffc36f5285dce4891dba1dd75da41c1296bf2443b83226d3",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/test/java/com/app/miklink/testsupport/TestMoshiProvider.kt",
+        "type":  "TEXT",
+        "size":  1707,
+        "sha256":  "e813ad7172e8fdd5b9b58576dbd83dd444b1147003d51528712102b54e177040",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/test/java/com/app/miklink/ui/dashboard/DashboardViewModelTest.kt",
+        "type":  "TEXT",
+        "size":  7758,
+        "sha256":  "25569816d5198b06bdbcc4e038aa3edf0fa20d438b52fde64ae190cd71e1c41a",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/test/java/com/app/miklink/ui/probe/ProbeEditViewModelTest.kt",
+        "type":  "TEXT",
+        "size":  5435,
+        "sha256":  "f2eb3243a6a7913614d46e9db7d69ba71070a2a287b9b5ed3cdfba5580ac79aa",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/test/java/com/app/miklink/ui/test/TestViewModelTest.kt",
+        "type":  "TEXT",
+        "size":  6393,
+        "sha256":  "e5ce4a4a8ffb2f915e54323958518d337e81f40813ab099c03f923317b53911b",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/test/resources/fixtures/routeros/7.20.5/bridge_host.json",
+        "type":  "TEXT",
+        "size":  400,
+        "sha256":  "8692efaecc0122113c169c263c4bd82f5d6cbf869b25fbe757b7096927771ded",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/test/resources/fixtures/routeros/7.20.5/bridge_port.json",
+        "type":  "TEXT",
+        "size":  2844,
+        "sha256":  "3c6b527e1e8033627fe7bbe7fb9c753a06960bc2c5dc311c812657612278eb2d",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/test/resources/fixtures/routeros/7.20.5/bridge_vlan_empty.json",
+        "type":  "TEXT",
+        "size":  2,
+        "sha256":  "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/test/resources/fixtures/routeros/7.20.5/ethernet_cable_test_ether1_link_ok.json",
+        "type":  "TEXT",
+        "size":  38,
+        "sha256":  "64496970f46b9645039eaa10bd91e3519b3b4d1777b4336dfb1fa58bde4a8ece",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/test/resources/fixtures/routeros/7.20.5/ethernet_cable_test_ether2_no_link_open.json",
+        "type":  "TEXT",
+        "size":  82,
+        "sha256":  "4db4bb1791c060253307e0488a16a99d2f46e63507bc3118fe10b20bf5e6231b",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/test/resources/fixtures/routeros/7.20.5/ethernet_monitor_ether1_link_ok_1gbps.json",
+        "type":  "TEXT",
+        "size":  481,
+        "sha256":  "ae0c0e45c2aa27c217a15842c687184e7a476d14bc56ed77b1feb474827b53f0",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/test/resources/fixtures/routeros/7.20.5/ethernet_monitor_ether2_no_link.json",
+        "type":  "TEXT",
+        "size":  304,
+        "sha256":  "fdfbf382ef5ef907f2469ace0bd273337a93fa830bb6d352702ea9777f352b0e",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/test/resources/fixtures/routeros/7.20.5/ip_neighbor_single.json",
+        "type":  "TEXT",
+        "size":  522,
+        "sha256":  "79702962600d792c6fa5caf73819d01e9fd17a52424bbfd7eca39516f1a3600a",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/test/resources/fixtures/routeros/7.20.5/README.md",
+        "type":  "TEXT",
+        "size":  1321,
+        "sha256":  "5ff60cf3592b9d7a106b7cfbd062e536e5d7dd108c97bba07732147b3024ca68",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "app/src/test/resources/fixtures/routeros/7.20.5/system_resource_hap_ax2.json",
+        "type":  "TEXT",
+        "size":  437,
+        "sha256":  "9377b37344ca01466b7e2408298e2747a08848d49824f548c03cd2eda0c56673",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "build.gradle.kts",
+        "type":  "TEXT",
+        "size":  382,
+        "sha256":  "d3ebb568dca0ea2299be6f2192ac829c62bfdd695dfc02e3bb644178bd89b138",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "buildSrc/build.gradle.kts",
+        "type":  "TEXT",
+        "size":  87,
+        "sha256":  "dfacbb96ad127feb1147d808e478430074b093950e3e3c63407bb55d6f60a3d4",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "buildSrc/src/main/kotlin/ForbiddenPatternsTask.kt",
+        "type":  "TEXT",
+        "size":  3203,
+        "sha256":  "b819ad5abac0a406f1cd171cbfe80dd65a974cefecb09004634d903246e681a0",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "Cleanup-Now.ps1",
+        "type":  "TEXT",
+        "size":  1758,
+        "sha256":  "0551c5fc9e2a536a87923459df8abb3fc0e4a0ca3682e1ed1da88e4e5e11bbc9",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "docs/contributing/documentation.md",
+        "type":  "TEXT",
+        "size":  1871,
+        "sha256":  "1a6e79cbf77674e6171b3d04d35ec11d0622449da6578d7e9d74d566f44c1b3f",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "docs/decisions/ADR-0001-single-probe.md",
+        "type":  "TEXT",
+        "size":  565,
+        "sha256":  "4cc033009f843a471c0b787953a3e3a226df6c051cf778ae3df6fa1a103f1790",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "docs/decisions/ADR-0002-https-toggle-trust-all.md",
+        "type":  "TEXT",
+        "size":  1811,
+        "sha256":  "efbae890192a42ec49e4c60da9eb3bef23d20ffbbfac9dd82ab52454ba9d3a71",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "docs/decisions/ADR-0003-db-rebase-baseline.md",
+        "type":  "TEXT",
+        "size":  958,
+        "sha256":  "8e361a752c46ee76b38b1b20e2d5a544a38ddda424ee6fdb1df1b9a90234c5b0",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "docs/decisions/ADR-0004-socket-id-lite.md",
+        "type":  "TEXT",
+        "size":  3101,
+        "sha256":  "5809dc3a066a8d4fa2cf1670cfb03080ec3948056cb2f2631d6676241cdc0b6b",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "docs/decisions/ADR-0005-remove-logs.md",
+        "type":  "TEXT",
+        "size":  539,
+        "sha256":  "21ccbd8072abe8aaff5b4e130d23f990d80faee28d29b460348d403df9f6f5bb",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "docs/decisions/ADR-0006-backup-stable-client-key.md",
+        "type":  "TEXT",
+        "size":  896,
+        "sha256":  "f2bc8d57615a999666f0c64cbf28dfd431ba393c33559dd0b7df888d4609d16e",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "docs/decisions/ADR-0007-package-structure-and-naming.md",
+        "type":  "TEXT",
+        "size":  1623,
+        "sha256":  "f3ce8228c07aa7e64921558302d481c7cf8ed47ba8ef906f1983cd8385079b71",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "docs/decisions/ADR-0008-no-dto-leaks-across-ports.md",
+        "type":  "TEXT",
+        "size":  1278,
+        "sha256":  "35492985ab75c17a955081b9635b5e803b597308c865aacccc58041a07bdc69f",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "docs/decisions/ADR-0009-reintroduce-test-execution-logs.md",
+        "type":  "TEXT",
+        "size":  1341,
+        "sha256":  "f3f849ab4b7ed1c0d8e28d3f6dec46e585483c493dea629847545cb18a689c9f",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "docs/decisions/ADR-0010-socket-id-increment-on-save.md",
+        "type":  "TEXT",
+        "size":  1646,
+        "sha256":  "213bbc1de35bea202fbc5dae972583d8e7bae487a670e3e438fa29ca6b179b6f",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "docs/decisions/ADR-0011-typed-test-execution-contract.md",
+        "type":  "TEXT",
+        "size":  1454,
+        "sha256":  "d56c6d79aba74c9596520aed0a7f498860d7552a06a3833d7c7d6ad239fb5f73",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "docs/epic.md",
+        "type":  "TEXT",
+        "size":  14720,
+        "sha256":  "7ac2014af658285dfc83c1e0d015998e893dc03488db75b326acd2f282b12c04",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "docs/EPIC_live-test-cards_socket-id_ping.md",
+        "type":  "TEXT",
+        "size":  15331,
+        "sha256":  "c87fc15e2a626c19df969e77f6a5e8f0ab9fe6746c2c8888f719d9f0b05d455c",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "docs/epic-Eliminate build warnings.md",
+        "type":  "TEXT",
+        "size":  10266,
+        "sha256":  "c14af514d8b95af848313623b75c414141a0c606cec2580772d58b90d1e99269",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "docs/EPIC-Reintr Show Logs in Test ExecUI.md",
+        "type":  "TEXT",
+        "size":  12236,
+        "sha256":  "ab2f5ec811645c024fe8c5495cd78535099da0415c0358927cf754013fd6db3e",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "docs/explanation/architecture.md",
+        "type":  "TEXT",
+        "size":  2842,
+        "sha256":  "14a0c8050ab6adabcb9766ad82da1177500889fd8d007be56c360459d95e82ba",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "docs/explanation/features.md",
+        "type":  "TEXT",
+        "size":  5152,
+        "sha256":  "3c77fd8380cb5c35c460297cd6aebf6078c0b2aaf7d1a682a3eb2237a429e612",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "docs/miklink_consolidated_refactor_plan.md",
+        "type":  "TEXT",
+        "size":  30411,
+        "sha256":  "2f8257bf5afdd58a43d2bdc1380a2705f81f93b5c053e3244b313f1da076c45b",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "docs/README.md",
+        "type":  "TEXT",
+        "size":  1138,
+        "sha256":  "8f0ca856c90b25a4603904f5919f50907de447e0edfeb032647646edd3937d54",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "docs/reference/annotations-use-site-targets.md",
+        "type":  "TEXT",
+        "size":  1102,
+        "sha256":  "e99a600f5921922df3dbeb763388858da5ed658b5b5016cef480e6407e5156a3",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "docs/reference/backup-format.md",
+        "type":  "TEXT",
+        "size":  1646,
+        "sha256":  "ba12f03c1c3da1ff60bae0378444d1b8e0f4490379f71f164472ad4f109b9095",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "docs/reference/build.md",
+        "type":  "TEXT",
+        "size":  1841,
+        "sha256":  "b2e4013210c445d2e76f6b351c873239c4fdf65b4a505f51e605bc2bb9227dc5",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "docs/reference/database.md",
+        "type":  "TEXT",
+        "size":  3285,
+        "sha256":  "9955ba1ae38dae4ee935298c81248aaa9445963b8a5b113fcc8a2e236ba36890",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "docs/reference/mikrotik-rest-api.md",
+        "type":  "TEXT",
+        "size":  5120,
+        "sha256":  "8f71718ec876819e775181033b6a8c7006a22de663ff934e8515a8be452ac63d",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "docs/reference/project-structure.md",
+        "type":  "TEXT",
+        "size":  5051,
+        "sha256":  "46802897e7a31069b6ca572c8c8df359a32b7953d6b8d004fe2bf86dd1c85e3a",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "docs/reference/testing.md",
+        "type":  "TEXT",
+        "size":  1213,
+        "sha256":  "0a7226841dd355cdfd011ba41122d8be3a966a65c9ef81ee48085f554b941666",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "docs/reference/ui-architecture.md",
+        "type":  "TEXT",
+        "size":  2847,
+        "sha256":  "df3048e1d7590f3880a1cc3e575b9f3569c7ef5596f3452293bed0dd5d43e4ff",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "Dump-Repo.ps1",
+        "type":  "TEXT",
+        "size":  12020,
+        "sha256":  "4437a6ecdcc45173df73f88e88e02c5a191ff528744781696c22122b88c85e9e",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "gradle.properties",
+        "type":  "TEXT",
+        "size":  439,
+        "sha256":  "04b181920d21f12ebcc110fd716353c4103c7221091a730c106e335e7b18e774",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "gradle/libs.versions.toml",
+        "type":  "TEXT",
+        "size":  4099,
+        "sha256":  "68d96b37d2541b73af79c9388458e72d911d93a30df8764899777483da886460",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "gradle/wrapper/gradle-wrapper.properties",
+        "type":  "TEXT",
+        "size":  290,
+        "sha256":  "42358efdda07a7f095434eaf69b1538f23177dbcc22a8175fab16fc02d75ecf2",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "gradlew",
+        "type":  "TEXT",
+        "size":  8728,
+        "sha256":  "3238afb2aed5cb16eb7d6718077e7138059108f007b54179e9cc157c5a6e0e89",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "gradlew.bat",
+        "type":  "TEXT",
+        "size":  2937,
+        "sha256":  "1d297e00bd21de3ace22b4d7f2de1f9dfa858883d66bbf7c1ccbecccec8f4f3b",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "settings.gradle.kts",
+        "type":  "TEXT",
+        "size":  450,
+        "sha256":  "029c971dd7aa6a3f2fb36ebcd85229fd41184c66b6421c2128a48d6316a94e89",
+        "dumpFile":  "dump_all.txt"
+    },
+    {
+        "path":  "tools/inspect-triage.ps1",
+        "type":  "TEXT",
+        "size":  1772,
+        "sha256":  "ab6115f4a1b8ed6d58e0599b153844223ac3446635c0050bad26f85bb039f6a6",
+        "dumpFile":  "dump_all.txt"
+    }
+]

@@ -1,33 +1,36 @@
 /*
  * Purpose: Monitor probe online status using MikroTik REST calls and emit probe status updates.
- * Inputs: Stored ProbeConfig, MikroTikServiceProvider for API access, and user preferences for polling interval.
+ * Inputs: Stored ProbeConfig, MikroTikCallExecutor, and user preferences for polling interval.
  * Outputs: Flows indicating online/offline status for the singleton probe.
- * Notes: Uses `.proplist` filtering and ignores entries without board-name to avoid false positives.
+ * Notes: Single transport path via MikroTikCallExecutor; uses proplist filtering to avoid false positives.
  */
-package com.app.miklink.data.repositoryimpl.mikrotik
+package com.app.miklink.data.repository.mikrotik
 
+import com.app.miklink.core.data.repository.ProbeStatusInfo
+import com.app.miklink.core.data.repository.preferences.UserPreferencesRepository
 import com.app.miklink.core.data.repository.probe.ProbeRepository
+import com.app.miklink.core.data.repository.probe.ProbeStatusRepository
 import com.app.miklink.core.domain.model.ProbeConfig
 import com.app.miklink.data.remote.mikrotik.dto.ProplistRequest
+import com.app.miklink.data.remote.mikrotik.service.CallOutcome
 import com.app.miklink.data.remote.mikrotik.service.MikroTikCallExecutor
-import com.app.miklink.core.data.repository.ProbeStatusInfo
-import com.app.miklink.core.data.repository.probe.ProbeStatusRepository
-import com.app.miklink.core.data.repository.preferences.UserPreferencesRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import retrofit2.HttpException
 import javax.inject.Inject
 
 /**
- * Implementazione di ProbeStatusRepository.
- *
- * Usa MikroTikServiceProvider per costruire il service e chiama l'API MikroTik
- * per verificare lo stato online/offline delle sonde.
+ * Implementazione MikroTik di ProbeStatusRepository.
  */
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-class ProbeStatusRepositoryImpl @Inject constructor(
+class MikroTikProbeStatusRepository @Inject constructor(
     private val probeRepository: ProbeRepository,
     private val callExecutor: MikroTikCallExecutor,
     private val userPreferencesRepository: UserPreferencesRepository
@@ -39,10 +42,11 @@ class ProbeStatusRepositoryImpl @Inject constructor(
                 flow {
                     while (true) {
                         val isOnline = try {
-                            callExecutor.execute(probe) { api ->
+                            val outcome = callExecutor.executeWithOutcome(probe) { api ->
                                 api.getSystemResource(ProplistRequest(listOf("board-name")))
                                     .any { !it.boardName.isNullOrBlank() }
-                            }.value
+                            }
+                            outcome.getOrThrow()
                         } catch (_: HttpException) {
                             false
                         } catch (_: Exception) {
@@ -62,10 +66,11 @@ class ProbeStatusRepositoryImpl @Inject constructor(
             tickerFlow(interval).map {
                 withContext(Dispatchers.IO) {
                     val isOnline = try {
-                        callExecutor.execute(probe) { api ->
+                        val outcome = callExecutor.executeWithOutcome(probe) { api ->
                             val result = api.getSystemResource(ProplistRequest(listOf("board-name")))
                             result.any { !it.boardName.isNullOrBlank() }
-                        }.value
+                        }
+                        outcome.getOrThrow()
                     } catch (e: Exception) {
                         android.util.Log.w("ProbeStatusRepository", "Sonda @ ${probe.ipAddress} offline: ${e.message}")
                         false
@@ -81,5 +86,16 @@ private fun tickerFlow(periodMs: Long): Flow<Unit> = flow {
     while (true) {
         emit(Unit)
         delay(periodMs)
+    }
+}
+
+private fun <T> CallOutcome<T>.getOrThrow(): T {
+    return when (this) {
+        is CallOutcome.Success -> value
+        is CallOutcome.Failure -> {
+            val primary = failures.firstOrNull()?.throwable ?: IllegalStateException("Unknown call failure")
+            failures.drop(1).forEach { primary.addSuppressed(it.throwable) }
+            throw primary
+        }
     }
 }

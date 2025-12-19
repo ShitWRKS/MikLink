@@ -39,12 +39,12 @@ import com.app.miklink.data.repository.RouteManager
 import com.app.miklink.data.repository.RouteManagerImpl
 import com.app.miklink.data.repository.RoomTransactionRunner
 import com.app.miklink.data.repository.TransactionRunner
-import com.app.miklink.data.repositoryimpl.NetworkConfigRepositoryImpl
 import com.app.miklink.data.repositoryimpl.PingTargetResolverImpl
-import com.app.miklink.data.repositoryimpl.mikrotik.DhcpGatewayRepositoryImpl
-import com.app.miklink.data.repositoryimpl.mikrotik.MikroTikTestRepositoryImpl
-import com.app.miklink.data.repositoryimpl.mikrotik.ProbeConnectivityRepositoryImpl
-import com.app.miklink.data.repositoryimpl.mikrotik.ProbeStatusRepositoryImpl
+import com.app.miklink.data.repository.mikrotik.MikroTikDhcpGatewayRepository
+import com.app.miklink.data.repository.mikrotik.MikroTikNetworkConfigRepository
+import com.app.miklink.data.repository.mikrotik.MikroTikProbeConnectivityRepository
+import com.app.miklink.data.repository.mikrotik.MikroTikProbeStatusRepository
+import com.app.miklink.data.repository.mikrotik.MikroTikTestRepositoryRemote
 import com.app.miklink.data.repositoryimpl.room.RoomClientRepository
 import com.app.miklink.data.repositoryimpl.room.RoomProbeRepository
 import com.app.miklink.data.repositoryimpl.room.RoomReportRepository
@@ -94,11 +94,11 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindMikroTikTestRepository(impl: MikroTikTestRepositoryImpl): MikroTikTestRepository
+    abstract fun bindMikroTikTestRepository(impl: MikroTikTestRepositoryRemote): MikroTikTestRepository
 
     @Binds
     @Singleton
-    abstract fun bindNetworkConfigRepository(impl: NetworkConfigRepositoryImpl): NetworkConfigRepository
+    abstract fun bindNetworkConfigRepository(impl: MikroTikNetworkConfigRepository): NetworkConfigRepository
 
     @Binds
     @Singleton
@@ -110,15 +110,15 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindDhcpGatewayRepository(impl: DhcpGatewayRepositoryImpl): DhcpGatewayRepository
+    abstract fun bindDhcpGatewayRepository(impl: MikroTikDhcpGatewayRepository): DhcpGatewayRepository
 
     @Binds
     @Singleton
-    abstract fun bindProbeStatusRepository(impl: ProbeStatusRepositoryImpl): ProbeStatusRepository
+    abstract fun bindProbeStatusRepository(impl: MikroTikProbeStatusRepository): ProbeStatusRepository
 
     @Binds
     @Singleton
-    abstract fun bindProbeConnectivityRepository(impl: ProbeConnectivityRepositoryImpl): ProbeConnectivityRepository
+    abstract fun bindProbeConnectivityRepository(impl: MikroTikProbeConnectivityRepository): ProbeConnectivityRepository
 
     @Binds
     @Singleton

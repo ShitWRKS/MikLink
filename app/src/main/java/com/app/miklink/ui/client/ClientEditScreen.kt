@@ -21,12 +21,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.app.miklink.core.domain.model.NetworkMode
 import com.app.miklink.core.domain.policy.socketid.SocketIdLite
+import com.app.miklink.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,6 +60,7 @@ fun ClientEditScreen(
     val speedTestServerAddress by viewModel.speedTestServerAddress.collectAsStateWithLifecycle()
     val speedTestServerUser by viewModel.speedTestServerUser.collectAsStateWithLifecycle()
     val speedTestServerPassword by viewModel.speedTestServerPassword.collectAsStateWithLifecycle()
+    var speedTestPasswordVisible by remember { mutableStateOf(false) }
 
     // UI state - Network aperta, Socket e Speed chiuse di default
     var networkConfigExpanded by remember { mutableStateOf(true) }
@@ -359,7 +363,19 @@ fun ClientEditScreen(
                     label = { Text("Password") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    supportingText = { Text("Optional") }
+                    supportingText = { Text("Optional") },
+                    visualTransformation = if (speedTestPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    trailingIcon = {
+                        val icon = if (speedTestPasswordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility
+                        val description = if (speedTestPasswordVisible) {
+                            stringResource(id = R.string.hide_password)
+                        } else {
+                            stringResource(id = R.string.show_password)
+                        }
+                        IconButton(onClick = { speedTestPasswordVisible = !speedTestPasswordVisible }) {
+                            Icon(icon, contentDescription = description)
+                        }
+                    }
                 )
             }
 

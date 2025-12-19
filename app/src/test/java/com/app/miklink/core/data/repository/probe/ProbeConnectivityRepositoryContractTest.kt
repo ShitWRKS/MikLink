@@ -16,7 +16,7 @@ import com.app.miklink.data.remote.mikrotik.service.MikroTikApiService
 import com.app.miklink.data.remote.mikrotik.service.MikroTikServiceProvider
 import com.app.miklink.data.remote.mikrotik.service.MikroTikCallExecutor
 import com.app.miklink.core.data.repository.ProbeCheckResult
-import com.app.miklink.data.repositoryimpl.mikrotik.ProbeConnectivityRepositoryImpl
+import com.app.miklink.data.repository.mikrotik.MikroTikProbeConnectivityRepository
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -37,7 +37,7 @@ class ProbeConnectivityRepositoryContractTest {
     private val mockServiceProvider = mockk<MikroTikServiceProvider>()
     private val mockApiService = mockk<MikroTikApiService>()
     private val callExecutor = MikroTikCallExecutor(mockServiceProvider)
-    private val repository: ProbeConnectivityRepository = ProbeConnectivityRepositoryImpl(
+    private val repository: ProbeConnectivityRepository = MikroTikProbeConnectivityRepository(
         mockContext,
         callExecutor
     )

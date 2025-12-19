@@ -1,26 +1,34 @@
-package com.app.miklink.data.repositoryimpl
+/*
+ * Purpose: Apply network configuration to MikroTik probes (DHCP/static) via centralized transport.
+ * Inputs: ProbeConfig, Client settings, RouteManager, and MikroTikCallExecutor.
+ * Outputs: NetworkConfigFeedback describing resulting network state.
+ * Notes: Keeps HTTPS->HTTP fallback centralized; mirrors legacy AppRepository logic without duplicating transport.
+ */
+package com.app.miklink.data.repository.mikrotik
 
 import android.content.Context
-import com.app.miklink.core.domain.model.Client
-import com.app.miklink.core.domain.model.ProbeConfig
-import com.app.miklink.core.domain.model.NetworkMode
-import com.app.miklink.data.remote.mikrotik.dto.*
-import com.app.miklink.data.remote.mikrotik.service.MikroTikCallExecutor
+import com.app.miklink.R
 import com.app.miklink.core.data.repository.NetworkConfigFeedback
 import com.app.miklink.core.data.repository.test.NetworkConfigRepository
+import com.app.miklink.core.domain.model.Client
+import com.app.miklink.core.domain.model.NetworkMode
+import com.app.miklink.core.domain.model.ProbeConfig
+import com.app.miklink.data.remote.mikrotik.dto.DhcpClientAdd
+import com.app.miklink.data.remote.mikrotik.dto.DhcpClientStatus
+import com.app.miklink.data.remote.mikrotik.dto.IpAddressAdd
+import com.app.miklink.data.remote.mikrotik.dto.NumbersRequest
+import com.app.miklink.data.remote.mikrotik.dto.RouteAdd
+import com.app.miklink.data.remote.mikrotik.service.CallOutcome
+import com.app.miklink.data.remote.mikrotik.service.MikroTikCallExecutor
 import com.app.miklink.data.repository.RouteManager
-import com.app.miklink.R
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.delay
 import javax.inject.Inject
 
 /**
- * Implementazione di NetworkConfigRepository.
- *
- * Esegue direttamente le operazioni di configurazione rete senza dipendere da AppRepository.
- * Replica la logica di AppRepository.applyClientNetworkConfig mantenendo lo stesso comportamento.
+ * Implementazione MikroTik di NetworkConfigRepository.
  */
-class NetworkConfigRepositoryImpl @Inject constructor(
+class MikroTikNetworkConfigRepository @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val callExecutor: MikroTikCallExecutor,
     private val routeManager: RouteManager
@@ -32,7 +40,7 @@ class NetworkConfigRepositoryImpl @Inject constructor(
         override: Client?
     ): NetworkConfigFeedback {
         val effective = override ?: client
-        return callExecutor.execute(probe) { api ->
+        val outcome = callExecutor.executeWithOutcome(probe) { api ->
             val iface = probe.testInterface
 
             // Helper: rimuovi IP statici su interfaccia
@@ -52,7 +60,7 @@ class NetworkConfigRepositoryImpl @Inject constructor(
                     existingDhcp.disabled == "false" &&
                     existingDhcp.status?.equals("bound", ignoreCase = true) == true) {
                     // DHCP gia configurato correttamente, ritorna lo stato attuale
-                    return@execute NetworkConfigFeedback(
+                    return@executeWithOutcome NetworkConfigFeedback(
                         mode = "DHCP",
                         interfaceName = iface,
                         address = existingDhcp.address,
@@ -156,7 +164,8 @@ class NetworkConfigRepositoryImpl @Inject constructor(
                     message = context.getString(R.string.status_static_configured)
                 )
             }
-        }.value
+        }
+        return outcome.getOrThrow()
     }
 
     private fun validateStaticInput(cidr: String, gateway: String) {
@@ -202,5 +211,16 @@ class NetworkConfigRepositoryImpl @Inject constructor(
         if (value == 0) return false
         val inverted = value.inv()
         return (inverted + 1) and inverted == 0
+    }
+}
+
+private fun <T> CallOutcome<T>.getOrThrow(): T {
+    return when (this) {
+        is CallOutcome.Success -> value
+        is CallOutcome.Failure -> {
+            val primary = failures.firstOrNull()?.throwable ?: IllegalStateException("Unknown call failure")
+            failures.drop(1).forEach { primary.addSuppressed(it.throwable) }
+            throw primary
+        }
     }
 }

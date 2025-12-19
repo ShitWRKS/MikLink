@@ -10,8 +10,11 @@ interface ReportDetailScreenStateProvider {
     val report: StateFlow<TestReport?>
     val parsedResults: StateFlow<ReportData?>
     val pdfStatus: StateFlow<String>
+    val clientName: StateFlow<String>
     val socketName: MutableStateFlow<String>
     val notes: MutableStateFlow<String>
     fun updateReportDetails()
     fun exportReportToPdf()
+    suspend fun buildRepeatRoute(): String?
+    suspend fun deleteReport()
 }

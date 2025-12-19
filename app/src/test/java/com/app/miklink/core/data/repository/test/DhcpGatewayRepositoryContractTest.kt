@@ -1,13 +1,23 @@
+/*
+ * Purpose: Contract tests for DHCP gateway resolution using the centralized MikroTikCallExecutor path.
+ * Inputs: ProbeConfig instances, mocked MikroTikServiceProvider/ApiService, and DhcpGatewayRepositoryImpl.
+ * Outputs: Assertions on resolved gateways or null when unavailable or failing.
+ * Notes: Keeps a single MikroTik transport path per ADR-0002 while validating repository behavior.
+ */
 package com.app.miklink.core.data.repository.test
 
 import com.app.miklink.core.domain.model.ProbeConfig
 import com.app.miklink.data.remote.mikrotik.dto.DhcpClientStatus
 import com.app.miklink.data.remote.mikrotik.service.MikroTikApiService
+import com.app.miklink.data.remote.mikrotik.service.MikroTikCallExecutor
 import com.app.miklink.data.remote.mikrotik.service.MikroTikServiceProvider
-import com.app.miklink.data.repositoryimpl.mikrotik.DhcpGatewayRepositoryImpl
+import com.app.miklink.data.repository.mikrotik.MikroTikDhcpGatewayRepository
+import io.mockk.every
 import io.mockk.coEvery
 import io.mockk.mockk
+import io.mockk.mockkStatic
 import kotlinx.coroutines.runBlocking
+import org.junit.Before
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -19,7 +29,8 @@ class DhcpGatewayRepositoryContractTest {
 
     private val mockServiceProvider = mockk<MikroTikServiceProvider>()
     private val mockApiService = mockk<MikroTikApiService>()
-    private val repository: DhcpGatewayRepository = DhcpGatewayRepositoryImpl(mockServiceProvider)
+    private val callExecutor = MikroTikCallExecutor(mockServiceProvider)
+    private val repository: DhcpGatewayRepository = MikroTikDhcpGatewayRepository(callExecutor)
 
     private val testProbe = ProbeConfig(
         ipAddress = "192.168.1.1",
@@ -31,6 +42,12 @@ class DhcpGatewayRepositoryContractTest {
         tdrSupported = false,
         isHttps = false
     )
+
+    @Before
+    fun setUp() {
+        mockkStatic("android.util.Log")
+        every { android.util.Log.isLoggable(any(), any()) } returns false
+    }
 
     @Test
     fun `getGatewayForInterface returns gateway when DHCP client is bound`() = runBlocking {

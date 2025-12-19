@@ -1,16 +1,21 @@
+/*
+ * Purpose: Manage history list, PDF export, filters, and repeat route building for reports.
+ * Inputs: Repositories (reports, clients, profiles, prefs), PdfGenerator, RepeatTestRouteBuilder.
+ * Outputs: Grouped report state, filter/search updates, repeat route strings, and deletion/duplication actions.
+ */
 package com.app.miklink.ui.history
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.app.miklink.core.data.repository.client.ClientRepository
 import com.app.miklink.core.data.repository.report.ReportRepository
-import com.app.miklink.core.data.repository.test.TestProfileRepository
 import com.app.miklink.core.domain.model.Client
 import com.app.miklink.core.domain.model.TestReport
 import com.app.miklink.core.data.pdf.PdfGenerator
 import com.app.miklink.core.data.pdf.PdfExportConfig
 import com.app.miklink.core.data.repository.preferences.UserPreferencesRepository
 import com.app.miklink.ui.history.model.ReportsByClient
+import com.app.miklink.ui.navigation.RepeatTestRouteBuilder
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
@@ -23,8 +28,8 @@ class HistoryViewModel @Inject constructor(
     private val reportRepository: ReportRepository,
     private val clientRepository: ClientRepository,
     private val pdfGenerator: PdfGenerator,
-    private val profileRepository: TestProfileRepository,
-    private val userPreferencesRepository: UserPreferencesRepository
+    private val userPreferencesRepository: UserPreferencesRepository,
+    private val repeatTestRouteBuilder: RepeatTestRouteBuilder
 ) : ViewModel() {
 
     val pdfIncludeEmptyTests = userPreferencesRepository.pdfIncludeEmptyTests
@@ -177,21 +182,7 @@ class HistoryViewModel @Inject constructor(
      * Note: ProbeConfig doesn't store a name, so we get the first available probe.
      */
     suspend fun getRepeatTestRoute(report: TestReport): String? = withContext(Dispatchers.IO) {
-        try {
-            val profile = profileRepository.observeAllProfiles().first().firstOrNull {
-                it.profileName == report.profileName
-            }
-
-            if (profile != null && report.clientId != null) {
-                val encodedSocket = android.net.Uri.encode(report.socketName ?: "")
-                "test_execution/${report.clientId}/${profile.profileId}/$encodedSocket"
-            } else {
-                null
-            }
-        } catch (e: Exception) {
-            android.util.Log.e("HistoryViewModel", "Error getting repeat test route", e)
-            null
-        }
+        repeatTestRouteBuilder.build(report)
     }
 }
 

@@ -1,3 +1,8 @@
+/*
+ * Purpose: Provide report detail state and actions (edit, delete, repeat route, PDF status) for the legacy detail screen.
+ * Inputs: SavedStateHandle reportId, repositories (report/client/profile), parse use case, repeat route builder, prefs.
+ * Outputs: StateFlows for report data, parsed results, metadata fields, client name, pdf status, and actions to save/delete/repeat.
+ */
 package com.app.miklink.ui.history
 
 
@@ -15,9 +20,12 @@ import com.app.miklink.core.data.repository.preferences.UserPreferencesRepositor
 import com.app.miklink.core.data.pdf.PdfGenerator
 import com.app.miklink.core.data.pdf.PdfExportConfig
 import com.app.miklink.core.domain.usecase.report.ParseReportResultsUseCase
+import com.app.miklink.ui.navigation.RepeatTestRouteBuilder
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
@@ -29,6 +37,7 @@ class ReportDetailViewModel @Inject constructor(
     private val pdfGenerator: PdfGenerator,
     private val parseReportResults: ParseReportResultsUseCase,
     private val userPreferencesRepository: UserPreferencesRepository,
+    private val repeatTestRouteBuilder: RepeatTestRouteBuilder,
     savedStateHandle: SavedStateHandle
 ) : ViewModel(), ReportDetailScreenStateProvider {
 
@@ -57,7 +66,7 @@ class ReportDetailViewModel @Inject constructor(
     override val parsedResults: StateFlow<ReportData?> = _parsedResults.asStateFlow()
 
     private val _clientName = MutableStateFlow("")
-    val clientName: StateFlow<String> = _clientName.asStateFlow()
+    override val clientName: StateFlow<String> = _clientName.asStateFlow()
 
     private val _profile = MutableStateFlow<TestProfile?>(null)
     val profile: StateFlow<TestProfile?> = _profile.asStateFlow()
@@ -133,6 +142,16 @@ class ReportDetailViewModel @Inject constructor(
     override fun exportReportToPdf() {
         // No-op: la stampa è demandata alla UI
         _pdfStatus.value = ""
+    }
+
+    override suspend fun buildRepeatRoute(): String? = withContext(Dispatchers.IO) {
+        repeatTestRouteBuilder.build(report.value)
+    }
+
+    override suspend fun deleteReport() {
+        withContext(Dispatchers.IO) {
+            report.value?.let { reportRepository.deleteReport(it) }
+        }
     }
 
 }

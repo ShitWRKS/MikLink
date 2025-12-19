@@ -27,6 +27,7 @@ Questa è una scelta consapevole (trade-off accettato per il contesto d'uso).
   - Installare un certificato valido su RouterOS (www-ssl), **oppure**
   - Usare HTTP se il contesto lo consente.
 - Non aggiungere cipher suite obsolete o workaround insicuri per “farlo funzionare”.
+- Gli errori di trasporto vengono aggregati: quando il fallback HTTP fallisce dopo un handshake TLS, `CallOutcome.Failure` conserva entrambe le eccezioni (https + http) così la UI può mostrare un hint TLS senza perdere il contesto del secondo errore.
 
 ## Conseguenze
 

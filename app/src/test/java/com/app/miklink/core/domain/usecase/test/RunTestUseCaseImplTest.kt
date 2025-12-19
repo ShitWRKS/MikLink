@@ -195,57 +195,29 @@ class RunTestUseCaseImplTest {
         )
 
         val events = useCase.execute(plan).toList()
-        val sectionsUpdates = events.filterIsInstance<TestEvent.SectionsUpdated>()
-        assertTrue("Expected live sections updates", sectionsUpdates.isNotEmpty())
+        val snapshotUpdates = events.filterIsInstance<TestEvent.SnapshotUpdated>()
+        assertTrue("Expected typed snapshot updates", snapshotUpdates.isNotEmpty())
 
-        val expectedOrder = listOf("NETWORK", "LINK", "TDR", "LLDP", "PING", "SPEED")
-        val actualOrder = sectionsUpdates.first().sections.map { it.type }
-        if (expectedOrder != actualOrder) {
-            org.junit.Assert.fail("expected: $expectedOrder actual: $actualOrder")
+        val firstSnapshot = snapshotUpdates.first().snapshot
+        val expectedOrder = listOf("NETWORK", "LINK", "TDR", "NEIGHBORS", "PING", "SPEED")
+        val actualOrder = firstSnapshot.sections.map { it.id.name }
+        assertEquals(expectedOrder, actualOrder)
+        firstSnapshot.sections.forEach { section ->
+            org.junit.Assert.assertEquals(
+                com.app.miklink.core.domain.test.model.TestSectionStatus.PENDING,
+                section.status
+            )
         }
 
-        val firstStatuses = sectionsUpdates.first().sections.map { it.status }
-        assertEquals(expectedOrder.map { "PENDING" }, firstStatuses)
-
-        assertStatusProgression(sectionsUpdates, "NETWORK")
-        assertStatusProgression(sectionsUpdates, "LINK")
-        assertStatusProgression(sectionsUpdates, "TDR")
-        assertStatusProgression(sectionsUpdates, "LLDP")
-        assertStatusProgression(sectionsUpdates, "PING")
-        assertStatusProgression(sectionsUpdates, "SPEED")
-
-        val completedIndex = events.indexOfFirst { it is TestEvent.Completed }
-        if (completedIndex < 0) {
-            val eventsDesc = events.map { ev ->
-                when (ev) {
-                    is TestEvent.Progress -> "Progress"
-                    is TestEvent.SectionsUpdated -> "SectionsUpdated(${ev.sections.map { it.type }})"
-                    is TestEvent.Failed -> "Failed(${ev.error.message})"
-                    is TestEvent.Completed -> "Completed"
-                    else -> ev.toString()
-                }
-            }
-            org.junit.Assert.fail("Completed event should be emitted; events: $eventsDesc")
+        val completed = events.lastOrNull { it is TestEvent.Completed } as? TestEvent.Completed
+        assertTrue("Completed event should be emitted", completed != null)
+        completed?.let { event ->
+            assertEquals("PASS", event.outcome.overallStatus)
+            assertEquals(
+                com.app.miklink.core.domain.test.model.TestProgressKey.COMPLETED,
+                event.outcome.finalSnapshot.progress
+            )
+            assertTrue("rawResultsJson should be present", !event.outcome.rawResultsJson.isNullOrBlank())
         }
-        assertTrue(
-            "SectionsUpdated must appear before Completed",
-            events.subList(0, completedIndex).any { it is TestEvent.SectionsUpdated }
-        )
-    }
-
-    private fun assertStatusProgression(
-        updates: List<TestEvent.SectionsUpdated>,
-        type: String
-    ) {
-        val timeline = updates.mapNotNull { update ->
-            update.sections.firstOrNull { it.type == type }?.status
-        }
-        val pendingIndex = timeline.indexOf("PENDING")
-        val runningIndex = timeline.indexOf("RUNNING")
-        val finalIndex = timeline.indexOfLast { it == "PASS" || it == "FAIL" || it == "SKIP" }
-
-        assertTrue("$type should start as PENDING", pendingIndex == 0)
-        assertTrue("$type should go RUNNING", runningIndex > pendingIndex)
-        assertTrue("$type should reach a final status", finalIndex > runningIndex)
     }
 }

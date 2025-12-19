@@ -411,7 +411,7 @@ This feature map was requested explicitly in the chat to confirm scope before re
 
 **Files typically involved (as stated in chat)**
 - `core/data/repository/test/MikroTikTestRepository.kt`
-- `data/repositoryimpl/mikrotik/MikroTikTestRepositoryImpl.kt`
+- `data/repository/mikrotik/MikroTikTestRepositoryRemote.kt`
 - `data/remote/mikrotik/mapper/MikroTikTestMappers.kt` (new)
 - `data/teststeps/*` (several steps)
 

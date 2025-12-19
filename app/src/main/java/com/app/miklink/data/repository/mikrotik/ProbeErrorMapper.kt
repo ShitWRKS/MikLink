@@ -1,10 +1,10 @@
 /*
  * Purpose: Map low-level probe connectivity exceptions to user-facing messages without leaking sensitive details.
- * Inputs: Throwable from connectivity attempts and a default fallback message for unknown cases.
+ * Inputs: Throwable from connectivity attempts and localized fallback messages.
  * Outputs: Human-readable error description, differentiating TLS handshake failures from generic errors.
  * Notes: Keeps HTTPS diagnostics centralized; does not alter security posture (no cipher weakening).
  */
-package com.app.miklink.data.repositoryimpl.mikrotik
+package com.app.miklink.data.repository.mikrotik
 
 import javax.net.ssl.SSLHandshakeException
 

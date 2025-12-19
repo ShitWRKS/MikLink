@@ -60,9 +60,10 @@ com.app.miklink
         mapper/                   # dto -> domain
         infra/                    # OkHttp, SSL policy, interceptors, Moshi adapters
         provider/                 # provider network binding (Android)
+        service/                  # MikroTikCallExecutor (unico path di chiamata, riusa factory/provider)
     repository/
       room/                       # RoomClientRepository, RoomReportRepository e simili
-      mikrotik/                   # MikroTik*Repository (per esempio MikroTikProbeStatusRepository)
+      mikrotik/                   # MikroTik*Repository (per esempio MikroTikProbeStatusRepository) senza suffisso Impl
       backup/                     # DefaultBackupRepository / BackupManagerImpl
       common/                     # componenti di composizione (es. RouteManager)
     pdf/
@@ -76,6 +77,7 @@ com.app.miklink
     feature/                      # vertical slice per feature (consigliato)
       probe/
       test/
+      test_details/               # renderer unificato live+history basato su TestRunSnapshot
       history/
       client/
       settings/

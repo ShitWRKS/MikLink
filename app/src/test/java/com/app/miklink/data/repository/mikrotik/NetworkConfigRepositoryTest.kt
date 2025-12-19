@@ -1,10 +1,10 @@
 /*
  * Purpose: Ensure static network configuration validates inputs and stops before hitting the API when CIDR or gateway are invalid.
- * Inputs: NetworkConfigRepositoryImpl invoked with fake MikroTikApiService/RouteManager and static client settings.
+ * Inputs: MikroTikNetworkConfigRepository invoked with fake MikroTikApiService/RouteManager and static client settings.
  * Outputs: Verification that valid input triggers addIpAddress/addRoute, while invalid CIDR/gateway fail fast with no API calls.
  * Notes: Protects against RouterOS HTTP 400 caused by malformed keys or addresses.
  */
-package com.app.miklink.data.repositoryimpl
+package com.app.miklink.data.repository.mikrotik
 
 import android.content.Context
 import com.app.miklink.core.domain.model.Client
@@ -16,6 +16,7 @@ import com.app.miklink.data.remote.mikrotik.service.MikroTikApiService
 import com.app.miklink.data.remote.mikrotik.service.MikroTikCallExecutor
 import com.app.miklink.data.remote.mikrotik.service.MikroTikServiceProvider
 import com.app.miklink.data.repository.RouteManager
+import com.app.miklink.data.repository.mikrotik.MikroTikNetworkConfigRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -23,14 +24,14 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Assert.fail
 import org.junit.Test
 
-class NetworkConfigRepositoryImplTest {
+class NetworkConfigRepositoryTest {
 
     private val context: Context = mockk(relaxed = true)
     private val api: MikroTikApiService = mockk(relaxed = true)
     private val serviceProvider: MikroTikServiceProvider = mockk()
     private val routeManager: RouteManager = mockk(relaxed = true)
     private val callExecutor = MikroTikCallExecutor(serviceProvider)
-    private val repo = NetworkConfigRepositoryImpl(context, callExecutor, routeManager)
+    private val repo = MikroTikNetworkConfigRepository(context, callExecutor, routeManager)
 
     private val probe = ProbeConfig(
         ipAddress = "192.168.0.10",

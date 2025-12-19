@@ -1,10 +1,10 @@
 /*
- * Purpose: MikroTik test repository implementation that binds Retrofit calls to the Wi-Fi network and returns domain data.
+ * Purpose: MikroTik test repository that binds Retrofit calls to the Wi-Fi network and returns domain data.
  * Inputs: Probe configuration plus per-call parameters (interface names, targets, credentials).
  * Outputs: Domain test models derived from MikroTik REST endpoints.
  * Notes: DTO usage stays internal; mapping is centralized in data/remote/mikrotik/mapper to keep ports clean.
  */
-package com.app.miklink.data.repositoryimpl.mikrotik
+package com.app.miklink.data.repository.mikrotik
 
 import com.app.miklink.core.data.repository.test.MikroTikTestRepository
 import com.app.miklink.core.domain.model.ProbeConfig
@@ -21,6 +21,7 @@ import com.app.miklink.data.remote.mikrotik.mapper.toDomain
 import com.app.miklink.data.remote.mikrotik.mapper.toLinkStatusData
 import com.app.miklink.data.remote.mikrotik.mapper.toMeasurement
 import com.app.miklink.data.remote.mikrotik.mapper.toSummary
+import com.app.miklink.data.remote.mikrotik.service.CallOutcome
 import com.app.miklink.data.remote.mikrotik.service.MikroTikCallExecutor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -28,10 +29,10 @@ import retrofit2.HttpException
 import javax.inject.Inject
 
 /**
- * Implementazione di MikroTikTestRepository che usa MikroTikApiService.
- * Centralizza il fallback HTTPS?HTTP tramite MikroTikCallExecutor e il binding WiFi via service provider.
+ * Implementazione remota di MikroTikTestRepository che usa MikroTikApiService.
+ * Centralizza il fallback HTTPS->HTTP tramite MikroTikCallExecutor e il binding WiFi via service provider.
  */
-class MikroTikTestRepositoryImpl @Inject constructor(
+class MikroTikTestRepositoryRemote @Inject constructor(
     private val callExecutor: MikroTikCallExecutor
 ) : MikroTikTestRepository {
 
@@ -40,11 +41,12 @@ class MikroTikTestRepositoryImpl @Inject constructor(
         interfaceName: String,
         once: Boolean
     ): LinkStatusData = withContext(Dispatchers.IO) {
-        callExecutor.execute(probe) { api ->
+        val outcome = callExecutor.executeWithOutcome(probe) { api ->
             val results = api.getLinkStatus(MonitorRequest(numbers = interfaceName, once = once))
             val latest = results.lastOrNull() ?: throw IllegalStateException("No link status returned")
             latest.toLinkStatusData()
-        }.value
+        }
+        outcome.getOrThrow()
     }
 
     override suspend fun cableTest(
@@ -52,13 +54,14 @@ class MikroTikTestRepositoryImpl @Inject constructor(
         interfaceName: String,
         once: Boolean
     ): CableTestSummary = withContext(Dispatchers.IO) {
-        callExecutor.execute(probe) { api ->
+        val outcome = callExecutor.executeWithOutcome(probe) { api ->
             val results = api.runCableTest(CableTestRequest(numbers = interfaceName, duration = "5s"))
             val validResult = results.lastOrNull {
                 it.cablePairs != null || it.status.lowercase() in listOf("ok", "open", "link-ok", "running")
             } ?: throw IllegalStateException("No valid cable test results found")
             validResult.toSummary()
-        }.value
+        }
+        outcome.getOrThrow()
     }
 
     override suspend fun ping(
@@ -67,19 +70,21 @@ class MikroTikTestRepositoryImpl @Inject constructor(
         interfaceName: String?,
         count: Int
     ): List<PingMeasurement> = withContext(Dispatchers.IO) {
-        callExecutor.execute(probe) { api ->
+        val outcome = callExecutor.executeWithOutcome(probe) { api ->
             api.runPing(PingRequest(address = target, `interface` = interfaceName, count = count.toString()))
                 .map { it.toMeasurement() }
-        }.value
+        }
+        outcome.getOrThrow()
     }
 
     override suspend fun neighbors(
         probe: ProbeConfig,
         interfaceName: String
     ): List<NeighborData> = withContext(Dispatchers.IO) {
-        callExecutor.execute(probe) { api ->
+        val outcome = callExecutor.executeWithOutcome(probe) { api ->
             api.getIpNeighbors(interfaceName).map { it.toDomain() }
-        }.value
+        }
+        outcome.getOrThrow()
     }
 
     override suspend fun speedTest(
@@ -89,7 +94,7 @@ class MikroTikTestRepositoryImpl @Inject constructor(
         password: String?,
         duration: String
     ): SpeedTestData = withContext(Dispatchers.IO) {
-        callExecutor.execute(probe) { api ->
+        val outcome = callExecutor.executeWithOutcome(probe) { api ->
             val requestBody = SpeedTestRequest(
                 address = serverAddress,
                 user = username ?: "admin",
@@ -108,6 +113,18 @@ class MikroTikTestRepositoryImpl @Inject constructor(
                     else -> throw HttpException(response)
                 }
             }
-        }.value
+        }
+        outcome.getOrThrow()
+    }
+}
+
+private fun <T> CallOutcome<T>.getOrThrow(): T {
+    return when (this) {
+        is CallOutcome.Success -> value
+        is CallOutcome.Failure -> {
+            val primary = failures.firstOrNull()?.throwable ?: IllegalStateException("Unknown call failure")
+            failures.drop(1).forEach { primary.addSuppressed(it.throwable) }
+            throw primary
+        }
     }
 }

@@ -70,6 +70,11 @@ Shared:
   - fakes for ports/use cases
 - UI instrumented tests in `app/src/androidTest` for navigation & rendering.
 
+### Test execution rendering (attuato)
+- Renderer unico (`ui/feature/test_details/*`) alimentato da `TestRunSnapshot` tipizzati.
+- Live e History riusano lo stesso renderer; vietato il parsing di mappe stringa o chiavi libere.
+- I report v1 vengono mappati a `TestRunSnapshot` per mantenere la compatibilità.
+
 ## Legacy cleanup policy
 
 Any UI that is not reachable from the navigation graph is considered **legacy** and must be removed (screen + VM + routes + tests).

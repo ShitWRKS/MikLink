@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -32,12 +33,16 @@ fun RawLogsPane(
     logs: List<String>,
     emptyLabel: String,
     modifier: Modifier = Modifier,
-    title: String? = null
+    title: String? = null,
+    autoScroll: Boolean = true,
+    colorize: Boolean = false,
+    minHeight: Dp = 140.dp,
+    maxHeight: Dp = 260.dp
 ) {
     val listState = rememberLazyListState()
 
     LaunchedEffect(logs.size) {
-        if (logs.isNotEmpty()) {
+        if (autoScroll && logs.isNotEmpty()) {
             listState.scrollToItem(logs.lastIndex)
         }
     }
@@ -45,7 +50,7 @@ fun RawLogsPane(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .heightIn(min = 140.dp, max = 260.dp)
+            .heightIn(min = minHeight, max = maxHeight)
             .clip(RoundedCornerShape(12.dp))
             .testTag(TestExecutionTags.LOG_PANE),
         color = MaterialTheme.colorScheme.surfaceVariant,
@@ -75,11 +80,18 @@ fun RawLogsPane(
                         .background(MaterialTheme.colorScheme.surfaceVariant)
                 ) {
                     itemsIndexed(logs) { index, line ->
+                        val color = when {
+                            colorize && line.contains("ERRORE", true) -> MaterialTheme.colorScheme.error
+                            colorize && line.contains("FAIL", true) -> MaterialTheme.colorScheme.error
+                            colorize && line.contains("FALLITO", true) -> MaterialTheme.colorScheme.error
+                            colorize && (line.contains("SUCCESSO", true) || line.contains("PASS", true)) -> MaterialTheme.colorScheme.primary
+                            else -> MaterialTheme.colorScheme.onSurfaceVariant
+                        }
                         Text(
                             text = line,
                             style = MaterialTheme.typography.bodySmall,
                             fontFamily = FontFamily.Monospace,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = color,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(vertical = 2.dp)

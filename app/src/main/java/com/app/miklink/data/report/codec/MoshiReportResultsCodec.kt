@@ -24,6 +24,7 @@ class MoshiReportResultsCodec @Inject constructor(
     }
 
     private data class ReportDataPayload(
+        val network: com.app.miklink.core.domain.model.report.NetworkData? = null,
         val linkStatus: com.app.miklink.core.domain.model.report.LinkStatusData? = null,
         val tdr: List<com.app.miklink.core.domain.model.report.TdrEntry>? = null,
         val neighbors: List<com.app.miklink.core.domain.model.report.NeighborData>? = null,
@@ -33,6 +34,7 @@ class MoshiReportResultsCodec @Inject constructor(
     ) {
         fun toDomain(): ReportData {
             return ReportData(
+                network = network,
                 linkStatus = linkStatus,
                 tdr = tdr.orEmpty(),
                 neighbors = neighbors.orEmpty(),
@@ -45,6 +47,7 @@ class MoshiReportResultsCodec @Inject constructor(
         companion object {
             fun fromDomain(data: ReportData): ReportDataPayload {
                 return ReportDataPayload(
+                    network = data.network,
                     linkStatus = data.linkStatus,
                     tdr = data.tdr,
                     neighbors = data.neighbors,

@@ -39,6 +39,8 @@ class ProbeEditViewModel @Inject constructor(
     private val _modelName = MutableStateFlow<String?>(null)
     private val _isOnline = MutableStateFlow(false)
     private val _tdrSupported = MutableStateFlow(false)
+    private var suppressVerificationReset = false
+    private var lastVerifiedConnection: ProbeConfig? = null
 
     // Internal verification state (used to update UI verification progress/result)
     private val _verificationState = MutableStateFlow<VerificationState>(VerificationState.Idle)
@@ -92,9 +94,11 @@ class ProbeEditViewModel @Inject constructor(
         viewModelScope.launch {
             connectionDetailsFlow
                 .drop(1) // Ignore initial value
-                .collect {
-                    if (_verificationState.value is VerificationState.Success) {
-                        _verificationState.value = VerificationState.Error("Probe details changed. Please verify again.")
+                .collect { currentConfig ->
+                    if (!suppressVerificationReset && _verificationState.value is VerificationState.Success) {
+                        if (lastVerifiedConnection != null && lastVerifiedConnection != currentConfig) {
+                            _verificationState.value = VerificationState.Error("Probe details changed. Please verify again.")
+                        }
                     }
                 }
         }
@@ -118,18 +122,19 @@ class ProbeEditViewModel @Inject constructor(
 
     fun onVerifyClicked() {
         viewModelScope.launch {
+            suppressVerificationReset = true
             _verificationState.value = VerificationState.Loading
             val tempProbe = connectionDetailsFlow.first()
 
             when (val result = probeConnectivityRepository.checkProbeConnection(tempProbe)) {
                 is ProbeCheckResult.Success -> {
-                    if (result.didFallbackToHttp) {
-                        isHttps.value = false
-                    }
+                    // Sync scheme with effective transport to reflect fallback or HTTPS success.
+                    isHttps.value = result.effectiveIsHttps
                     _isOnline.value = true
                     _tdrSupported.value = Compatibility.isTdrSupported(result.boardName)
                     _modelName.value = result.boardName
                     testInterface.value = result.interfaces.firstOrNull() ?: ""
+                    lastVerifiedConnection = tempProbe.copy(isHttps = result.effectiveIsHttps)
                     _verificationState.value = VerificationState.Success(
                         boardName = result.boardName,
                         interfaces = result.interfaces,
@@ -139,9 +144,11 @@ class ProbeEditViewModel @Inject constructor(
                 }
                 is ProbeCheckResult.Error -> {
                     _isOnline.value = false
+                    lastVerifiedConnection = null
                     _verificationState.value = VerificationState.Error(result.message)
                 }
             }
+            suppressVerificationReset = false
         }
     }
 
