@@ -49,6 +49,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
 import java.util.LinkedHashMap
+import com.app.miklink.core.domain.policy.TestQualityPolicy
+import com.app.miklink.utils.normalizeTime
 
 /**
  * Implementazione di RunTestUseCase.
@@ -75,6 +77,7 @@ class RunTestUseCaseImpl @Inject constructor(
     private val reportResultsCodec: ReportResultsCodec
 ) : RunTestUseCase {
     private val logSanitizer = LogSanitizer()
+    private val qualityPolicy = TestQualityPolicy()
 
     override fun execute(plan: TestPlan): Flow<TestEvent> = flow {
         suspend fun emitLog(message: String) {
@@ -237,15 +240,20 @@ class RunTestUseCaseImpl @Inject constructor(
                     is StepResult.Success -> {
                         val linkStatus = linkResult.data
                         reportData.linkStatus = linkStatus
+                        val evaluation = qualityPolicy.evaluateLink(linkStatus, profile, client)
+                        if (evaluation.status == TestSectionStatus.FAIL) {
+                            overallStatus = "FAIL"
+                        }
                         recordStep(
                             id = TestSectionId.LINK,
                             title = "Link",
-                            status = TestSectionStatus.PASS,
+                            status = evaluation.status,
                             rawData = linkRaw(linkStatus),
-                            payload = TestSectionPayload.Link(linkStatus)
+                            payload = TestSectionPayload.Link(linkStatus),
+                            warning = evaluation.warning
                         )
                         emitSnapshot()
-                        emitLog("[Link] PASS status=${linkStatus.status ?: "-"} rate=${linkStatus.rate ?: "-"}")
+                        emitLog("[Link] ${evaluation.status} status=${linkStatus.status ?: "-"} rate=${linkStatus.rate ?: "-"}")
                     }
                     is StepResult.Failed -> {
                         overallStatus = "FAIL"
@@ -304,15 +312,20 @@ class RunTestUseCaseImpl @Inject constructor(
                     is StepResult.Success -> {
                         val cableTest = tdrResult.data
                         reportData.tdr += cableTest.entries
+                        val evaluation = qualityPolicy.evaluateTdr(cableTest, profile)
+                        if (evaluation.status == TestSectionStatus.FAIL) {
+                            overallStatus = "FAIL"
+                        }
                         recordStep(
                             id = TestSectionId.TDR,
                             title = "TDR",
-                            status = TestSectionStatus.PASS,
+                            status = evaluation.status,
                             rawData = tdrRaw(cableTest),
-                            payload = TestSectionPayload.Tdr(cableTest.entries)
+                            payload = TestSectionPayload.Tdr(cableTest.entries),
+                            warning = evaluation.warning
                         )
                         emitSnapshot()
-                        emitLog("[TDR] PASS entries=${cableTest.entries.size}")
+                        emitLog("[TDR] ${evaluation.status} entries=${cableTest.entries.size}")
                     }
                     is StepResult.Failed -> {
                         val isFatal = tdrResult.error is TestError.Unsupported
@@ -446,15 +459,20 @@ class RunTestUseCaseImpl @Inject constructor(
                         val outcomes = pingResult.data
                         val samples = mapPingOutcomes(outcomes)
                         reportData.pingSamples += samples
+                        val evaluation = qualityPolicy.evaluatePing(outcomes, profile)
+                        if (evaluation.status == TestSectionStatus.FAIL) {
+                            overallStatus = "FAIL"
+                        }
                         recordStep(
                             id = TestSectionId.PING,
                             title = "Ping",
-                            status = TestSectionStatus.PASS,
+                            status = evaluation.status,
                             rawData = pingRaw(outcomes),
-                            payload = TestSectionPayload.Ping(samples)
+                            payload = TestSectionPayload.Ping(samples),
+                            warning = evaluation.warning
                         )
                         emitSnapshot()
-                        emitLog("[Ping] PASS targets=${outcomes.size}")
+                        emitLog("[Ping] ${evaluation.status} targets=${outcomes.size}${evaluation.warning?.let { " warn=$it" } ?: ""}")
                     }
                     is StepResult.Failed -> {
                         overallStatus = "FAIL"
@@ -511,15 +529,20 @@ class RunTestUseCaseImpl @Inject constructor(
                     is StepResult.Success -> {
                         val speed = speedResult.data
                         reportData.speedTest = speed
+                        val evaluation = qualityPolicy.evaluateSpeed(speed, profile)
+                        if (evaluation.status == TestSectionStatus.FAIL) {
+                            overallStatus = "FAIL"
+                        }
                         recordStep(
                             id = TestSectionId.SPEED,
                             title = "Speed Test",
-                            status = TestSectionStatus.PASS,
+                            status = evaluation.status,
                             rawData = speedRaw(speed, client.speedTestServerAddress),
-                            payload = TestSectionPayload.Speed(speed)
+                            payload = TestSectionPayload.Speed(speed),
+                            warning = evaluation.warning
                         )
                         emitSnapshot()
-                        emitLog("[SpeedTest] PASS download=${speed.tcpDownload ?: "-"} upload=${speed.tcpUpload ?: "-"}")
+                        emitLog("[SpeedTest] ${evaluation.status} download=${speed.tcpDownload ?: "-"} upload=${speed.tcpUpload ?: "-"}${evaluation.warning?.let { " warn=$it" } ?: ""}")
                     }
                     is StepResult.Failed -> {
                         val message = speedResult.error.message
@@ -591,14 +614,14 @@ class RunTestUseCaseImpl @Inject constructor(
                 samples += PingSample(
                     target = outcome.target,
                     host = result.host,
-                    minRtt = result.minRtt,
-                    avgRtt = result.avgRtt,
-                    maxRtt = result.maxRtt,
+                    minRtt = normalizeTime(result.minRtt),
+                    avgRtt = normalizeTime(result.avgRtt),
+                    maxRtt = normalizeTime(result.maxRtt),
                     packetLoss = outcome.packetLoss ?: result.packetLoss,
                     sent = result.sent,
                     received = result.received,
                     seq = result.seq,
-                    time = result.time,
+                    time = normalizeTime(result.time),
                     ttl = result.ttl,
                     size = result.size,
                     error = outcome.error

@@ -60,8 +60,14 @@ class PingSectionRenderer : SectionRenderer {
     @Composable
     private fun PingTargetBlock(target: String, samples: List<PingSample>) {
         val resolvedHost = samples.firstNotNullOfOrNull { it.host?.takeIf { host -> host.isNotBlank() } }
-        val lossText = samples.firstNotNullOfOrNull { it.packetLoss?.takeIf { value -> value.isNotBlank() } } ?: "-"
-        val sent = samples.firstNotNullOfOrNull { it.sent?.takeIf { value -> value.isNotBlank() } } ?: "-"
+        val rawLoss = samples.lastOrNull { !it.packetLoss.isNullOrBlank() }?.packetLoss ?: "-"
+        val lossText = when {
+            rawLoss == "-" -> rawLoss
+            rawLoss.trim().endsWith("%") -> rawLoss.trim()
+            else -> "${rawLoss.trim()}%"
+        }
+        val sent = samples.mapNotNull { it.sent?.toIntOrNull() }.maxOrNull()?.toString()
+            ?: samples.size.toString()
         val min = samples.firstNotNullOfOrNull { it.minRtt?.takeIf { value -> value.isNotBlank() } } ?: "-"
         val avg = samples.firstNotNullOfOrNull { it.avgRtt?.takeIf { value -> value.isNotBlank() } } ?: "-"
         val max = samples.firstNotNullOfOrNull { it.maxRtt?.takeIf { value -> value.isNotBlank() } } ?: "-"
@@ -86,29 +92,6 @@ class PingSectionRenderer : SectionRenderer {
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                Surface(
-                    color = lossChipColors.first,
-                    contentColor = lossChipColors.second,
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = if (lossText.trim().startsWith("0")) Icons.Default.CheckCircle else Icons.Default.Error,
-                            contentDescription = null,
-                            tint = lossChipColors.second,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = stringResource(id = R.string.test_details_ping_loss_chip, lossText.trim()),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
             }
 
             if (target.equals("DHCP_GATEWAY", ignoreCase = true) && !resolvedHost.isNullOrBlank()) {
@@ -164,20 +147,20 @@ class PingSectionRenderer : SectionRenderer {
                                 style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.SemiBold
                             )
-                            Text(
-                                text = stringResource(
-                                    id = R.string.test_details_ping_sample_value,
-                                    sample.time ?: "-",
-                                    sample.ttl ?: "-"
-                                ),
-                                style = MaterialTheme.typography.bodySmall,
-                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
-                            )
-                        }
+                        Text(
+                            text = stringResource(
+                                id = R.string.test_details_ping_sample_value,
+                                sample.time ?: "-",
+                                sample.ttl ?: "-"
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                        )
                     }
                 }
             }
         }
+    }
     }
 
     @Composable
@@ -190,30 +173,6 @@ class PingSectionRenderer : SectionRenderer {
             Text(value, style = MaterialTheme.typography.bodyMedium)
         }
     }
-
-    private fun parseNumber(raw: String?): Double? {
-        if (raw.isNullOrBlank()) return null
-        val cleaned = raw.lowercase().replace(",", ".").trim()
-        val msIndex = cleaned.indexOf("ms")
-        val usIndex = cleaned.indexOf("us")
-        return when {
-            msIndex >= 0 -> cleaned.take(msIndex)
-                .filter { it.isDigit() || it == '.' || it == '-' }
-                .toDoubleOrNull()
-            usIndex >= 0 -> cleaned.take(usIndex)
-                .filter { it.isDigit() || it == '.' || it == '-' }
-                .toDoubleOrNull()
-                ?.div(1000.0)
-            else -> cleaned.filter { it.isDigit() || it == '.' || it == '-' }.toDoubleOrNull()
-        }
-    }
-
-    private fun formatMs(value: Double): String =
-        when {
-            value < 1 -> "0ms"
-            value % 1.0 == 0.0 -> "${value.toInt()}ms"
-            else -> "%.1fms".format(value)
-        }
 
     private fun groupSamplesPreserveOrder(samples: List<PingSample>): Map<String?, List<PingSample>> {
         val order = LinkedHashMap<String?, MutableList<PingSample>>()

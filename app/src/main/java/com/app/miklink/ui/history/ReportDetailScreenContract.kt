@@ -2,6 +2,8 @@ package com.app.miklink.ui.history
 
 import com.app.miklink.core.domain.model.TestReport
 import com.app.miklink.core.domain.model.report.ReportData
+import com.app.miklink.core.data.pdf.PdfExportConfig
+import java.io.File
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -15,6 +17,7 @@ interface ReportDetailScreenStateProvider {
     val notes: MutableStateFlow<String>
     fun updateReportDetails()
     fun exportReportToPdf()
+    suspend fun generatePdf(config: PdfExportConfig): File?
     suspend fun buildRepeatRoute(): String?
     suspend fun deleteReport()
 }

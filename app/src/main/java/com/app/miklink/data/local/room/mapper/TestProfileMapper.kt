@@ -1,3 +1,9 @@
+/*
+ * Purpose: Map Room TestProfileEntity to domain TestProfile and back, including thresholds serialization.
+ * Inputs: Entities from Room and domain TestProfile instances with optional thresholds.
+ * Outputs: Converted domain objects or entities ready for persistence.
+ * Notes: Thresholds fall back to defaults if deserialization fails.
+ */
 package com.app.miklink.data.local.room.mapper
 
 import com.app.miklink.core.domain.model.TestProfile
@@ -16,7 +22,8 @@ fun TestProfileEntity.toDomain(): TestProfile {
         pingTarget2 = pingTarget2,
         pingTarget3 = pingTarget3,
         pingCount = pingCount,
-        runSpeedTest = runSpeedTest
+        runSpeedTest = runSpeedTest,
+        thresholds = thresholdsJson.toThresholdsOrDefault()
     )
 }
 
@@ -33,6 +40,7 @@ fun TestProfile.toEntity(): TestProfileEntity {
         pingTarget2 = pingTarget2,
         pingTarget3 = pingTarget3,
         pingCount = pingCount,
-        runSpeedTest = runSpeedTest
+        runSpeedTest = runSpeedTest,
+        thresholdsJson = thresholds.toJsonOrNull()
     )
 }

@@ -140,8 +140,35 @@ class ReportDetailViewModel @Inject constructor(
 
 
     override fun exportReportToPdf() {
-        // No-op: la stampa è demandata alla UI
-        _pdfStatus.value = ""
+        viewModelScope.launch {
+            val currentReport = report.value
+            if (currentReport == null) {
+                _pdfStatus.value = "Report non disponibile"
+                return@launch
+            }
+
+            val profileForReport = currentReport.profileName?.let { name ->
+                profileRepository.observeAllProfiles().firstOrNull()?.find { it.profileName == name }
+            }
+            val client = currentReport.clientId?.let { clientRepository.getClient(it) }
+
+            val file = withContext(Dispatchers.IO) {
+                runCatching {
+                    pdfGenerator.generateSingleTestPdf(
+                        report = currentReport,
+                        client = client,
+                        profile = profileForReport,
+                        reportTitle = pdfReportTitle.value
+                    )
+                }.getOrNull()
+            }
+            _pdfStatus.value = file?.let { "PDF generato: ${it.absolutePath}" }
+                ?: "Impossibile generare il PDF"
+        }
+    }
+
+    override suspend fun generatePdf(config: PdfExportConfig): java.io.File? {
+        return generatePdfWithIText(config)
     }
 
     override suspend fun buildRepeatRoute(): String? = withContext(Dispatchers.IO) {

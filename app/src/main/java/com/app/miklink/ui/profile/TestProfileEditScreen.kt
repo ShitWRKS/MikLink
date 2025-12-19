@@ -39,6 +39,19 @@ fun TestProfileEditScreen(
     val pingCount by viewModel.pingCount.collectAsStateWithLifecycle()
     val runSpeedTest by viewModel.runSpeedTest.collectAsStateWithLifecycle()
     val availableSlots by viewModel.availableSlots.collectAsStateWithLifecycle()
+    val linkMinRate by viewModel.linkMinRate.collectAsStateWithLifecycle()
+    val pingLocalMaxLoss by viewModel.pingLocalMaxLoss.collectAsStateWithLifecycle()
+    val pingLocalMaxAvgRtt by viewModel.pingLocalMaxAvgRtt.collectAsStateWithLifecycle()
+    val pingLocalMaxRtt by viewModel.pingLocalMaxRtt.collectAsStateWithLifecycle()
+    val pingExternalMaxLoss by viewModel.pingExternalMaxLoss.collectAsStateWithLifecycle()
+    val pingExternalMaxAvgRtt by viewModel.pingExternalMaxAvgRtt.collectAsStateWithLifecycle()
+    val pingExternalMaxRtt by viewModel.pingExternalMaxRtt.collectAsStateWithLifecycle()
+    val gatewayPolicyFail by viewModel.gatewayPolicyFail.collectAsStateWithLifecycle()
+    val speedMaxPing by viewModel.speedMaxPing.collectAsStateWithLifecycle()
+    val speedMaxJitter by viewModel.speedMaxJitter.collectAsStateWithLifecycle()
+    val speedMaxLoss by viewModel.speedMaxLoss.collectAsStateWithLifecycle()
+    val speedMinDownload by viewModel.speedMinDownload.collectAsStateWithLifecycle()
+    val speedMinUpload by viewModel.speedMinUpload.collectAsStateWithLifecycle()
 
     var pingConfigExpanded by remember { mutableStateOf(false) }
     var showTarget2 by remember { mutableStateOf(pingTarget2.isNotBlank()) }
@@ -292,6 +305,108 @@ fun TestProfileEditScreen(
                     }
                 }
             }
+
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text("Soglie qualita test", style = MaterialTheme.typography.titleMedium)
+                        Text("Configura i criteri di pass/fail per ogni sezione. I valori vuoti usano le predefinite.", style = MaterialTheme.typography.bodySmall)
+
+                        Text("Link", style = MaterialTheme.typography.labelLarge)
+                        OutlinedTextField(
+                            value = linkMinRate,
+                            onValueChange = { viewModel.linkMinRate.value = it },
+                            label = { Text("Velocita minima (es. 1G, 100M)") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+
+                        HorizontalDivider()
+
+                        Text("Ping locale (gateway/rete interna)", style = MaterialTheme.typography.labelLarge)
+                        ThresholdRow(
+                            leftLabel = "Loss %",
+                            leftValue = pingLocalMaxLoss,
+                            onLeftChange = { viewModel.pingLocalMaxLoss.value = it },
+                            rightLabel = "Avg RTT ms",
+                            rightValue = pingLocalMaxAvgRtt,
+                            onRightChange = { viewModel.pingLocalMaxAvgRtt.value = it }
+                        )
+                        ThresholdRow(
+                            leftLabel = "Max RTT ms",
+                            leftValue = pingLocalMaxRtt,
+                            onLeftChange = { viewModel.pingLocalMaxRtt.value = it },
+                            rightLabel = "-",
+                            rightValue = "",
+                            onRightChange = {},
+                            rightEnabled = false
+                        )
+
+                        Text("Ping esterno", style = MaterialTheme.typography.labelLarge)
+                        ThresholdRow(
+                            leftLabel = "Loss %",
+                            leftValue = pingExternalMaxLoss,
+                            onLeftChange = { viewModel.pingExternalMaxLoss.value = it },
+                            rightLabel = "Avg RTT ms",
+                            rightValue = pingExternalMaxAvgRtt,
+                            onRightChange = { viewModel.pingExternalMaxAvgRtt.value = it }
+                        )
+                        ThresholdRow(
+                            leftLabel = "Max RTT ms",
+                            leftValue = pingExternalMaxRtt,
+                            onLeftChange = { viewModel.pingExternalMaxRtt.value = it },
+                            rightLabel = "Gateway DHCP",
+                            rightValue = "",
+                            onRightChange = {},
+                            rightEnabled = false,
+                            trailingContent = {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("Fail se non risolto", style = MaterialTheme.typography.bodySmall)
+                                    Switch(
+                                        checked = gatewayPolicyFail,
+                                        onCheckedChange = { viewModel.gatewayPolicyFail.value = it }
+                                    )
+                                }
+                            }
+                        )
+
+                        HorizontalDivider()
+
+                        Text("Speed Test", style = MaterialTheme.typography.labelLarge)
+                        ThresholdRow(
+                            leftLabel = "Ping ms",
+                            leftValue = speedMaxPing,
+                            onLeftChange = { viewModel.speedMaxPing.value = it },
+                            rightLabel = "Jitter ms",
+                            rightValue = speedMaxJitter,
+                            onRightChange = { viewModel.speedMaxJitter.value = it }
+                        )
+                        ThresholdRow(
+                            leftLabel = "Loss %",
+                            leftValue = speedMaxLoss,
+                            onLeftChange = { viewModel.speedMaxLoss.value = it },
+                            rightLabel = "Down Mbps",
+                            rightValue = speedMinDownload,
+                            onRightChange = { viewModel.speedMinDownload.value = it }
+                        )
+                        ThresholdRow(
+                            leftLabel = "Up Mbps",
+                            leftValue = speedMinUpload,
+                            onLeftChange = { viewModel.speedMinUpload.value = it },
+                            rightLabel = "",
+                            rightValue = "",
+                            onRightChange = {},
+                            rightEnabled = false
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -304,4 +419,46 @@ private fun SwitchListItem(checked: Boolean, onCheckedChange: (Boolean) -> Unit,
         trailingContent = { Switch(checked = checked, onCheckedChange = onCheckedChange) },
         modifier = Modifier.fillMaxWidth()
     )
+}
+
+@Composable
+private fun ThresholdRow(
+    leftLabel: String,
+    leftValue: String,
+    onLeftChange: (String) -> Unit,
+    rightLabel: String,
+    rightValue: String,
+    onRightChange: (String) -> Unit,
+    rightEnabled: Boolean = true,
+    trailingContent: @Composable (() -> Unit)? = null
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        OutlinedTextField(
+            value = leftValue,
+            onValueChange = onLeftChange,
+            label = { Text(leftLabel) },
+            modifier = Modifier.weight(1f),
+            singleLine = true
+        )
+        if (rightLabel.isNotBlank()) {
+            OutlinedTextField(
+                value = rightValue,
+                onValueChange = onRightChange,
+                label = { Text(rightLabel) },
+                modifier = Modifier.weight(1f),
+                singleLine = true,
+                enabled = rightEnabled
+            )
+        } else {
+            Spacer(modifier = Modifier.weight(1f))
+        }
+        trailingContent?.let { content ->
+            Spacer(modifier = Modifier.width(4.dp))
+            content()
+        }
+    }
 }

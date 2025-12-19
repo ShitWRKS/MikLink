@@ -26,9 +26,11 @@ import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.Percent
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -73,6 +75,8 @@ import com.app.miklink.core.domain.model.TestReport
 import com.app.miklink.core.domain.model.report.ReportData
 import com.app.miklink.core.domain.test.model.TestSectionId
 import com.app.miklink.core.domain.test.model.TestSectionStatus
+import com.app.miklink.core.data.pdf.PdfExportConfig
+import kotlin.math.roundToInt
 import com.app.miklink.ui.feature.test_details.ReportDataToSnapshotMapper
 import com.app.miklink.ui.feature.test_details.SectionRendererRegistry
 import com.app.miklink.ui.feature.test_details.renderers.LinkSectionRenderer
@@ -86,8 +90,12 @@ import com.app.miklink.utils.normalizeTime
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Locale
+import java.io.File
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.FileProvider
 
 @Composable
 fun ReportDetailScreen(
@@ -112,11 +120,17 @@ fun ReportDetailScreen(
     val socketName by stateProvider.socketName.collectAsStateWithLifecycle()
     val notes by stateProvider.notes.collectAsStateWithLifecycle()
     val clientName by stateProvider.clientName.collectAsStateWithLifecycle()
+    val exportingSingleMessage = stringResource(id = R.string.history_exporting_single)
+    val pdfGeneratedMessage = stringResource(id = R.string.history_pdf_generated)
+    val noPdfViewerMessage = stringResource(id = R.string.history_no_pdf_viewer)
+    val pdfGenerationErrorMessage = stringResource(id = R.string.history_pdf_generation_error)
 
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showRepeatDialog by remember { mutableStateOf(false) }
+    var showExportDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(pdfStatus) {
         if (pdfStatus.isNotBlank()) {
@@ -153,7 +167,7 @@ fun ReportDetailScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { stateProvider.exportReportToPdf() }) {
+                    IconButton(onClick = { showExportDialog = true }) {
                         Icon(Icons.Filled.PictureAsPdf, contentDescription = null)
                     }
                 },
@@ -211,6 +225,45 @@ fun ReportDetailScreen(
                 }
             }
         }
+    }
+
+    if (showExportDialog && report != null) {
+        PdfExportDialog(
+            clientName = clientName.ifBlank { "Report" },
+            onDismiss = { showExportDialog = false },
+            onConfirm = { config ->
+                showExportDialog = false
+                coroutineScope.launch {
+                    try {
+                        snackbarHostState.showSnackbar(exportingSingleMessage)
+                        val pdfFile = stateProvider.generatePdf(config)
+                        if (pdfFile != null && pdfFile.exists() && pdfFile.length() > 0) {
+                            val uri = FileProvider.getUriForFile(
+                                context,
+                                "${context.packageName}.fileprovider",
+                                pdfFile
+                            )
+                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                                setDataAndType(uri, "application/pdf")
+                                addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                            }
+                            try {
+                                context.startActivity(intent)
+                                snackbarHostState.showSnackbar(pdfGeneratedMessage)
+                            } catch (_: android.content.ActivityNotFoundException) {
+                                snackbarHostState.showSnackbar(noPdfViewerMessage)
+                            }
+                        } else {
+                            snackbarHostState.showSnackbar(pdfGenerationErrorMessage)
+                        }
+                    } catch (e: Exception) {
+                        android.util.Log.e("ReportDetailPDF", "Error generating PDF", e)
+                        snackbarHostState.showSnackbar(pdfGenerationErrorMessage)
+                    }
+                }
+            }
+        )
     }
 
     if (showDeleteDialog) {
@@ -304,16 +357,16 @@ private fun ReportHero(report: TestReport, results: ReportData?, modifier: Modif
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                val pingSummary = results?.pingSamples?.lastOrNull()
+                val pingSamples = results?.pingSamples
                 QuickStatItem(
                     label = stringResource(id = R.string.report_detail_stat_ping_avg),
-                    value = normalizeTime(pingSummary?.avgRtt),
-                    icon = Icons.Default.Wifi
+                    value = avgPingDisplay(pingSamples),
+                    icon = Icons.Default.Timer
                 )
                 QuickStatItem(
                     label = stringResource(id = R.string.report_detail_stat_loss),
-                    value = "${pingSummary?.packetLoss ?: "0"}%",
-                    icon = Icons.Default.Wifi
+                    value = lossDisplay(pingSamples),
+                    icon = Icons.Default.Percent
                 )
                 QuickStatItem(
                     label = stringResource(id = R.string.report_detail_stat_speed),
@@ -331,6 +384,34 @@ private fun QuickStatItem(label: String, value: String, icon: androidx.compose.u
         Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
         Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+private fun avgPingDisplay(samples: List<com.app.miklink.core.domain.model.report.PingSample>?): String {
+    val values = samples.orEmpty()
+        .mapNotNull { it.avgRtt?.let(::parseMs) }
+    if (values.isEmpty()) return "N/A"
+    val avg = values.average()
+    return "${avg.roundToInt()}ms"
+}
+
+private fun lossDisplay(samples: List<com.app.miklink.core.domain.model.report.PingSample>?): String {
+    val lossRaw = samples.orEmpty().lastOrNull { !it.packetLoss.isNullOrBlank() }?.packetLoss?.trim()
+    return when {
+        lossRaw.isNullOrBlank() -> "0%"
+        lossRaw.endsWith("%") -> lossRaw
+        else -> "$lossRaw%"
+    }
+}
+
+private fun parseMs(raw: String): Double? {
+    val cleaned = raw.lowercase().trim()
+    val regex = Regex("""(\d+(?:\.\d+)?)(ms|s)?""")
+    val match = regex.find(cleaned) ?: return null
+    val value = match.groupValues[1].toDoubleOrNull() ?: return null
+    return when (match.groupValues.getOrNull(2)) {
+        "s" -> value * 1000.0
+        else -> value
     }
 }
 
@@ -540,6 +621,8 @@ private fun PreviewReportDetail() {
 }
 
 private class FakeReportDetailProvider : ReportDetailScreenStateProvider {
+    private val _pdfStatus = MutableStateFlow("")
+
     override val report: StateFlow<TestReport?> = MutableStateFlow(
         TestReport(
             reportId = 1,
@@ -575,12 +658,13 @@ private class FakeReportDetailProvider : ReportDetailScreenStateProvider {
             extra = mapOf("client" to "Client")
         )
     )
-    override val pdfStatus: StateFlow<String> = MutableStateFlow("")
+    override val pdfStatus: StateFlow<String> = _pdfStatus
     override val clientName: StateFlow<String> = MutableStateFlow("Client Preview")
     override val socketName: MutableStateFlow<String> = MutableStateFlow("Presa 1")
     override val notes: MutableStateFlow<String> = MutableStateFlow("Nota di test")
     override fun updateReportDetails() {}
-    override fun exportReportToPdf() {}
+    override fun exportReportToPdf() { _pdfStatus.value = "PDF generato" }
+    override suspend fun generatePdf(config: com.app.miklink.core.data.pdf.PdfExportConfig): java.io.File? = null
     override suspend fun buildRepeatRoute(): String? = null
     override suspend fun deleteReport() {}
 }

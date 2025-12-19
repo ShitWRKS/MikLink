@@ -64,7 +64,8 @@ class PingTargetResolverContractTest {
         pingTarget1 = "8.8.8.8",
         pingTarget2 = null,
         pingTarget3 = null,
-        pingCount = 4
+        pingCount = 4,
+        thresholds = com.app.miklink.core.domain.model.TestThresholds.defaults()
     )
 
     @Test

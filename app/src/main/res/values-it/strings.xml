@@ -304,6 +304,9 @@
     <string name="test_details_tdr_status">Stato: %1$s</string>
     <string name="test_details_tdr_distance">Distanza: %1$s</string>
     <string name="test_details_tdr_pair">Coppia: %1$s</string>
+    <string name="test_details_tdr_status_label">Stato</string>
+    <string name="test_details_tdr_distance_label">Distanza</string>
+    <string name="test_details_tdr_pair_label">Coppia</string>
     <string name="test_details_neighbors_empty">Nessun neighbor rilevato</string>
     <string name="test_details_ping_empty">Nessun ping disponibile</string>
     <string name="test_details_speed_empty">Nessun speed test disponibile</string>

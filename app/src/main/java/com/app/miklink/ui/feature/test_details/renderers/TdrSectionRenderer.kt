@@ -6,7 +6,10 @@
  */
 package com.app.miklink.ui.feature.test_details.renderers
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
@@ -31,22 +34,29 @@ class TdrSectionRenderer : SectionRenderer {
             return
         }
         Column(modifier = modifier.fillMaxWidth()) {
-            entries.forEach { entry ->
-                Text(
-                    text = stringResource(id = R.string.test_details_tdr_status, entry.status ?: "-"),
-                    fontWeight = FontWeight.SemiBold
-                )
+            entries.forEachIndexed { index, entry ->
+                StatRow(label = stringResource(id = R.string.test_details_tdr_status_label), value = entry.status ?: "-")
                 entry.distance?.let {
-                    Text(stringResource(id = R.string.test_details_tdr_distance, it))
+                    StatRow(label = stringResource(id = R.string.test_details_tdr_distance_label), value = it)
                 }
                 entry.description?.let {
-                    Text(stringResource(id = R.string.test_details_tdr_pair, it))
+                    StatRow(label = stringResource(id = R.string.test_details_tdr_pair_label), value = it)
                 }
-                Text(
-                    text = "",
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
+                if (index < entries.lastIndex) {
+                    Spacer(modifier = Modifier.padding(bottom = 8.dp))
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun StatRow(label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(value, fontWeight = FontWeight.SemiBold)
     }
 }

@@ -69,6 +69,7 @@ class SaveTestProfileUseCaseTest {
         pingTarget2 = null,
         pingTarget3 = null,
         pingCount = 4,
-        runSpeedTest = false
+        runSpeedTest = false,
+        thresholds = com.app.miklink.core.domain.model.TestThresholds.defaults()
     )
 }

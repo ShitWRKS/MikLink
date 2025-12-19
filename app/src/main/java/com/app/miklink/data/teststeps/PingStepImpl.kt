@@ -36,7 +36,6 @@ class PingStepImpl @Inject constructor(
         }
 
         val outcomes = mutableListOf<PingTargetOutcome>()
-        var allPingsPassed = true
 
         for (target in pingTargets) {
             try {
@@ -49,7 +48,6 @@ class PingStepImpl @Inject constructor(
                 )
 
                 if (resolvedTarget.equals("DHCP_GATEWAY", ignoreCase = true)) {
-                    // Gateway non risolto: skip questo target
                     outcomes.add(
                         PingTargetOutcome(
                             target = target,
@@ -69,13 +67,7 @@ class PingStepImpl @Inject constructor(
                     count = context.testProfile.pingCount
                 )
 
-                // Verifica packet loss per determinare se questo target ha avuto successo
-                val lastResult = measurements.lastOrNull()
-                val packetLoss = lastResult?.packetLoss ?: "100"
-                val numericLoss = packetLoss.filter { it.isDigit() || it == '.' }.toDoubleOrNull() ?: 100.0
-                if (numericLoss > 0.0) {
-                    allPingsPassed = false
-                }
+                val packetLoss = measurements.lastOrNull()?.packetLoss
                 outcomes.add(
                     PingTargetOutcome(
                         target = target,
@@ -86,7 +78,6 @@ class PingStepImpl @Inject constructor(
                     )
                 )
             } catch (e: Exception) {
-                allPingsPassed = false
                 outcomes.add(
                     PingTargetOutcome(
                         target = target,
@@ -100,10 +91,10 @@ class PingStepImpl @Inject constructor(
         }
 
         val hasValidTargets = outcomes.any { it.results.isNotEmpty() }
-        return when {
-            allPingsPassed && hasValidTargets -> StepResult.Success(outcomes)
-            !hasValidTargets -> StepResult.Skipped(TestSkipReason.PING_NO_VALID_TARGETS)
-            else -> StepResult.Failed(TestError.NetworkError("Alcuni ping sono falliti"), outcomes)
+        return if (hasValidTargets) {
+            StepResult.Success(outcomes)
+        } else {
+            StepResult.Skipped(TestSkipReason.PING_NO_VALID_TARGETS)
         }
     }
 }

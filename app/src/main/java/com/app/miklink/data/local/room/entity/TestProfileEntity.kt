@@ -1,3 +1,9 @@
+/*
+ * Purpose: Room entity for test profiles including enabled steps, ping targets, and serialized thresholds.
+ * Inputs: Profile fields from the UI/domain layer; thresholdsJson stores TestThresholds as JSON.
+ * Outputs: Persisted rows backing domain TestProfile instances.
+ * Notes: thresholdsJson keeps schema changes minimal while allowing future threshold extensions.
+ */
 package com.app.miklink.data.local.room.entity
 
 import androidx.room.Entity
@@ -17,5 +23,6 @@ data class TestProfileEntity(
     val pingTarget2: String?,
     val pingTarget3: String?,
     val pingCount: Int,
-    val runSpeedTest: Boolean
+    val runSpeedTest: Boolean,
+    val thresholdsJson: String? = null
 )

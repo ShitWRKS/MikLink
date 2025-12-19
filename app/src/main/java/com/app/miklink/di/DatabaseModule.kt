@@ -10,9 +10,11 @@ import android.content.Context
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.app.miklink.core.domain.model.TestThresholds
 import com.app.miklink.data.local.room.MikLinkDatabase
 import com.app.miklink.data.local.room.dao.TestProfileDao
 import com.app.miklink.data.local.room.entity.TestProfileEntity
+import com.app.miklink.data.local.room.mapper.toJsonOrNull
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -66,7 +68,8 @@ object DatabaseModule {
                 pingTarget2 = "8.8.8.8",
                 pingTarget3 = null,
                 pingCount = 4,
-                runSpeedTest = false
+                runSpeedTest = false,
+                thresholdsJson = TestThresholds.defaults().toJsonOrNull()
             )
         )
         testProfileDao.insert(
@@ -81,7 +84,8 @@ object DatabaseModule {
                 pingTarget2 = null,
                 pingTarget3 = null,
                 pingCount = 4,
-                runSpeedTest = false
+                runSpeedTest = false,
+                thresholdsJson = TestThresholds.defaults().toJsonOrNull()
             )
         )
     }

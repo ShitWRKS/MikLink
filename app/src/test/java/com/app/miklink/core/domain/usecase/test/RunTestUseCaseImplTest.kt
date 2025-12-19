@@ -179,7 +179,8 @@ class RunTestUseCaseImplTest {
             pingTarget2 = null,
             pingTarget3 = null,
             pingCount = 4,
-            runSpeedTest = true
+            runSpeedTest = true,
+            thresholds = com.app.miklink.core.domain.model.TestThresholds.defaults()
         )
 
         coEvery { clientRepository.getClient(1) } returns client
