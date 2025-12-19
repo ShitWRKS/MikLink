@@ -1,3 +1,8 @@
+/*
+ * Purpose: Dashboard screen for selecting client/profile, starting tests, and showing probe status/glow.
+ * Inputs: DashboardViewModel state (clients, profiles, probe online, glow intensity, socket suggestion) and NavController.
+ * Outputs: UI for CTA, selection sheets, and navigation to history/settings/test execution.
+ */
 package com.app.miklink.ui.dashboard
 
 import android.net.Uri
@@ -34,11 +39,15 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import com.app.miklink.core.domain.model.TestProfile
 import com.app.miklink.ui.components.MinimalListItem
 import com.app.miklink.ui.components.ModernSearchBar
 import com.app.miklink.ui.components.StatusBadge
 import com.app.miklink.ui.navigateDashboard
+import com.app.miklink.ui.profile.TestBadge
 import com.app.miklink.ui.theme.Spacing
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 
 import androidx.compose.ui.res.stringResource
 import com.app.miklink.R
@@ -285,6 +294,9 @@ fun DashboardScreen(
                     icon = Icons.Default.Speed,
                     isSelected = selectedProfile != null,
                     onClick = { showProfileSheet = true },
+                    badges = selectedProfile?.let { prof ->
+                        { ProfileTestsRow(profile = prof, modifier = Modifier.padding(top = 6.dp)) }
+                    },
                     modifier = Modifier.weight(1f)
                 )
                 
@@ -410,6 +422,9 @@ fun DashboardScreen(
                             onClick = {
                                 viewModel.selectedProfile.value = profile
                                 showProfileSheet = false
+                            },
+                            trailingContent = {
+                                ProfileTestsRow(profile = profile)
                             }
                         )
                     }
@@ -470,7 +485,8 @@ private fun SelectionCard(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     isSelected: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    badges: (@Composable () -> Unit)? = null
 ) {
     Card(
         modifier = modifier
@@ -520,11 +536,14 @@ private fun SelectionCard(
                     fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                if (subtitle.isNotBlank()) {
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                badges?.invoke()
             }
             
             Icon(
@@ -532,6 +551,31 @@ private fun SelectionCard(
                 contentDescription = "Select",
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
+        }
+    }
+}
+
+@Composable
+private fun ProfileTestsRow(profile: TestProfile, modifier: Modifier = Modifier) {
+    FlowRow(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        if (profile.runTdr) {
+            TestBadge(label = "TDR", color = Color(0xFF2F6F4E)) // align with success tone
+        }
+        if (profile.runLinkStatus) {
+            TestBadge(label = "LINK", color = MaterialTheme.colorScheme.primary)
+        }
+        if (profile.runLldp) {
+            TestBadge(label = "LLDP", color = Color(0xFFFFA726))
+        }
+        if (profile.runPing) {
+            TestBadge(label = "PING", color = MaterialTheme.colorScheme.primary)
+        }
+        if (profile.runSpeedTest) {
+            TestBadge(label = "SPEED", color = MaterialTheme.colorScheme.secondary)
         }
     }
 }

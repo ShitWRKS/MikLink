@@ -1,3 +1,8 @@
+/*
+ * Purpose: Compact selectable list item with optional trailing content and selection border.
+ * Inputs: Title/subtitle, icon, selection flag, click handler, optional trailing composable (e.g., badges).
+ * Outputs: Row-styled item used in sheets/lists with selection highlighting.
+ */
 package com.app.miklink.ui.components
 
 import androidx.compose.foundation.BorderStroke
