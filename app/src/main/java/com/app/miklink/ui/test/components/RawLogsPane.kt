@@ -1,7 +1,5 @@
 /*
- * Purpose: Render a bounded, scrollable list of execution logs with auto-scroll to the latest entry.
- * Inputs: List of sanitized log lines, optional title, empty state label, and modifiers for layout/styling.
- * Outputs: Compose UI showing logs with semantics tags for instrumentation tests.
+ * UI logs pane, input log lines and display options, output scrollable console-style rendering.
  */
 package com.app.miklink.ui.test.components
 
@@ -15,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -28,6 +25,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.app.miklink.ui.theme.MikLinkThemeTokens
 import com.app.miklink.ui.theme.MonoBody
+import com.app.miklink.ui.theme.MikLinkShapeTokens
 
 @Composable
 fun RawLogsPane(
@@ -53,16 +51,16 @@ fun RawLogsPane(
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = minHeight, max = maxHeight)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(MikLinkShapeTokens.containedMedium)
             .testTag(TestExecutionTags.LOG_PANE),
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        tonalElevation = 1.dp
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        tonalElevation = 2.dp
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             if (!title.isNullOrBlank()) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.titleSmall,
+                    style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(4.dp))
@@ -79,7 +77,7 @@ fun RawLogsPane(
                     state = listState,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .background(MaterialTheme.colorScheme.surfaceContainerHighest)
                 ) {
                     itemsIndexed(logs) { index, line ->
                         val color = when {

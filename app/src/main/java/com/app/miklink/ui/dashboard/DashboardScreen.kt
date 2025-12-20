@@ -1,12 +1,9 @@
 /*
- * Purpose: Dashboard screen for selecting client/profile, starting tests, and showing probe status/glow.
- * Inputs: DashboardViewModel state (clients, profiles, probe online, glow intensity, socket suggestion) and NavController.
- * Outputs: UI for CTA, selection sheets, and navigation to history/settings/test execution.
+ * UI dashboard screen, input setup/probe state, output expressive setup flow and sticky CTA rendering.
  */
 package com.app.miklink.ui.dashboard
 
 import android.net.Uri
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -14,45 +11,59 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Label
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Business
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import com.app.miklink.R
 import com.app.miklink.core.domain.model.TestProfile
+import com.app.miklink.ui.components.AppTopBar
 import com.app.miklink.ui.components.MinimalListItem
-import com.app.miklink.ui.components.ModernSearchBar
-import com.app.miklink.ui.components.StatusBadge
-import com.app.miklink.ui.navigateDashboard
+import com.app.miklink.ui.components.PrimaryStickyCTA
+import com.app.miklink.ui.components.SetupWizardCard
 import com.app.miklink.ui.profile.TestBadge
-import com.app.miklink.ui.theme.Spacing
+import com.app.miklink.ui.theme.MikLinkThemeTokens
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 
-import androidx.compose.ui.res.stringResource
-import com.app.miklink.R
-
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun DashboardScreen(
     navController: NavController,
@@ -69,302 +80,203 @@ fun DashboardScreen(
     val glowIntensity by viewModel.dashboardGlowIntensity.collectAsStateWithLifecycle()
 
     val isTestButtonEnabled = selectedClient != null && currentProbe != null &&
-                            selectedProfile != null && socketName.isNotBlank()
+        selectedProfile != null && socketName.isNotBlank()
 
-
-    // Ambient Glow Colors
-    val targetGlowColor = if (currentProbe == null) {
-        MaterialTheme.colorScheme.primary.copy(alpha = 0.05f) // Default subtle glow
-    } else if (isProbeOnline) {
-        com.app.miklink.ui.theme.TechGreen.copy(alpha = glowIntensity) // Online Green Glow with dynamic alpha
-    } else {
-        com.app.miklink.ui.theme.TechRed.copy(alpha = glowIntensity) // Offline Red Glow with dynamic alpha
+    val semantic = MikLinkThemeTokens.semantic
+    val normalizedGlow = glowIntensity.coerceIn(0f, 1f)
+    val baseGlowColor = when {
+        currentProbe == null -> MaterialTheme.colorScheme.primary
+        isProbeOnline -> semantic.success
+        else -> semantic.failure
     }
-
-    val glowColor by animateColorAsState(targetValue = targetGlowColor, label = "glow_color", animationSpec = tween(1000))
-
-    // Sheet State
-    var showClientSheet by remember { mutableStateOf(false) }
-    var showProfileSheet by remember { mutableStateOf(false) }
-    val sheetState = rememberModalBottomSheetState()
-
-    // Pulse animation for the button
-    val infiniteTransition = rememberInfiniteTransition(label = "button_pulse")
-    val buttonAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.8f,
+    val glowAlpha = when {
+        currentProbe == null -> 0.05f + 0.12f * normalizedGlow
+        isProbeOnline -> 0.12f + 0.28f * normalizedGlow
+        else -> 0.12f + 0.32f * normalizedGlow
+    }
+    val glowColor by animateColorAsState(
+        targetValue = baseGlowColor.copy(alpha = glowAlpha.coerceIn(0f, 1f)),
+        label = "dashboard_glow"
+    )
+    val glowTransition = rememberInfiniteTransition(label = "dashboard_glow_drift")
+    val glowDriftX by glowTransition.animateFloat(
+        initialValue = -1f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = LinearEasing),
+            animation = tween(durationMillis = 14000, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "button_alpha"
+        label = "dashboard_glow_drift_x"
     )
+    val glowDriftY by glowTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = -1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 18000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "dashboard_glow_drift_y"
+    )
+    val glowHeight = 360.dp
+
+    var showClientSheet by remember { mutableStateOf(false) }
+    var showProfileSheet by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // Ambient Glow Layer
-        Box(
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(300.dp)
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            glowColor,
-                            Color.Transparent
+                .height(glowHeight)
+                .align(Alignment.TopCenter)
+        ) {
+            val width = constraints.maxWidth.toFloat().coerceAtLeast(1f)
+            val height = constraints.maxHeight.toFloat().coerceAtLeast(1f)
+            val center = Offset(
+                x = width * 0.5f + width * 0.06f * glowDriftX,
+                y = height * 0.2f + height * 0.05f * glowDriftY
+            )
+            val haloColor = glowColor.copy(alpha = (glowColor.alpha * 0.55f).coerceIn(0f, 1f))
+            val glowRadius = maxOf(width, height) * (0.75f + 0.15f * normalizedGlow)
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        brush = Brush.radialGradient(
+                            colors = listOf(glowColor, Color.Transparent),
+                            center = center,
+                            radius = glowRadius
                         )
                     )
-                )
-        )
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        brush = Brush.radialGradient(
+                            colors = listOf(haloColor, Color.Transparent),
+                            center = center.copy(y = center.y + height * 0.08f),
+                            radius = glowRadius * 1.1f
+                        )
+                    )
+            )
+        }
 
-        Scaffold(
+        androidx.compose.material3.Scaffold(
             containerColor = Color.Transparent,
             topBar = {
-                // Updated TopAppBar to be transparent to show glow
-                TopAppBar(
-                    title = {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.clickable { navController.navigateDashboard() }
-                        ) {
-                            // Logo dell'app invece dell'icona Dashboard
-                            Icon(
-                                painter = androidx.compose.ui.res.painterResource(id = com.app.miklink.R.drawable.logo),
-                                contentDescription = "MikLink Logo",
-                                modifier = Modifier.size(32.dp),
-                                tint = Color.Unspecified
-                            )
-                            Spacer(Modifier.width(12.dp))
-                            Text(stringResource(R.string.dashboard_title), fontWeight = FontWeight.Bold)
-                        }
+                AppTopBar(
+                    title = stringResource(id = R.string.dashboard_title),
+                    subtitle = if (isTestButtonEnabled) {
+                        stringResource(id = R.string.dashboard_subtitle_ready)
+                    } else {
+                        stringResource(id = R.string.dashboard_subtitle_setup)
                     },
-                    actions = {
-                        // Tasto Report più evidente
-                        FilledTonalButton(
-                            onClick = { navController.navigate("history") },
-                            modifier = Modifier.padding(end = 8.dp),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-                            colors = ButtonDefaults.filledTonalButtonColors(
-                                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        ) {
-                            Icon(
-                                Icons.Default.Description,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            Text(stringResource(R.string.dashboard_btn_report), fontWeight = FontWeight.Bold)
-                        }
-
-                        IconButton(onClick = { navController.navigate("settings") }) {
-                            Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.dashboard_btn_settings))
-                        }
+                    leadingContent = {
+                        Icon(
+                            painter = painterResource(id = R.drawable.logo),
+                            contentDescription = stringResource(id = R.string.app_name),
+                            modifier = Modifier.size(28.dp),
+                            tint = Color.Unspecified
+                        )
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.Transparent, // Transparent for glow
-                        titleContentColor = MaterialTheme.colorScheme.onBackground,
-                        actionIconContentColor = MaterialTheme.colorScheme.onBackground
-                    )
+                    containerColor = Color.Transparent,
+                    onReport = { navController.navigate("history") },
+                    onSettings = { navController.navigate("settings") },
+                    reportBadge = true
                 )
             },
             bottomBar = {
-                Surface(
-                    tonalElevation = 8.dp,
-                    shadowElevation = 8.dp
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)
-                            .navigationBarsPadding()
-                    ) {
-                        // Status Badges (Removed Sonda Badge)
-                        AnimatedVisibility(visible = selectedClient != null) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(bottom = 12.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                selectedClient?.let { client ->
-                                    StatusBadge(
-                                        text = client.companyName,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        icon = Icons.Default.Business
+                PrimaryStickyCTA(
+                    label = if (isTestButtonEnabled) {
+                        stringResource(id = R.string.dashboard_btn_start_test)
+                    } else {
+                        stringResource(id = R.string.dashboard_btn_configure_test)
+                    },
+                    supportingText = if (isTestButtonEnabled) null else stringResource(id = R.string.dashboard_cta_hint),
+                    icon = Icons.Default.PlayArrow,
+                    enabled = isTestButtonEnabled,
+                    onClick = {
+                        selectedClient?.let { client ->
+                            currentProbe?.let {
+                                selectedProfile?.let { profile ->
+                                    val encodedSocket = Uri.encode(socketName)
+                                    navController.navigate(
+                                        "test_execution/${client.clientId}/${profile.profileId}/$encodedSocket"
                                     )
                                 }
                             }
                         }
-
-                        Button(
-                            onClick = {
-                                selectedClient?.let { client ->
-                                    currentProbe?.let { probe ->
-                                        selectedProfile?.let { profile ->
-                                            val encodedSocket = Uri.encode(socketName)
-                                            navController.navigate(
-                                                "test_execution/${client.clientId}/${profile.profileId}/$encodedSocket"
-                                            )
-                                        }
-                                    }
-                                }
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(56.dp)
-                                .alpha(if (isTestButtonEnabled) buttonAlpha else 1f),
-                            enabled = isTestButtonEnabled,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (isTestButtonEnabled)
-                                    MaterialTheme.colorScheme.primary
-                                else
-                                    MaterialTheme.colorScheme.surfaceVariant,
-                                contentColor = if (isTestButtonEnabled)
-                                    MaterialTheme.colorScheme.onPrimary
-                                else
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                            ),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.PlayArrow,
-                                contentDescription = null,
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            Text(
-                                text = if (isTestButtonEnabled) stringResource(R.string.dashboard_btn_start_test) else stringResource(R.string.dashboard_btn_configure_test),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
                     }
-                }
+                )
             }
         ) { padding ->
-            Column(
+            LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding)
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(24.dp)
+                    .padding(padding),
+                contentPadding = PaddingValues(
+                    start = 16.dp,
+                    end = 16.dp,
+                    top = 16.dp,
+                    bottom = 96.dp
+                ),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-            // 1. Client Selection
-            SectionHeader(title = stringResource(R.string.dashboard_section_client), icon = Icons.Default.Business)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                SelectionCard(
-                    title = selectedClient?.companyName ?: stringResource(R.string.dashboard_select_client),
-                    subtitle = selectedClient?.location ?: stringResource(R.string.dashboard_click_to_select),
-                    icon = Icons.Default.Business,
-                    isSelected = selectedClient != null,
-                    onClick = { showClientSheet = true },
-                    modifier = Modifier.weight(1f)
-                )
-                
-                IconButton(onClick = { navController.navigate("client_list") }) {
-                        Icon(
-                        Icons.Default.Edit,
-                        contentDescription = stringResource(R.string.settings_manage_clients),
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(24.dp)
+                item {
+                    SetupWizardCard(
+                        clientName = selectedClient?.companyName,
+                        clientSubtitle = selectedClient?.location,
+                        profileName = selectedProfile?.profileName,
+                        profileSubtitle = selectedProfile?.profileDescription,
+                        socketValue = socketName,
+                        socketPlaceholder = stringResource(id = R.string.dashboard_socket_placeholder),
+                        onSelectClient = { showClientSheet = true },
+                        onSelectProfile = { showProfileSheet = true },
+                        onSocketChange = { viewModel.socketName.value = it },
+                        onManageClient = { navController.navigate("client_list") },
+                        onManageProfile = { navController.navigate("profile_list") }
                     )
                 }
-            }
-
-            // 2. Profile Selection
-            SectionHeader(title = stringResource(R.string.dashboard_section_profile), icon = Icons.Default.Speed)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                SelectionCard(
-                    title = selectedProfile?.profileName ?: stringResource(R.string.dashboard_select_profile),
-                    subtitle = selectedProfile?.profileDescription ?: stringResource(R.string.dashboard_click_to_select),
-                    icon = Icons.Default.Speed,
-                    isSelected = selectedProfile != null,
-                    onClick = { showProfileSheet = true },
-                    badges = selectedProfile?.let { prof ->
-                        { ProfileTestsRow(profile = prof, modifier = Modifier.padding(top = 6.dp)) }
-                    },
-                    modifier = Modifier.weight(1f)
-                )
-                
-                IconButton(onClick = { navController.navigate("profile_list") }) {
-                    Icon(
-                        Icons.Default.Edit,
-                        contentDescription = stringResource(R.string.settings_manage_profiles),
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(24.dp)
-                    )
+                item {
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
             }
-
-            // 3. Socket ID
-            SectionHeader(title = stringResource(R.string.dashboard_section_socket), icon = Icons.Default.PowerInput)
-            
-            OutlinedTextField(
-                value = socketName,
-                onValueChange = { viewModel.socketName.value = it },
-                label = { Text(stringResource(R.string.dashboard_socket_label)) },
-                placeholder = { Text(stringResource(R.string.dashboard_socket_placeholder)) },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                leadingIcon = {
-                    Icon(Icons.AutoMirrored.Filled.Label, contentDescription = null)
-                },
-                shape = RoundedCornerShape(8.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                )
-            )
-            
-            Spacer(Modifier.height(32.dp))
         }
     }
-}
 
-    // Client Bottom Sheet
     if (showClientSheet) {
         ModalBottomSheet(
             onDismissRequest = { showClientSheet = false },
-            sheetState = sheetState
+            sheetState = sheetState,
+            shape = MaterialTheme.shapes.extraLarge,
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
         ) {
             var searchQuery by remember { mutableStateOf("") }
             val filteredClients = remember(clients, searchQuery) {
                 if (searchQuery.isBlank()) clients
-                else clients.filter { 
-                    it.companyName.contains(searchQuery, ignoreCase = true) || 
-                    (it.location?.contains(searchQuery, ignoreCase = true) == true)
+                else clients.filter {
+                    it.companyName.contains(searchQuery, ignoreCase = true) ||
+                        (it.location?.contains(searchQuery, ignoreCase = true) == true)
                 }
             }
-
-            Column(modifier = Modifier.padding(16.dp)) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
-                    stringResource(R.string.dashboard_select_client),
+                    text = stringResource(id = R.string.dashboard_select_client),
                     style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 16.dp)
+                    fontWeight = FontWeight.SemiBold
                 )
-                
-                ModernSearchBar(
-                    query = searchQuery,
-                    onQueryChange = { searchQuery = it },
-                    placeholder = stringResource(R.string.dashboard_search_client),
-                    modifier = Modifier.padding(bottom = 8.dp)
+                androidx.compose.material3.OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    placeholder = { Text(stringResource(id = R.string.dashboard_search_client)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.medium
                 )
-
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     contentPadding = PaddingValues(bottom = 32.dp)
@@ -384,8 +296,8 @@ fun DashboardScreen(
                     if (filteredClients.isEmpty()) {
                         item {
                             Text(
-                                stringResource(R.string.dashboard_no_clients_found),
-                                modifier = Modifier.padding(16.dp),
+                                stringResource(id = R.string.dashboard_no_clients_found),
+                                modifier = Modifier.padding(12.dp),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -395,20 +307,19 @@ fun DashboardScreen(
         }
     }
 
-    // Profile Bottom Sheet
     if (showProfileSheet) {
         ModalBottomSheet(
             onDismissRequest = { showProfileSheet = false },
-            sheetState = sheetState
+            sheetState = sheetState,
+            shape = MaterialTheme.shapes.extraLarge,
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
-                    stringResource(R.string.dashboard_select_profile),
+                    text = stringResource(id = R.string.dashboard_select_profile),
                     style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 16.dp)
+                    fontWeight = FontWeight.SemiBold
                 )
-
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     contentPadding = PaddingValues(bottom = 32.dp)
@@ -423,16 +334,14 @@ fun DashboardScreen(
                                 viewModel.selectedProfile.value = profile
                                 showProfileSheet = false
                             },
-                            trailingContent = {
-                                ProfileTestsRow(profile = profile)
-                            }
+                            trailingContent = { ProfileTestsRow(profile = profile) }
                         )
                     }
                     if (profiles.isEmpty()) {
                         item {
                             Text(
-                                stringResource(R.string.dashboard_no_profiles),
-                                modifier = Modifier.padding(16.dp),
+                                stringResource(id = R.string.dashboard_no_profiles),
+                                modifier = Modifier.padding(12.dp),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -441,129 +350,19 @@ fun DashboardScreen(
             }
         }
     }
+
 }
 
-@Composable
-private fun SectionHeader(
-    title: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    onManageClick: (() -> Unit)? = null
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(20.dp)
-            )
-            Spacer(Modifier.width(8.dp))
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-        }
-        
-        if (onManageClick != null) {
-            TextButton(onClick = onManageClick) {
-                Text(stringResource(R.string.manage).uppercase())
-            }
-        }
-    }
-}
-
-@Composable
-private fun SelectionCard(
-    title: String,
-    subtitle: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    badges: (@Composable () -> Unit)? = null
-) {
-    Card(
-        modifier = modifier
-            .fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) 
-                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f)
-            else 
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        ),
-        border = if (isSelected) 
-            BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
-        else null
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onClick)
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(
-                        if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-                        else MaterialTheme.colorScheme.surface
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    icon,
-                    contentDescription = null,
-                    tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-            
-            Spacer(Modifier.width(16.dp))
-            
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                if (subtitle.isNotBlank()) {
-                    Text(
-                        text = subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                badges?.invoke()
-            }
-            
-            Icon(
-                Icons.Default.ChevronRight,
-                contentDescription = "Select",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
-
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ProfileTestsRow(profile: TestProfile, modifier: Modifier = Modifier) {
     FlowRow(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         if (profile.runTdr) {
-            TestBadge(label = "TDR", color = Color(0xFF2F6F4E)) // align with success tone
+            TestBadge(label = "TDR", color = Color(0xFF2F6F4E))
         }
         if (profile.runLinkStatus) {
             TestBadge(label = "LINK", color = MaterialTheme.colorScheme.primary)

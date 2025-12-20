@@ -1,7 +1,5 @@
 /*
- * Purpose: Define MikLink typography using Manrope as the base UI font and JetBrains Mono for technical/monospace text.
- * Inputs: Font resources in res/font (manrope_regular/medium/semibold, jetbrains_mono_regular/medium).
- * Outputs: Material3 Typography instance for MaterialTheme and helper text styles for monospace content.
+ * UI typography system, input font families and weights, output Material 3 type scale + mono styles.
  */
 package com.app.miklink.ui.theme
 
@@ -24,32 +22,109 @@ val JetBrainsMono = FontFamily(
     Font(resId = R.font.jetbrains_mono_medium, weight = FontWeight.Medium)
 )
 
-private val BaseTypography = Typography()
-
 val Typography = Typography(
-    displaySmall = BaseTypography.displaySmall.copy(fontFamily = Manrope, fontWeight = FontWeight.SemiBold),
-    headlineMedium = BaseTypography.headlineMedium.copy(fontFamily = Manrope, fontWeight = FontWeight.SemiBold),
-    titleLarge = BaseTypography.titleLarge.copy(fontFamily = Manrope, fontWeight = FontWeight.SemiBold),
-    titleMedium = BaseTypography.titleMedium.copy(fontFamily = Manrope, fontWeight = FontWeight.Medium),
-    titleSmall = BaseTypography.titleSmall.copy(fontFamily = Manrope, fontWeight = FontWeight.Medium),
-    bodyLarge = BaseTypography.bodyLarge.copy(fontFamily = Manrope, fontWeight = FontWeight.Normal),
-    bodyMedium = BaseTypography.bodyMedium.copy(fontFamily = Manrope, fontWeight = FontWeight.Normal),
-    bodySmall = BaseTypography.bodySmall.copy(fontFamily = Manrope, fontWeight = FontWeight.Normal),
-    labelLarge = BaseTypography.labelLarge.copy(fontFamily = Manrope, fontWeight = FontWeight.Medium),
-    labelMedium = BaseTypography.labelMedium.copy(fontFamily = Manrope, fontWeight = FontWeight.Medium),
-    labelSmall = BaseTypography.labelSmall.copy(fontFamily = Manrope, fontWeight = FontWeight.Medium)
+    displayLarge = TextStyle(
+        fontFamily = Manrope,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 48.sp,
+        lineHeight = 56.sp
+    ),
+    displayMedium = TextStyle(
+        fontFamily = Manrope,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 40.sp,
+        lineHeight = 48.sp
+    ),
+    displaySmall = TextStyle(
+        fontFamily = Manrope,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 32.sp,
+        lineHeight = 40.sp
+    ),
+    headlineLarge = TextStyle(
+        fontFamily = Manrope,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 30.sp,
+        lineHeight = 38.sp
+    ),
+    headlineMedium = TextStyle(
+        fontFamily = Manrope,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 26.sp,
+        lineHeight = 34.sp
+    ),
+    headlineSmall = TextStyle(
+        fontFamily = Manrope,
+        fontWeight = FontWeight.Medium,
+        fontSize = 22.sp,
+        lineHeight = 28.sp
+    ),
+    titleLarge = TextStyle(
+        fontFamily = Manrope,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 20.sp,
+        lineHeight = 28.sp
+    ),
+    titleMedium = TextStyle(
+        fontFamily = Manrope,
+        fontWeight = FontWeight.Medium,
+        fontSize = 18.sp,
+        lineHeight = 24.sp
+    ),
+    titleSmall = TextStyle(
+        fontFamily = Manrope,
+        fontWeight = FontWeight.Medium,
+        fontSize = 16.sp,
+        lineHeight = 22.sp
+    ),
+    bodyLarge = TextStyle(
+        fontFamily = Manrope,
+        fontWeight = FontWeight.Normal,
+        fontSize = 16.sp,
+        lineHeight = 24.sp
+    ),
+    bodyMedium = TextStyle(
+        fontFamily = Manrope,
+        fontWeight = FontWeight.Normal,
+        fontSize = 14.sp,
+        lineHeight = 22.sp
+    ),
+    bodySmall = TextStyle(
+        fontFamily = Manrope,
+        fontWeight = FontWeight.Normal,
+        fontSize = 12.sp,
+        lineHeight = 18.sp
+    ),
+    labelLarge = TextStyle(
+        fontFamily = Manrope,
+        fontWeight = FontWeight.Medium,
+        fontSize = 14.sp,
+        lineHeight = 20.sp
+    ),
+    labelMedium = TextStyle(
+        fontFamily = Manrope,
+        fontWeight = FontWeight.Medium,
+        fontSize = 12.sp,
+        lineHeight = 16.sp
+    ),
+    labelSmall = TextStyle(
+        fontFamily = Manrope,
+        fontWeight = FontWeight.Medium,
+        fontSize = 11.sp,
+        lineHeight = 16.sp
+    )
 )
 
 val MonoBody = TextStyle(
     fontFamily = JetBrainsMono,
     fontWeight = FontWeight.Medium,
-    fontSize = 14.sp,
+    fontSize = 13.sp,
     lineHeight = 20.sp
 )
 
 val MonoLabel = TextStyle(
     fontFamily = JetBrainsMono,
     fontWeight = FontWeight.Medium,
-    fontSize = 12.sp,
+    fontSize = 11.sp,
     lineHeight = 16.sp
 )

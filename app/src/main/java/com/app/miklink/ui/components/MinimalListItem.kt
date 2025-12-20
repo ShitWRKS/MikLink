@@ -1,7 +1,5 @@
 /*
- * Purpose: Compact selectable list item with optional trailing content and selection border.
- * Inputs: Title/subtitle, icon, selection flag, click handler, optional trailing composable (e.g., badges).
- * Outputs: Row-styled item used in sheets/lists with selection highlighting.
+ * UI minimal list item, input title/subtitle/selection, output contained selectable row rendering.
  */
 package com.app.miklink.ui.components
 
@@ -10,7 +8,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.Icon
@@ -24,7 +21,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.app.miklink.ui.theme.CornerRadius
 import com.app.miklink.ui.theme.Spacing
 
 @Composable
@@ -40,12 +36,12 @@ fun MinimalListItem(
     Surface(
         modifier = modifier
             .fillMaxWidth(),
-        shape = RoundedCornerShape(CornerRadius.small),
-        color = if (isSelected) MaterialTheme.colorScheme.surface.copy(alpha = 0.8f) else MaterialTheme.colorScheme.surface,
+        shape = MaterialTheme.shapes.medium,
+        color = if (isSelected) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surfaceContainer,
         border = if (isSelected) 
             BorderStroke(1.dp, MaterialTheme.colorScheme.primary) 
         else 
-            BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+            BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Row(
             modifier = Modifier
@@ -60,7 +56,10 @@ fun MinimalListItem(
                 modifier = Modifier
                     .size(32.dp)
                     .clip(CircleShape)
-                    .background(if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant),
+                    .background(
+                        if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                        else MaterialTheme.colorScheme.surfaceContainerHighest
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
