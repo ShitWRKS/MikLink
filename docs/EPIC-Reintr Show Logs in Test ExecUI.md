@@ -1,13 +1,27 @@
-EPIC — Reintroduce “Show Logs” in Test Execution UI (in-progress + completed)
+EPIC — Reintroduce "Show Logs" in Test Execution UI (in-progress + completed)
+
+**Status:** ✅ COMPLETATO  
+**Data Completamento:** 2025-12-16  
+**Implementato in:** ADR-0009  
+**Files Implementati:**
+- `core/domain/test/model/TestEvent.kt` — LogLine event
+- `core/domain/usecase/test/RunTestUseCaseImpl.kt` — emitLog() in 35+ punti
+- `ui/test/TestViewModel.kt` — Log collection con exhaustive handling
+- `ui/test/components/RawLogsPane.kt` — Shared component
+- `ui/test/components/TestExecutionTags.kt` — Semantics tags
+
+---
+
 0) Scope and intent
 
-Reintroduce the “Show logs” feature in the Test Execution UI:
+Reintroduce the "Show logs" feature in the Test Execution UI:
 
 While a test is running (in-progress screen)
 
 After a test completes (completed screen, regardless of PASS/FAIL)
 
 The solution must be:
+
 
 SOLID / Clean Architecture compliant (UI depends on domain/use cases only; no data impl leakage)
 
