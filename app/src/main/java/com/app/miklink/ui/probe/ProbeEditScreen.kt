@@ -68,7 +68,7 @@ fun ProbeEditScreen(
                     .navigationBarsPadding(),
                 enabled = ipAddress.isNotBlank() && verificationState is VerificationState.Success
             ) {
-                Text("Save")
+                Text(stringResource(R.string.save))
             }
         }
     ) { padding ->
@@ -82,12 +82,12 @@ fun ProbeEditScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             // NAME input removed by design: probe should be generically named "Sonda"
-            OutlinedTextField(value = ipAddress, onValueChange = { viewModel.ipAddress.value = it }, label = { Text("IP Address") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
-            OutlinedTextField(value = username, onValueChange = { viewModel.username.value = it }, label = { Text("Username") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+            OutlinedTextField(value = ipAddress, onValueChange = { viewModel.ipAddress.value = it }, label = { Text(stringResource(R.string.probe_edit_ip_label)) }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+            OutlinedTextField(value = username, onValueChange = { viewModel.username.value = it }, label = { Text(stringResource(R.string.client_edit_username_label)) }, modifier = Modifier.fillMaxWidth(), singleLine = true)
             OutlinedTextField(
                 value = password,
                 onValueChange = { viewModel.password.value = it },
-                label = { Text("Password") },
+                label = { Text(stringResource(R.string.client_edit_password_label)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
@@ -95,17 +95,17 @@ fun ProbeEditScreen(
                     val image = if (passwordVisible)
                         Icons.Filled.Visibility
                     else Icons.Filled.VisibilityOff
-                    val description = if (passwordVisible) "Hide password" else "Show password"
+                    val descriptionRes = if (passwordVisible) R.string.hide_password else R.string.show_password
 
                     IconButton(onClick = {passwordVisible = !passwordVisible}){
-                        Icon(imageVector  = image, description)
+                        Icon(imageVector  = image, stringResource(descriptionRes))
                     }
                 }
             )
 
             ListItem(
-                headlineContent = { Text("Use HTTPS (SSL)") },
-                supportingContent = { Text("Ignores certificate errors") },
+                headlineContent = { Text(stringResource(R.string.probe_edit_https_title)) },
+                supportingContent = { Text(stringResource(R.string.probe_edit_https_description)) },
                 trailingContent = { Switch(checked = isHttps, onCheckedChange = { viewModel.isHttps.value = it }) }
             )
 
@@ -119,7 +119,8 @@ fun ProbeEditScreen(
                     CircularProgressIndicator()
                 }
                 is VerificationState.Success -> {
-                    Text("Board: ${state.boardName ?: "Unknown"}", style = MaterialTheme.typography.bodyLarge)
+                    val boardName = state.boardName ?: stringResource(R.string.probe_edit_board_unknown)
+                    Text(stringResource(R.string.probe_edit_board_label, boardName), style = MaterialTheme.typography.bodyLarge)
                     state.warning?.let { warning ->
                         Text(
                             text = warning,
@@ -134,7 +135,7 @@ fun ProbeEditScreen(
                         OutlinedTextField(
                             value = testInterface,
                             onValueChange = { },
-                            label = { Text("Test Interface") },
+                            label = { Text(stringResource(R.string.probe_edit_test_interface_label)) },
                             readOnly = true,
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                             modifier = Modifier
@@ -159,7 +160,7 @@ fun ProbeEditScreen(
                     Text(state.message, color = MaterialTheme.colorScheme.error)
                     Spacer(Modifier.height(8.dp))
                     VerifyProbeButton(onClick = viewModel::onVerifyClicked)
-                    OutlinedTextField(value = testInterface, onValueChange = { viewModel.testInterface.value = it }, label = { Text("Test Interface (Manual)") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                    OutlinedTextField(value = testInterface, onValueChange = { viewModel.testInterface.value = it }, label = { Text(stringResource(R.string.probe_edit_test_interface_manual)) }, modifier = Modifier.fillMaxWidth(), singleLine = true)
                 }
             }
         }
@@ -169,6 +170,6 @@ fun ProbeEditScreen(
 @Composable
 private fun VerifyProbeButton(onClick: () -> Unit) {
     Button(onClick = onClick) {
-        Text("Verify Probe")
+        Text(stringResource(R.string.probe_edit_verify_button))
     }
 }

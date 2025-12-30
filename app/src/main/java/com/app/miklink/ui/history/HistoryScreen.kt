@@ -126,7 +126,7 @@ fun HistoryScreen(
                         .padding(horizontal = 16.dp, vertical = 8.dp),
                     placeholder = { Text(stringResource(R.string.history_search_placeholder)) },
                     leadingIcon = {
-                        Icon(Icons.Default.Search, contentDescription = "Search")
+                        Icon(Icons.Default.Search, contentDescription = stringResource(R.string.common_search))
                     },
                     trailingIcon = {
                         if (searchText.isNotEmpty()) {
@@ -134,7 +134,7 @@ fun HistoryScreen(
                                 searchText = ""
                                 viewModel.updateSearchQuery("")
                             }) {
-                                Icon(Icons.Default.Close, contentDescription = "Clear")
+                                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.common_clear))
                             }
                         }
                     },
@@ -241,16 +241,16 @@ fun HistoryScreen(
                     ) {
                         Column(modifier = Modifier.padding(20.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("💡", style = MaterialTheme.typography.titleLarge)
+                                Text(stringResource(R.string.history_tip_icon), style = MaterialTheme.typography.titleLarge)
                                 Spacer(Modifier.width(8.dp))
                                 Text(stringResource(R.string.history_tips_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                             }
                             Spacer(Modifier.height(16.dp))
-                            Row { Text("•  ", style = MaterialTheme.typography.bodyMedium); Text(stringResource(R.string.history_tip_1), style = MaterialTheme.typography.bodyMedium) }
+                            Row { Text(stringResource(R.string.history_tip_bullet), style = MaterialTheme.typography.bodyMedium); Text(stringResource(R.string.history_tip_1), style = MaterialTheme.typography.bodyMedium) }
                             Spacer(Modifier.height(8.dp))
-                            Row { Text("•  ", style = MaterialTheme.typography.bodyMedium); Text(stringResource(R.string.history_tip_2), style = MaterialTheme.typography.bodyMedium) }
+                            Row { Text(stringResource(R.string.history_tip_bullet), style = MaterialTheme.typography.bodyMedium); Text(stringResource(R.string.history_tip_2), style = MaterialTheme.typography.bodyMedium) }
                             Spacer(Modifier.height(8.dp))
-                            Row { Text("•  ", style = MaterialTheme.typography.bodyMedium); Text(stringResource(R.string.history_tip_3), style = MaterialTheme.typography.bodyMedium) }
+                            Row { Text(stringResource(R.string.history_tip_bullet), style = MaterialTheme.typography.bodyMedium); Text(stringResource(R.string.history_tip_3), style = MaterialTheme.typography.bodyMedium) }
                         }
                     }
                     
@@ -589,7 +589,7 @@ fun ClientReportsCard(
                         Badge(
                             containerColor = MaterialTheme.colorScheme.secondaryContainer
                         ) {
-                            Text("${clientData.totalTests} tests")
+                            Text(stringResource(R.string.history_total_tests, clientData.totalTests))
                         }
                         if (clientData.passedTests > 0) {
                             Badge(

@@ -89,7 +89,7 @@ fun SettingsScreen(
                             onDismissRequest = { showLanguageMenu = false }
                         ) {
                             DropdownMenuItem(
-                                text = { Text("English 🇬🇧") },
+                                text = { Text(stringResource(R.string.settings_language_en)) },
                                 onClick = {
                                     androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(
                                         androidx.core.os.LocaleListCompat.forLanguageTags("en")
@@ -98,7 +98,7 @@ fun SettingsScreen(
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Italiano 🇮🇹") },
+                                text = { Text(stringResource(R.string.settings_language_it)) },
                                 onClick = {
                                     androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(
                                         androidx.core.os.LocaleListCompat.forLanguageTags("it")
@@ -330,7 +330,7 @@ fun SettingsScreen(
     if (showIdStrategyDialog) {
         AlertDialog(
             onDismissRequest = { showIdStrategyDialog = false },
-            title = { Text("Strategia Numerazione ID") },
+            title = { Text(stringResource(R.string.settings_id_strategy_dialog_title)) },
             text = {
                 Column {
                     IdNumberingStrategy.entries.forEach { strategy ->
@@ -376,7 +376,7 @@ fun SettingsScreen(
             },
             confirmButton = {
                 TextButton(onClick = { showIdStrategyDialog = false }) {
-                    Text("Annulla")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )

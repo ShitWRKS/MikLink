@@ -20,8 +20,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.res.stringResource
 import com.app.miklink.ui.theme.CornerRadius
 import com.app.miklink.ui.theme.Spacing
+import com.app.miklink.R
 
 /**
  * Modern search bar with filter button
@@ -50,7 +52,7 @@ fun ModernSearchBar(
     ) {
         Icon(
             imageVector = Icons.Default.Search,
-            contentDescription = "Search",
+            contentDescription = stringResource(R.string.common_search),
             tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
         
@@ -85,7 +87,7 @@ fun ModernSearchBar(
             IconButton(onClick = it) {
                 Icon(
                     imageVector = Icons.Default.FilterList,
-                    contentDescription = "Filter",
+                    contentDescription = stringResource(R.string.common_filter),
                     tint = MaterialTheme.colorScheme.primary
                 )
             }

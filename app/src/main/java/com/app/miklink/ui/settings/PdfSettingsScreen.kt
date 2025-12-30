@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import com.app.miklink.R
 import com.app.miklink.core.data.pdf.ExportColumn
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -33,10 +34,10 @@ fun PdfSettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Preferenze Rapporto PDF") },
+                title = { Text(stringResource(R.string.settings_pdf_preferences)) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(id = com.app.miklink.R.string.back))
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(id = R.string.back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -56,7 +57,7 @@ fun PdfSettingsScreen(
             // Section: General Settings
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    text = "IMPOSTAZIONI GENERALI",
+                    text = stringResource(R.string.pdf_settings_general_section_title),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold
@@ -65,7 +66,7 @@ fun PdfSettingsScreen(
                 OutlinedTextField(
                     value = pdfReportTitle,
                     onValueChange = { viewModel.updatePdfReportTitle(it) },
-                    label = { Text("Titolo Default Report") },
+                    label = { Text(stringResource(R.string.pdf_report_title)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     leadingIcon = { Icon(Icons.Default.PictureAsPdf, null) }
@@ -77,7 +78,7 @@ fun PdfSettingsScreen(
             // Section: Data & Content
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    text = "CONTENUTO & DATI",
+                    text = stringResource(R.string.pdf_settings_content_section_title),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold
@@ -85,24 +86,38 @@ fun PdfSettingsScreen(
 
                 // Include Empty Tests
                 Row(
-                   modifier = Modifier.fillMaxWidth().clickable { viewModel.updatePdfIncludeEmptyTests(!pdfIncludeEmpty) }.padding(vertical = 8.dp),
+                   modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { viewModel.updatePdfIncludeEmptyTests(!pdfIncludeEmpty) }
+                        .padding(vertical = 8.dp),
                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(Modifier.weight(1f)) {
-                        Text("Includi Test Vuoti", style = MaterialTheme.typography.titleMedium)
-                        Text("Mostra anche test falliti o senza dati", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.pdf_settings_include_empty_title), style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            stringResource(R.string.pdf_settings_include_empty_description),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                     Switch(checked = pdfIncludeEmpty, onCheckedChange = { viewModel.updatePdfIncludeEmptyTests(it) })
                 }
                 
                 // Hide Empty Columns
                 Row(
-                   modifier = Modifier.fillMaxWidth().clickable { viewModel.updatePdfHideEmptyColumns(!pdfHideEmptyColumns) }.padding(vertical = 8.dp),
+                   modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { viewModel.updatePdfHideEmptyColumns(!pdfHideEmptyColumns) }
+                        .padding(vertical = 8.dp),
                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(Modifier.weight(1f)) {
-                        Text("Nascondi Colonne Vuote", style = MaterialTheme.typography.titleMedium)
-                        Text("Non stampare colonne senza dati (override)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.pdf_settings_hide_empty_columns_title), style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            stringResource(R.string.pdf_settings_hide_empty_columns_description),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                     Switch(checked = pdfHideEmptyColumns, onCheckedChange = { viewModel.updatePdfHideEmptyColumns(it) })
                 }
@@ -113,13 +128,13 @@ fun PdfSettingsScreen(
             // Section: Columns
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    text = "COLONNE DA STAMPARE",
+                    text = stringResource(R.string.pdf_settings_columns_section_title),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "Seleziona le colonne da includere di default.",
+                    text = stringResource(R.string.pdf_settings_columns_section_description),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

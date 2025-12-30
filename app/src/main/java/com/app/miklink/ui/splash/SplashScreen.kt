@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.app.miklink.R
+import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import com.app.miklink.ui.theme.JetBrainsMono
@@ -118,7 +119,7 @@ fun SplashScreen(navController: NavController) {
             // MikLink Logo (Large)
             androidx.compose.foundation.Image(
                 painter = androidx.compose.ui.res.painterResource(id = R.drawable.logo),
-                contentDescription = "MikLink Logo",
+                contentDescription = stringResource(R.string.splash_logo_description),
                 modifier = Modifier.size(140.dp)
             )
 
@@ -166,7 +167,7 @@ fun SplashScreen(navController: NavController) {
                             .build(),
                         imageLoader = imageLoader
                     ),
-                    contentDescription = "Shitworks Logo",
+                    contentDescription = stringResource(R.string.splash_shitworks_logo_description),
                     modifier = Modifier.size(50.dp)
                 )
 

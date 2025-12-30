@@ -108,6 +108,14 @@
     <string name="settings_category_pdf">PDF Report</string>
     <string name="settings_pdf_preferences">PDF Report Preferences</string>
     <string name="settings_pdf_preferences_desc">Customize default titles and options</string>
+    <string name="pdf_settings_general_section_title">GENERAL SETTINGS</string>
+    <string name="pdf_settings_content_section_title">CONTENT &amp; DATA</string>
+    <string name="pdf_settings_columns_section_title">COLUMNS TO PRINT</string>
+    <string name="pdf_settings_columns_section_description">Select the columns to include by default.</string>
+    <string name="pdf_settings_include_empty_title">Include Empty Tests</string>
+    <string name="pdf_settings_include_empty_description">Also show failed or empty tests.</string>
+    <string name="pdf_settings_hide_empty_columns_title">Hide Empty Columns</string>
+    <string name="pdf_settings_hide_empty_columns_description">Do not print columns without data (override).</string>
     <string name="settings_id_numbering">ID Numbering</string>
     <string name="settings_id_strategy">Numbering Strategy</string>
     <string name="settings_category_info">Information</string>
@@ -347,4 +355,113 @@
     <string name="test_details_speed_warning_fallback">Results can be limited by CPU; traffic generation/termination performance might not be representative of forwarding performance.</string>
     <string name="show_password">Show password</string>
     <string name="hide_password">Hide password</string>
+
+    <!-- Common UI -->
+    <string name="common_search">Search</string>
+    <string name="common_filter">Filter</string>
+    <string name="common_clear">Clear</string>
+
+    <!-- Client Edit -->
+    <string name="client_edit_title_edit">Edit Client</string>
+    <string name="client_edit_title_new">New Client</string>
+    <string name="client_edit_save">Save Client</string>
+    <string name="client_edit_company_label">Company Name *</string>
+    <string name="client_edit_location_label">Location</string>
+    <string name="client_edit_location_placeholder">e.g., HQ, Rome Branch</string>
+    <string name="client_edit_notes_placeholder">Additional information...</string>
+    <string name="client_edit_section_network">Network</string>
+    <string name="client_edit_not_configured">Not configured</string>
+    <string name="client_edit_network_preview_static">Static: %1$s</string>
+    <string name="client_edit_static_ip_label">Static IP (CIDR)</string>
+    <string name="client_edit_static_ip_placeholder">e.g. 192.168.1.20/24</string>
+    <string name="client_edit_static_ip_support">Format: IP/Subnet</string>
+    <string name="client_edit_gateway_placeholder">e.g. 192.168.1.1</string>
+    <string name="client_edit_min_link_rate">Min Link Rate</string>
+    <string name="client_edit_prefix_label">Prefix</string>
+    <string name="client_edit_prefix_placeholder">SW, NET, PR</string>
+    <string name="client_edit_separator_label">Separator</string>
+    <string name="client_edit_separator_placeholder">-</string>
+    <string name="client_edit_separator_support">Character between parts</string>
+    <string name="client_edit_padding_label">Number Padding</string>
+    <string name="client_edit_suffix_label">Suffix</string>
+    <string name="client_edit_suffix_placeholder">A, B, -1</string>
+    <string name="client_edit_section_socket">Socket Configuration</string>
+    <string name="client_edit_section_speed">Speed Test</string>
+    <string name="client_edit_server_address_label">Server Address</string>
+    <string name="client_edit_server_address_placeholder">192.168.1.1</string>
+    <string name="client_edit_server_address_support">IP or hostname of MikroTik server</string>
+    <string name="client_edit_username_label">Username</string>
+    <string name="client_edit_username_placeholder">admin</string>
+    <string name="client_edit_username_support">Optional (default: admin)</string>
+    <string name="client_edit_password_label">Password</string>
+    <string name="client_edit_password_support">Optional</string>
+
+    <!-- Client List -->
+    <string name="client_list_new_client">NEW CLIENT</string>
+
+    <!-- History -->
+    <string name="history_tip_icon">💡</string>
+    <string name="history_tip_bullet">•  </string>
+    <string name="history_total_tests">%1$d tests</string>
+
+    <!-- Components -->
+    <string name="list_item_selected">Selected</string>
+
+
+    <!-- Probe Edit -->
+    <string name="probe_edit_ip_label">IP Address</string>
+    <string name="probe_edit_https_title">Use HTTPS (SSL)</string>
+    <string name="probe_edit_https_description">Ignores certificate errors</string>
+    <string name="probe_edit_board_label">Board: %1$s</string>
+    <string name="probe_edit_board_unknown">Unknown</string>
+    <string name="probe_edit_test_interface_label">Test Interface</string>
+    <string name="probe_edit_test_interface_manual">Test Interface (Manual)</string>
+    <string name="probe_edit_verify_button">Verify Probe</string>
+
+    <!-- Test Profile Edit -->
+    <string name="profile_edit_name_label">Profile Name</string>
+    <string name="profile_edit_description_label">Description</string>
+    <string name="profile_edit_run_tdr_title">Run TDR (Cable-Test)</string>
+    <string name="profile_edit_run_tdr_support">Requires compatible probe</string>
+    <string name="profile_edit_run_link_title">Run Link Status Test</string>
+    <string name="profile_edit_run_lldp_title">Run LLDP/CDP Neighbor Test</string>
+    <string name="profile_edit_run_ping_title">Run Ping Test</string>
+    <string name="profile_edit_run_speed_title">Run Speed Test</string>
+    <string name="profile_edit_run_speed_support">Requires server configuration on the client</string>
+    <string name="profile_edit_ping_header">Ping Configuration</string>
+    <string name="profile_edit_ping_header_description">Configure ping targets (max 3)</string>
+    <string name="profile_edit_quick_fill">Quick Fill</string>
+    <string name="profile_edit_quick_fill_gateway">Gateway</string>
+    <string name="profile_edit_quick_fill_google">Google</string>
+    <string name="profile_edit_quick_fill_cloudflare">Cloudflare</string>
+    <string name="profile_edit_custom_targets">Custom Targets</string>
+    <string name="profile_edit_target_label">Target %1$d</string>
+    <string name="profile_edit_target_placeholder">IP, hostname, or DHCP_GATEWAY</string>
+    <string name="profile_edit_invalid_target_full">Invalid IP/hostname. No http://, https://, or www.</string>
+    <string name="profile_edit_invalid_target_short">Invalid IP/hostname</string>
+    <string name="profile_edit_remove_target">Remove Target %1$d</string>
+    <string name="profile_edit_add_target">Add Target %1$d</string>
+    <string name="profile_edit_ping_count_label">Ping Count (1-20)</string>
+    <string name="profile_edit_ping_count_support">Ping count per target (default: 4)</string>
+    <string name="profile_edit_thresholds_title">Test Quality Thresholds</string>
+    <string name="profile_edit_thresholds_description">Configure pass/fail criteria for each section. Empty values use defaults.</string>
+    <string name="profile_edit_link_section_title">Link</string>
+    <string name="profile_edit_link_min_rate_label">Minimum speed (e.g. 1G, 100M)</string>
+    <string name="profile_edit_ping_local_section_title">Local ping (gateway/internal network)</string>
+    <string name="profile_edit_ping_external_section_title">External ping</string>
+    <string name="profile_edit_gateway_policy_label">Fail if unresolved</string>
+    <string name="profile_edit_speed_section_title">Speed Test</string>
+
+    <!-- Test Profile List -->
+    <string name="profile_list_new_profile">NEW PROFILE</string>
+    <string name="profile_list_create_profile">CREATE PROFILE</string>
+
+    <!-- Settings -->
+    <string name="settings_language_en">English 🇬🇧</string>
+    <string name="settings_language_it">Italian 🇮🇹</string>
+    <string name="settings_id_strategy_dialog_title">ID Numbering Strategy</string>
+
+    <!-- Splash -->
+    <string name="splash_logo_description">MikLink Logo</string>
+    <string name="splash_shitworks_logo_description">Shitworks Logo</string>
 </resources>

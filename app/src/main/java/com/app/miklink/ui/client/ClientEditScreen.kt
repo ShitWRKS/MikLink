@@ -78,14 +78,23 @@ fun ClientEditScreen(
         )
     }
 
-    val speedTestPreview = remember(speedTestServerAddress) {
-        speedTestServerAddress.takeIf { it.isNotBlank() } ?: "Not configured"
+    val notConfiguredText = stringResource(R.string.client_edit_not_configured)
+    val speedTestPreview = remember(speedTestServerAddress, notConfiguredText) {
+        speedTestServerAddress.takeIf { it.isNotBlank() } ?: notConfiguredText
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (viewModel.isEditing) "Edit Client" else "New Client") },
+                title = {
+                    Text(
+                        text = if (viewModel.isEditing) {
+                            stringResource(R.string.client_edit_title_edit)
+                        } else {
+                            stringResource(R.string.client_edit_title_new)
+                        }
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(id = com.app.miklink.R.string.back))
@@ -99,7 +108,7 @@ fun ClientEditScreen(
                     ) {
                         Icon(
                             Icons.Default.Save,
-                            contentDescription = "Save"
+                            contentDescription = stringResource(R.string.save)
                         )
                     }
                 }
@@ -114,7 +123,7 @@ fun ClientEditScreen(
                     .navigationBarsPadding(),
                 enabled = companyName.isNotBlank()
             ) {
-                Text("Save Client")
+                Text(stringResource(R.string.client_edit_save))
             }
         }
     ) { padding ->
@@ -134,7 +143,7 @@ fun ClientEditScreen(
             OutlinedTextField(
                 value = companyName,
                 onValueChange = { viewModel.companyName.value = it },
-                label = { Text("Company Name *") },
+                label = { Text(stringResource(R.string.client_edit_company_label)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 isError = companyName.isBlank()
@@ -143,8 +152,8 @@ fun ClientEditScreen(
             OutlinedTextField(
                 value = location,
                 onValueChange = { viewModel.location.value = it },
-                label = { Text("Location") },
-                placeholder = { Text("e.g., Sede, Filiale Roma") },
+                label = { Text(stringResource(R.string.client_edit_location_label)) },
+                placeholder = { Text(stringResource(R.string.client_edit_location_placeholder)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
@@ -152,8 +161,8 @@ fun ClientEditScreen(
             OutlinedTextField(
                 value = notes,
                 onValueChange = { viewModel.notes.value = it },
-                label = { Text("Notes") },
-                placeholder = { Text("Additional information...") },
+                label = { Text(stringResource(R.string.report_detail_edit_notes)) },
+                placeholder = { Text(stringResource(R.string.client_edit_notes_placeholder)) },
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 2,
                 maxLines = 4
@@ -164,11 +173,16 @@ fun ClientEditScreen(
             // === NETWORK CONFIGURATION (Default Expanded) ===
             CollapsibleSection(
                 icon = Icons.Default.Router,
-                title = "Network",
+                title = stringResource(R.string.client_edit_section_network),
                 isExpanded = networkConfigExpanded,
                 onToggle = { networkConfigExpanded = !networkConfigExpanded },
                 preview = if (!networkConfigExpanded) {
-                    if (networkMode == NetworkMode.DHCP) "DHCP" else "Static: ${staticCidr.ifBlank { "Not configured" }}"
+                    if (networkMode == NetworkMode.DHCP) {
+                        stringResource(R.string.detail_value_dhcp)
+                    } else {
+                        val cidrPreview = staticCidr.ifBlank { stringResource(R.string.client_edit_not_configured) }
+                        stringResource(R.string.client_edit_network_preview_static, cidrPreview)
+                    }
                 } else null
             ) {
                 // Network Mode Toggle
@@ -186,7 +200,7 @@ fun ClientEditScreen(
                     ) {
                         Icon(Icons.Default.Wifi, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(4.dp))
-                        Text("DHCP")
+                        Text(stringResource(R.string.detail_value_dhcp))
                     }
 
                     Button(
@@ -199,7 +213,7 @@ fun ClientEditScreen(
                     ) {
                         Icon(Icons.Default.Settings, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(4.dp))
-                        Text("Static")
+                        Text(stringResource(R.string.detail_value_static))
                     }
                 }
 
@@ -207,25 +221,25 @@ fun ClientEditScreen(
                     OutlinedTextField(
                         value = staticCidr,
                         onValueChange = { viewModel.staticCidr.value = it },
-                        label = { Text("Static IP (CIDR)") },
-                        placeholder = { Text("es. 192.168.1.20/24") },
+                        label = { Text(stringResource(R.string.client_edit_static_ip_label)) },
+                        placeholder = { Text(stringResource(R.string.client_edit_static_ip_placeholder)) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
-                        supportingText = { Text("Formato: IP/Subnet") }
+                        supportingText = { Text(stringResource(R.string.client_edit_static_ip_support)) }
                     )
                     
                     OutlinedTextField(
                         value = staticGateway,
                         onValueChange = { viewModel.staticGateway.value = it },
-                        label = { Text("Gateway") },
-                        placeholder = { Text("es. 192.168.1.1") },
+                        label = { Text(stringResource(R.string.detail_label_gateway)) },
+                        placeholder = { Text(stringResource(R.string.client_edit_gateway_placeholder)) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
                     )
                 }
 
                 Spacer(Modifier.height(8.dp))
-                Text("Min Link Rate", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Medium)
+                Text(stringResource(R.string.client_edit_min_link_rate), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Medium)
                 val options = listOf("10M", "100M", "1G", "10G")
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -248,7 +262,7 @@ fun ClientEditScreen(
             // === SOCKET CONFIGURATION (Default Collapsed with Preview) ===
             CollapsibleSection(
                 icon = Icons.Default.Cable,
-                title = "Socket Configuration",
+                title = stringResource(R.string.client_edit_section_socket),
                 isExpanded = socketConfigExpanded,
                 onToggle = { socketConfigExpanded = !socketConfigExpanded },
                 preview = if (!socketConfigExpanded) socketPreview else null
@@ -256,8 +270,8 @@ fun ClientEditScreen(
                 OutlinedTextField(
                     value = socketPrefix,
                     onValueChange = { viewModel.socketPrefix.value = it },
-                    label = { Text("Prefix") },
-                    placeholder = { Text("SW, NET, PR") },
+                    label = { Text(stringResource(R.string.client_edit_prefix_label)) },
+                    placeholder = { Text(stringResource(R.string.client_edit_prefix_placeholder)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
@@ -265,14 +279,14 @@ fun ClientEditScreen(
                 OutlinedTextField(
                     value = socketSeparator,
                     onValueChange = { viewModel.socketSeparator.value = it },
-                    label = { Text("Separator") },
-                    placeholder = { Text("-") },
+                    label = { Text(stringResource(R.string.client_edit_separator_label)) },
+                    placeholder = { Text(stringResource(R.string.client_edit_separator_placeholder)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    supportingText = { Text("Character between parts") }
+                    supportingText = { Text(stringResource(R.string.client_edit_separator_support)) }
                 )
 
-                Text("Number Padding", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Medium)
+                Text(stringResource(R.string.client_edit_padding_label), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Medium)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -298,8 +312,8 @@ fun ClientEditScreen(
                 OutlinedTextField(
                     value = socketSuffix,
                     onValueChange = { viewModel.socketSuffix.value = it },
-                    label = { Text("Suffix") },
-                    placeholder = { Text("A, B, -1") },
+                    label = { Text(stringResource(R.string.client_edit_suffix_label)) },
+                    placeholder = { Text(stringResource(R.string.client_edit_suffix_placeholder)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
@@ -332,7 +346,7 @@ fun ClientEditScreen(
             // === SPEED TEST CONFIGURATION (Default Collapsed with Preview) ===
             CollapsibleSection(
                 icon = Icons.Default.Speed,
-                title = "Speed Test",
+                title = stringResource(R.string.client_edit_section_speed),
                 isExpanded = speedTestConfigExpanded,
                 onToggle = { speedTestConfigExpanded = !speedTestConfigExpanded },
                 preview = if (!speedTestConfigExpanded) speedTestPreview else null
@@ -340,30 +354,30 @@ fun ClientEditScreen(
                 OutlinedTextField(
                     value = speedTestServerAddress,
                     onValueChange = { viewModel.speedTestServerAddress.value = it },
-                    label = { Text("Server Address") },
-                    placeholder = { Text("192.168.1.1") },
+                    label = { Text(stringResource(R.string.client_edit_server_address_label)) },
+                    placeholder = { Text(stringResource(R.string.client_edit_server_address_placeholder)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    supportingText = { Text("IP or hostname of MikroTik server") }
+                    supportingText = { Text(stringResource(R.string.client_edit_server_address_support)) }
                 )
 
                 OutlinedTextField(
                     value = speedTestServerUser,
                     onValueChange = { viewModel.speedTestServerUser.value = it },
-                    label = { Text("Username") },
-                    placeholder = { Text("admin") },
+                    label = { Text(stringResource(R.string.client_edit_username_label)) },
+                    placeholder = { Text(stringResource(R.string.client_edit_username_placeholder)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    supportingText = { Text("Optional (default: admin)") }
+                    supportingText = { Text(stringResource(R.string.client_edit_username_support)) }
                 )
 
                 OutlinedTextField(
                     value = speedTestServerPassword,
                     onValueChange = { viewModel.speedTestServerPassword.value = it },
-                    label = { Text("Password") },
+                    label = { Text(stringResource(R.string.client_edit_password_label)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    supportingText = { Text("Optional") },
+                    supportingText = { Text(stringResource(R.string.client_edit_password_support)) },
                     visualTransformation = if (speedTestPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                     trailingIcon = {
                         val icon = if (speedTestPasswordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility
@@ -441,9 +455,14 @@ private fun CollapsibleSection(
                 },
                 trailingContent = {
                     IconButton(onClick = onToggle) {
+                        val description = if (isExpanded) {
+                            stringResource(R.string.collapse)
+                        } else {
+                            stringResource(R.string.expand)
+                        }
                         Icon(
                             if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                            contentDescription = if (isExpanded) "Collapse" else "Expand"
+                            contentDescription = description
                         )
                     }
                 },

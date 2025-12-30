@@ -29,6 +29,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.app.miklink.ui.components.MinimalListItem
 import com.app.miklink.ui.components.ModernSearchBar
+import com.app.miklink.R
 import kotlinx.coroutines.launch
 
 // Removed legacy WebView-based printing imports
@@ -94,7 +95,7 @@ fun ClientListScreen(
             ExtendedFloatingActionButton(
                 onClick = { navController.navigate("client_add") },
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text("NUOVO CLIENTE") },
+                text = { Text(stringResource(R.string.client_list_new_client)) },
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             )
@@ -224,7 +225,7 @@ fun ClientListScreen(
                                                 snackbarHostState.showSnackbar("Errore export: ${e.message}")
                                             }
                                         }
-                                    }) { Icon(Icons.Default.PictureAsPdf, contentDescription = "Export PDF") }
+                                    }) { Icon(Icons.Default.PictureAsPdf, contentDescription = stringResource(R.string.history_export_pdf)) }
                                 }
                             )
                         }

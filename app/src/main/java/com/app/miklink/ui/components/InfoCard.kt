@@ -16,7 +16,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import com.app.miklink.ui.theme.Spacing
+import com.app.miklink.R
 
 /**
  * Dismissible info/tip card with icon
@@ -75,7 +77,7 @@ fun InfoCard(
             IconButton(onClick = onDismiss) {
                 Icon(
                     imageVector = Icons.Default.Close,
-                    contentDescription = "Dismiss",
+                    contentDescription = stringResource(R.string.close),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }

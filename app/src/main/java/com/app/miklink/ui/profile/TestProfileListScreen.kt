@@ -30,6 +30,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.app.miklink.core.domain.model.TestProfile
+import com.app.miklink.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,7 +76,7 @@ fun TestProfileListScreen(
             ExtendedFloatingActionButton(
                 onClick = { navController.navigate("profile_edit/-1") },
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text("NUOVO PROFILO") },
+                text = { Text(stringResource(R.string.profile_list_new_profile)) },
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             )
@@ -136,7 +137,7 @@ fun TestProfileListScreen(
                         ) {
                             Icon(Icons.Default.Add, contentDescription = null)
                             Spacer(Modifier.width(8.dp))
-                            Text("CREA PROFILO")
+                            Text(stringResource(R.string.profile_list_create_profile))
                         }
                     }
                 }

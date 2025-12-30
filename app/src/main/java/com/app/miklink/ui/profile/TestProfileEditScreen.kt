@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
+import com.app.miklink.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
@@ -86,18 +87,18 @@ fun TestProfileEditScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
-                OutlinedTextField(value = profileName, onValueChange = { viewModel.profileName.value = it }, label = { Text("Profile Name") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
-                OutlinedTextField(value = profileDescription, onValueChange = { viewModel.profileDescription.value = it }, label = { Text("Description") }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = profileName, onValueChange = { viewModel.profileName.value = it }, label = { Text(stringResource(R.string.profile_edit_name_label)) }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                OutlinedTextField(value = profileDescription, onValueChange = { viewModel.profileDescription.value = it }, label = { Text(stringResource(R.string.profile_edit_description_label)) }, modifier = Modifier.fillMaxWidth())
             }
 
             item { HorizontalDivider() }
 
             item {
-                SwitchListItem(checked = runTdr, onCheckedChange = { viewModel.runTdr.value = it }, headlineText = "Run TDR (Cable-Test)", supportingText = "Requires compatible probe")
-                SwitchListItem(checked = runLinkStatus, onCheckedChange = { viewModel.runLinkStatus.value = it }, headlineText = "Run Link Status Test")
-                SwitchListItem(checked = runLldp, onCheckedChange = { viewModel.runLldp.value = it }, headlineText = "Run LLDP/CDP Neighbor Test")
-                SwitchListItem(checked = runPing, onCheckedChange = { viewModel.runPing.value = it }, headlineText = "Run Ping Test")
-                SwitchListItem(checked = runSpeedTest, onCheckedChange = { viewModel.runSpeedTest.value = it }, headlineText = "Run Speed Test", supportingText = "Richiede configurazione server nel client")
+                SwitchListItem(checked = runTdr, onCheckedChange = { viewModel.runTdr.value = it }, headlineText = stringResource(R.string.profile_edit_run_tdr_title), supportingText = stringResource(R.string.profile_edit_run_tdr_support))
+                SwitchListItem(checked = runLinkStatus, onCheckedChange = { viewModel.runLinkStatus.value = it }, headlineText = stringResource(R.string.profile_edit_run_link_title))
+                SwitchListItem(checked = runLldp, onCheckedChange = { viewModel.runLldp.value = it }, headlineText = stringResource(R.string.profile_edit_run_lldp_title))
+                SwitchListItem(checked = runPing, onCheckedChange = { viewModel.runPing.value = it }, headlineText = stringResource(R.string.profile_edit_run_ping_title))
+                SwitchListItem(checked = runSpeedTest, onCheckedChange = { viewModel.runSpeedTest.value = it }, headlineText = stringResource(R.string.profile_edit_run_speed_title), supportingText = stringResource(R.string.profile_edit_run_speed_support))
             }
 
             if (runPing) {
@@ -108,13 +109,13 @@ fun TestProfileEditScreen(
                     ) {
                         Column {
                             ListItem(
-                                headlineContent = { Text("Ping Configuration", style = MaterialTheme.typography.titleMedium) },
-                                supportingContent = { Text("Configure ping targets (max 3)") },
+                                headlineContent = { Text(stringResource(R.string.profile_edit_ping_header), style = MaterialTheme.typography.titleMedium) },
+                                supportingContent = { Text(stringResource(R.string.profile_edit_ping_header_description)) },
                                 trailingContent = {
                                     IconButton(onClick = { pingConfigExpanded = !pingConfigExpanded }) {
                                         Icon(
                                             if (pingConfigExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                                            contentDescription = if (pingConfigExpanded) "Collapse" else "Expand"
+                                            contentDescription = if (pingConfigExpanded) stringResource(R.string.collapse) else stringResource(R.string.expand)
                                         )
                                     }
                                 },
@@ -127,7 +128,7 @@ fun TestProfileEditScreen(
                                     verticalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
                                     // Quick Fill Toggles
-                                    Text("Quick Fill", style = MaterialTheme.typography.labelLarge)
+                                    Text(stringResource(R.string.profile_edit_quick_fill), style = MaterialTheme.typography.labelLarge)
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -142,7 +143,7 @@ fun TestProfileEditScreen(
                                         ) {
                                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                                 Icon(Icons.Default.Router, contentDescription = null, modifier = Modifier.size(20.dp))
-                                                Text("Gateway", style = MaterialTheme.typography.labelSmall)
+                                                Text(stringResource(R.string.profile_edit_quick_fill_gateway), style = MaterialTheme.typography.labelSmall)
                                             }
                                         }
                                         
@@ -154,7 +155,7 @@ fun TestProfileEditScreen(
                                         ) {
                                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                                 Icon(Icons.Default.Cloud, contentDescription = null, modifier = Modifier.size(20.dp))
-                                                Text("Google", style = MaterialTheme.typography.labelSmall)
+                                                Text(stringResource(R.string.profile_edit_quick_fill_google), style = MaterialTheme.typography.labelSmall)
                                             }
                                         }
                                         
@@ -166,7 +167,7 @@ fun TestProfileEditScreen(
                                         ) {
                                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                                 Icon(Icons.Default.Storage, contentDescription = null, modifier = Modifier.size(20.dp))
-                                                Text("Cloudflare", style = MaterialTheme.typography.labelSmall)
+                                                Text(stringResource(R.string.profile_edit_quick_fill_cloudflare), style = MaterialTheme.typography.labelSmall)
                                             }
                                         }
                                     }
@@ -174,20 +175,20 @@ fun TestProfileEditScreen(
                                     HorizontalDivider()
 
                                     // Custom Targets
-                                    Text("Custom Targets", style = MaterialTheme.typography.labelLarge)
+                                    Text(stringResource(R.string.profile_edit_custom_targets), style = MaterialTheme.typography.labelLarge)
                                     
                                     // Target 1 (always visible)
                                     OutlinedTextField(
                                         value = pingTarget1,
                                         onValueChange = { viewModel.pingTarget1.value = it },
-                                        label = { Text("Target 1") },
-                                        placeholder = { Text("IP, hostname, or DHCP_GATEWAY") },
+                                        label = { Text(stringResource(R.string.profile_edit_target_label, 1)) },
+                                        placeholder = { Text(stringResource(R.string.profile_edit_target_placeholder)) },
                                         modifier = Modifier.fillMaxWidth(),
                                         singleLine = true,
                                         isError = pingTarget1.isNotBlank() && !NetworkValidator.isValidTarget(pingTarget1),
                                         supportingText = {
                                             if (pingTarget1.isNotBlank() && !NetworkValidator.isValidTarget(pingTarget1)) {
-                                                Text("Invalid IP/hostname. No http://, https://, or www.", color = MaterialTheme.colorScheme.error)
+                                                Text(stringResource(R.string.profile_edit_invalid_target_full), color = MaterialTheme.colorScheme.error)
                                             }
                                         }
                                     )
@@ -202,14 +203,14 @@ fun TestProfileEditScreen(
                                             OutlinedTextField(
                                                 value = pingTarget2,
                                                 onValueChange = { viewModel.pingTarget2.value = it },
-                                                label = { Text("Target 2") },
-                                                placeholder = { Text("IP, hostname, or DHCP_GATEWAY") },
+                                                label = { Text(stringResource(R.string.profile_edit_target_label, 2)) },
+                                                placeholder = { Text(stringResource(R.string.profile_edit_target_placeholder)) },
                                                 modifier = Modifier.weight(1f),
                                                 singleLine = true,
                                                 isError = pingTarget2.isNotBlank() && !NetworkValidator.isValidTarget(pingTarget2),
                                                 supportingText = {
                                                     if (pingTarget2.isNotBlank() && !NetworkValidator.isValidTarget(pingTarget2)) {
-                                                        Text("Invalid IP/hostname", color = MaterialTheme.colorScheme.error)
+                                                        Text(stringResource(R.string.profile_edit_invalid_target_short), color = MaterialTheme.colorScheme.error)
                                                     }
                                                 }
                                             )
@@ -220,7 +221,7 @@ fun TestProfileEditScreen(
                                                 },
                                                 modifier = Modifier.padding(top = 8.dp)
                                             ) {
-                                                Icon(Icons.Default.Remove, contentDescription = "Remove Target 2")
+                                                Icon(Icons.Default.Remove, contentDescription = stringResource(R.string.profile_edit_remove_target, 2))
                                             }
                                         }
                                     }
@@ -235,14 +236,14 @@ fun TestProfileEditScreen(
                                             OutlinedTextField(
                                                 value = pingTarget3,
                                                 onValueChange = { viewModel.pingTarget3.value = it },
-                                                label = { Text("Target 3") },
-                                                placeholder = { Text("IP, hostname, or DHCP_GATEWAY") },
+                                                label = { Text(stringResource(R.string.profile_edit_target_label, 3)) },
+                                                placeholder = { Text(stringResource(R.string.profile_edit_target_placeholder)) },
                                                 modifier = Modifier.weight(1f),
                                                 singleLine = true,
                                                 isError = pingTarget3.isNotBlank() && !NetworkValidator.isValidTarget(pingTarget3),
                                                 supportingText = {
                                                     if (pingTarget3.isNotBlank() && !NetworkValidator.isValidTarget(pingTarget3)) {
-                                                        Text("Invalid IP/hostname", color = MaterialTheme.colorScheme.error)
+                                                        Text(stringResource(R.string.profile_edit_invalid_target_short), color = MaterialTheme.colorScheme.error)
                                                     }
                                                 }
                                             )
@@ -253,7 +254,7 @@ fun TestProfileEditScreen(
                                                 },
                                                 modifier = Modifier.padding(top = 8.dp)
                                             ) {
-                                                Icon(Icons.Default.Remove, contentDescription = "Remove Target 3")
+                                                Icon(Icons.Default.Remove, contentDescription = stringResource(R.string.profile_edit_remove_target, 3))
                                             }
                                         }
                                     }
@@ -270,7 +271,7 @@ fun TestProfileEditScreen(
                                             ) {
                                                 Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                                                 Spacer(Modifier.width(4.dp))
-                                                Text("Add Target 2")
+                                                Text(stringResource(R.string.profile_edit_add_target, 2))
                                             }
                                         }
                                         if (!showTarget3 && showTarget2) {
@@ -280,7 +281,7 @@ fun TestProfileEditScreen(
                                             ) {
                                                 Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                                                 Spacer(Modifier.width(4.dp))
-                                                Text("Add Target 3")
+                                                Text(stringResource(R.string.profile_edit_add_target, 3))
                                             }
                                         }
                                     }
@@ -291,10 +292,10 @@ fun TestProfileEditScreen(
                                     OutlinedTextField(
                                         value = pingCount,
                                         onValueChange = { viewModel.pingCount.value = it },
-                                        label = { Text("Ping Count (1-20)") },
+                                        label = { Text(stringResource(R.string.profile_edit_ping_count_label)) },
                                         modifier = Modifier.fillMaxWidth(),
                                         singleLine = true,
-                                        supportingText = { Text("Numero di ping per ogni target (default: 4)") },
+                                        supportingText = { Text(stringResource(R.string.profile_edit_ping_count_support)) },
                                         isError = pingCount.toIntOrNull()?.let { it < 1 || it > 20 } ?: (pingCount.isNotBlank())
                                     )
                                     
@@ -315,21 +316,21 @@ fun TestProfileEditScreen(
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Text("Soglie qualita test", style = MaterialTheme.typography.titleMedium)
-                        Text("Configura i criteri di pass/fail per ogni sezione. I valori vuoti usano le predefinite.", style = MaterialTheme.typography.bodySmall)
+                        Text(stringResource(R.string.profile_edit_thresholds_title), style = MaterialTheme.typography.titleMedium)
+                        Text(stringResource(R.string.profile_edit_thresholds_description), style = MaterialTheme.typography.bodySmall)
 
-                        Text("Link", style = MaterialTheme.typography.labelLarge)
+                        Text(stringResource(R.string.profile_edit_link_section_title), style = MaterialTheme.typography.labelLarge)
                         OutlinedTextField(
                             value = linkMinRate,
                             onValueChange = { viewModel.linkMinRate.value = it },
-                            label = { Text("Velocita minima (es. 1G, 100M)") },
+                            label = { Text(stringResource(R.string.profile_edit_link_min_rate_label)) },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true
                         )
 
                         HorizontalDivider()
 
-                        Text("Ping locale (gateway/rete interna)", style = MaterialTheme.typography.labelLarge)
+                        Text(stringResource(R.string.profile_edit_ping_local_section_title), style = MaterialTheme.typography.labelLarge)
                         ThresholdRow(
                             leftLabel = "Loss %",
                             leftValue = pingLocalMaxLoss,
@@ -348,7 +349,7 @@ fun TestProfileEditScreen(
                             rightEnabled = false
                         )
 
-                        Text("Ping esterno", style = MaterialTheme.typography.labelLarge)
+                        Text(stringResource(R.string.profile_edit_ping_external_section_title), style = MaterialTheme.typography.labelLarge)
                         ThresholdRow(
                             leftLabel = "Loss %",
                             leftValue = pingExternalMaxLoss,
@@ -367,7 +368,7 @@ fun TestProfileEditScreen(
                             rightEnabled = false,
                             trailingContent = {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text("Fail se non risolto", style = MaterialTheme.typography.bodySmall)
+                                    Text(stringResource(R.string.profile_edit_gateway_policy_label), style = MaterialTheme.typography.bodySmall)
                                     Switch(
                                         checked = gatewayPolicyFail,
                                         onCheckedChange = { viewModel.gatewayPolicyFail.value = it }
@@ -378,7 +379,7 @@ fun TestProfileEditScreen(
 
                         HorizontalDivider()
 
-                        Text("Speed Test", style = MaterialTheme.typography.labelLarge)
+                        Text(stringResource(R.string.profile_edit_speed_section_title), style = MaterialTheme.typography.labelLarge)
                         ThresholdRow(
                             leftLabel = "Ping ms",
                             leftValue = speedMaxPing,
