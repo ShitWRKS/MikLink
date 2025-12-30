@@ -93,7 +93,6 @@ dependencies {
     implementation(libs.moshi)
     implementation(libs.moshi.kotlin)
     implementation(libs.okhttp)
-    implementation(libs.logging.interceptor)
 
     // DataStore
     implementation(libs.datastore.preferences)

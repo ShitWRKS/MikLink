@@ -29,6 +29,7 @@
     <string name="error_unknown">Si è verificato un errore sconosciuto</string>
     <string name="error_probe_connection_unknown">Errore sconosciuto durante la connessione alla sonda.</string>
     <string name="error_probe_connection_tls_handshake">Handshake HTTPS fallito: TLS/cipher non compatibile o certificato rifiutato. Installa un certificato valido su RouterOS oppure usa HTTP.</string>
+    <string name="probe_verify_http_fallback_warning">Handshake HTTPS fallito. Verifica completata tramite fallback HTTP.</string>
     <string name="error_static_cidr_missing">Indirizzo CIDR mancante</string>
     <string name="error_static_gateway_missing">Gateway mancante per configurazione statica</string>
     <string name="error_cable_test_timeout">Timeout durante cable-test (>%1$ds). Il comando potrebbe richiedere più tempo su questo modello.</string>
@@ -61,6 +62,10 @@
     <string name="dashboard_btn_settings">Impostazioni</string>
     <string name="dashboard_btn_start_test">AVVIA TEST</string>
     <string name="dashboard_btn_configure_test">CONFIGURA TEST</string>
+    <string name="dashboard_subtitle_ready">Pronto per avviare il test</string>
+    <string name="dashboard_subtitle_setup">Completa la configurazione</string>
+    <string name="dashboard_cta_ready">Tutto pronto. Avvia il test.</string>
+    <string name="dashboard_cta_hint">Seleziona cliente, profilo e presa per abilitare il test.</string>
     <string name="dashboard_section_client">Cliente</string>
     <string name="dashboard_select_client">Seleziona Cliente</string>
     <string name="dashboard_click_to_select">Clicca per selezionare</string>
@@ -72,6 +77,17 @@
     <string name="dashboard_section_socket">Socket ID</string>
     <string name="dashboard_socket_label">ID Presa</string>
     <string name="dashboard_socket_placeholder">Es. Ufficio 1, Sala Riunioni</string>
+    <string name="dashboard_setup_title">Procedura guidata</string>
+    <string name="dashboard_step_required">Obbligatorio</string>
+    <string name="dashboard_profile_tests_title">Test del profilo</string>
+    <string name="dashboard_probe_title">Stato sonda</string>
+    <string name="dashboard_probe_missing">Nessuna sonda ancora configurata</string>
+    <string name="dashboard_probe_status_label">Stato</string>
+    <string name="dashboard_probe_online">Online</string>
+    <string name="dashboard_probe_offline">Offline</string>
+    <string name="dashboard_probe_ip">Indirizzo IP</string>
+    <string name="dashboard_probe_interface">Interfaccia</string>
+    <string name="dashboard_probe_transport">Trasporto</string>
 
     <!-- Settings -->
     <string name="settings_title">Impostazioni</string>
@@ -183,6 +199,16 @@
     <string name="test_execution_title_failure">Test fallito</string>
     <string name="test_execution_title_error">Errore test</string>
     <string name="test_execution_title_ready">Pronto per il test</string>
+    <string name="test_execution_section_saving">Salvataggio report</string>
+    <string name="test_execution_section_report">Report</string>
+    <string name="test_execution_section_unknown">Sconosciuto</string>
+    <string name="test_execution_fail_reason_title">Motivo</string>
+    <string name="test_execution_fail_reason_fallback">Controlla i log per i dettagli.</string>
+    <string name="test_execution_subtitle_running">Analisi in corso</string>
+    <string name="test_execution_subtitle_success">Tutte le sezioni completate</string>
+    <string name="test_execution_subtitle_failure">Alcune sezioni non sono OK</string>
+    <string name="test_execution_subtitle_error">Verifica la sonda e riprova</string>
+    <string name="test_execution_subtitle_ready">Pronto per iniziare</string>
     <string name="test_execution_running_topbar">Test in corso...</string>
     <string name="test_execution_completed_title_pass">Test Completato</string>
     <string name="test_execution_completed_title_fail">Test Fallito</string>
@@ -243,6 +269,7 @@
     <string name="status_fail">FAIL</string>
     <string name="status_skip">SKIP</string>
     <string name="status_info">INFO</string>
+    <string name="status_pending">IN ATTESA</string>
     <string name="test_passed">TEST SUPERATO</string>
     <string name="test_failed">TEST FALLITO</string>
     

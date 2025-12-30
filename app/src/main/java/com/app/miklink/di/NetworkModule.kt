@@ -10,7 +10,6 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import java.security.cert.X509Certificate
@@ -65,23 +64,14 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(
-        loggingInterceptor: HttpLoggingInterceptor
-    ): OkHttpClient {
+    fun provideOkHttpClient(): OkHttpClient {
         val builder = OkHttpClient.Builder()
-            .addInterceptor(loggingInterceptor)
             // Timeout: massimo 60s per request come richiesto
             .connectTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
             .readTimeout(60, TimeUnit.SECONDS)
             .callTimeout(60, TimeUnit.SECONDS)
         return builder.build()
-    }
-
-    @Provides
-    @Singleton
-    fun provideLoggingInterceptor(): HttpLoggingInterceptor {
-        return HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY)
     }
 
     @Provides

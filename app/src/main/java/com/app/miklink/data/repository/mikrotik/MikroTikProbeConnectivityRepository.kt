@@ -32,7 +32,7 @@ class MikroTikProbeConnectivityRepository @Inject constructor(
     private val callExecutor: MikroTikCallExecutor
 ) : ProbeConnectivityRepository {
 
-    private val logTag = "ProbeConnectivityRepository"
+    private val logTag = "ProbeConnectivityRepo"
 
     override suspend fun checkProbeConnection(probe: ProbeConfig): ProbeCheckResult =
         withContext(Dispatchers.IO) {
