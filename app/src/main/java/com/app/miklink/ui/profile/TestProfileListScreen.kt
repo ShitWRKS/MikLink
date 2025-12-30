@@ -235,18 +235,28 @@ fun TestProfileCard(
                 Spacer(Modifier.height(8.dp))
 
                 // Test attivi chips
+                val neutralBadgeContent = MaterialTheme.colorScheme.onSurfaceVariant
+                val neutralBadgeBackground = MaterialTheme.colorScheme.surfaceContainerHigh
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     if (profile.runTdr) {
-                        TestBadge("TDR", Color(0xFF4CAF50))
+                        TestBadge(
+                            label = "TDR",
+                            color = neutralBadgeContent,
+                            backgroundColor = neutralBadgeBackground
+                        )
                     }
                     if (profile.runLinkStatus) {
-                        TestBadge("LINK", Color(0xFF2196F3))
+                        TestBadge("LINK", MaterialTheme.colorScheme.primary)
                     }
                     if (profile.runLldp) {
-                        TestBadge("LLDP", Color(0xFFFF9800))
+                        TestBadge(
+                            label = "LLDP",
+                            color = neutralBadgeContent,
+                            backgroundColor = neutralBadgeBackground
+                        )
                     }
                     if (profile.runPing) {
                         TestBadge("PING", MaterialTheme.colorScheme.primary)
@@ -291,10 +301,14 @@ fun TestProfileCard(
 }
 
 @Composable
-fun TestBadge(label: String, color: Color) {
+fun TestBadge(
+    label: String,
+    color: Color,
+    backgroundColor: Color = color.copy(alpha = 0.15f)
+) {
     Surface(
         shape = RoundedCornerShape(4.dp),
-        color = color.copy(alpha = 0.15f)
+        color = backgroundColor
     ) {
         Text(
             text = label,

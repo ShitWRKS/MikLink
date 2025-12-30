@@ -26,6 +26,7 @@ import androidx.navigation.NavController
 import androidx.compose.ui.res.stringResource
 import com.app.miklink.R
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import com.app.miklink.ui.theme.MikLinkThemeTokens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,6 +34,7 @@ fun ProbeEditScreen(
     navController: NavController,
     viewModel: ProbeEditViewModel = hiltViewModel()
 ) {
+    val semantic = MikLinkThemeTokens.semantic
     // probe name removed from model — not tracked in the UI
     val ipAddress by viewModel.ipAddress.collectAsStateWithLifecycle()
     val username by viewModel.username.collectAsStateWithLifecycle()
@@ -157,7 +159,7 @@ fun ProbeEditScreen(
                     }
                 }
                 is VerificationState.Error -> {
-                    Text(state.message, color = MaterialTheme.colorScheme.error)
+                    Text(state.message, color = semantic.failure)
                     Spacer(Modifier.height(8.dp))
                     VerifyProbeButton(onClick = viewModel::onVerifyClicked)
                     OutlinedTextField(value = testInterface, onValueChange = { viewModel.testInterface.value = it }, label = { Text(stringResource(R.string.probe_edit_test_interface_manual)) }, modifier = Modifier.fillMaxWidth(), singleLine = true)

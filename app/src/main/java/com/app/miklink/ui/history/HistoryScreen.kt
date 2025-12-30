@@ -319,7 +319,7 @@ fun HistoryScreen(
                             showDeleteDialog = null
                         },
                         colors = ButtonDefaults.textButtonColors(
-                            contentColor = MaterialTheme.colorScheme.error
+                            contentColor = semantic.failure
                         )
                     ) {
                         Text(stringResource(R.string.delete))
@@ -436,7 +436,7 @@ fun HistoryScreen(
                 Icon(
                     Icons.Default.Warning,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.error,
+                    tint = semantic.failure,
                     modifier = Modifier.size(32.dp)
                 )
             },
@@ -751,7 +751,7 @@ fun ReportListItem(
                     onDismissRequest = { showMenu = false }
                 ) {
                     DropdownMenuItem(
-                        text = { Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error) },
+                        text = { Text(stringResource(R.string.delete), color = semantic.failure) },
                         onClick = {
                             onDelete()
                             showMenu = false
@@ -760,7 +760,7 @@ fun ReportListItem(
                             Icon(
                                 Icons.Default.Delete,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.error
+                                tint = semantic.failure
                             )
                         }
                     )

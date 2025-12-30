@@ -16,6 +16,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.app.miklink.utils.NetworkValidator
+import com.app.miklink.ui.theme.MikLinkThemeTokens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -23,6 +24,7 @@ fun TestProfileEditScreen(
     navController: NavController,
     viewModel: TestProfileViewModel = hiltViewModel()
 ) {
+    val semantic = MikLinkThemeTokens.semantic
     val isSaved by viewModel.isSaved.collectAsStateWithLifecycle()
     if (isSaved) {
         LaunchedEffect(Unit) { navController.popBackStack() }
@@ -188,7 +190,7 @@ fun TestProfileEditScreen(
                                         isError = pingTarget1.isNotBlank() && !NetworkValidator.isValidTarget(pingTarget1),
                                         supportingText = {
                                             if (pingTarget1.isNotBlank() && !NetworkValidator.isValidTarget(pingTarget1)) {
-                                                Text(stringResource(R.string.profile_edit_invalid_target_full), color = MaterialTheme.colorScheme.error)
+                                                Text(stringResource(R.string.profile_edit_invalid_target_full), color = semantic.failure)
                                             }
                                         }
                                     )
@@ -210,7 +212,7 @@ fun TestProfileEditScreen(
                                                 isError = pingTarget2.isNotBlank() && !NetworkValidator.isValidTarget(pingTarget2),
                                                 supportingText = {
                                                     if (pingTarget2.isNotBlank() && !NetworkValidator.isValidTarget(pingTarget2)) {
-                                                        Text(stringResource(R.string.profile_edit_invalid_target_short), color = MaterialTheme.colorScheme.error)
+                                                        Text(stringResource(R.string.profile_edit_invalid_target_short), color = semantic.failure)
                                                     }
                                                 }
                                             )
@@ -243,7 +245,7 @@ fun TestProfileEditScreen(
                                                 isError = pingTarget3.isNotBlank() && !NetworkValidator.isValidTarget(pingTarget3),
                                                 supportingText = {
                                                     if (pingTarget3.isNotBlank() && !NetworkValidator.isValidTarget(pingTarget3)) {
-                                                        Text(stringResource(R.string.profile_edit_invalid_target_short), color = MaterialTheme.colorScheme.error)
+                                                        Text(stringResource(R.string.profile_edit_invalid_target_short), color = semantic.failure)
                                                     }
                                                 }
                                             )

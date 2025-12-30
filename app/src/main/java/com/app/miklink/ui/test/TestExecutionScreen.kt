@@ -586,13 +586,14 @@ private fun RepeatDialog(
     onDismiss: () -> Unit,
     onConfirm: () -> Unit
 ) {
+    val semantic = MikLinkThemeTokens.semantic
     AlertDialog(
         onDismissRequest = onDismiss,
         icon = {
             Icon(
                 Icons.Default.Warning,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.error
+                tint = semantic.failure
             )
         },
         title = { Text(text = stringResource(id = R.string.test_execution_repeat_title), fontWeight = FontWeight.Bold) },
@@ -621,9 +622,13 @@ private fun ErrorState(
     message: String,
     modifier: Modifier = Modifier
 ) {
+    val semantic = MikLinkThemeTokens.semantic
     Card(
         modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+        colors = CardDefaults.cardColors(
+            containerColor = semantic.failureContainer,
+            contentColor = semantic.onFailureContainer
+        )
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -632,7 +637,7 @@ private fun ErrorState(
             Icon(
                 imageVector = Icons.Default.Error,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.error
+                tint = semantic.failure
             )
             Text(
                 text = stringResource(id = R.string.test_execution_title_error),

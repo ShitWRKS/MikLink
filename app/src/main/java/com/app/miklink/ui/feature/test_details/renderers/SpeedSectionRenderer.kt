@@ -21,7 +21,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -110,8 +109,8 @@ class SpeedSectionRenderer : SectionRenderer {
                 .fillMaxWidth()
                 .padding(top = 6.dp),
             colors = CardDefaults.cardColors(
-                containerColor = WarningContainer,
-                contentColor = WarningOnContainer
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
             ),
             shape = RoundedCornerShape(12.dp)
         ) {
@@ -171,6 +170,4 @@ class SpeedSectionRenderer : SectionRenderer {
     private val localCpuRegex = Regex("local-cpu-load[:=]\\s*([^,\\s)]+)", RegexOption.IGNORE_CASE)
     private val remoteCpuRegex = Regex("remote-cpu-load[:=]\\s*([^,\\s)]+)", RegexOption.IGNORE_CASE)
 
-    private val WarningContainer = Color(0xFFF6E6B8)
-    private val WarningOnContainer = Color(0xFF5B4A1A)
 }

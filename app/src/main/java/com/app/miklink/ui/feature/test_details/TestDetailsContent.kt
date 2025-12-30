@@ -125,7 +125,7 @@ private fun SectionCard(
             Text(
                 text = warning,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.error
+                color = semantic.failure
             )
         }
         renderer.Render(section)

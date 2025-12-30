@@ -356,19 +356,29 @@ fun DashboardScreen(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ProfileTestsRow(profile: TestProfile, modifier: Modifier = Modifier) {
+    val neutralBadgeContent = MaterialTheme.colorScheme.onSurfaceVariant
+    val neutralBadgeBackground = MaterialTheme.colorScheme.surfaceContainerHigh
     FlowRow(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         if (profile.runTdr) {
-            TestBadge(label = "TDR", color = Color(0xFF2F6F4E))
+            TestBadge(
+                label = "TDR",
+                color = neutralBadgeContent,
+                backgroundColor = neutralBadgeBackground
+            )
         }
         if (profile.runLinkStatus) {
             TestBadge(label = "LINK", color = MaterialTheme.colorScheme.primary)
         }
         if (profile.runLldp) {
-            TestBadge(label = "LLDP", color = Color(0xFFFFA726))
+            TestBadge(
+                label = "LLDP",
+                color = neutralBadgeContent,
+                backgroundColor = neutralBadgeBackground
+            )
         }
         if (profile.runPing) {
             TestBadge(label = "PING", color = MaterialTheme.colorScheme.primary)
