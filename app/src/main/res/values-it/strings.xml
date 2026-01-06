@@ -103,6 +103,11 @@
     <string name="settings_manage_profiles_desc">Aggiungi o rimuovi profili di test</string>
     <string name="settings_manage_clients">Gestisci Clienti</string>
     <string name="settings_manage_clients_desc">Gestisci anagrafica clienti</string>
+    <string name="settings_backup">Backup e Ripristino</string>
+    <string name="settings_backup_desc">Esporta o ripristina la configurazione</string>
+    <string name="backup_export">Esporta backup</string>
+    <string name="backup_import">Ripristina da file</string>
+    <string name="backup_status">Stato backup</string>
     <!-- Theme selection removed: app uses automatic system theme only (no UI settings) -->
     <string name="settings_category_pdf">Report PDF</string>
     <string name="settings_pdf_preferences">Preferenze Rapporto PDF</string>
@@ -349,7 +354,7 @@
     <string name="test_details_speed_jitter">Jitter</string>
     <string name="test_details_speed_loss">Perdita</string>
     <string name="test_details_speed_warning_title">Attenzione</string>
-    <string name="test_details_speed_warning_fallback">I risultati possono essere limitati dalla CPU; la generazione/terminazione del traffico potrebbe non rappresentare le prestazioni di forwarding.</string>
+    <string name="test_details_speed_warning_fallback">I risultati dello Speed Test potrebbero essere influenzati dall’elevato utilizzo della CPU rilevato su client o server. </string>
     <string name="show_password">Mostra password</string>
     <string name="hide_password">Nascondi password</string>
 

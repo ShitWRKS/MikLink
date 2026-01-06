@@ -60,6 +60,7 @@ fun NavGraph() {
         // Settings and Management Screens
         composable("settings") { SettingsScreen(navController) }
         composable("pdf_settings") { com.app.miklink.ui.settings.PdfSettingsScreen(navController) }
+        composable("backup_settings") { com.app.miklink.ui.settings.BackupSettingsScreen(navController) }
         
         // Probe Routes (singleton probe)
         composable("probe_config") { ProbeEditScreen(navController) }

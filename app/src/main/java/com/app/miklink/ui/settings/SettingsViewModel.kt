@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.app.miklink.core.data.repository.BackupRepository
 import com.app.miklink.core.data.io.DocumentDestination
 import com.app.miklink.core.data.io.DocumentReader
+import com.app.miklink.core.data.io.DocumentWriter
 import com.app.miklink.core.domain.usecase.backup.ImportBackupUseCase
 import com.app.miklink.core.data.repository.preferences.UserPreferencesRepository
 import com.app.miklink.core.domain.model.preferences.IdNumberingStrategy
@@ -26,6 +27,7 @@ class SettingsViewModel @Inject constructor(
     private val userPreferencesRepository: UserPreferencesRepository,
     private val observeIdNumberingStrategyUseCase: ObserveIdNumberingStrategyUseCase,
     private val setIdNumberingStrategyUseCase: SetIdNumberingStrategyUseCase,
+    private val documentWriter: DocumentWriter,
     private val documentReader: DocumentReader
 ) : ViewModel() {
 
@@ -150,6 +152,26 @@ class SettingsViewModel @Inject constructor(
             "Configuration restored successfully."
         } else {
             "Error restoring configuration: ${result.exceptionOrNull()?.message}"
+        }
+    }
+
+    fun saveExportToUri(uri: android.net.Uri) {
+        viewModelScope.launch {
+            try {
+                val json = exportConfig()
+                val writeResult = documentWriter.writeBytes(
+                    DocumentDestination(uriString = uri.toString()),
+                    json.toByteArray(),
+                    "application/json"
+                )
+                _backupStatus.value = if (writeResult.isSuccess) {
+                    "Backup saved successfully."
+                } else {
+                    "Error saving backup: ${writeResult.exceptionOrNull()?.message}"
+                }
+            } catch (e: Exception) {
+                _backupStatus.value = "Error saving backup: ${e.message}"
+            }
         }
     }
 }

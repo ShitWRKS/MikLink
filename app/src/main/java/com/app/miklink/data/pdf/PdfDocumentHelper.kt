@@ -102,9 +102,10 @@ class PdfDocumentHelper {
     }
 
     fun createFooterTable(
-        clientNotes: String?, 
-        showCpuWarning: Boolean, 
-        config: PdfExportConfig
+        clientNotes: String?,
+        showCpuWarning: Boolean,
+        config: PdfExportConfig,
+        cpuWarningText: String?
     ): Table {
         val container = Table(1)
             .setWidth(UnitValue.createPercentValue(100f))
@@ -114,7 +115,7 @@ class PdfDocumentHelper {
         // Note: replace emoji with ASCII text to avoid font issues in iText
         if (showCpuWarning) {
             val warning = paragraph(
-                "Attenzione: carico CPU 100% (locale/remota). Valori possibilmente sottostimati.",
+                cpuWarningText ?: "Attenzione: carico CPU 100% (locale/remota). Valori possibilmente sottostimati.",
                 fontRegular,
                 10f,
                 DeviceRgb(230, 81, 0)

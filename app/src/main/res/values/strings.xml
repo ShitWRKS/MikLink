@@ -103,6 +103,11 @@
     <string name="settings_manage_profiles_desc">Add or remove test profiles</string>
     <string name="settings_manage_clients">Manage Clients</string>
     <string name="settings_manage_clients_desc">Manage customer registry</string>
+    <string name="settings_backup">Backup &amp; Restore</string>
+    <string name="settings_backup_desc">Export or restore app configuration</string>
+    <string name="backup_export">Export backup</string>
+    <string name="backup_import">Restore from file</string>
+    <string name="backup_status">Backup status</string>
     <!-- Execution logs: sanitized, bounded in-memory buffer, no persistence (pre-prod). Exposed via `test_toggle_show_logs`/`test_toggle_hide_logs`. Raw logs are not displayed. -->
     <!-- Theme selection removed: app uses automatic system theme only (no UI settings) -->
     <string name="settings_category_pdf">PDF Report</string>
@@ -350,7 +355,7 @@
     <string name="test_details_speed_jitter">Jitter</string>
     <string name="test_details_speed_loss">Loss</string>
     <string name="test_details_speed_warning_title">Warning</string>
-    <string name="test_details_speed_warning_fallback">Results can be limited by CPU; traffic generation/termination performance might not be representative of forwarding performance.</string>
+    <string name="test_details_speed_warning_fallback">Results of Speed Test may be affected by the high CPU usage detected on the client or server.</string>
     <string name="show_password">Show password</string>
     <string name="hide_password">Hide password</string>
 

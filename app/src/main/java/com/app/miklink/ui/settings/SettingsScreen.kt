@@ -236,6 +236,13 @@ fun SettingsScreen(
                     leadingIcon = Icons.Default.Business,
                     onClick = { navController.navigate("client_list") }
                 )
+
+                SettingsCard(
+                    headline = stringResource(R.string.settings_backup),
+                    subtitle = stringResource(R.string.settings_backup_desc),
+                    leadingIcon = Icons.Default.CloudUpload,
+                    onClick = { navController.navigate("backup_settings") }
+                )
             }
 
             // Sezione Report PDF

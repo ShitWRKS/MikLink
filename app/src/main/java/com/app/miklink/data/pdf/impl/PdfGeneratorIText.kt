@@ -119,7 +119,12 @@ class PdfGeneratorIText @Inject constructor(
                 } == true
             }
 
-            val footerTable = helper.createFooterTable(client?.notes, showCpuWarning, config)
+            val footerTable = helper.createFooterTable(
+                client?.notes,
+                showCpuWarning,
+                config,
+                context.getString(com.app.miklink.R.string.test_details_speed_warning_fallback)
+            )
             val pageNum = pdf.numberOfPages
             val pageParams = pdf.getPage(pageNum).pageSize
             val bottomMargin = 20f
