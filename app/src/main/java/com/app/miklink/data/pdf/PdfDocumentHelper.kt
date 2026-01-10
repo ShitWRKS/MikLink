@@ -34,6 +34,8 @@ import java.util.Locale
  */
 class PdfDocumentHelper {
 
+    private val MIN_ROW_HEIGHT = 30f
+
     private val fontRegular by lazy { PdfFontFactory.createFont(StandardFonts.HELVETICA) }
     private val fontBold by lazy { PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD) }
     private val fontItalic by lazy { PdfFontFactory.createFont(StandardFonts.HELVETICA_OBLIQUE) }
@@ -170,6 +172,8 @@ class PdfDocumentHelper {
             .setBorder(SolidBorder(DeviceRgb(221, 221, 221), 1f))
             .setPadding(4f)
             .setVerticalAlignment(VerticalAlignment.MIDDLE)
+            .setMinHeight(MIN_ROW_HEIGHT)
+            .setKeepTogether(true)
     }
 
     fun createStatusCell(status: String): Cell {
@@ -179,6 +183,8 @@ class PdfDocumentHelper {
             .setBorder(SolidBorder(color, 1f))
             .setPadding(4f)
             .setVerticalAlignment(VerticalAlignment.MIDDLE)
+            .setMinHeight(MIN_ROW_HEIGHT)
+            .setKeepTogether(true)
     }
 
     /**

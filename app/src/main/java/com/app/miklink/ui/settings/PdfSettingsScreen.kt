@@ -162,10 +162,23 @@ fun PdfSettingsScreen(
                             }
                         )
                         Spacer(Modifier.width(8.dp))
-                        Text(col.label, style = MaterialTheme.typography.bodyLarge)
+                        Text(stringResource(getColumnLabelResId(col)), style = MaterialTheme.typography.bodyLarge)
                     }
                 }
             }
         }
+    }
+}
+
+private fun getColumnLabelResId(column: ExportColumn): Int {
+    return when (column) {
+        ExportColumn.SOCKET -> R.string.pdf_col_socket
+        ExportColumn.DATE -> R.string.pdf_col_date
+        ExportColumn.STATUS -> R.string.pdf_col_status
+        ExportColumn.LINK_SPEED -> R.string.pdf_col_link_speed
+        ExportColumn.NEIGHBOR -> R.string.pdf_col_neighbor
+        ExportColumn.PING -> R.string.pdf_col_ping
+        ExportColumn.TDR -> R.string.pdf_col_tdr
+        ExportColumn.SPEED_TEST -> R.string.pdf_col_speed_test
     }
 }

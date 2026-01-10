@@ -83,8 +83,8 @@
     <string name="dashboard_probe_title">Stato sonda</string>
     <string name="dashboard_probe_missing">Nessuna sonda ancora configurata</string>
     <string name="dashboard_probe_status_label">Stato</string>
-    <string name="dashboard_probe_online">Online</string>
-    <string name="dashboard_probe_offline">Offline</string>
+    <string name="dashboard_probe_online">Connesso</string>
+    <string name="dashboard_probe_offline">Disconnesso</string>
     <string name="dashboard_probe_ip">Indirizzo IP</string>
     <string name="dashboard_probe_interface">Interfaccia</string>
     <string name="dashboard_probe_transport">Trasporto</string>
@@ -119,6 +119,14 @@
     <string name="pdf_settings_general_section_title">IMPOSTAZIONI GENERALI</string>
     <string name="pdf_settings_content_section_title">CONTENUTO &amp; DATI</string>
     <string name="pdf_settings_columns_section_title">COLONNE DA STAMPARE</string>
+    <string name="pdf_col_socket">Presa</string>
+    <string name="pdf_col_date">Data/Ora</string>
+    <string name="pdf_col_status">Stato</string>
+    <string name="pdf_col_link_speed">Velocità Link</string>
+    <string name="pdf_col_neighbor">Vicino</string>
+    <string name="pdf_col_ping">Ping</string>
+    <string name="pdf_col_tdr">TDR</string>
+    <string name="pdf_col_speed_test">Speed Test</string>
     <string name="pdf_settings_columns_section_description">Seleziona le colonne da includere di default.</string>
     <string name="pdf_settings_include_empty_title">Includi Test Vuoti</string>
     <string name="pdf_settings_include_empty_description">Mostra anche test falliti o senza dati</string>
@@ -270,9 +278,9 @@
     <string name="pdf_default_sig_right">Elettricista</string>
 
     <!-- Test Status -->
-    <string name="status_pass">PASS</string>
-    <string name="status_fail">FAIL</string>
-    <string name="status_skip">SKIP</string>
+    <string name="status_pass">SUPERATO</string>
+    <string name="status_fail">FALLITO</string>
+    <string name="status_skip">SALTATO</string>
     <string name="status_info">INFO</string>
     <string name="status_pending">IN ATTESA</string>
     <string name="test_passed">TEST SUPERATO</string>
@@ -297,7 +305,39 @@
     <string name="section_speed">Speedtest</string>
     <string name="profile_list_title">Profili di Test</string>
     <string name="client_list_title">Gestione Clienti</string>
-        <!-- Log di esecuzione: sanitizzati, buffer limitato in memoria, nessuna persistenza (pre-prod). Esposti tramite `test_toggle_show_logs`/`test_toggle_hide_logs`. I log grezzi non sono mostrati. -->
+
+    <!-- Test Execution Logs -->
+    <string name="log_label_init">Inizializzazione</string>
+    <string name="log_init_starting">[Init] Avvio test per cliente=%1$s profilo=%2$s presa=%3$s</string>
+    <string name="log_init_loading">[Init] Caricamento dati...</string>
+    <string name="log_link_checking">[Link] Verifica stato link</string>
+    <string name="log_link_status">[Link] %1$s stato=%2$s rate=%3$s</string>
+    <string name="log_link_fail">[Link] ERR %1$s</string>
+    <string name="log_link_skip">[Link] SKIP motivo=%1$s</string>
+    <string name="log_link_cable_disconnected">[Link] Cavo scollegato, salto i test rimanenti</string>
+    <string name="log_network_starting">[Network] Configurazione avviata su %1$s</string>
+    <string name="log_network_pass">[Network] OK modo=%1$s iface=%2$s</string>
+    <string name="log_network_fail">[Network] ERR %1$s</string>
+    <string name="log_network_skip">[Network] SKIP motivo=%1$s</string>
+    <string name="log_tdr_starting">[TDR] Test cavo avviato su %1$s</string>
+    <string name="log_tdr_status">[TDR] %1$s voci=%2$d</string>
+    <string name="log_tdr_fail">[TDR] %1$s %2$s</string>
+    <string name="log_tdr_skip">[TDR] SKIP motivo=%1$s</string>
+    <string name="log_lldp_starting">[LLDP] Ricerca vicini avviata</string>
+    <string name="log_lldp_pass">[LLDP] OK vicini=%1$d</string>
+    <string name="log_lldp_info">[LLDP] INFO %1$s</string>
+    <string name="log_lldp_skip">[LLDP] SKIP motivo=%1$s</string>
+    <string name="log_ping_starting">[Ping] Esecuzione avviata</string>
+    <string name="log_ping_status">[Ping] %1$s target=%2$d%3$s</string>
+    <string name="log_ping_fail">[Ping] ERR %1$s</string>
+    <string name="log_ping_skip">[Ping] SKIP motivo=%1$s</string>
+    <string name="log_speed_starting">[SpeedTest] Esecuzione avviata</string>
+    <string name="log_speed_status">[SpeedTest] %1$s down=%2$s up=%3$s%4$s</string>
+    <string name="log_speed_fail">[SpeedTest] ERR %1$s</string>
+    <string name="log_speed_skip">[SpeedTest] SKIP motivo=%1$s</string>
+    <string name="log_result_completed">[Result] Completato con stato=%1$s</string>
+    <string name="log_result_error">[Result] Errore imprevisto: %1$s</string>
+
     <!-- Detail formatter labels -->
     <string name="detail_label_mode">Modalita</string>
     <string name="detail_label_interface">Interfaccia</string>

@@ -40,6 +40,7 @@ class RunTestUseCaseImplTest {
     private val profileRepository: TestProfileRepository = mockk()
 
     private val reportResultsCodec: ReportResultsCodec = mockk()
+    private val context: android.content.Context = mockk()
 
     private val networkStep = object : NetworkConfigStep {
         override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<NetworkConfigFeedback> {
@@ -123,6 +124,7 @@ class RunTestUseCaseImplTest {
     }
 
     private val useCase = RunTestUseCaseImpl(
+        context = context,
         clientRepository = clientRepository,
         probeRepository = probeRepository,
         testProfileRepository = profileRepository,
@@ -187,6 +189,8 @@ class RunTestUseCaseImplTest {
         coEvery { probeRepository.getProbeConfig() } returns probe
         coEvery { profileRepository.getProfile(1) } returns profile
         every { reportResultsCodec.encode(any()) } returns Result.success("{}")
+        every { context.getString(any(), *anyVararg()) } returns "log message"
+        every { context.getString(any()) } returns "log message"
 
         val plan = TestPlan(
             clientId = 1,

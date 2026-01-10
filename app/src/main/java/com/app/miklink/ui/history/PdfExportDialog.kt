@@ -163,13 +163,14 @@ fun PdfExportDialog(
             }
         },
         confirmButton = {
-            Button(
-                onClick = {
-                    val orderedColumns = ExportColumn.values().filter { globalColumns.contains(it.name) }
-                    
-                    val config = PdfExportConfig(
-                        title = reportTitle.ifBlank { "Collaudo Cablaggio di Rete" },
-                        includeEmptyTests = globalIncludeEmpty,
+                    val defaultTitle = stringResource(R.string.pdf_default_title)
+                    Button(
+                        onClick = {
+                            val orderedColumns = ExportColumn.values().filter { globalColumns.contains(it.name) }
+                            
+                            val config = PdfExportConfig(
+                                title = reportTitle.ifBlank { defaultTitle },
+                                includeEmptyTests = globalIncludeEmpty,
                         columns = orderedColumns,
                         showSignatures = showSignatures,
                         signatureLeftLabel = signatureLeftLabel,

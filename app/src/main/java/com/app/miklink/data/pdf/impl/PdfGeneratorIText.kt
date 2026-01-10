@@ -50,7 +50,7 @@ class PdfGeneratorIText @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val reportResultsCodec: ReportResultsCodec
 ) : PdfGenerator {
-    private val helper = com.app.miklink.data.pdf.PdfDocumentHelper()
+
 
     override fun generatePdfReport(
         rawReports: List<TestReport>,
@@ -64,6 +64,9 @@ class PdfGeneratorIText @Inject constructor(
         }
 
         if (filteredReports.isEmpty()) return null
+
+        // Instantiate helper per-request to avoid iText object reuse errors
+        val helper = com.app.miklink.data.pdf.PdfDocumentHelper()
 
         val fileName = "${config.title}.pdf"
         val file = File(context.cacheDir, fileName)
@@ -105,7 +108,7 @@ class PdfGeneratorIText @Inject constructor(
             helper.addHeader(document, client?.companyName, config.title, logoData)
 
             // 3. Results Table
-            addResultsTable(document, filteredReports, config)
+            addResultsTable(document, filteredReports, config, helper)
 
             // 4. Footer (Signatures, Notes, Warnings) - Fixed at bottom of last page
             val showCpuWarning = filteredReports.any { report ->
@@ -158,7 +161,12 @@ class PdfGeneratorIText @Inject constructor(
         return generatePdfReport(listOf(report), client, config)
     }
 
-    private fun addResultsTable(document: Document, reports: List<TestReport>, config: PdfExportConfig) {
+    private fun addResultsTable(
+        document: Document,
+        reports: List<TestReport>,
+        config: PdfExportConfig,
+        helper: com.app.miklink.data.pdf.PdfDocumentHelper
+    ) {
         document.add(
             Paragraph("Dettaglio Test")
                 .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD))
@@ -209,7 +217,7 @@ class PdfGeneratorIText @Inject constructor(
         activeColumns.forEach { col ->
             val cell = Cell()
                 .add(
-                    Paragraph(col.label)
+                    Paragraph(getColumnLabel(col))
                         .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD))
                         .setFontSize(9f)
                         .setTextAlignment(TextAlignment.CENTER)
@@ -310,5 +318,19 @@ class PdfGeneratorIText @Inject constructor(
 
     internal fun parseReportData(json: String): ReportData? {
         return reportResultsCodec.decode(json).getOrNull()
+    }
+
+    private fun getColumnLabel(column: ExportColumn): String {
+        val resId = when (column) {
+            ExportColumn.SOCKET -> com.app.miklink.R.string.pdf_col_socket
+            ExportColumn.DATE -> com.app.miklink.R.string.pdf_col_date
+            ExportColumn.STATUS -> com.app.miklink.R.string.pdf_col_status
+            ExportColumn.LINK_SPEED -> com.app.miklink.R.string.pdf_col_link_speed
+            ExportColumn.NEIGHBOR -> com.app.miklink.R.string.pdf_col_neighbor
+            ExportColumn.PING -> com.app.miklink.R.string.pdf_col_ping
+            ExportColumn.TDR -> com.app.miklink.R.string.pdf_col_tdr
+            ExportColumn.SPEED_TEST -> com.app.miklink.R.string.pdf_col_speed_test
+        }
+        return context.getString(resId)
     }
 }

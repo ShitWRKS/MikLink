@@ -45,8 +45,13 @@ import java.util.LinkedHashMap
 import com.app.miklink.core.domain.policy.TestQualityPolicy
 import com.app.miklink.utils.normalizeTime
 
+import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
+import com.app.miklink.R
+
 /** RunTestUseCase implementation. */
 class RunTestUseCaseImpl @Inject constructor(
+    @param:ApplicationContext private val context: Context,
     private val clientRepository: ClientRepository,
     private val probeRepository: ProbeRepository,
     private val testProfileRepository: TestProfileRepository,
@@ -76,7 +81,7 @@ class RunTestUseCaseImpl @Inject constructor(
         val profile = testProfileRepository.getProfile(plan.profileId)
             ?: throw IllegalStateException("Profile not found: ${plan.profileId}")
 
-        val context = TestExecutionContext(
+        val testExecutionContext = TestExecutionContext(
             client = client,
             probeConfig = probe,
             testProfile = profile,
@@ -150,7 +155,7 @@ class RunTestUseCaseImpl @Inject constructor(
                 rawResultsJson = buildReportData(plan, reportData)
             )
 
-            emitLog("[Result] Completed with status=$overallStatus")
+            emitLog(context.getString(R.string.log_result_completed, overallStatus))
             emit(TestEvent.Completed(outcome))
         }
 
@@ -185,8 +190,8 @@ class RunTestUseCaseImpl @Inject constructor(
         }
 
         emitSnapshot()
-        emitLog("[Init] Starting test for client=${client.companyName} profile=${profile.profileName} socket=${plan.socketId}")
-        emitProgress(TestProgressKey.PREPARING, 0, "Inizializzazione", "Caricamento dati...")
+        emitLog(context.getString(R.string.log_init_starting, client.companyName, profile.profileName, plan.socketId))
+        emitProgress(TestProgressKey.PREPARING, 0, context.getString(R.string.log_label_init), context.getString(R.string.log_init_loading))
 
         try {
             // 1) Link Status
@@ -200,9 +205,9 @@ class RunTestUseCaseImpl @Inject constructor(
                     title = "Link"
                 )
                 emitSnapshot()
-                emitLog("[Link] Checking link status")
+                emitLog(context.getString(R.string.log_link_checking))
 
-                when (val linkResult = linkStatusStep.run(context)) {
+                when (val linkResult = linkStatusStep.run(testExecutionContext)) {
                     is StepResult.Success -> {
                         val linkStatus = linkResult.data
                         reportData.linkStatus = linkStatus
@@ -226,7 +231,7 @@ class RunTestUseCaseImpl @Inject constructor(
                             warning = resolvedWarning
                         )
                         emitSnapshot()
-                        emitLog("[Link] ${resolvedStatus} status=${linkStatus.status ?: "-"} rate=${linkStatus.rate ?: "-"}")
+                        emitLog(context.getString(R.string.log_link_status, resolvedStatus, linkStatus.status ?: "-", linkStatus.rate ?: "-"))
                         if (cableDisconnected) {
                             stopAfterLink = true
                             stopAfterLinkReason = resolvedWarning
@@ -244,7 +249,7 @@ class RunTestUseCaseImpl @Inject constructor(
                             error = errorMessage
                         )
                         emitSnapshot()
-                        emitLog("[Link] FAIL ${errorMessage ?: "unknown error"}")
+                        emitLog(context.getString(R.string.log_link_fail, errorMessage ?: "unknown error"))
                         emit(TestEvent.Failed(linkResult.error))
                         return@flow
                     }
@@ -257,7 +262,7 @@ class RunTestUseCaseImpl @Inject constructor(
                             rawData = mapOf("reason" to linkResult.reason)
                         )
                         emitSnapshot()
-                        emitLog("[Link] SKIP reason=${linkResult.reason}")
+                        emitLog(context.getString(R.string.log_link_skip, linkResult.reason))
                     }
                 }
             } else {
@@ -269,12 +274,12 @@ class RunTestUseCaseImpl @Inject constructor(
                     rawData = mapOf("reason" to TestSkipReason.PROFILE_DISABLED)
                 )
                 emitSnapshot()
-                emitLog("[Link] SKIP reason=${TestSkipReason.PROFILE_DISABLED}")
+                emitLog(context.getString(R.string.log_link_skip, TestSkipReason.PROFILE_DISABLED))
             }
 
             if (stopAfterLink) {
                 val reason = stopAfterLinkReason ?: "Link inattivo o sconosciuto"
-                emitLog("[Link] Cable disconnected, skipping remaining tests")
+                emitLog(context.getString(R.string.log_link_cable_disconnected))
                 skipRemainingSections(reason)
                 finishTest()
                 return@flow
@@ -290,9 +295,9 @@ class RunTestUseCaseImpl @Inject constructor(
                 title = "Network"
             )
             emitSnapshot()
-            emitLog("[Network] Configuration started on ${probe.testInterface}")
+            emitLog(context.getString(R.string.log_network_starting, probe.testInterface))
 
-            when (val networkResult = networkConfigStep.run(context)) {
+            when (val networkResult = networkConfigStep.run(testExecutionContext)) {
                 is StepResult.Success -> {
                     val feedback = networkResult.data as NetworkConfigFeedback
                     reportData.network = NetworkData(
@@ -316,7 +321,7 @@ class RunTestUseCaseImpl @Inject constructor(
                         )
                     )
                     emitSnapshot()
-                    emitLog("[Network] PASS mode=${feedback.mode} iface=${feedback.interfaceName}")
+                    emitLog(context.getString(R.string.log_network_pass, feedback.mode, feedback.interfaceName))
                 }
                 is StepResult.Failed -> {
                     overallStatus = "FAIL"
@@ -330,7 +335,7 @@ class RunTestUseCaseImpl @Inject constructor(
                         error = errorMessage
                     )
                     emitSnapshot()
-                    emitLog("[Network] FAIL ${errorMessage ?: "unknown error"}")
+                    emitLog(context.getString(R.string.log_network_fail, errorMessage ?: "unknown error"))
                 }
                 is StepResult.Skipped -> {
                     recordStep(
@@ -341,7 +346,7 @@ class RunTestUseCaseImpl @Inject constructor(
                         rawData = mapOf("reason" to networkResult.reason)
                     )
                     emitSnapshot()
-                    emitLog("[Network] SKIP reason=${networkResult.reason}")
+                    emitLog(context.getString(R.string.log_network_skip, networkResult.reason))
                 }
             }
 
@@ -356,9 +361,9 @@ class RunTestUseCaseImpl @Inject constructor(
                     title = "TDR"
                 )
                 emitSnapshot()
-                emitLog("[TDR] Cable test started on ${probe.testInterface}")
+                emitLog(context.getString(R.string.log_tdr_starting, probe.testInterface))
 
-                when (val tdrResult = cableTestStep.run(context)) {
+                when (val tdrResult = cableTestStep.run(testExecutionContext)) {
                     is StepResult.Success -> {
                         val cableTest = tdrResult.data
                         reportData.tdr += cableTest.entries
@@ -375,7 +380,7 @@ class RunTestUseCaseImpl @Inject constructor(
                             warning = evaluation.warning
                         )
                         emitSnapshot()
-                        emitLog("[TDR] ${evaluation.status} entries=${cableTest.entries.size}")
+                        emitLog(context.getString(R.string.log_tdr_status, evaluation.status, cableTest.entries.size))
                     }
                     is StepResult.Failed -> {
                         val isFatal = tdrResult.error is TestError.Unsupported
@@ -392,7 +397,7 @@ class RunTestUseCaseImpl @Inject constructor(
                         )
                         emitSnapshot()
                         val statusLabel = if (isFatal) "SKIP" else "FAIL"
-                        emitLog("[TDR] $statusLabel ${message ?: "unknown error"}")
+                        emitLog(context.getString(R.string.log_tdr_fail, statusLabel, message ?: "unknown error"))
                     }
                     is StepResult.Skipped -> {
                         recordStep(
@@ -403,7 +408,7 @@ class RunTestUseCaseImpl @Inject constructor(
                             rawData = mapOf("reason" to tdrResult.reason)
                         )
                         emitSnapshot()
-                        emitLog("[TDR] SKIP reason=${tdrResult.reason}")
+                        emitLog(context.getString(R.string.log_tdr_skip, tdrResult.reason))
                     }
                 }
             } else if (profile.runTdr && !probe.tdrSupported) {
@@ -415,7 +420,7 @@ class RunTestUseCaseImpl @Inject constructor(
                     rawData = mapOf("reason" to TestSkipReason.HARDWARE_UNSUPPORTED)
                 )
                 emitSnapshot()
-                emitLog("[TDR] SKIP reason=${TestSkipReason.HARDWARE_UNSUPPORTED}")
+                emitLog(context.getString(R.string.log_tdr_skip, TestSkipReason.HARDWARE_UNSUPPORTED))
             } else {
                 recordStep(
                     id = TestSectionId.TDR,
@@ -425,7 +430,7 @@ class RunTestUseCaseImpl @Inject constructor(
                     rawData = mapOf("reason" to TestSkipReason.PROFILE_DISABLED)
                 )
                 emitSnapshot()
-                emitLog("[TDR] SKIP reason=${TestSkipReason.PROFILE_DISABLED}")
+                emitLog(context.getString(R.string.log_tdr_skip, TestSkipReason.PROFILE_DISABLED))
             }
 
             // 4) LLDP
@@ -439,9 +444,9 @@ class RunTestUseCaseImpl @Inject constructor(
                     title = "LLDP/CDP"
                 )
                 emitSnapshot()
-                emitLog("[LLDP] Neighbor discovery started")
+                emitLog(context.getString(R.string.log_lldp_starting))
 
-                when (val lldpResult = neighborDiscoveryStep.run(context)) {
+                when (val lldpResult = neighborDiscoveryStep.run(testExecutionContext)) {
                     is StepResult.Success -> {
                         val neighbors = lldpResult.data
                         reportData.neighbors += neighbors
@@ -453,7 +458,7 @@ class RunTestUseCaseImpl @Inject constructor(
                             payload = TestSectionPayload.Neighbors(neighbors)
                         )
                         emitSnapshot()
-                        emitLog("[LLDP] PASS neighbors=${neighbors.size}")
+                        emitLog(context.getString(R.string.log_lldp_pass, neighbors.size))
                     }
                     is StepResult.Failed -> {
                         val message = lldpResult.error.message
@@ -465,7 +470,7 @@ class RunTestUseCaseImpl @Inject constructor(
                             rawData = mapOf("error" to message)
                         )
                         emitSnapshot()
-                        emitLog("[LLDP] INFO ${message ?: "unknown error"}")
+                        emitLog(context.getString(R.string.log_lldp_info, message ?: "unknown error"))
                     }
                     is StepResult.Skipped -> {
                         recordStep(
@@ -476,7 +481,7 @@ class RunTestUseCaseImpl @Inject constructor(
                             rawData = mapOf("reason" to lldpResult.reason)
                         )
                         emitSnapshot()
-                        emitLog("[LLDP] SKIP reason=${lldpResult.reason}")
+                        emitLog(context.getString(R.string.log_lldp_skip, lldpResult.reason))
                     }
                 }
             } else {
@@ -488,7 +493,7 @@ class RunTestUseCaseImpl @Inject constructor(
                     rawData = mapOf("reason" to TestSkipReason.PROFILE_DISABLED)
                 )
                 emitSnapshot()
-                emitLog("[LLDP] SKIP reason=${TestSkipReason.PROFILE_DISABLED}")
+                emitLog(context.getString(R.string.log_lldp_skip, TestSkipReason.PROFILE_DISABLED))
             }
 
             // 5) Ping
@@ -502,9 +507,9 @@ class RunTestUseCaseImpl @Inject constructor(
                     title = "Ping"
                 )
                 emitSnapshot()
-                emitLog("[Ping] Execution started")
+                emitLog(context.getString(R.string.log_ping_starting))
 
-                when (val pingResult = pingStep.run(context)) {
+                when (val pingResult = pingStep.run(testExecutionContext)) {
                     is StepResult.Success -> {
                         val outcomes = pingResult.data
                         val samples = mapPingOutcomes(outcomes)
@@ -522,7 +527,7 @@ class RunTestUseCaseImpl @Inject constructor(
                             warning = evaluation.warning
                         )
                         emitSnapshot()
-                        emitLog("[Ping] ${evaluation.status} targets=${outcomes.size}${evaluation.warning?.let { " warn=$it" } ?: ""}")
+                        emitLog(context.getString(R.string.log_ping_status, evaluation.status, outcomes.size, evaluation.warning?.let { " warn=$it" } ?: ""))
                     }
                     is StepResult.Failed -> {
                         overallStatus = "FAIL"
@@ -536,7 +541,7 @@ class RunTestUseCaseImpl @Inject constructor(
                             error = error
                         )
                         emitSnapshot()
-                        emitLog("[Ping] FAIL ${error ?: "unknown error"}")
+                        emitLog(context.getString(R.string.log_ping_fail, error ?: "unknown error"))
                     }
                     is StepResult.Skipped -> {
                         recordStep(
@@ -547,7 +552,7 @@ class RunTestUseCaseImpl @Inject constructor(
                             rawData = mapOf("reason" to pingResult.reason)
                         )
                         emitSnapshot()
-                        emitLog("[Ping] SKIP reason=${pingResult.reason}")
+                        emitLog(context.getString(R.string.log_ping_skip, pingResult.reason))
                     }
                 }
             } else {
@@ -559,7 +564,7 @@ class RunTestUseCaseImpl @Inject constructor(
                     rawData = mapOf("reason" to TestSkipReason.PROFILE_DISABLED)
                 )
                 emitSnapshot()
-                emitLog("[Ping] SKIP reason=${TestSkipReason.PROFILE_DISABLED}")
+                emitLog(context.getString(R.string.log_ping_skip, TestSkipReason.PROFILE_DISABLED))
             }
 
             // 6) Speed Test
@@ -573,9 +578,9 @@ class RunTestUseCaseImpl @Inject constructor(
                     title = "Speed Test"
                 )
                 emitSnapshot()
-                emitLog("[SpeedTest] Execution started")
+                emitLog(context.getString(R.string.log_speed_starting))
 
-                when (val speedResult = speedTestStep.run(context)) {
+                when (val speedResult = speedTestStep.run(testExecutionContext)) {
                     is StepResult.Success -> {
                         val speed = speedResult.data
                         reportData.speedTest = speed
@@ -592,7 +597,7 @@ class RunTestUseCaseImpl @Inject constructor(
                             warning = evaluation.warning
                         )
                         emitSnapshot()
-                        emitLog("[SpeedTest] ${evaluation.status} download=${speed.tcpDownload ?: "-"} upload=${speed.tcpUpload ?: "-"}${evaluation.warning?.let { " warn=$it" } ?: ""}")
+                        emitLog(context.getString(R.string.log_speed_status, evaluation.status, speed.tcpDownload ?: "-", speed.tcpUpload ?: "-", evaluation.warning?.let { " warn=$it" } ?: ""))
                     }
                     is StepResult.Failed -> {
                         val message = speedResult.error.message
@@ -605,7 +610,7 @@ class RunTestUseCaseImpl @Inject constructor(
                             error = message
                         )
                         emitSnapshot()
-                        emitLog("[SpeedTest] FAIL ${message ?: "unknown error"}")
+                        emitLog(context.getString(R.string.log_speed_fail, message ?: "unknown error"))
                     }
                     is StepResult.Skipped -> {
                         recordStep(
@@ -616,7 +621,7 @@ class RunTestUseCaseImpl @Inject constructor(
                             rawData = mapOf("reason" to speedResult.reason)
                         )
                         emitSnapshot()
-                        emitLog("[SpeedTest] SKIP reason=${speedResult.reason}")
+                        emitLog(context.getString(R.string.log_speed_skip, speedResult.reason))
                     }
                 }
             } else {
@@ -628,12 +633,12 @@ class RunTestUseCaseImpl @Inject constructor(
                     rawData = mapOf("reason" to TestSkipReason.PROFILE_DISABLED)
                 )
                 emitSnapshot()
-                emitLog("[SpeedTest] SKIP reason=${TestSkipReason.PROFILE_DISABLED}")
+                emitLog(context.getString(R.string.log_speed_skip, TestSkipReason.PROFILE_DISABLED))
             }
 
             finishTest()
         } catch (e: Exception) {
-            emitLog("[Result] Unexpected error: ${e.message ?: "unknown error"}")
+            emitLog(context.getString(R.string.log_result_error, e.message ?: "unknown error"))
             emit(TestEvent.Failed(TestError.Unexpected(e.message ?: "Unknown error", e)))
         }
     }

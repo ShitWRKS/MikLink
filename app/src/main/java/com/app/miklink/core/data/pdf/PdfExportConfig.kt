@@ -1,14 +1,14 @@
 package com.app.miklink.core.data.pdf
 
-enum class ExportColumn(val label: String) {
-    SOCKET("Presa"),
-    DATE("Data/Ora"),
-    STATUS("Stato"),
-    LINK_SPEED("Link Speed"),
-    NEIGHBOR("Neighbor"),
-    PING("Ping"),
-    TDR("TDR"),
-    SPEED_TEST("Speed Test")
+enum class ExportColumn {
+    SOCKET,
+    DATE,
+    STATUS,
+    LINK_SPEED,
+    NEIGHBOR,
+    PING,
+    TDR,
+    SPEED_TEST
 }
 
 enum class PdfPageOrientation {

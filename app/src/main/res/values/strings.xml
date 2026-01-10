@@ -120,6 +120,14 @@
     <string name="pdf_settings_general_section_title">GENERAL SETTINGS</string>
     <string name="pdf_settings_content_section_title">CONTENT &amp; DATA</string>
     <string name="pdf_settings_columns_section_title">COLUMNS TO PRINT</string>
+    <string name="pdf_col_socket">Socket</string>
+    <string name="pdf_col_date">Date/Time</string>
+    <string name="pdf_col_status">Status</string>
+    <string name="pdf_col_link_speed">Link Speed</string>
+    <string name="pdf_col_neighbor">Neighbor</string>
+    <string name="pdf_col_ping">Ping</string>
+    <string name="pdf_col_tdr">TDR</string>
+    <string name="pdf_col_speed_test">Speed Test</string>
     <string name="pdf_settings_columns_section_description">Select the columns to include by default.</string>
     <string name="pdf_settings_include_empty_title">Include Empty Tests</string>
     <string name="pdf_settings_include_empty_description">Also show failed or empty tests.</string>
@@ -170,19 +178,12 @@
     <string name="history_pdf_generation_error">Error generating PDF</string>
     <string name="history_error_prefix">Error: %1$s</string>
     
-    <string name="history_export_all">Export all</string>
+    <string name="history_export_all">Export All</string>
     <string name="history_export_pdf">Export PDF</string>
-    <string name="history_repeat_test">Repeat test</string>
+    <string name="history_repeat_test">Repeat Test</string>
     <string name="unknown_client">Unknown Client</string>
     <string name="unnamed_socket">Unnamed Socket</string>
 
-    <!-- Test execution logs -->
-    <string name="test_toggle_show_logs">Show logs</string>
-    <string name="test_toggle_hide_logs">Hide logs</string>
-    <string name="test_logs_empty">No logs yet</string>
-    <string name="test_logs_title">Execution logs</string>
-    <string name="report_detail_network_title">Network Information</string>
-    <string name="report_detail_tests_title">Test Results</string>
     <string name="report_detail_ping_title">Ping Test</string>
     <string name="report_detail_tdr_title">Cable Test (TDR)</string>
     <string name="report_detail_edit_title">Edit Details</string>
@@ -190,26 +191,33 @@
     <string name="report_detail_edit_notes">Notes</string>
     <string name="report_detail_edit_save">Save Changes</string>
     <string name="report_detail_actions_title">Actions</string>
-    <string name="report_detail_actions_delete">Elimina</string>
-    <string name="report_detail_actions_repeat">Ripeti Test</string>
+    <string name="report_detail_actions_delete">Delete</string>
+    <string name="report_detail_actions_repeat">Repeat Test</string>
     <string name="report_detail_delete_title">Delete report?</string>
     <string name="report_detail_delete_body">This action will remove the report permanently.</string>
     <string name="report_detail_delete_confirm">Delete</string>
-    <string name="report_detail_repeat_title">Ripetere il test?</string>
-    <string name="report_detail_repeat_body">Ripetendo il test verranno persi i dati attuali.</string>
-    <string name="report_detail_repeat_confirm">Ripeti</string>
-    <string name="report_detail_repeat_error">Impossibile avviare il test: profilo o client mancanti.</string>
+    <string name="report_detail_repeat_title">Repeat test?</string>
+    <string name="report_detail_repeat_body">Repeating the test will discard current data.</string>
+    <string name="report_detail_repeat_confirm">Repeat</string>
+    <string name="report_detail_repeat_error">Unable to start test: profile or client missing.</string>
     <string name="report_detail_stat_ping_avg">Ping Avg</string>
     <string name="report_detail_stat_loss">Loss</string>
     <string name="report_detail_stat_speed">Speed</string>
+    <string name="test_toggle_show_logs">Show logs</string>
+    <string name="test_toggle_hide_logs">Hide logs</string>
+    <string name="test_logs_empty">No logs</string>
+    <string name="test_logs_title">Execution logs</string>
+    <string name="report_detail_network_title">Network Information</string>
+    <string name="report_detail_tests_title">Test Results</string>
+
     <string name="test_execution_title_running">Test in progress</string>
     <string name="test_execution_title_success">Test completed</string>
     <string name="test_execution_title_failure">Test failed</string>
     <string name="test_execution_title_error">Test error</string>
     <string name="test_execution_title_ready">Ready to start</string>
-    <string name="test_execution_running_topbar">Test in corso...</string>
-    <string name="test_execution_completed_title_pass">Test Completato</string>
-    <string name="test_execution_completed_title_fail">Test Fallito</string>
+    <string name="test_execution_running_topbar">Test in progress...</string>
+    <string name="test_execution_completed_title_pass">Test Completed</string>
+    <string name="test_execution_completed_title_fail">Test Failed</string>
     <string name="test_execution_progress_label">Progress %1$d%%</string>
     <string name="test_execution_ready_body">Tap start to run the certification test.</string>
     <string name="test_execution_no_details">Details will appear here when available.</string>
@@ -221,9 +229,9 @@
     <string name="test_execution_hero_running_subtitle">Live checks are running. Stay on this screen.</string>
     <string name="test_execution_hero_pass_subtitle">All sections completed. Review details below.</string>
     <string name="test_execution_hero_fail_subtitle">Some sections failed. Review details below.</string>
-    <string name="test_execution_running_hero_title">Test in esecuzione...</string>
-    <string name="test_execution_completed_hero_pass">TEST SUPERATO</string>
-    <string name="test_execution_completed_hero_fail">TEST FALLITO</string>
+    <string name="test_execution_running_hero_title">Test Running...</string>
+    <string name="test_execution_completed_hero_pass">TEST PASSED</string>
+    <string name="test_execution_completed_hero_fail">TEST FAILED</string>
     <string name="test_execution_completed_subtitle_pass">All tests completed successfully</string>
     <string name="test_execution_completed_subtitle_fail">Some tests reported issues</string>
     <string name="test_execution_sections_passed">%1$d passed</string>
@@ -241,19 +249,19 @@
     <string name="test_execution_section_saving">Saving report</string>
     <string name="test_execution_section_report">Report</string>
     <string name="test_execution_section_unknown">Unknown</string>
-    <string name="test_execution_details_title">Dettagli Test</string>
-    <string name="test_execution_action_close">CHIUDI</string>
-    <string name="test_execution_action_repeat_short">RIPETI</string>
-    <string name="test_execution_action_repeat_long">Ripeti Test</string>
-    <string name="test_execution_action_save">SALVA</string>
+    <string name="test_execution_details_title">Test Details</string>
+    <string name="test_execution_action_close">CLOSE</string>
+    <string name="test_execution_action_repeat_short">REPEAT</string>
+    <string name="test_execution_action_repeat_long">Repeat Test</string>
+    <string name="test_execution_action_save">SAVE</string>
 
-    <string name="test_execution_subtitle_running">Analisi in corso</string>
-    <string name="test_execution_subtitle_success">Tutte le sezioni completate</string>
-    <string name="test_execution_subtitle_failure">Alcune sezioni non sono ok</string>
-    <string name="test_execution_subtitle_error">Verifica la sonda e riprova</string>
-    <string name="test_execution_subtitle_ready">Pronto per iniziare</string>
-    <string name="test_execution_repeat_warning_one">• Riposizionati sulla stessa presa</string>
-    <string name="test_execution_repeat_warning_two">• Verifica la connessione del cavo</string>
+    <string name="test_execution_subtitle_running">Analysis in progress</string>
+    <string name="test_execution_subtitle_success">All sections completed</string>
+    <string name="test_execution_subtitle_failure">Some sections failed</string>
+    <string name="test_execution_subtitle_error">Check probe and retry</string>
+    <string name="test_execution_subtitle_ready">Ready to start</string>
+    <string name="test_execution_repeat_warning_one">• Re-position on the same socket</string>
+    <string name="test_execution_repeat_warning_two">• Verify cable connection</string>
 
     <!-- PDF Dialog -->
     <string name="pdf_export_title">Export PDF</string>
@@ -299,6 +307,38 @@
     <string name="section_speed">Speedtest</string>
     <string name="profile_list_title">Test Profiles</string>
     <string name="client_list_title">Manage Clients</string>
+
+    <!-- Test Execution Logs -->
+    <string name="log_label_init">Initialization</string>
+    <string name="log_init_starting">[Init] Starting test for client=%1$s profile=%2$s socket=%3$s</string>
+    <string name="log_init_loading">Loading data...</string>
+    <string name="log_link_checking">[Link] Checking link status</string>
+    <string name="log_link_status">[Link] %1$s status=%2$s rate=%3$s</string>
+    <string name="log_link_fail">[Link] FAIL %1$s</string>
+    <string name="log_link_skip">[Link] SKIP reason=%1$s</string>
+    <string name="log_link_cable_disconnected">[Link] Cable disconnected, skipping remaining tests</string>
+    <string name="log_network_starting">[Network] Configuration started on %1$s</string>
+    <string name="log_network_pass">[Network] PASS mode=%1$s iface=%2$s</string>
+    <string name="log_network_fail">[Network] FAIL %1$s</string>
+    <string name="log_network_skip">[Network] SKIP reason=%1$s</string>
+    <string name="log_tdr_starting">[TDR] Cable test started on %1$s</string>
+    <string name="log_tdr_status">[TDR] %1$s entries=%2$d</string>
+    <string name="log_tdr_fail">[TDR] %1$s %2$s</string>
+    <string name="log_tdr_skip">[TDR] SKIP reason=%1$s</string>
+    <string name="log_lldp_starting">[LLDP] Neighbor discovery started</string>
+    <string name="log_lldp_pass">[LLDP] PASS neighbors=%1$d</string>
+    <string name="log_lldp_info">[LLDP] INFO %1$s</string>
+    <string name="log_lldp_skip">[LLDP] SKIP reason=%1$s</string>
+    <string name="log_ping_starting">[Ping] Execution started</string>
+    <string name="log_ping_status">[Ping] %1$s targets=%2$d%3$s</string>
+    <string name="log_ping_fail">[Ping] FAIL %1$s</string>
+    <string name="log_ping_skip">[Ping] SKIP reason=%1$s</string>
+    <string name="log_speed_starting">[SpeedTest] Execution started</string>
+    <string name="log_speed_status">[SpeedTest] %1$s download=%2$s upload=%3$s%4$s</string>
+    <string name="log_speed_fail">[SpeedTest] FAIL %1$s</string>
+    <string name="log_speed_skip">[SpeedTest] SKIP reason=%1$s</string>
+    <string name="log_result_completed">[Result] Completed with status=%1$s</string>
+    <string name="log_result_error">[Result] Unexpected error: %1$s</string>
     
     <!-- Detail formatter labels -->
     <string name="detail_label_mode">Mode</string>
@@ -324,7 +364,7 @@
     <string name="test_details_ping_loss_chip">LOSS %1$s</string>
     <string name="test_details_ping_gateway_target">DHCP_GATEWAY → %1$s</string>
     <string name="test_details_ping_sent">Sent packets</string>
-    <string name="test_details_ping_samples_header">Dettaglio ping individuali:</string>
+    <string name="test_details_ping_samples_header">Individual ping details:</string>
     <string name="test_details_ping_sample_label">Ping #%1$s</string>
     <string name="test_details_ping_sample_value">time=%1$s ttl=%2$s</string>
     <string name="detail_label_server">Server</string>
