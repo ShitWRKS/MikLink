@@ -48,7 +48,7 @@ class ReportDetailViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
 
     val pdfReportTitle = userPreferencesRepository.pdfReportTitle
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "Collaudo Cablaggio di Rete")
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
 
     val pdfHideEmptyColumns = userPreferencesRepository.pdfHideEmptyColumns
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)

@@ -39,13 +39,10 @@ class HistoryViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
 
     val pdfReportTitle = userPreferencesRepository.pdfReportTitle
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "Collaudo Cablaggio di Rete")
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
 
     val pdfHideEmptyColumns = userPreferencesRepository.pdfHideEmptyColumns
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
-
-    val reports: StateFlow<List<TestReport>> = reportRepository.observeAllReports()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val clients: StateFlow<List<Client>> = clientRepository.observeAllClients()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())

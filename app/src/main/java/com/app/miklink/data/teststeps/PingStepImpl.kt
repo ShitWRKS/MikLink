@@ -90,8 +90,7 @@ class PingStepImpl @Inject constructor(
             }
         }
 
-        val hasValidTargets = outcomes.any { it.results.isNotEmpty() }
-        return if (hasValidTargets) {
+        return if (outcomes.isNotEmpty()) {
             StepResult.Success(outcomes)
         } else {
             StepResult.Skipped(TestSkipReason.PING_NO_VALID_TARGETS)

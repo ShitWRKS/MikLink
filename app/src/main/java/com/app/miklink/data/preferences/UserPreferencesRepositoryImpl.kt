@@ -1,5 +1,6 @@
 package com.app.miklink.data.preferences
 
+import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -10,11 +11,13 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import com.app.miklink.core.data.repository.preferences.UserPreferencesRepository
 import com.app.miklink.core.domain.model.preferences.IdNumberingStrategy
-import javax.inject.Inject
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import javax.inject.Inject
 
 class UserPreferencesRepositoryImpl @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val dataStore: DataStore<Preferences>
 ) : UserPreferencesRepository {
 
@@ -57,7 +60,7 @@ class UserPreferencesRepositoryImpl @Inject constructor(
     private val PDF_HIDE_EMPTY_COLUMNS_KEY = booleanPreferencesKey("pdf_hide_empty_columns")
 
     override val pdfReportTitle: Flow<String> = dataStore.data
-        .map { preferences -> preferences[PDF_REPORT_TITLE_KEY] ?: "Collaudo Cablaggio di Rete" }
+        .map { preferences -> preferences[PDF_REPORT_TITLE_KEY] ?: context.getString(com.app.miklink.R.string.pdf_default_report_title) }
 
     override val pdfHideEmptyColumns: Flow<Boolean> = dataStore.data
         .map { preferences -> preferences[PDF_HIDE_EMPTY_COLUMNS_KEY] ?: false }

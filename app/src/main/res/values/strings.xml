@@ -278,6 +278,10 @@
     <string name="pdf_default_title">Structured Cabling Test</string>
     <string name="pdf_default_sig_left">Tester</string>
     <string name="pdf_default_sig_right">Electrician</string>
+    <string name="pdf_default_report_title">Network Cabling Test</string>
+    <string name="pdf_section_test_details">Test Details</string>
+    <string name="pdf_no_tests">No tests in report.</string>
+    <string name="pdf_no_columns">No columns selected or data unavailable.</string>
 
     <!-- Test Status -->
     <string name="status_pass">PASS</string>

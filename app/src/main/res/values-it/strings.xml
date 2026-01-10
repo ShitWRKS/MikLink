@@ -276,6 +276,10 @@
     <string name="pdf_default_title">Collaudo Cablaggio di Rete</string>
     <string name="pdf_default_sig_left">Collaudatore</string>
     <string name="pdf_default_sig_right">Elettricista</string>
+    <string name="pdf_default_report_title">Collaudo Cablaggio di Rete</string>
+    <string name="pdf_section_test_details">Dettaglio Test</string>
+    <string name="pdf_no_tests">Nessun test presente nel report.</string>
+    <string name="pdf_no_columns">Nessuna colonna selezionata o dati non disponibili.</string>
 
     <!-- Test Status -->
     <string name="status_pass">SUPERATO</string>

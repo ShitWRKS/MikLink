@@ -168,7 +168,7 @@ class PdfGeneratorIText @Inject constructor(
         helper: com.app.miklink.data.pdf.PdfDocumentHelper
     ) {
         document.add(
-            Paragraph("Dettaglio Test")
+            Paragraph(context.getString(com.app.miklink.R.string.pdf_section_test_details))
                 .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD))
                 .setFontSize(10f)
                 .setFontColor(DeviceRgb(102, 102, 102))
@@ -177,7 +177,7 @@ class PdfGeneratorIText @Inject constructor(
 
         if (reports.isEmpty()) {
             document.add(
-                Paragraph("Nessun test presente nel report.")
+                Paragraph(context.getString(com.app.miklink.R.string.pdf_no_tests))
                     .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA_OBLIQUE))
                     .setFontSize(10f)
                     .setFontColor(DeviceRgb(150, 150, 150))
@@ -193,7 +193,7 @@ class PdfGeneratorIText @Inject constructor(
 
         if (activeColumns.isEmpty()) {
             document.add(
-                Paragraph("Nessuna colonna selezionata o dati non disponibili.")
+                Paragraph(context.getString(com.app.miklink.R.string.pdf_no_columns))
                     .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA_OBLIQUE))
                     .setFontSize(10f)
             )
