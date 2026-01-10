@@ -126,15 +126,6 @@ sequenceDiagram
 
     UC-->>VM: Completed
     VM->>App: Show Results
-    end
-
-    UC-->>VM: Emit TestEvent.Completed
-    VM->>App: Display Results Summary
-
-    opt Export
-        App->>App: Generate PDF
-    end
-
 ```
 
 ---
