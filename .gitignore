@@ -23,7 +23,7 @@
 # * Se hai un problema con .idea, potresti doverlo aggiungere e rimuovere l'intera cartella
 /.idea/
 
-# Additional local IDE and build output folders to ignore (EPIC A1)
+# Additional local IDE and build output folders to ignore
 .kotlin/
 .run/
 /.vscode/
@@ -31,6 +31,7 @@
 # Android App build outputs (redundant but explicit)
 # Already excluded by **/build/, but keep explicit entry
 /app/build/
+/app/release/
 
 # Local SDK / Credentials files
 /local.properties
