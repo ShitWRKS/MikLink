@@ -265,7 +265,6 @@ private fun CompletedContent(
 ) {
     val sections = TestSectionDisplayPolicy.ordered(snapshot?.sections.orEmpty())
     val isFailed = report.overallStatus != "PASS"
-    val failureReason = if (isFailed) resolveFailureReason(snapshot) else null
 
     LazyColumn(
         modifier = modifier.padding(horizontal = 16.dp),
@@ -294,11 +293,7 @@ private fun CompletedContent(
                 supportingContent = null
             )
         }
-        if (isFailed) {
-            item {
-                FailureReasonCard(reason = failureReason)
-            }
-        }
+
         item {
             KpiRow(sections = sections)
         }
@@ -326,32 +321,7 @@ private fun CompletedContent(
     }
 }
 
-@Composable
-private fun FailureReasonCard(reason: String?) {
-    val semantic = MikLinkThemeTokens.semantic
-    val resolved = reason ?: stringResource(id = R.string.test_execution_fail_reason_fallback)
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        color = semantic.failureContainer
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text(
-                text = stringResource(id = R.string.test_execution_fail_reason_title),
-                style = MaterialTheme.typography.labelLarge,
-                color = semantic.onFailureContainer
-            )
-            Text(
-                text = resolved,
-                style = MaterialTheme.typography.bodyMedium,
-                color = semantic.onFailureContainer
-            )
-        }
-    }
-}
+
 
 @Composable
 private fun KpiRow(sections: List<TestSectionSnapshot>) {
@@ -776,9 +746,7 @@ private fun topBarSubtitle(uiState: UiState<TestReport>, isRunning: Boolean): St
     }
 
 // Picks the first failure warning if present, otherwise falls back to snapshot notes.
-private fun resolveFailureReason(snapshot: TestRunSnapshot?): String? =
-    snapshot?.sections?.firstOrNull { it.status == TestSectionStatus.FAIL }?.warning
-        ?: snapshot?.notes
+
 
 @Composable
 // Memoizes renderers to avoid recreating heavy detail renderers on every recomposition.

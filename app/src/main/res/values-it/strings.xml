@@ -209,8 +209,6 @@
     <string name="test_execution_section_saving">Salvataggio report</string>
     <string name="test_execution_section_report">Report</string>
     <string name="test_execution_section_unknown">Sconosciuto</string>
-    <string name="test_execution_fail_reason_title">Motivo</string>
-    <string name="test_execution_fail_reason_fallback">Controlla i log per i dettagli.</string>
     <string name="test_execution_subtitle_running">Analisi in corso</string>
     <string name="test_execution_subtitle_success">Tutte le sezioni completate</string>
     <string name="test_execution_subtitle_failure">Alcune sezioni non sono OK</string>

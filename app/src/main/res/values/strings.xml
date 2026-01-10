@@ -246,8 +246,7 @@
     <string name="test_execution_action_repeat_short">RIPETI</string>
     <string name="test_execution_action_repeat_long">Ripeti Test</string>
     <string name="test_execution_action_save">SALVA</string>
-    <string name="test_execution_fail_reason_title">Reason</string>
-    <string name="test_execution_fail_reason_fallback">Check logs for details.</string>
+
     <string name="test_execution_subtitle_running">Analisi in corso</string>
     <string name="test_execution_subtitle_success">Tutte le sezioni completate</string>
     <string name="test_execution_subtitle_failure">Alcune sezioni non sono ok</string>
