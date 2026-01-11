@@ -343,6 +343,7 @@
     <string name="log_speed_skip">[SpeedTest] SKIP motivo=%1$s</string>
     <string name="log_result_completed">[Result] Completato con stato=%1$s</string>
     <string name="log_result_error">[Result] Errore imprevisto: %1$s</string>
+    <string name="test_timeout_error">Test interrotto: tempo massimo (%1$ds) superato</string>
 
     <!-- Detail formatter labels -->
     <string name="detail_label_mode">Modalita</string>

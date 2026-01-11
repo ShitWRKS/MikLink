@@ -5,6 +5,7 @@
  */
 package com.app.miklink.ui.test
 
+import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.app.miklink.core.domain.test.model.TestEvent
@@ -26,11 +27,15 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.yield
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import io.mockk.every
+import io.mockk.mockk
 
 class TestViewModelTest {
 
@@ -64,10 +69,15 @@ class TestViewModelTest {
             )
         )
 
-        val viewModel = TestViewModel(savedStateHandle, useCase, reportRepository)
+        val mockContext = mockk<Context>(relaxed = true) {
+            every { getString(any(), any<Int>()) } returns "Test timeout"
+        }
+
+        val viewModel = TestViewModel(mockContext, savedStateHandle, useCase, reportRepository)
 
         viewModel.startTest()
-        advanceUntilIdle()
+        runCurrent() // Start the coroutine and reach the collect suspension point
+        yield() // Ensure the collector is ready to receive events
 
         val pendingSnapshot = TestRunSnapshot(
             sections = listOf(
@@ -78,7 +88,7 @@ class TestViewModelTest {
             percent = 0
         )
         events.emit(TestEvent.SnapshotUpdated(pendingSnapshot))
-        advanceUntilIdle()
+        runCurrent()
 
         assertEquals(2, viewModel.snapshot.value?.sections?.size)
         assertTrue(viewModel.snapshot.value?.sections?.all { it.status == TestSectionStatus.PENDING } == true)
@@ -92,7 +102,7 @@ class TestViewModelTest {
             percent = 20
         )
         events.emit(TestEvent.SnapshotUpdated(runningSnapshot))
-        advanceUntilIdle()
+        runCurrent()
 
         val currentStatuses = viewModel.snapshot.value?.sections?.associate { it.id.name to it.status }
         assertEquals(TestSectionStatus.RUNNING, currentStatuses?.get("NETWORK"))
@@ -107,7 +117,7 @@ class TestViewModelTest {
             percent = 100
         )
         events.emit(TestEvent.SnapshotUpdated(finalSnapshot))
-        advanceUntilIdle()
+        runCurrent()
 
         events.emit(
             TestEvent.Completed(
@@ -118,7 +128,7 @@ class TestViewModelTest {
                 )
             )
         )
-        advanceUntilIdle()
+        runCurrent()
 
         val uiState = viewModel.uiState.value
         assertTrue(uiState is UiState.Success<TestReport>)
@@ -144,14 +154,19 @@ class TestViewModelTest {
             )
         )
 
-        val viewModel = TestViewModel(savedStateHandle, useCase, reportRepository)
+        val mockContext = mockk<Context>(relaxed = true) {
+            every { getString(any(), any<Int>()) } returns "Test timeout"
+        }
+
+        val viewModel = TestViewModel(mockContext, savedStateHandle, useCase, reportRepository)
 
         viewModel.startTest()
-        advanceUntilIdle()
+        runCurrent() // Start the coroutine and reach the collect suspension point
+        yield() // Ensure the collector is ready to receive events
 
         events.emit(TestEvent.Progress(TestProgress("Init", 0, "starting setup")))
         events.emit(TestEvent.LogLine("Sanitized log line"))
-        advanceUntilIdle()
+        runCurrent()
 
         assertEquals(listOf("[Init] starting setup", "Sanitized log line"), viewModel.logs.value)
 

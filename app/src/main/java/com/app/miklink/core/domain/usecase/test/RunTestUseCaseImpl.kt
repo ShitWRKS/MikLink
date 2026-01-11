@@ -40,8 +40,10 @@ import com.app.miklink.core.domain.test.step.PingStep
 import com.app.miklink.core.domain.test.step.SpeedTestStep
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.ensureActive
 import javax.inject.Inject
 import java.util.LinkedHashMap
+import kotlin.coroutines.coroutineContext
 import com.app.miklink.core.domain.policy.TestQualityPolicy
 import com.app.miklink.utils.normalizeTime
 
@@ -196,6 +198,8 @@ class RunTestUseCaseImpl @Inject constructor(
         try {
             // 1) Link Status
             if (profile.runLinkStatus) {
+                // Cooperative cancellation checkpoint: allows coroutine to be cancelled before long step
+                coroutineContext.ensureActive()
                 emitProgress(TestProgressKey.LINK, 10, "Link Status", "Verifica stato link...")
 
                 updateTypedSection(
@@ -286,6 +290,8 @@ class RunTestUseCaseImpl @Inject constructor(
             }
 
             // 2) Network Config
+            // Cooperative cancellation checkpoint
+            coroutineContext.ensureActive()
             emitProgress(TestProgressKey.NETWORK_CONFIG, 30, "Network Config", "Configurazione rete in corso...")
 
             updateTypedSection(
@@ -352,6 +358,8 @@ class RunTestUseCaseImpl @Inject constructor(
 
             // 3) TDR
             if (profile.runTdr && probe.tdrSupported) {
+                // Cooperative cancellation checkpoint
+                coroutineContext.ensureActive()
                 emitProgress(TestProgressKey.TDR, 50, "TDR", "Test cavo in corso...")
 
                 updateTypedSection(
@@ -435,6 +443,8 @@ class RunTestUseCaseImpl @Inject constructor(
 
             // 4) LLDP
             if (profile.runLldp) {
+                // Cooperative cancellation checkpoint
+                coroutineContext.ensureActive()
                 emitProgress(TestProgressKey.NEIGHBORS, 60, "LLDP", "Discovery neighbor...")
 
                 updateTypedSection(
@@ -498,6 +508,8 @@ class RunTestUseCaseImpl @Inject constructor(
 
             // 5) Ping
             if (profile.runPing) {
+                // Cooperative cancellation checkpoint
+                coroutineContext.ensureActive()
                 emitProgress(TestProgressKey.PING, 70, "Ping", "Test ping in corso...")
 
                 updateTypedSection(
@@ -569,6 +581,8 @@ class RunTestUseCaseImpl @Inject constructor(
 
             // 6) Speed Test
             if (profile.runSpeedTest) {
+                // Cooperative cancellation checkpoint
+                coroutineContext.ensureActive()
                 emitProgress(TestProgressKey.SPEED, 90, "Speed Test", "Speed test in corso...")
 
                 updateTypedSection(

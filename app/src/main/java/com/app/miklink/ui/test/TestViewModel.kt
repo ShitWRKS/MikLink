@@ -6,10 +6,12 @@
  */
 package com.app.miklink.ui.test
 
+import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.app.miklink.R
 import com.app.miklink.core.domain.model.TestReport
 import com.app.miklink.core.domain.test.logging.ExecutionLogBuffer
 import com.app.miklink.core.domain.test.model.TestEvent
@@ -20,15 +22,20 @@ import com.app.miklink.core.domain.usecase.report.SaveTestReportUseCase
 import com.app.miklink.core.domain.usecase.test.RunTestUseCase
 import com.app.miklink.utils.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 
 @HiltViewModel
 class TestViewModel @Inject constructor(
+    @param:ApplicationContext private val context: Context,
     private val savedStateHandle: SavedStateHandle,
     private val runTestUseCase: RunTestUseCase,
     private val saveTestReportUseCase: SaveTestReportUseCase
@@ -49,36 +56,55 @@ class TestViewModel @Inject constructor(
     private val _logs = MutableStateFlow<List<String>>(emptyList())
     val logs: StateFlow<List<String>> = _logs.asStateFlow()
 
+    // Tracks the current test coroutine so it can be cancelled if a new test starts
+    private var testJob: Job? = null
+
+    companion object {
+        // Global timeout to prevent indefinite test execution (e.g. stuck HTTP calls)
+        private const val TEST_TIMEOUT_MS = 90_000L
+        private const val TEST_TIMEOUT_SECONDS = (TEST_TIMEOUT_MS / 1000).toInt()
+    }
+
     fun startTest() {
-        if (_isRunning.value) return
+        // Cancel any previous test still running (prevents stale coroutines and UI lock)
+        testJob?.cancel()
 
         val plan = buildPlan() ?: return
 
-        viewModelScope.launch {
+        testJob = viewModelScope.launch {
             _snapshot.value = null
             _uiState.value = UiState.Loading
             _isRunning.value = true
             logBuffer.clear()
             _logs.value = emptyList()
 
-            runTestUseCase.execute(plan)
-                .catch { throwable ->
-                    handleFailure(throwable.message)
-                }
-                .collect { event ->
-                    when (event) {
-                        is TestEvent.Progress -> appendLog("[${event.progress.currentStep}] ${event.progress.message}")
-                        is TestEvent.LogLine -> appendLog(event.message)
-                        is TestEvent.SnapshotUpdated -> {
-                            _snapshot.value = event.snapshot
+            try {
+                withTimeout(TEST_TIMEOUT_MS) {
+                    runTestUseCase.execute(plan)
+                        .catch { throwable ->
+                            handleFailure(throwable.message)
                         }
-                        is TestEvent.Completed -> {
-                            _snapshot.value = event.outcome.finalSnapshot
-                            handleCompletion(plan, event.outcome)
+                        .collect { event ->
+                            when (event) {
+                                is TestEvent.Progress -> appendLog("[${event.progress.currentStep}] ${event.progress.message}")
+                                is TestEvent.LogLine -> appendLog(event.message)
+                                is TestEvent.SnapshotUpdated -> {
+                                    _snapshot.value = event.snapshot
+                                }
+                                is TestEvent.Completed -> {
+                                    _snapshot.value = event.outcome.finalSnapshot
+                                    handleCompletion(plan, event.outcome)
+                                }
+                                is TestEvent.Failed -> handleFailure(event.error.message)
+                            }
                         }
-                        is TestEvent.Failed -> handleFailure(event.error.message)
-                    }
                 }
+            } catch (e: TimeoutCancellationException) {
+                handleFailure(context.getString(R.string.test_timeout_error, TEST_TIMEOUT_SECONDS))
+            } finally {
+                // Ensures isRunning is reset even if cancelled or timed out
+                _isRunning.value = false
+            }
         }
     }
 
@@ -89,14 +115,14 @@ class TestViewModel @Inject constructor(
     }
 
     private fun handleCompletion(plan: TestPlan, outcome: TestOutcome) {
-        _isRunning.value = false
+        // Note: _isRunning reset moved to finally block in startTest()
         _snapshot.value = outcome.finalSnapshot
         val report = buildReport(plan, outcome)
         _uiState.value = UiState.Success(report)
     }
 
     private fun handleFailure(message: String?) {
-        _isRunning.value = false
+        // Note: _isRunning reset moved to finally block in startTest()
         val errorMessage = message ?: "Errore sconosciuto"
         _uiState.value = UiState.Error(errorMessage)
     }

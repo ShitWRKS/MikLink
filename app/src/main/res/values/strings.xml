@@ -345,6 +345,7 @@
     <string name="log_speed_skip">[SpeedTest] SKIP reason=%1$s</string>
     <string name="log_result_completed">[Result] Completed with status=%1$s</string>
     <string name="log_result_error">[Result] Unexpected error: %1$s</string>
+    <string name="test_timeout_error">Test interrupted: maximum time (%1$ds) exceeded</string>
     
     <!-- Detail formatter labels -->
     <string name="detail_label_mode">Mode</string>
