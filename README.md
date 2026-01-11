@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="branding/Miklink - WithTypo - White.png" alt="MikLink Logo" width="400">
+  <img src="branding/Miklink%20-%20WithTypo%20-%20White.png" alt="MikLink Logo" width="400">
 </p>
 
 <h1 align="center">MikLink</h1>
@@ -285,7 +285,7 @@ MIT – Do whatever you want, you owe me nothing.
 ## 🏴 Featured By
 
 <p align="center">
-  <img src="./branding/asd.gif" alt="shitworks" width="120"><br>
+  <img src="branding/asd.gif?raw=true" alt="shitworks" width="120"><br>
   <strong>shitworks</strong><br>
   <em>'cause shit always works</em>
 </p>
