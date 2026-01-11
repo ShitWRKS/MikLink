@@ -513,6 +513,16 @@
     <string name="settings_language_it">Italian 🇮🇹</string>
     <string name="settings_id_strategy_dialog_title">ID Numbering Strategy</string>
 
+    <!-- Discovery Protocols -->
+    <string name="settings_discovery_protocols_section">Discovery Protocols</string>
+    <string name="settings_discovery_protocols_title">Protocol Filter</string>
+    <string name="settings_discovery_protocols_desc">Select which protocols to include in neighbor discovery</string>
+    <string name="settings_discovery_protocols_dialog_title">Discovery Protocols</string>
+    <string name="settings_discovery_protocols_all">All</string>
+    <string name="neighbor_protocol_cdp">CDP (Cisco)</string>
+    <string name="neighbor_protocol_lldp">LLDP (IEEE 802.1AB)</string>
+    <string name="neighbor_protocol_mndp">MNDP (MikroTik)</string>
+
     <!-- Splash -->
     <string name="splash_logo_description">MikLink Logo</string>
     <string name="splash_shitworks_logo_description">Shitworks Logo</string>

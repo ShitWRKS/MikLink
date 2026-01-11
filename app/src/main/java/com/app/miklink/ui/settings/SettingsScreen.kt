@@ -43,6 +43,9 @@ fun SettingsScreen(
     val idNumberingStrategy by viewModel.idNumberingStrategy.collectAsStateWithLifecycle()
 
     var showIdStrategyDialog by remember { mutableStateOf(false) }
+    var showDiscoveryProtocolsDialog by remember { mutableStateOf(false) }
+
+    val neighborDiscoveryProtocols by viewModel.neighborDiscoveryProtocols.collectAsStateWithLifecycle()
 
     val idStrategyLabel = when (idNumberingStrategy) {
         IdNumberingStrategy.CONTINUOUS_INCREMENT -> "Continuo"
@@ -284,21 +287,26 @@ fun SettingsScreen(
             }
             // Sezione Modalità di Filtraggio
             SettingsSection(
-                title = "Modalità di Filtraggio",
+                title = stringResource(R.string.settings_discovery_protocols_section),
                 icon = Icons.Default.Tune
             ) {
                 SettingsCard(
-                    headline = "Filtraggio CDP/LLDP",
-                    subtitle = "Seleziona la modalità di filtraggio",
+                    headline = stringResource(R.string.settings_discovery_protocols_title),
+                    subtitle = stringResource(R.string.settings_discovery_protocols_desc),
                     leadingIcon = Icons.Default.FilterList,
-                    onClick = { /* Filtering mode selector pending confirmed requirements */ },
+                    onClick = { showDiscoveryProtocolsDialog = true },
                     trailingContent = {
                         Surface(
                             shape = RoundedCornerShape(12.dp),
                             color = MaterialTheme.colorScheme.secondaryContainer
                         ) {
+                            val protocolsLabel = when {
+                                neighborDiscoveryProtocols.size == 3 -> stringResource(R.string.settings_discovery_protocols_all)
+                                neighborDiscoveryProtocols.size == 1 -> neighborDiscoveryProtocols.first()
+                                else -> neighborDiscoveryProtocols.joinToString(", ")
+                            }
                             Text(
-                                text = "Auto",
+                                text = protocolsLabel,
                                 style = MaterialTheme.typography.labelSmall,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                             )
@@ -384,6 +392,64 @@ fun SettingsScreen(
             confirmButton = {
                 TextButton(onClick = { showIdStrategyDialog = false }) {
                     Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+
+    if (showDiscoveryProtocolsDialog) {
+        val protocols = listOf("CDP", "LLDP", "MNDP")
+        val protocolLabels = mapOf(
+            "CDP" to stringResource(R.string.neighbor_protocol_cdp),
+            "LLDP" to stringResource(R.string.neighbor_protocol_lldp),
+            "MNDP" to stringResource(R.string.neighbor_protocol_mndp)
+        )
+        AlertDialog(
+            onDismissRequest = { showDiscoveryProtocolsDialog = false },
+            title = { Text(stringResource(R.string.settings_discovery_protocols_dialog_title)) },
+            text = {
+                Column {
+                    protocols.forEach { protocol ->
+                        val isSelected = neighborDiscoveryProtocols.contains(protocol)
+                        val isLastSelected = neighborDiscoveryProtocols.size == 1 && isSelected
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable(enabled = !isLastSelected) {
+                                    val newSet = if (isSelected) {
+                                        neighborDiscoveryProtocols - protocol
+                                    } else {
+                                        neighborDiscoveryProtocols + protocol
+                                    }
+                                    viewModel.updateNeighborDiscoveryProtocols(newSet)
+                                }
+                                .padding(vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(
+                                checked = isSelected,
+                                enabled = !isLastSelected,
+                                onCheckedChange = { checked ->
+                                    val newSet = if (checked) {
+                                        neighborDiscoveryProtocols + protocol
+                                    } else {
+                                        neighborDiscoveryProtocols - protocol
+                                    }
+                                    viewModel.updateNeighborDiscoveryProtocols(newSet)
+                                }
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = protocolLabels[protocol] ?: protocol,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showDiscoveryProtocolsDialog = false }) {
+                    Text(stringResource(R.string.ok))
                 }
             }
         )

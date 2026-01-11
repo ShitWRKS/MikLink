@@ -99,6 +99,19 @@ class UserPreferencesRepositoryImpl @Inject constructor(
             preferences[PROBE_POLLING_INTERVAL_KEY] = interval
         }
     }
+
+    private val NEIGHBOR_DISCOVERY_PROTOCOLS_KEY = stringSetPreferencesKey("neighbor_discovery_protocols")
+
+    override val neighborDiscoveryProtocols: Flow<Set<String>> = dataStore.data
+        .map { preferences ->
+            preferences[NEIGHBOR_DISCOVERY_PROTOCOLS_KEY] ?: setOf("CDP", "LLDP", "MNDP")
+        }
+
+    override suspend fun setNeighborDiscoveryProtocols(protocols: Set<String>) {
+        dataStore.edit { preferences ->
+            preferences[NEIGHBOR_DISCOVERY_PROTOCOLS_KEY] = protocols
+        }
+    }
     
     override suspend fun resetPdfPreferencesToDefaults() {
         dataStore.edit { preferences ->

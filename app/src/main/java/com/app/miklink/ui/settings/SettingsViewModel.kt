@@ -125,6 +125,20 @@ class SettingsViewModel @Inject constructor(
             userPreferencesRepository.setProbePollingInterval(interval)
         }
     }
+
+    val neighborDiscoveryProtocols = userPreferencesRepository.neighborDiscoveryProtocols
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = setOf("CDP", "LLDP", "MNDP")
+        )
+
+    fun updateNeighborDiscoveryProtocols(protocols: Set<String>) {
+        if (protocols.isEmpty()) return // Prevent deselecting all protocols
+        viewModelScope.launch {
+            userPreferencesRepository.setNeighborDiscoveryProtocols(protocols)
+        }
+    }
     
     fun resetPdfPreferences() {
         viewModelScope.launch {

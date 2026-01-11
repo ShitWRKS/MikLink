@@ -146,6 +146,7 @@ class DashboardViewModelTest {
         override val pdfHideEmptyColumns: Flow<Boolean> = flowOf(false)
         override val dashboardGlowIntensity: Flow<Float> = flowOf(0.5f)
         override val probePollingInterval: Flow<Long> = flowOf(5000)
+        override val neighborDiscoveryProtocols: Flow<Set<String>> = flowOf(setOf("CDP", "LLDP", "MNDP"))
         override suspend fun setIdNumberingStrategy(strategy: IdNumberingStrategy) {}
         override suspend fun setPdfIncludeEmptyTests(include: Boolean) {}
         override suspend fun setPdfSelectedColumns(columns: Set<String>) {}
@@ -153,6 +154,8 @@ class DashboardViewModelTest {
         override suspend fun setPdfHideEmptyColumns(hide: Boolean) {}
         override suspend fun setDashboardGlowIntensity(intensity: Float) {}
         override suspend fun setProbePollingInterval(interval: Long) {}
+        override suspend fun setNeighborDiscoveryProtocols(protocols: Set<String>) {}
+        override suspend fun resetPdfPreferencesToDefaults() {}
     }
 
     private class FakeIdNumberingStrategyUseCase(

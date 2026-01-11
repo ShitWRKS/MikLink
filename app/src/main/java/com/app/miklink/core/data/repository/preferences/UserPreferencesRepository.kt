@@ -13,6 +13,7 @@ interface UserPreferencesRepository {
 
     val dashboardGlowIntensity: Flow<Float>
     val probePollingInterval: Flow<Long>
+    val neighborDiscoveryProtocols: Flow<Set<String>>
 
     suspend fun setIdNumberingStrategy(strategy: IdNumberingStrategy)
     suspend fun setPdfIncludeEmptyTests(include: Boolean)
@@ -21,6 +22,7 @@ interface UserPreferencesRepository {
     suspend fun setPdfHideEmptyColumns(hide: Boolean)
     suspend fun setDashboardGlowIntensity(intensity: Float)
     suspend fun setProbePollingInterval(interval: Long)
+    suspend fun setNeighborDiscoveryProtocols(protocols: Set<String>)
     
     suspend fun resetPdfPreferencesToDefaults()
 }
