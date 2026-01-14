@@ -42,7 +42,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.ensureActive
 import javax.inject.Inject
-import java.util.LinkedHashMap
 import kotlin.coroutines.coroutineContext
 import com.app.miklink.core.domain.policy.TestQualityPolicy
 import com.app.miklink.utils.normalizeTime
@@ -715,7 +714,7 @@ class RunTestUseCaseImpl @Inject constructor(
         }
 
         fun toReportData(plan: TestPlan): ReportData {
-            val mergedExtra = LinkedHashMap<String, String>(extra)
+            val mergedExtra = extra.toMutableMap()
             mergedExtra.putIfAbsent(
                 "plan",
                 "clientId=${plan.clientId}; profileId=${plan.profileId}; socketId=${plan.socketId}"
