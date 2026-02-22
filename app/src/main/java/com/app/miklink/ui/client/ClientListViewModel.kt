@@ -1,8 +1,10 @@
 package com.app.miklink.ui.client
 
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.app.miklink.BuildConfig
 import com.app.miklink.core.data.repository.client.ClientRepository
 import com.app.miklink.core.data.repository.report.ReportRepository
 import com.app.miklink.core.domain.model.Client
@@ -21,7 +23,15 @@ class ClientListViewModel @Inject constructor(
     private val pdfGenerator: PdfGenerator
 ) : ViewModel() {
 
+    private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage = _errorMessage.asStateFlow()
+
     val clients: StateFlow<List<Client>> = clientRepository.observeAllClients()
+        .catch { throwable ->
+            _errorMessage.value = throwable.message ?: "Error loading clients"
+            if (BuildConfig.DEBUG) Log.e("ClientListViewModel", "observeAllClients error", throwable)
+            emit(emptyList())
+        }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _pdfStatus = MutableStateFlow("")
@@ -31,6 +41,10 @@ class ClientListViewModel @Inject constructor(
         viewModelScope.launch {
             clientRepository.deleteClient(client)
         }
+    }
+
+    fun consumeError() {
+        _errorMessage.value = null
     }
 
 

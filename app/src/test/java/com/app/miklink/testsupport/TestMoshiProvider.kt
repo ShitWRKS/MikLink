@@ -1,5 +1,6 @@
 package com.app.miklink.testsupport
 
+import com.app.miklink.data.json.LinkedHashMapJsonAdapterFactory
 import com.app.miklink.data.remote.mikrotik.infra.NeighborDetailListAdapter
 import com.squareup.moshi.FromJson
 import com.squareup.moshi.Moshi
@@ -40,6 +41,7 @@ object TestMoshiProvider {
                     writer.value(value)
                 }
             })
+            .add(LinkedHashMapJsonAdapterFactory)
             .add(KotlinJsonAdapterFactory())
             .build()
     }

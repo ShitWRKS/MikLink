@@ -1,6 +1,5 @@
 package com.app.miklink.ui.client
 
-import android.content.Context
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
@@ -19,7 +18,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -41,9 +39,16 @@ fun ClientListScreen(
     viewModel: ClientListViewModel = hiltViewModel()
 ) {
     val clients by viewModel.clients.collectAsStateWithLifecycle()
+    val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
+    LaunchedEffect(errorMessage) {
+        errorMessage?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            viewModel.consumeError()
+        }
+    }
     
     // Search State
     var searchQuery by remember { mutableStateOf("") }
@@ -73,7 +78,7 @@ fun ClientListScreen(
                         Column {
                             Text(stringResource(id = com.app.miklink.R.string.client_list_title), fontWeight = FontWeight.Bold)
                             Text(
-                                "${filteredClients.size} ${if (filteredClients.size == 1) "cliente" else "clienti"}",
+                                "${filteredClients.size} ${if (filteredClients.size == 1) "client" else "clients"}",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -111,7 +116,7 @@ fun ClientListScreen(
                 query = searchQuery,
                 onQueryChange = { searchQuery = it },
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                placeholder = "Cerca cliente..."
+                placeholder = stringResource(R.string.dashboard_search_client)
             )
 
             if (clients.isEmpty()) {
@@ -141,13 +146,13 @@ fun ClientListScreen(
                         }
                         Spacer(Modifier.height(24.dp))
                         Text(
-                            text = "Nessun Cliente",
+                            text = "No clients",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold
                         )
                         Spacer(Modifier.height(8.dp))
                         Text(
-                            text = "Aggiungi il tuo primo cliente per iniziare.",
+                            text = "Add your first client to get started.",
                             style = MaterialTheme.typography.bodyMedium,
                             textAlign = TextAlign.Center,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -163,7 +168,7 @@ fun ClientListScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Nessun risultato trovato per \"$searchQuery\"",
+                        text = "No results found for \"$searchQuery\"",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -182,14 +187,16 @@ fun ClientListScreen(
                         ) {
                             MinimalListItem(
                                 title = client.companyName,
-                                subtitle = client.location ?: "Nessuna sede specificata",
+                                subtitle = client.location ?: "No location specified",
                                 icon = Icons.Default.Business,
                                 onClick = { navController.navigate("client_edit/${client.clientId}") },
                                 trailingContent = {
                                     IconButton(onClick = {
                                         coroutineScope.launch {
                                             try {
-                                                snackbarHostState.showSnackbar("Generazione PDF...")
+                                                snackbarHostState.showSnackbar(
+                                                    context.getString(R.string.history_exporting_client)
+                                                )
                                                 val pdfFile = viewModel.generatePdfWithIText(client.clientId)
                                                 if (pdfFile != null && pdfFile.exists() && pdfFile.length() > 0) {
                                                     val uri = androidx.core.content.FileProvider.getUriForFile(
@@ -204,7 +211,9 @@ fun ClientListScreen(
                                                     }
                                                     try {
                                                         context.startActivity(intent)
-                                                        snackbarHostState.showSnackbar("PDF generato con successo")
+                                                        snackbarHostState.showSnackbar(
+                                                            context.getString(R.string.history_export_success)
+                                                        )
                                                     } catch (e: android.content.ActivityNotFoundException) {
                                                         // No viewer, fallback to share
                                                         val share = android.content.Intent.createChooser(
@@ -218,11 +227,18 @@ fun ClientListScreen(
                                                         context.startActivity(share)
                                                     }
                                                 } else {
-                                                    snackbarHostState.showSnackbar("Errore generazione PDF")
+                                                    snackbarHostState.showSnackbar(
+                                                        context.getString(R.string.history_pdf_generation_error)
+                                                    )
                                                 }
                                             } catch (e: Exception) {
                                                 if (com.app.miklink.BuildConfig.DEBUG) android.util.Log.e("ClientPDF", "Export error", e)
-                                                snackbarHostState.showSnackbar("Errore export: ${e.message}")
+                                                snackbarHostState.showSnackbar(
+                                                    context.getString(
+                                                        R.string.history_error_prefix,
+                                                        e.message ?: context.getString(R.string.error_unknown)
+                                                    )
+                                                )
                                             }
                                         }
                                     }) { Icon(Icons.Default.PictureAsPdf, contentDescription = stringResource(R.string.history_export_pdf)) }

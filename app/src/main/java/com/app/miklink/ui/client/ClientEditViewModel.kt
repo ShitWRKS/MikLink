@@ -6,8 +6,10 @@
  */
 package com.app.miklink.ui.client
 
+import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
+import com.app.miklink.BuildConfig
 import com.app.miklink.core.data.repository.client.ClientRepository
 import com.app.miklink.core.domain.model.Client
 import com.app.miklink.core.domain.model.NetworkMode
@@ -15,6 +17,7 @@ import com.app.miklink.core.domain.usecase.client.SaveClientUseCase
 import com.app.miklink.ui.common.BaseEditViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
@@ -50,6 +53,8 @@ class ClientEditViewModel @Inject constructor(
     val speedTestServerAddress = MutableStateFlow("")
     val speedTestServerUser = MutableStateFlow("")
     val speedTestServerPassword = MutableStateFlow("")
+    private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage = _errorMessage.asStateFlow()
 
     init {
         if (isEditing) {
@@ -67,26 +72,31 @@ class ClientEditViewModel @Inject constructor(
     // loadEntity to run twice which led to duplicated DAO calls in tests.
 
     override suspend fun loadEntity(id: Long) {
-        clientRepository.getClient(id)?.let { client ->
-            companyName.value = client.companyName
-            location.value = client.location ?: ""
-            notes.value = client.notes ?: ""
-            networkMode.value = client.networkMode
-            staticIp.value = client.staticIp ?: ""
-            staticSubnet.value = client.staticSubnet ?: ""
-            staticGateway.value = client.staticGateway ?: ""
-            staticCidr.value = client.staticCidr ?: ""
-            minLinkRate.value = client.minLinkRate
-            socketPrefix.value = client.socketPrefix
-            socketSuffix.value = client.socketSuffix
-            socketSeparator.value = client.socketSeparator
-            socketNumberPadding.value = client.socketNumberPadding
-            lastFloor.value = "" // Rimosso dal domain model
-            lastRoom.value = "" // Rimosso dal domain model
-            // Speed Test
-            speedTestServerAddress.value = client.speedTestServerAddress ?: ""
-            speedTestServerUser.value = client.speedTestServerUser ?: ""
-            speedTestServerPassword.value = client.speedTestServerPassword ?: ""
+        try {
+            clientRepository.getClient(id)?.let { client ->
+                companyName.value = client.companyName
+                location.value = client.location ?: ""
+                notes.value = client.notes ?: ""
+                networkMode.value = client.networkMode
+                staticIp.value = client.staticIp ?: ""
+                staticSubnet.value = client.staticSubnet ?: ""
+                staticGateway.value = client.staticGateway ?: ""
+                staticCidr.value = client.staticCidr ?: ""
+                minLinkRate.value = client.minLinkRate
+                socketPrefix.value = client.socketPrefix
+                socketSuffix.value = client.socketSuffix
+                socketSeparator.value = client.socketSeparator
+                socketNumberPadding.value = client.socketNumberPadding
+                lastFloor.value = "" // Rimosso dal domain model
+                lastRoom.value = "" // Rimosso dal domain model
+                // Speed Test
+                speedTestServerAddress.value = client.speedTestServerAddress ?: ""
+                speedTestServerUser.value = client.speedTestServerUser ?: ""
+                speedTestServerPassword.value = client.speedTestServerPassword ?: ""
+            }
+        } catch (e: Exception) {
+            _errorMessage.value = e.message ?: "Error loading client"
+            if (BuildConfig.DEBUG) Log.e("ClientEditViewModel", "loadEntity error", e)
         }
     }
 
@@ -133,31 +143,40 @@ class ClientEditViewModel @Inject constructor(
         if (companyName.value.isBlank()) return
 
         viewModelScope.launch {
-            val originalClient = if (isEditing) clientRepository.getClient(entityId) else null
+            try {
+                val originalClient = if (isEditing) clientRepository.getClient(entityId) else null
 
-            val client = Client(
-                clientId = if (isEditing) entityId else 0,
-                companyName = companyName.value,
-                location = location.value.takeIf { it.isNotBlank() },
-                notes = notes.value.takeIf { it.isNotBlank() },
-                networkMode = networkMode.value,
-                staticIp = staticIp.value.takeIf { it.isNotBlank() && networkMode.value == NetworkMode.STATIC },
-                staticSubnet = staticSubnet.value.takeIf { it.isNotBlank() && networkMode.value == NetworkMode.STATIC },
-                staticGateway = staticGateway.value.takeIf { it.isNotBlank() && networkMode.value == NetworkMode.STATIC },
-                staticCidr = staticCidr.value.takeIf { it.isNotBlank() && networkMode.value == NetworkMode.STATIC },
-                minLinkRate = minLinkRate.value,
-                socketPrefix = socketPrefix.value,
-                socketSuffix = socketSuffix.value,
-                socketSeparator = socketSeparator.value,
-                socketNumberPadding = socketNumberPadding.value,
-                nextIdNumber = originalClient?.nextIdNumber ?: 1,
-                speedTestServerAddress = speedTestServerAddress.value.takeIf { it.isNotBlank() },
-                speedTestServerUser = speedTestServerUser.value.takeIf { it.isNotBlank() },
-                speedTestServerPassword = speedTestServerPassword.value.takeIf { it.isNotBlank() }
-            )
-            saveClientUseCase(client)
-            markSaved()
+                val client = Client(
+                    clientId = if (isEditing) entityId else 0,
+                    companyName = companyName.value,
+                    location = location.value.takeIf { it.isNotBlank() },
+                    notes = notes.value.takeIf { it.isNotBlank() },
+                    networkMode = networkMode.value,
+                    staticIp = staticIp.value.takeIf { it.isNotBlank() && networkMode.value == NetworkMode.STATIC },
+                    staticSubnet = staticSubnet.value.takeIf { it.isNotBlank() && networkMode.value == NetworkMode.STATIC },
+                    staticGateway = staticGateway.value.takeIf { it.isNotBlank() && networkMode.value == NetworkMode.STATIC },
+                    staticCidr = staticCidr.value.takeIf { it.isNotBlank() && networkMode.value == NetworkMode.STATIC },
+                    minLinkRate = minLinkRate.value,
+                    socketPrefix = socketPrefix.value,
+                    socketSuffix = socketSuffix.value,
+                    socketSeparator = socketSeparator.value,
+                    socketNumberPadding = socketNumberPadding.value,
+                    nextIdNumber = originalClient?.nextIdNumber ?: 1,
+                    speedTestServerAddress = speedTestServerAddress.value.takeIf { it.isNotBlank() },
+                    speedTestServerUser = speedTestServerUser.value.takeIf { it.isNotBlank() },
+                    speedTestServerPassword = speedTestServerPassword.value.takeIf { it.isNotBlank() }
+                )
+                saveClientUseCase(client)
+                markSaved()
+            } catch (e: Exception) {
+                _errorMessage.value = e.message ?: "Error saving client"
+                if (BuildConfig.DEBUG) Log.e("ClientEditViewModel", "saveClient error", e)
+            }
         }
+    }
+
+    fun consumeError() {
+        _errorMessage.value = null
     }
 
     /**

@@ -1,6 +1,7 @@
 package com.app.miklink.di
 
 import android.annotation.SuppressLint
+import com.app.miklink.data.json.LinkedHashMapJsonAdapterFactory
 import com.squareup.moshi.FromJson
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.ToJson
@@ -56,6 +57,7 @@ object NetworkModule {
                     writer.value(value)
                 }
             })
+            .add(LinkedHashMapJsonAdapterFactory)
             .add(KotlinJsonAdapterFactory())
             .build()
     }

@@ -36,8 +36,16 @@ fun ClientEditScreen(
     viewModel: ClientEditViewModel = hiltViewModel()
 ) {
     val isSaved by viewModel.isSaved.collectAsStateWithLifecycle()
+    val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
     if (isSaved) {
         LaunchedEffect(Unit) { navController.popBackStack() }
+    }
+    LaunchedEffect(errorMessage) {
+        errorMessage?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            viewModel.consumeError()
+        }
     }
 
     val companyName by viewModel.companyName.collectAsStateWithLifecycle()
@@ -83,6 +91,7 @@ fun ClientEditScreen(
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
