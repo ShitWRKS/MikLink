@@ -13,6 +13,7 @@ import com.app.miklink.core.domain.test.model.TestError
 import com.app.miklink.core.domain.test.model.TestExecutionContext
 import com.app.miklink.core.domain.test.step.NetworkConfigStep
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 
 /**
  * Implementazione di NetworkConfigStep.
@@ -30,6 +31,7 @@ class NetworkConfigStepImpl @Inject constructor(
             )
             StepResult.Success(feedback)
         } catch (e: Exception) {
+            if (e is CancellationException) throw e
             StepResult.Failed(TestError.NetworkError(e.message ?: "Network configuration failed"))
         }
     }

@@ -14,6 +14,7 @@ import com.app.miklink.core.domain.test.model.TestExecutionContext
 import com.app.miklink.core.domain.test.model.TestSkipReason
 import com.app.miklink.core.domain.test.step.SpeedTestStep
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 
 /**
  * Implementazione di SpeedTestStep.
@@ -40,6 +41,7 @@ class SpeedTestStepImpl @Inject constructor(
         } catch (e: SecurityException) {
             StepResult.Failed(TestError.AuthError(e.message ?: "Authentication failed"))
         } catch (e: Exception) {
+            if (e is CancellationException) throw e
             StepResult.Failed(TestError.NetworkError(e.message ?: "Speed test failed"))
         }
     }

@@ -13,6 +13,7 @@ import com.app.miklink.core.domain.test.model.TestError
 import com.app.miklink.core.domain.test.model.TestExecutionContext
 import com.app.miklink.core.domain.test.step.CableTestStep
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 
 /**
  * Implementazione di CableTestStep.
@@ -30,6 +31,7 @@ class CableTestStepImpl @Inject constructor(
             )
             StepResult.Success(cableTestSummary)
         } catch (e: Exception) {
+            if (e is CancellationException) throw e
             // Distinguere tra errori hardware vs errori temporanei
             val isUnsupported = e.message?.contains("non supportato", ignoreCase = true) == true
                     || e.message?.contains("unsupported", ignoreCase = true) == true

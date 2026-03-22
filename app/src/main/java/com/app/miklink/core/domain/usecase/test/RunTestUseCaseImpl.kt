@@ -41,6 +41,7 @@ import com.app.miklink.core.domain.test.step.SpeedTestStep
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.CancellationException
 import javax.inject.Inject
 import kotlin.coroutines.coroutineContext
 import com.app.miklink.core.domain.policy.TestQualityPolicy
@@ -651,6 +652,7 @@ class RunTestUseCaseImpl @Inject constructor(
 
             finishTest()
         } catch (e: Exception) {
+            if (e is CancellationException) throw e
             emitLog(context.getString(R.string.log_result_error, e.message ?: "unknown error"))
             emit(TestEvent.Failed(TestError.Unexpected(e.message ?: "Unknown error", e)))
         }

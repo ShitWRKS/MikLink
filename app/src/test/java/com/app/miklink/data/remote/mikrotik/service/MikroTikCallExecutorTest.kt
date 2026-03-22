@@ -10,6 +10,7 @@ import com.app.miklink.core.domain.model.ProbeConfig
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -99,6 +100,21 @@ class MikroTikCallExecutorTest {
         assertTrue(failure.failures[0].throwable is SSLHandshakeException)
         assertEquals("http", failure.failures[1].scheme)
         assertEquals("http down", failure.failures[1].throwable.message)
+    }
+
+    @Test
+    fun `executeWithOutcome rethrows cancellation instead of mapping it as call failure`() = runTest {
+        mockLogs()
+        every { serviceProvider.build(match { !it.isHttps }) } returns httpApi
+        val probe = httpsProbe.copy(isHttps = false)
+
+        val result = runCatching {
+            executor.executeWithOutcome(probe) {
+                throw CancellationException("job cancelled")
+            }
+        }
+
+        assertTrue(result.exceptionOrNull() is CancellationException)
     }
 
     private fun mockLogs() {

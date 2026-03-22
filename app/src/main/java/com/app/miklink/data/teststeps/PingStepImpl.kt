@@ -10,11 +10,11 @@ import com.app.miklink.core.data.repository.test.MikroTikTestRepository
 import com.app.miklink.core.data.repository.test.PingTargetResolver
 import com.app.miklink.core.domain.test.model.PingTargetOutcome
 import com.app.miklink.core.domain.test.model.StepResult
-import com.app.miklink.core.domain.test.model.TestError
 import com.app.miklink.core.domain.test.model.TestExecutionContext
 import com.app.miklink.core.domain.test.model.TestSkipReason
 import com.app.miklink.core.domain.test.step.PingStep
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 
 /**
  * Implementazione di PingStep.
@@ -38,28 +38,42 @@ class PingStepImpl @Inject constructor(
         val outcomes = mutableListOf<PingTargetOutcome>()
 
         for (target in pingTargets) {
-            try {
-                // Risolvi target (gestisce DHCP_GATEWAY)
-                val resolvedTarget = pingTargetResolver.resolve(
+            // Risolvi target (gestisce DHCP_GATEWAY)
+            val resolvedTarget = try {
+                pingTargetResolver.resolve(
                     probe = context.probeConfig,
                     client = context.client,
                     profile = context.testProfile,
                     input = target
                 )
-
-                if (resolvedTarget.equals("DHCP_GATEWAY", ignoreCase = true)) {
-                    outcomes.add(
-                        PingTargetOutcome(
-                            target = target,
-                            resolved = null,
-                            packetLoss = null,
-                            results = emptyList(),
-                            error = "Gateway DHCP non disponibile"
-                        )
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                outcomes.add(
+                    PingTargetOutcome(
+                        target = target,
+                        resolved = null,
+                        packetLoss = null,
+                        results = emptyList(),
+                        error = e.toStepMessage()
                     )
-                    continue
-                }
+                )
+                continue
+            }
 
+            if (resolvedTarget.equals("DHCP_GATEWAY", ignoreCase = true)) {
+                outcomes.add(
+                    PingTargetOutcome(
+                        target = target,
+                        resolved = null,
+                        packetLoss = null,
+                        results = emptyList(),
+                        error = "Gateway DHCP non disponibile"
+                    )
+                )
+                continue
+            }
+
+            try {
                 val measurements = mikrotikTestRepository.ping(
                     probe = context.probeConfig,
                     target = resolvedTarget,
@@ -78,13 +92,14 @@ class PingStepImpl @Inject constructor(
                     )
                 )
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 outcomes.add(
                     PingTargetOutcome(
                         target = target,
-                        resolved = null,
+                        resolved = resolvedTarget,
                         packetLoss = null,
                         results = emptyList(),
-                        error = e.message ?: "Unknown error"
+                        error = e.toStepMessage()
                     )
                 )
             }
@@ -96,4 +111,10 @@ class PingStepImpl @Inject constructor(
             StepResult.Skipped(TestSkipReason.PING_NO_VALID_TARGETS)
         }
     }
+}
+
+private fun Throwable.toStepMessage(): String {
+    val message = message?.trim()
+    if (!message.isNullOrBlank()) return message
+    return this::class.simpleName ?: "Unknown error"
 }

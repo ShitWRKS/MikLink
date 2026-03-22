@@ -26,10 +26,12 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
+import kotlinx.coroutines.CancellationException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -169,6 +171,38 @@ class TestViewModelTest {
         runCurrent()
 
         assertEquals(listOf("[Init] starting setup", "Sanitized log line"), viewModel.logs.value)
+
+        viewModel.viewModelScope.cancel()
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `cancellation does not surface a false failure ui state`() = runTest {
+        val useCase = object : RunTestUseCase {
+            override fun execute(plan: TestPlan): Flow<TestEvent> = flow {
+                throw CancellationException("screen closed")
+            }
+        }
+
+        val savedStateHandle = SavedStateHandle(
+            mapOf(
+                "clientId" to 1L,
+                "profileId" to 1L,
+                "socketName" to "A1"
+            )
+        )
+
+        val mockContext = mockk<Context>(relaxed = true) {
+            every { getString(any(), any<Int>()) } returns "Test timeout"
+        }
+
+        val viewModel = TestViewModel(mockContext, savedStateHandle, useCase, reportRepository)
+
+        viewModel.startTest()
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value !is UiState.Error)
+        assertEquals(false, viewModel.isRunning.value)
 
         viewModel.viewModelScope.cancel()
     }

@@ -27,9 +27,12 @@ import com.app.miklink.core.data.report.ReportResultsCodec
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -225,4 +228,182 @@ class RunTestUseCaseImplTest {
             assertTrue("rawResultsJson should be present", !event.outcome.rawResultsJson.isNullOrBlank())
         }
     }
+
+    @Test
+    fun `execute keeps network and speed results when ping fails`() = runTest {
+        val client = defaultClient()
+        val probe = defaultProbe()
+        val profile = defaultProfile()
+
+        coEvery { clientRepository.getClient(1) } returns client
+        coEvery { probeRepository.getProbeConfig() } returns probe
+        coEvery { profileRepository.getProfile(1) } returns profile
+        every { reportResultsCodec.encode(any()) } returns Result.success("{}")
+        every { context.getString(any(), *anyVararg()) } returns "log message"
+        every { context.getString(any()) } returns "log message"
+
+        val failingPingStep = object : PingStep {
+            override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<List<PingTargetOutcome>> {
+                return StepResult.Success(
+                    listOf(
+                        PingTargetOutcome(
+                            target = "8.8.8.8",
+                            resolved = "8.8.8.8",
+                            packetLoss = null,
+                            results = emptyList(),
+                            error = "target unreachable"
+                        )
+                    )
+                )
+            }
+        }
+
+        val successfulSpeedStep = object : SpeedTestStep {
+            override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<SpeedTestData> {
+                return StepResult.Success(
+                    SpeedTestData(
+                        status = "done",
+                        ping = "10/12/14ms",
+                        jitter = "1/2/3ms",
+                        loss = "0%",
+                        tcpDownload = "900Mbps",
+                        tcpUpload = "800Mbps",
+                        udpDownload = "850Mbps",
+                        udpUpload = "780Mbps",
+                        warning = null,
+                        serverAddress = "speed.example.com"
+                    )
+                )
+            }
+        }
+
+        val useCase = RunTestUseCaseImpl(
+            context = context,
+            clientRepository = clientRepository,
+            probeRepository = probeRepository,
+            testProfileRepository = profileRepository,
+            networkConfigStep = networkStep,
+            linkStatusStep = linkStatusStep,
+            cableTestStep = cableTestStep,
+            neighborDiscoveryStep = neighborStep,
+            pingStep = failingPingStep,
+            speedTestStep = successfulSpeedStep,
+            reportResultsCodec = reportResultsCodec
+        )
+
+        val plan = TestPlan(clientId = 1, profileId = 1, socketId = "A1", notes = null)
+        val events = useCase.execute(plan).toList()
+        val completed = events.last { it is TestEvent.Completed } as TestEvent.Completed
+        val sections = completed.outcome.finalSnapshot.sections.associateBy { it.id }
+
+        assertEquals(com.app.miklink.core.domain.test.model.TestSectionStatus.PASS, sections[com.app.miklink.core.domain.test.model.TestSectionId.NETWORK]?.status)
+        assertEquals(com.app.miklink.core.domain.test.model.TestSectionStatus.FAIL, sections[com.app.miklink.core.domain.test.model.TestSectionId.PING]?.status)
+        assertEquals(com.app.miklink.core.domain.test.model.TestSectionStatus.PASS, sections[com.app.miklink.core.domain.test.model.TestSectionId.SPEED]?.status)
+        assertTrue(sections[com.app.miklink.core.domain.test.model.TestSectionId.SPEED]?.payload is com.app.miklink.core.domain.test.model.TestSectionPayload.Speed)
+    }
+
+    @Test
+    fun `execute preserves speed data in report payload`() = runTest {
+        val captured = slot<com.app.miklink.core.domain.model.report.ReportData>()
+
+        coEvery { clientRepository.getClient(1) } returns defaultClient()
+        coEvery { probeRepository.getProbeConfig() } returns defaultProbe()
+        coEvery { profileRepository.getProfile(1) } returns defaultProfile()
+        every { reportResultsCodec.encode(capture(captured)) } returns Result.success("{}")
+        every { context.getString(any(), *anyVararg()) } returns "log message"
+        every { context.getString(any()) } returns "log message"
+
+        val plan = TestPlan(clientId = 1, profileId = 1, socketId = "A1", notes = null)
+        useCase.execute(plan).toList()
+
+        assertNotNull(captured.captured.speedTest)
+        assertEquals("900", captured.captured.speedTest?.tcpDownload)
+    }
+
+    @Test
+    fun `execute rethrows cancellation instead of emitting failed event`() = runTest {
+        val client = defaultClient()
+        val probe = defaultProbe()
+        val profile = defaultProfile()
+
+        coEvery { clientRepository.getClient(1) } returns client
+        coEvery { probeRepository.getProbeConfig() } returns probe
+        coEvery { profileRepository.getProfile(1) } returns profile
+        every { reportResultsCodec.encode(any()) } returns Result.success("{}")
+        every { context.getString(any(), *anyVararg()) } returns "log message"
+        every { context.getString(any()) } returns "log message"
+
+        val cancellingPingStep = object : PingStep {
+            override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<List<PingTargetOutcome>> {
+                throw CancellationException("screen disposed")
+            }
+        }
+
+        val useCase = RunTestUseCaseImpl(
+            context = context,
+            clientRepository = clientRepository,
+            probeRepository = probeRepository,
+            testProfileRepository = profileRepository,
+            networkConfigStep = networkStep,
+            linkStatusStep = linkStatusStep,
+            cableTestStep = cableTestStep,
+            neighborDiscoveryStep = neighborStep,
+            pingStep = cancellingPingStep,
+            speedTestStep = speedTestStep,
+            reportResultsCodec = reportResultsCodec
+        )
+
+        val plan = TestPlan(clientId = 1, profileId = 1, socketId = "A1", notes = null)
+        val result = runCatching { useCase.execute(plan).toList() }
+
+        assertTrue(result.exceptionOrNull() is CancellationException)
+    }
+
+    private fun defaultClient(): Client = Client(
+        clientId = 1,
+        companyName = "Acme",
+        location = "HQ",
+        notes = null,
+        networkMode = NetworkMode.DHCP,
+        staticIp = null,
+        staticSubnet = null,
+        staticGateway = null,
+        staticCidr = null,
+        minLinkRate = "1G",
+        socketPrefix = "",
+        socketSuffix = "",
+        socketSeparator = "",
+        socketNumberPadding = 3,
+        nextIdNumber = 1,
+        speedTestServerAddress = "speed.example.com",
+        speedTestServerUser = null,
+        speedTestServerPassword = null
+    )
+
+    private fun defaultProbe(): ProbeConfig = ProbeConfig(
+        ipAddress = "10.0.0.10",
+        username = "admin",
+        password = "admin",
+        testInterface = "ether1",
+        isOnline = true,
+        modelName = "RB",
+        tdrSupported = true,
+        isHttps = false
+    )
+
+    private fun defaultProfile(): TestProfile = TestProfile(
+        profileId = 1,
+        profileName = "Default",
+        profileDescription = null,
+        runTdr = true,
+        runLinkStatus = true,
+        runLldp = true,
+        runPing = true,
+        pingTarget1 = "8.8.8.8",
+        pingTarget2 = null,
+        pingTarget3 = null,
+        pingCount = 4,
+        runSpeedTest = true,
+        thresholds = com.app.miklink.core.domain.model.TestThresholds.defaults()
+    )
 }

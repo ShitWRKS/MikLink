@@ -9,6 +9,7 @@ package com.app.miklink.data.remote.mikrotik.service
 import com.app.miklink.core.domain.model.ProbeConfig
 import javax.inject.Inject
 import javax.net.ssl.SSLHandshakeException
+import kotlinx.coroutines.CancellationException
 
 data class TransportMeta(
     val attemptedHttps: Boolean,
@@ -72,6 +73,7 @@ class MikroTikCallExecutor @Inject constructor(
                         )
                     )
                 } catch (httpError: Exception) {
+                    if (httpError is CancellationException) throw httpError
                     logWarn(
                         "HTTP fallback after TLS handshake failure also failed for ${probe.ipAddress}.",
                         httpError
@@ -89,6 +91,7 @@ class MikroTikCallExecutor @Inject constructor(
                     )
                 }
             } catch (error: Exception) {
+                if (error is CancellationException) throw error
                 logError("HTTPS call failed for ${probe.ipAddress}", error)
                 return CallOutcome.Failure(
                     meta = TransportMeta(
@@ -113,6 +116,7 @@ class MikroTikCallExecutor @Inject constructor(
                 )
             )
         } catch (error: Exception) {
+            if (error is CancellationException) throw error
             logError("HTTP call failed for ${probe.ipAddress}", error)
             CallOutcome.Failure(
                 meta = TransportMeta(

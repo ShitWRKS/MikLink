@@ -13,6 +13,7 @@ import com.app.miklink.core.domain.test.model.TestError
 import com.app.miklink.core.domain.test.model.TestExecutionContext
 import com.app.miklink.core.domain.test.step.LinkStatusStep
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 
 /**
  * Implementazione di LinkStatusStep.
@@ -30,6 +31,7 @@ class LinkStatusStepImpl @Inject constructor(
             )
             StepResult.Success(linkStatus)
         } catch (e: Exception) {
+            if (e is CancellationException) throw e
             StepResult.Failed(TestError.NetworkError(e.message ?: "Link status check failed"))
         }
     }

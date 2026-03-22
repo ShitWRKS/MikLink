@@ -15,6 +15,7 @@ import com.app.miklink.core.domain.test.model.TestExecutionContext
 import com.app.miklink.core.domain.test.step.NeighborDiscoveryStep
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 
 /**
  * Implementazione di NeighborDiscoveryStep.
@@ -36,6 +37,7 @@ class NeighborDiscoveryStepImpl @Inject constructor(
             }
             StepResult.Success(neighbors)
         } catch (e: Exception) {
+            if (e is CancellationException) throw e
             StepResult.Failed(TestError.NetworkError(e.message ?: "Neighbor discovery failed"))
         }
     }

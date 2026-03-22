@@ -26,6 +26,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -82,6 +83,7 @@ class TestViewModel @Inject constructor(
                 withTimeout(TEST_TIMEOUT_MS) {
                     runTestUseCase.execute(plan)
                         .catch { throwable ->
+                            if (throwable is CancellationException) throw throwable
                             handleFailure(throwable.message)
                         }
                         .collect { event ->
