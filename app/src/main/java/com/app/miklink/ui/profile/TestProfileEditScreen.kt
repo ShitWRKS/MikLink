@@ -112,7 +112,7 @@ fun TestProfileEditScreen(
                     .fillMaxWidth()
                     .padding(16.dp)
                     .navigationBarsPadding(),
-                enabled = profileName.isNotBlank()
+                enabled = viewModel.isValidForSave()
             ) {
                 Text(stringResource(R.string.save))
             }
@@ -131,7 +131,8 @@ fun TestProfileEditScreen(
                     onValueChange = { viewModel.profileName.value = it },
                     label = { Text(stringResource(R.string.profile_edit_name_label)) },
                     modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    singleLine = true,
+                    isError = profileName.isBlank()
                 )
                 OutlinedTextField(
                     value = profileDescription,
@@ -171,6 +172,14 @@ fun TestProfileEditScreen(
                     headlineText = stringResource(R.string.profile_edit_run_speed_title),
                     supportingText = stringResource(R.string.profile_edit_run_speed_support)
                 )
+                if (!viewModel.hasAtLeastOneTestEnabled()) {
+                    Text(
+                        text = stringResource(R.string.profile_edit_error_no_test_enabled),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = semantic.failure,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                }
             }
 
             if (runPing) {
@@ -297,8 +306,14 @@ fun TestProfileEditScreen(
                             label = { Text(stringResource(R.string.profile_edit_ping_count_label)) },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
-                            supportingText = { Text(stringResource(R.string.profile_edit_ping_count_support)) },
-                            isError = pingCount.toIntOrNull()?.let { it < 1 || it > 20 } ?: pingCount.isNotBlank()
+                            supportingText = {
+                                if (viewModel.isPingCountInvalid()) {
+                                    Text(stringResource(R.string.profile_edit_ping_count_invalid), color = semantic.failure)
+                                } else {
+                                    Text(stringResource(R.string.profile_edit_ping_count_support))
+                                }
+                            },
+                            isError = viewModel.isPingCountInvalid()
                         )
                     }
                 }

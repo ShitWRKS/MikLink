@@ -504,6 +504,8 @@
     <string name="profile_edit_add_target">Add Target %1$d</string>
     <string name="profile_edit_ping_count_label">Ping Count (1-20)</string>
     <string name="profile_edit_ping_count_support">Ping count per target (default: 4)</string>
+    <string name="profile_edit_ping_count_invalid">Enter a value between 1 and 20.</string>
+    <string name="profile_edit_error_no_test_enabled">Enable at least one test.</string>
     <string name="profile_edit_thresholds_title">Test Quality Thresholds</string>
     <string name="profile_edit_thresholds_description">Configure pass/fail criteria for each section. Empty values use defaults.</string>
     <string name="profile_edit_link_section_title">Link</string>

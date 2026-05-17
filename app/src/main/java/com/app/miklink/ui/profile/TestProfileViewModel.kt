@@ -16,6 +16,7 @@ import com.app.miklink.core.domain.model.SpeedThresholds
 import com.app.miklink.core.domain.model.GatewayUnresolvedPolicy
 import com.app.miklink.core.domain.usecase.testprofile.SaveTestProfileUseCase
 import com.app.miklink.ui.common.BaseEditViewModel
+import com.app.miklink.utils.NetworkValidator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -101,7 +102,9 @@ class TestProfileViewModel @Inject constructor(
     init { loadIfEditing() }
 
     fun saveProfile() {
+        if (!isValidForSave()) return
         viewModelScope.launch {
+            if (!isValidForSave()) return@launch
             val profile = TestProfile(
                 profileId = if (isEditing) entityId else 0,
                 profileName = profileName.value,
@@ -113,7 +116,8 @@ class TestProfileViewModel @Inject constructor(
                 pingTarget1 = pingTarget1.value.takeIf { it.isNotBlank() },
                 pingTarget2 = pingTarget2.value.takeIf { it.isNotBlank() },
                 pingTarget3 = pingTarget3.value.takeIf { it.isNotBlank() },
-                pingCount = pingCount.value.toIntOrNull()?.coerceIn(1, 20) ?: 4, // validation
+                // Invalid profile input must be rejected before persistence, not silently coerced.
+                pingCount = pingCount.value.toInt(),
                 runSpeedTest = runSpeedTest.value,
                 thresholds = buildThresholds()
             )
@@ -139,7 +143,27 @@ class TestProfileViewModel @Inject constructor(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 3)
 
     // Validation helper for UI/tests (not part of BaseEditViewModel contract)
-    fun isValidForSave(): Boolean = profileName.value.isNotBlank()
+    fun isValidForSave(): Boolean {
+        if (profileName.value.isBlank()) return false
+        if (!hasAtLeastOneTestEnabled()) return false
+        if (!runPing.value) return true
+        if (isPingCountInvalid()) return false
+        return listOf(pingTarget1.value, pingTarget2.value, pingTarget3.value).none { isPingTargetInvalid(it) }
+    }
+
+    fun hasAtLeastOneTestEnabled(): Boolean =
+        runLinkStatus.value || runTdr.value || runLldp.value || runPing.value || runSpeedTest.value
+
+    fun isPingCountInvalid(): Boolean {
+        if (!runPing.value) return false
+        val count = pingCount.value.toIntOrNull() ?: return true
+        return count !in 1..20
+    }
+
+    fun isPingTargetInvalid(value: String): Boolean {
+        if (!runPing.value) return false
+        return value.isNotBlank() && !NetworkValidator.isValidTarget(value)
+    }
 
     private fun buildThresholds(): TestThresholds {
         fun String.toDoubleOrDefault(default: Double) = this.toDoubleOrNull() ?: default
