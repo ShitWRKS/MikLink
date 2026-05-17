@@ -96,8 +96,7 @@ class RunTestUseCaseImpl @Inject constructor(
         var overallStatus = "PASS"
         var snapshotProgressKey = TestProgressKey.PREPARING
         var snapshotPercent = 0
-        var stopAfterLink = false
-        var stopAfterLinkReason: String? = null
+        var layer1Failed = false
 
         suspend fun emitSnapshot() {
             emit(
@@ -161,37 +160,6 @@ class RunTestUseCaseImpl @Inject constructor(
             emit(TestEvent.Completed(outcome))
         }
 
-        suspend fun skipRemainingSections(reason: String) {
-            val remaining = listOfNotNull(
-                TestSectionId.NETWORK,
-                TestSectionId.TDR,
-                TestSectionId.NEIGHBORS.takeIf { profile.runLldp },
-                TestSectionId.PING
-            ) + listOfNotNull(
-                TestSectionId.SPEED.takeIf { profile.runSpeedTest }
-            )
-            remaining.forEach { id ->
-                val existingStatus = typedSections.firstOrNull { it.id == id }?.status
-                if (existingStatus == TestSectionStatus.SKIP) return@forEach
-                val title = when (id) {
-                    TestSectionId.NETWORK -> "Network"
-                    TestSectionId.TDR -> "TDR"
-                    TestSectionId.NEIGHBORS -> "LLDP/CDP"
-                    TestSectionId.PING -> "Ping"
-                    TestSectionId.SPEED -> "Speed Test"
-                    else -> id.name
-                }
-                recordStep(
-                    id = id,
-                    title = title,
-                    status = TestSectionStatus.SKIP,
-                    warning = reason,
-                    rawData = mapOf("reason" to reason)
-                )
-            }
-            emitSnapshot()
-        }
-
         emitSnapshot()
         emitLog(context.getString(R.string.log_init_starting, client.companyName, profile.profileName, plan.socketId))
         emitProgress(TestProgressKey.PREPARING, 0, context.getString(R.string.log_label_init), context.getString(R.string.log_init_loading))
@@ -226,6 +194,7 @@ class RunTestUseCaseImpl @Inject constructor(
                         }
                         if (resolvedStatus == TestSectionStatus.FAIL) {
                             overallStatus = "FAIL"
+                            layer1Failed = true
                         }
                         recordStep(
                             id = TestSectionId.LINK,
@@ -237,13 +206,10 @@ class RunTestUseCaseImpl @Inject constructor(
                         )
                         emitSnapshot()
                         emitLog(context.getString(R.string.log_link_status, resolvedStatus, linkStatus.status ?: "-", linkStatus.rate ?: "-"))
-                        if (cableDisconnected) {
-                            stopAfterLink = true
-                            stopAfterLinkReason = resolvedWarning
-                        }
                     }
                     is StepResult.Failed -> {
                         overallStatus = "FAIL"
+                        layer1Failed = true
                         val errorMessage = linkResult.error.message
                         recordStep(
                             id = TestSectionId.LINK,
@@ -255,8 +221,6 @@ class RunTestUseCaseImpl @Inject constructor(
                         )
                         emitSnapshot()
                         emitLog(context.getString(R.string.log_link_fail, errorMessage ?: "unknown error"))
-                        emit(TestEvent.Failed(linkResult.error))
-                        return@flow
                     }
                     is StepResult.Skipped -> {
                         recordStep(
@@ -271,29 +235,100 @@ class RunTestUseCaseImpl @Inject constructor(
                     }
                 }
             } else {
-                recordStep(
-                    id = TestSectionId.LINK,
-                    title = "Link",
-                    status = TestSectionStatus.SKIP,
-                    warning = TestSkipReason.PROFILE_DISABLED,
-                    rawData = mapOf("reason" to TestSkipReason.PROFILE_DISABLED)
-                )
-                emitSnapshot()
                 emitLog(context.getString(R.string.log_link_skip, TestSkipReason.PROFILE_DISABLED))
             }
 
-            if (stopAfterLink) {
-                val reason = stopAfterLinkReason ?: "Link inattivo o sconosciuto"
+            // 2) TDR
+            if (profile.runTdr && probe.tdrSupported) {
+                // Cooperative cancellation checkpoint
+                coroutineContext.ensureActive()
+                emitProgress(TestProgressKey.TDR, 30, "TDR", "Test cavo in corso...")
+
+                updateTypedSection(
+                    typedSections = typedSections,
+                    id = TestSectionId.TDR,
+                    status = TestSectionStatus.RUNNING,
+                    title = "TDR"
+                )
+                emitSnapshot()
+                emitLog(context.getString(R.string.log_tdr_starting, probe.testInterface))
+
+                when (val tdrResult = cableTestStep.run(testExecutionContext)) {
+                    is StepResult.Success -> {
+                        val cableTest = tdrResult.data
+                        reportData.tdr += cableTest.entries
+                        val evaluation = qualityPolicy.evaluateTdr(cableTest, profile)
+                        if (evaluation.status == TestSectionStatus.FAIL) {
+                            overallStatus = "FAIL"
+                            layer1Failed = true
+                        }
+                        recordStep(
+                            id = TestSectionId.TDR,
+                            title = "TDR",
+                            status = evaluation.status,
+                            rawData = tdrRaw(cableTest),
+                            payload = TestSectionPayload.Tdr(cableTest.entries),
+                            warning = evaluation.warning
+                        )
+                        emitSnapshot()
+                        emitLog(context.getString(R.string.log_tdr_status, evaluation.status, cableTest.entries.size))
+                    }
+                    is StepResult.Failed -> {
+                        val isFatal = tdrResult.error is TestError.Unsupported
+                        if (!isFatal) {
+                            overallStatus = "FAIL"
+                            layer1Failed = true
+                        }
+                        val status = if (isFatal) TestSectionStatus.SKIP else TestSectionStatus.FAIL
+                        val message = tdrResult.error.message
+                        recordStep(
+                            id = TestSectionId.TDR,
+                            title = "TDR",
+                            status = status,
+                            warning = message ?: TestSkipReason.HARDWARE_UNSUPPORTED,
+                            rawData = mapOf("error" to message),
+                            error = message
+                        )
+                        emitSnapshot()
+                        val statusLabel = if (isFatal) "SKIP" else "FAIL"
+                        emitLog(context.getString(R.string.log_tdr_fail, statusLabel, message ?: "unknown error"))
+                    }
+                    is StepResult.Skipped -> {
+                        recordStep(
+                            id = TestSectionId.TDR,
+                            title = "TDR",
+                            status = TestSectionStatus.SKIP,
+                            warning = tdrResult.reason,
+                            rawData = mapOf("reason" to tdrResult.reason)
+                        )
+                        emitSnapshot()
+                        emitLog(context.getString(R.string.log_tdr_skip, tdrResult.reason))
+                    }
+                }
+            } else if (profile.runTdr && !probe.tdrSupported) {
+                recordStep(
+                    id = TestSectionId.TDR,
+                    title = "TDR",
+                    status = TestSectionStatus.SKIP,
+                    warning = TestSkipReason.HARDWARE_UNSUPPORTED,
+                    rawData = mapOf("reason" to TestSkipReason.HARDWARE_UNSUPPORTED)
+                )
+                emitSnapshot()
+                emitLog(context.getString(R.string.log_tdr_skip, TestSkipReason.HARDWARE_UNSUPPORTED))
+            } else {
+                emitLog(context.getString(R.string.log_tdr_skip, TestSkipReason.PROFILE_DISABLED))
+            }
+
+            if (layer1Failed) {
                 emitLog(context.getString(R.string.log_link_cable_disconnected))
-                skipRemainingSections(reason)
                 finishTest()
                 return@flow
             }
 
-            // 2) Network Config
+            // 3) Network Config
             // Cooperative cancellation checkpoint
             coroutineContext.ensureActive()
-            emitProgress(TestProgressKey.NETWORK_CONFIG, 30, "Network Config", "Configurazione rete in corso...")
+            emitProgress(TestProgressKey.NETWORK_CONFIG, 50, "Network Config", "Configurazione rete in corso...")
 
             updateTypedSection(
                 typedSections = typedSections,
@@ -355,91 +390,6 @@ class RunTestUseCaseImpl @Inject constructor(
                     emitSnapshot()
                     emitLog(context.getString(R.string.log_network_skip, networkResult.reason))
                 }
-            }
-
-            // 3) TDR
-            if (profile.runTdr && probe.tdrSupported) {
-                // Cooperative cancellation checkpoint
-                coroutineContext.ensureActive()
-                emitProgress(TestProgressKey.TDR, 50, "TDR", "Test cavo in corso...")
-
-                updateTypedSection(
-                    typedSections = typedSections,
-                    id = TestSectionId.TDR,
-                    status = TestSectionStatus.RUNNING,
-                    title = "TDR"
-                )
-                emitSnapshot()
-                emitLog(context.getString(R.string.log_tdr_starting, probe.testInterface))
-
-                when (val tdrResult = cableTestStep.run(testExecutionContext)) {
-                    is StepResult.Success -> {
-                        val cableTest = tdrResult.data
-                        reportData.tdr += cableTest.entries
-                        val evaluation = qualityPolicy.evaluateTdr(cableTest, profile)
-                        if (evaluation.status == TestSectionStatus.FAIL) {
-                            overallStatus = "FAIL"
-                        }
-                        recordStep(
-                            id = TestSectionId.TDR,
-                            title = "TDR",
-                            status = evaluation.status,
-                            rawData = tdrRaw(cableTest),
-                            payload = TestSectionPayload.Tdr(cableTest.entries),
-                            warning = evaluation.warning
-                        )
-                        emitSnapshot()
-                        emitLog(context.getString(R.string.log_tdr_status, evaluation.status, cableTest.entries.size))
-                    }
-                    is StepResult.Failed -> {
-                        val isFatal = tdrResult.error is TestError.Unsupported
-                        if (!isFatal) overallStatus = "FAIL"
-                        val status = if (isFatal) TestSectionStatus.SKIP else TestSectionStatus.FAIL
-                        val message = tdrResult.error.message
-                        recordStep(
-                            id = TestSectionId.TDR,
-                            title = "TDR",
-                            status = status,
-                            warning = message ?: TestSkipReason.HARDWARE_UNSUPPORTED,
-                            rawData = mapOf("error" to message),
-                            error = message
-                        )
-                        emitSnapshot()
-                        val statusLabel = if (isFatal) "SKIP" else "FAIL"
-                        emitLog(context.getString(R.string.log_tdr_fail, statusLabel, message ?: "unknown error"))
-                    }
-                    is StepResult.Skipped -> {
-                        recordStep(
-                            id = TestSectionId.TDR,
-                            title = "TDR",
-                            status = TestSectionStatus.SKIP,
-                            warning = tdrResult.reason,
-                            rawData = mapOf("reason" to tdrResult.reason)
-                        )
-                        emitSnapshot()
-                        emitLog(context.getString(R.string.log_tdr_skip, tdrResult.reason))
-                    }
-                }
-            } else if (profile.runTdr && !probe.tdrSupported) {
-                recordStep(
-                    id = TestSectionId.TDR,
-                    title = "TDR",
-                    status = TestSectionStatus.SKIP,
-                    warning = TestSkipReason.HARDWARE_UNSUPPORTED,
-                    rawData = mapOf("reason" to TestSkipReason.HARDWARE_UNSUPPORTED)
-                )
-                emitSnapshot()
-                emitLog(context.getString(R.string.log_tdr_skip, TestSkipReason.HARDWARE_UNSUPPORTED))
-            } else {
-                recordStep(
-                    id = TestSectionId.TDR,
-                    title = "TDR",
-                    status = TestSectionStatus.SKIP,
-                    warning = TestSkipReason.PROFILE_DISABLED,
-                    rawData = mapOf("reason" to TestSkipReason.PROFILE_DISABLED)
-                )
-                emitSnapshot()
-                emitLog(context.getString(R.string.log_tdr_skip, TestSkipReason.PROFILE_DISABLED))
             }
 
             // 4) LLDP
@@ -911,13 +861,17 @@ private fun TestSectionId.toLegacyName(): String = when (this) {
 // Initializes section list with default status based on profile flags and hardware support.
 private fun buildInitialTypedSections(profile: TestProfile, probe: ProbeConfig): MutableList<TestSectionSnapshot> {
     val sections = mutableListOf<TestSectionSnapshot>()
-    sections += when {
-        profile.runLinkStatus -> TestSectionSnapshot(id = TestSectionId.LINK, status = TestSectionStatus.PENDING, title = "Link")
-        else -> TestSectionSnapshot(
-            id = TestSectionId.LINK,
+    if (profile.runLinkStatus) {
+        sections += TestSectionSnapshot(id = TestSectionId.LINK, status = TestSectionStatus.PENDING, title = "Link")
+    }
+    if (profile.runTdr && probe.tdrSupported) {
+        sections += TestSectionSnapshot(id = TestSectionId.TDR, status = TestSectionStatus.PENDING, title = "TDR")
+    } else if (profile.runTdr && !probe.tdrSupported) {
+        sections += TestSectionSnapshot(
+            id = TestSectionId.TDR,
             status = TestSectionStatus.SKIP,
-            title = "Link",
-            warning = TestSkipReason.PROFILE_DISABLED
+            title = "TDR",
+            warning = TestSkipReason.HARDWARE_UNSUPPORTED
         )
     }
     sections += TestSectionSnapshot(
@@ -925,21 +879,6 @@ private fun buildInitialTypedSections(profile: TestProfile, probe: ProbeConfig):
         status = TestSectionStatus.PENDING,
         title = "Network"
     )
-    sections += when {
-        profile.runTdr && probe.tdrSupported -> TestSectionSnapshot(id = TestSectionId.TDR, status = TestSectionStatus.PENDING, title = "TDR")
-        profile.runTdr && !probe.tdrSupported -> TestSectionSnapshot(
-            id = TestSectionId.TDR,
-            status = TestSectionStatus.SKIP,
-            title = "TDR",
-            warning = TestSkipReason.HARDWARE_UNSUPPORTED
-        )
-        else -> TestSectionSnapshot(
-            id = TestSectionId.TDR,
-            status = TestSectionStatus.SKIP,
-            title = "TDR",
-            warning = TestSkipReason.PROFILE_DISABLED
-        )
-    }
     if (profile.runLldp) {
         sections += TestSectionSnapshot(id = TestSectionId.NEIGHBORS, status = TestSectionStatus.PENDING, title = "LLDP/CDP")
     }

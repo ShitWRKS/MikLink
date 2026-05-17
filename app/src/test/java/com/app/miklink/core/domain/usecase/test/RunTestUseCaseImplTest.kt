@@ -22,6 +22,7 @@ import com.app.miklink.core.domain.test.model.TestPlan
 import com.app.miklink.core.domain.test.model.TestSectionId
 import com.app.miklink.core.domain.test.model.TestSectionPayload
 import com.app.miklink.core.domain.test.model.TestSectionStatus
+import com.app.miklink.core.domain.test.model.TestSkipReason
 import com.app.miklink.core.domain.test.step.CableTestStep
 import com.app.miklink.core.domain.test.step.LinkStatusStep
 import com.app.miklink.core.domain.test.step.NetworkConfigStep
@@ -212,7 +213,7 @@ class RunTestUseCaseImplTest {
         assertTrue("Expected typed snapshot updates", snapshotUpdates.isNotEmpty())
 
         val firstSnapshot = snapshotUpdates.first().snapshot
-        val expectedOrder = listOf("LINK", "NETWORK", "TDR", "NEIGHBORS", "PING", "SPEED")
+        val expectedOrder = listOf("LINK", "TDR", "NETWORK", "NEIGHBORS", "PING", "SPEED")
         val actualOrder = firstSnapshot.sections.map { it.id.name }
         assertEquals(expectedOrder, actualOrder)
         firstSnapshot.sections.forEach { section ->
@@ -232,6 +233,123 @@ class RunTestUseCaseImplTest {
             )
             assertTrue("rawResultsJson should be present", !event.outcome.rawResultsJson.isNullOrBlank())
         }
+    }
+
+    @Test
+    fun `link status failure runs tdr and blocks network dependent steps`() = runTest {
+        var tdrCalls = 0
+        var networkCalls = 0
+        var pingCalls = 0
+        var speedCalls = 0
+        var neighborCalls = 0
+
+        stubRepositories()
+        val useCase = buildUseCase(
+            linkStatusStep = object : LinkStatusStep {
+                override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<LinkStatusData> {
+                    return StepResult.Failed(TestError.NetworkError("link read failed"))
+                }
+            },
+            cableTestStep = object : CableTestStep {
+                override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<CableTestSummary> {
+                    tdrCalls++
+                    return StepResult.Success(CableTestSummary(status = "ok", entries = emptyList()))
+                }
+            },
+            networkConfigStep = countingNetworkStep { networkCalls++ },
+            pingStep = countingPingStep { pingCalls++ },
+            speedTestStep = countingSpeedStep { speedCalls++ },
+            neighborDiscoveryStep = countingNeighborStep { neighborCalls++ }
+        )
+
+        val events = useCase.execute(TestPlan(clientId = 1, profileId = 1, socketId = "A1", notes = null)).toList()
+        val completed = events.last { it is TestEvent.Completed } as TestEvent.Completed
+
+        assertEquals(1, tdrCalls)
+        assertEquals(0, networkCalls)
+        assertEquals(0, pingCalls)
+        assertEquals(0, speedCalls)
+        assertEquals(0, neighborCalls)
+        assertEquals("FAIL", completed.outcome.overallStatus)
+    }
+
+    @Test
+    fun `tdr failure blocks network dependent steps`() = runTest {
+        var networkCalls = 0
+        var pingCalls = 0
+        var speedCalls = 0
+        var neighborCalls = 0
+
+        stubRepositories()
+        val useCase = buildUseCase(
+            cableTestStep = object : CableTestStep {
+                override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<CableTestSummary> {
+                    return StepResult.Failed(TestError.NetworkError("tdr failed"))
+                }
+            },
+            networkConfigStep = countingNetworkStep { networkCalls++ },
+            pingStep = countingPingStep { pingCalls++ },
+            speedTestStep = countingSpeedStep { speedCalls++ },
+            neighborDiscoveryStep = countingNeighborStep { neighborCalls++ }
+        )
+
+        val events = useCase.execute(TestPlan(clientId = 1, profileId = 1, socketId = "A1", notes = null)).toList()
+        val completed = events.last { it is TestEvent.Completed } as TestEvent.Completed
+
+        assertEquals(0, networkCalls)
+        assertEquals(0, pingCalls)
+        assertEquals(0, speedCalls)
+        assertEquals(0, neighborCalls)
+        assertEquals("FAIL", completed.outcome.overallStatus)
+    }
+
+    @Test
+    fun `tdr skipped does not block when link status passes`() = runTest {
+        var networkCalls = 0
+
+        stubRepositories()
+        val useCase = buildUseCase(
+            cableTestStep = object : CableTestStep {
+                override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<CableTestSummary> {
+                    return StepResult.Skipped(TestSkipReason.HARDWARE_UNSUPPORTED)
+                }
+            },
+            networkConfigStep = countingNetworkStep { networkCalls++ }
+        )
+
+        val events = useCase.execute(TestPlan(clientId = 1, profileId = 1, socketId = "A1", notes = null)).toList()
+        val completed = events.last { it is TestEvent.Completed } as TestEvent.Completed
+        val sections = completed.outcome.finalSnapshot.sections.associateBy { it.id }
+
+        assertEquals(1, networkCalls)
+        assertEquals(TestSectionStatus.SKIP, sections[TestSectionId.TDR]?.status)
+        assertEquals("PASS", completed.outcome.overallStatus)
+    }
+
+    @Test
+    fun `layer 1 steps run before network configuration`() = runTest {
+        val order = mutableListOf<String>()
+
+        stubRepositories(profile = defaultProfile().copy(runLldp = false, runPing = false, runSpeedTest = false))
+        val useCase = buildUseCase(
+            linkStatusStep = object : LinkStatusStep {
+                override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<LinkStatusData> {
+                    order += "LINK"
+                    return StepResult.Success(LinkStatusData(status = "up", rate = "1G"))
+                }
+            },
+            cableTestStep = object : CableTestStep {
+                override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<CableTestSummary> {
+                    order += "TDR"
+                    return StepResult.Success(CableTestSummary(status = "ok", entries = emptyList()))
+                }
+            },
+            networkConfigStep = countingNetworkStep { order += "NETWORK" }
+        )
+
+        useCase.execute(TestPlan(clientId = 1, profileId = 1, socketId = "A1", notes = null)).toList()
+
+        assertEquals(listOf("LINK", "TDR", "NETWORK"), order)
     }
 
     @Test
@@ -615,6 +733,90 @@ class RunTestUseCaseImplTest {
         val result = runCatching { useCase.execute(plan).toList() }
 
         assertTrue(result.exceptionOrNull() is CancellationException)
+    }
+
+    private fun stubRepositories(
+        client: Client = defaultClient(),
+        probe: ProbeConfig = defaultProbe(),
+        profile: TestProfile = defaultProfile()
+    ) {
+        coEvery { clientRepository.getClient(1) } returns client
+        coEvery { probeRepository.getProbeConfig() } returns probe
+        coEvery { profileRepository.getProfile(1) } returns profile
+        every { reportResultsCodec.encode(any()) } returns Result.success("{}")
+        every { context.getString(any(), *anyVararg()) } returns "log message"
+        every { context.getString(any()) } returns "log message"
+    }
+
+    private fun buildUseCase(
+        networkConfigStep: NetworkConfigStep = networkStep,
+        linkStatusStep: LinkStatusStep = this.linkStatusStep,
+        cableTestStep: CableTestStep = this.cableTestStep,
+        neighborDiscoveryStep: NeighborDiscoveryStep = neighborStep,
+        pingStep: PingStep = this.pingStep,
+        speedTestStep: SpeedTestStep = this.speedTestStep
+    ): RunTestUseCaseImpl = RunTestUseCaseImpl(
+        context = context,
+        clientRepository = clientRepository,
+        probeRepository = probeRepository,
+        testProfileRepository = profileRepository,
+        networkConfigStep = networkConfigStep,
+        linkStatusStep = linkStatusStep,
+        cableTestStep = cableTestStep,
+        neighborDiscoveryStep = neighborDiscoveryStep,
+        pingStep = pingStep,
+        speedTestStep = speedTestStep,
+        reportResultsCodec = reportResultsCodec
+    )
+
+    private fun countingNetworkStep(onRun: () -> Unit): NetworkConfigStep = object : NetworkConfigStep {
+        override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<NetworkConfigFeedback> {
+            onRun()
+            return StepResult.Success(
+                NetworkConfigFeedback(
+                    mode = "dhcp",
+                    interfaceName = "ether1",
+                    address = "10.0.0.2",
+                    gateway = "10.0.0.1",
+                    dns = "8.8.8.8",
+                    message = "OK"
+                )
+            )
+        }
+    }
+
+    private fun countingNeighborStep(onRun: () -> Unit): NeighborDiscoveryStep = object : NeighborDiscoveryStep {
+        override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<List<NeighborData>> {
+            onRun()
+            return StepResult.Success(emptyList())
+        }
+    }
+
+    private fun countingPingStep(onRun: () -> Unit): PingStep = object : PingStep {
+        override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<List<PingTargetOutcome>> {
+            onRun()
+            return StepResult.Success(emptyList())
+        }
+    }
+
+    private fun countingSpeedStep(onRun: () -> Unit): SpeedTestStep = object : SpeedTestStep {
+        override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<SpeedTestData> {
+            onRun()
+            return StepResult.Success(
+                SpeedTestData(
+                    status = "ok",
+                    ping = "1/2/3",
+                    jitter = "1/2/3",
+                    loss = "0",
+                    tcpDownload = "900",
+                    tcpUpload = "900",
+                    udpDownload = "800",
+                    udpUpload = "800",
+                    warning = null,
+                    serverAddress = null
+                )
+            )
+        }
     }
 
     private fun defaultClient(): Client = Client(
