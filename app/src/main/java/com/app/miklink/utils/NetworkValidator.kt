@@ -17,8 +17,35 @@ object NetworkValidator {
         if (parts.size != 4) return false
         
         return parts.all { part ->
-            part.toIntOrNull()?.let { it in 0..255 } ?: false
+            part.isNotEmpty() && part.all { it in '0'..'9' } &&
+                (part.toIntOrNull()?.let { it in 0..255 } ?: false)
         }
+    }
+
+    /**
+     * Validates an IPv4 address with CIDR prefix.
+     * Example: "10.0.3.100/24"
+     */
+    fun isValidIpv4Cidr(value: String): Boolean {
+        if (value.isBlank()) return false
+
+        val parts = value.split("/")
+        if (parts.size != 2) return false
+
+        val prefixPart = parts[1]
+        if (prefixPart.isEmpty() || prefixPart.any { it !in '0'..'9' }) return false
+
+        val prefix = prefixPart.toIntOrNull() ?: return false
+        return isValidIpAddress(parts[0]) && prefix in 0..32
+    }
+
+    /**
+     * Validates a plain IPv4 address and rejects CIDR notation.
+     * Example: "10.0.3.1"
+     */
+    fun isValidIpv4WithoutCidr(value: String): Boolean {
+        if (value.contains("/")) return false
+        return isValidIpAddress(value)
     }
     
     /**

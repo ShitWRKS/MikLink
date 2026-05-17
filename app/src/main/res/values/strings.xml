@@ -433,6 +433,10 @@
     <string name="client_edit_static_ip_placeholder">e.g. 192.168.1.20/24</string>
     <string name="client_edit_static_ip_support">Format: IP/Subnet</string>
     <string name="client_edit_gateway_placeholder">e.g. 192.168.1.1</string>
+    <string name="client_edit_static_cidr_required">Static CIDR is required</string>
+    <string name="client_edit_static_cidr_invalid">Invalid static CIDR</string>
+    <string name="client_edit_static_gateway_required">Static gateway is required</string>
+    <string name="client_edit_static_gateway_invalid">Invalid static gateway</string>
     <string name="client_edit_min_link_rate">Min Link Rate</string>
     <string name="client_edit_prefix_label">Prefix</string>
     <string name="client_edit_prefix_placeholder">SW, NET, PR</string>

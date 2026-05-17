@@ -15,6 +15,7 @@ import com.app.miklink.core.domain.model.Client
 import com.app.miklink.core.domain.model.NetworkMode
 import com.app.miklink.core.domain.usecase.client.SaveClientUseCase
 import com.app.miklink.ui.common.BaseEditViewModel
+import com.app.miklink.utils.NetworkValidator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -141,6 +142,14 @@ class ClientEditViewModel @Inject constructor(
     fun saveClient() {
         // Basic validation - company name is required
         if (companyName.value.isBlank()) return
+        staticCidrErrorMessage()?.let {
+            _errorMessage.value = it
+            return
+        }
+        staticGatewayErrorMessage()?.let {
+            _errorMessage.value = it
+            return
+        }
 
         viewModelScope.launch {
             try {
@@ -187,5 +196,30 @@ class ClientEditViewModel @Inject constructor(
      * closer to the domain model.
      */
     // Validation helper for UI/tests – not part of BaseEditViewModel contract
-    fun isValidForSave(): Boolean = companyName.value.isNotBlank()
+    fun isValidForSave(): Boolean =
+        companyName.value.isNotBlank() &&
+            staticCidrErrorMessage() == null &&
+            staticGatewayErrorMessage() == null
+
+    fun isStaticCidrInvalid(): Boolean = staticCidrErrorMessage() != null
+
+    fun isStaticGatewayInvalid(): Boolean = staticGatewayErrorMessage() != null
+
+    private fun staticCidrErrorMessage(): String? {
+        if (networkMode.value != NetworkMode.STATIC) return null
+        return when {
+            staticCidr.value.isBlank() -> "Static CIDR is required"
+            !NetworkValidator.isValidIpv4Cidr(staticCidr.value) -> "Invalid static CIDR"
+            else -> null
+        }
+    }
+
+    private fun staticGatewayErrorMessage(): String? {
+        if (networkMode.value != NetworkMode.STATIC) return null
+        return when {
+            staticGateway.value.isBlank() -> "Static gateway is required"
+            !NetworkValidator.isValidIpv4WithoutCidr(staticGateway.value) -> "Invalid static gateway"
+            else -> null
+        }
+    }
 }

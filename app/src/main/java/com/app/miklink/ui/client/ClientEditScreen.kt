@@ -215,13 +215,21 @@ fun ClientEditScreen(
                 }
 
                 if (networkMode == NetworkMode.STATIC) {
+                    val staticCidrInvalid = viewModel.isStaticCidrInvalid()
+                    val staticGatewayInvalid = viewModel.isStaticGatewayInvalid()
+
                     LabeledTextField(
                         value = staticCidr,
                         onValueChange = { viewModel.staticCidr.value = it },
                         labelResId = R.string.client_edit_static_ip_label,
                         placeholderResId = R.string.client_edit_static_ip_placeholder,
-                        supportingResId = R.string.client_edit_static_ip_support,
-                        modifier = Modifier.fillMaxWidth()
+                        supportingResId = when {
+                            staticCidr.isBlank() -> R.string.client_edit_static_cidr_required
+                            staticCidrInvalid -> R.string.client_edit_static_cidr_invalid
+                            else -> R.string.client_edit_static_ip_support
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        isError = staticCidrInvalid
                     )
                     
                     LabeledTextField(
@@ -229,7 +237,13 @@ fun ClientEditScreen(
                         onValueChange = { viewModel.staticGateway.value = it },
                         labelResId = R.string.detail_label_gateway,
                         placeholderResId = R.string.client_edit_gateway_placeholder,
-                        modifier = Modifier.fillMaxWidth()
+                        supportingResId = when {
+                            staticGateway.isBlank() -> R.string.client_edit_static_gateway_required
+                            staticGatewayInvalid -> R.string.client_edit_static_gateway_invalid
+                            else -> null
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        isError = staticGatewayInvalid
                     )
                 }
 
