@@ -166,8 +166,9 @@ class RunTestUseCaseImpl @Inject constructor(
                 TestSectionId.NETWORK,
                 TestSectionId.TDR,
                 TestSectionId.NEIGHBORS,
-                TestSectionId.PING,
-                TestSectionId.SPEED
+                TestSectionId.PING
+            ) + listOfNotNull(
+                TestSectionId.SPEED.takeIf { profile.runSpeedTest }
             )
             remaining.forEach { id ->
                 val existingStatus = typedSections.firstOrNull { it.id == id }?.status
@@ -614,6 +615,7 @@ class RunTestUseCaseImpl @Inject constructor(
                         emitLog(context.getString(R.string.log_speed_status, evaluation.status, speed.tcpDownload ?: "-", speed.tcpUpload ?: "-", evaluation.warning?.let { " warn=$it" } ?: ""))
                     }
                     is StepResult.Failed -> {
+                        overallStatus = "FAIL"
                         val message = speedResult.error.message
                         recordStep(
                             id = TestSectionId.SPEED,
@@ -639,14 +641,6 @@ class RunTestUseCaseImpl @Inject constructor(
                     }
                 }
             } else {
-                recordStep(
-                    id = TestSectionId.SPEED,
-                    title = "Speed Test",
-                    status = TestSectionStatus.SKIP,
-                    warning = TestSkipReason.PROFILE_DISABLED,
-                    rawData = mapOf("reason" to TestSkipReason.PROFILE_DISABLED)
-                )
-                emitSnapshot()
                 emitLog(context.getString(R.string.log_speed_skip, TestSkipReason.PROFILE_DISABLED))
             }
 
@@ -970,14 +964,8 @@ private fun buildInitialTypedSections(profile: TestProfile, probe: ProbeConfig):
             warning = TestSkipReason.PROFILE_DISABLED
         )
     }
-    sections += when {
-        profile.runSpeedTest -> TestSectionSnapshot(id = TestSectionId.SPEED, status = TestSectionStatus.PENDING, title = "Speed Test")
-        else -> TestSectionSnapshot(
-            id = TestSectionId.SPEED,
-            status = TestSectionStatus.SKIP,
-            title = "Speed Test",
-            warning = TestSkipReason.PROFILE_DISABLED
-        )
+    if (profile.runSpeedTest) {
+        sections += TestSectionSnapshot(id = TestSectionId.SPEED, status = TestSectionStatus.PENDING, title = "Speed Test")
     }
     return sections
 }

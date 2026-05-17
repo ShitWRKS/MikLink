@@ -15,8 +15,11 @@ import com.app.miklink.core.domain.test.model.CableTestSummary
 import com.app.miklink.core.domain.test.model.PingMeasurement
 import com.app.miklink.core.domain.test.model.PingTargetOutcome
 import com.app.miklink.core.domain.test.model.StepResult
+import com.app.miklink.core.domain.test.model.TestError
 import com.app.miklink.core.domain.test.model.TestEvent
 import com.app.miklink.core.domain.test.model.TestPlan
+import com.app.miklink.core.domain.test.model.TestSectionId
+import com.app.miklink.core.domain.test.model.TestSectionStatus
 import com.app.miklink.core.domain.test.step.CableTestStep
 import com.app.miklink.core.domain.test.step.LinkStatusStep
 import com.app.miklink.core.domain.test.step.NetworkConfigStep
@@ -318,6 +321,88 @@ class RunTestUseCaseImplTest {
 
         assertNotNull(captured.captured.speedTest)
         assertEquals("900", captured.captured.speedTest?.tcpDownload)
+    }
+
+    @Test
+    fun `execute marks overall fail when speed test step fails`() = runTest {
+        val failingSpeedStep = object : SpeedTestStep {
+            override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<SpeedTestData> {
+                return StepResult.Failed(
+                    TestError.ConfigurationError("Speed test server is not configured")
+                )
+            }
+        }
+
+        coEvery { clientRepository.getClient(1) } returns defaultClient()
+        coEvery { probeRepository.getProbeConfig() } returns defaultProbe()
+        coEvery { profileRepository.getProfile(1) } returns defaultProfile()
+        every { reportResultsCodec.encode(any()) } returns Result.success("{}")
+        every { context.getString(any(), *anyVararg()) } returns "log message"
+        every { context.getString(any()) } returns "log message"
+
+        val useCase = RunTestUseCaseImpl(
+            context = context,
+            clientRepository = clientRepository,
+            probeRepository = probeRepository,
+            testProfileRepository = profileRepository,
+            networkConfigStep = networkStep,
+            linkStatusStep = linkStatusStep,
+            cableTestStep = cableTestStep,
+            neighborDiscoveryStep = neighborStep,
+            pingStep = pingStep,
+            speedTestStep = failingSpeedStep,
+            reportResultsCodec = reportResultsCodec
+        )
+
+        val events = useCase.execute(TestPlan(clientId = 1, profileId = 1, socketId = "A1", notes = null)).toList()
+        val completed = events.last { it is TestEvent.Completed } as TestEvent.Completed
+        val sections = completed.outcome.finalSnapshot.sections.associateBy { it.id }
+
+        assertEquals(TestSectionStatus.FAIL, sections[TestSectionId.SPEED]?.status)
+        assertEquals("FAIL", completed.outcome.overallStatus)
+    }
+
+    @Test
+    fun `execute does not run or produce speed section when speed test is disabled`() = runTest {
+        val captured = slot<com.app.miklink.core.domain.model.report.ReportData>()
+        var speedRunCalls = 0
+        val disabledSpeedStep = object : SpeedTestStep {
+            override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<SpeedTestData> {
+                speedRunCalls++
+                return StepResult.Failed(TestError.Unexpected("Speed test should not run"))
+            }
+        }
+
+        coEvery { clientRepository.getClient(1) } returns defaultClient()
+        coEvery { probeRepository.getProbeConfig() } returns defaultProbe()
+        coEvery { profileRepository.getProfile(1) } returns defaultProfile().copy(runSpeedTest = false)
+        every { reportResultsCodec.encode(capture(captured)) } returns Result.success("{}")
+        every { context.getString(any(), *anyVararg()) } returns "log message"
+        every { context.getString(any()) } returns "log message"
+
+        val useCase = RunTestUseCaseImpl(
+            context = context,
+            clientRepository = clientRepository,
+            probeRepository = probeRepository,
+            testProfileRepository = profileRepository,
+            networkConfigStep = networkStep,
+            linkStatusStep = linkStatusStep,
+            cableTestStep = cableTestStep,
+            neighborDiscoveryStep = neighborStep,
+            pingStep = pingStep,
+            speedTestStep = disabledSpeedStep,
+            reportResultsCodec = reportResultsCodec
+        )
+
+        val events = useCase.execute(TestPlan(clientId = 1, profileId = 1, socketId = "A1", notes = null)).toList()
+        val completed = events.last { it is TestEvent.Completed } as TestEvent.Completed
+        val snapshots = events.filterIsInstance<TestEvent.SnapshotUpdated>()
+
+        assertEquals(0, speedRunCalls)
+        assertTrue(completed.outcome.finalSnapshot.sections.none { it.id == TestSectionId.SPEED })
+        assertTrue(snapshots.all { snapshot -> snapshot.snapshot.sections.none { it.id == TestSectionId.SPEED } })
+        assertEquals(null, captured.captured.speedTest)
+        assertTrue(captured.captured.extra.keys.none { it.equals("speed", ignoreCase = true) })
     }
 
     @Test

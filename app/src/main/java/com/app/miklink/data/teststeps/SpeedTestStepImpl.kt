@@ -11,7 +11,6 @@ import com.app.miklink.core.domain.model.report.SpeedTestData
 import com.app.miklink.core.domain.test.model.StepResult
 import com.app.miklink.core.domain.test.model.TestError
 import com.app.miklink.core.domain.test.model.TestExecutionContext
-import com.app.miklink.core.domain.test.model.TestSkipReason
 import com.app.miklink.core.domain.test.step.SpeedTestStep
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
@@ -26,7 +25,9 @@ class SpeedTestStepImpl @Inject constructor(
     override suspend fun run(context: TestExecutionContext): StepResult<SpeedTestData> {
         val serverAddress = context.client.speedTestServerAddress
         if (serverAddress.isNullOrBlank()) {
-            return StepResult.Skipped(TestSkipReason.SPEED_NO_SERVER)
+            return StepResult.Failed(
+                TestError.ConfigurationError("Speed test server is not configured")
+            )
         }
 
         return try {

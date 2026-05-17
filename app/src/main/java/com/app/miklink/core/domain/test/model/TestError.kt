@@ -17,5 +17,6 @@ sealed class TestError {
     data class AuthError(override val message: String) : TestError()
     data class Timeout(override val message: String) : TestError()
     data class Unsupported(override val message: String) : TestError()
+    data class ConfigurationError(override val message: String) : TestError()
     data class Unexpected(override val message: String, val cause: Throwable? = null) : TestError()
 }
