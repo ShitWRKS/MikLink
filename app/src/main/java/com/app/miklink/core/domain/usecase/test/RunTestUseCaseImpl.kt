@@ -162,10 +162,10 @@ class RunTestUseCaseImpl @Inject constructor(
         }
 
         suspend fun skipRemainingSections(reason: String) {
-            val remaining = listOf(
+            val remaining = listOfNotNull(
                 TestSectionId.NETWORK,
                 TestSectionId.TDR,
-                TestSectionId.NEIGHBORS,
+                TestSectionId.NEIGHBORS.takeIf { profile.runLldp },
                 TestSectionId.PING
             ) + listOfNotNull(
                 TestSectionId.SPEED.takeIf { profile.runSpeedTest }
@@ -464,7 +464,7 @@ class RunTestUseCaseImpl @Inject constructor(
                         recordStep(
                             id = TestSectionId.NEIGHBORS,
                             title = "LLDP/CDP",
-                            status = TestSectionStatus.PASS,
+                            status = TestSectionStatus.INFO,
                             rawData = lldpRaw(neighbors),
                             payload = TestSectionPayload.Neighbors(neighbors)
                         )
@@ -472,13 +472,15 @@ class RunTestUseCaseImpl @Inject constructor(
                         emitLog(context.getString(R.string.log_lldp_pass, neighbors.size))
                     }
                     is StepResult.Failed -> {
+                        overallStatus = "FAIL"
                         val message = lldpResult.error.message
                         recordStep(
                             id = TestSectionId.NEIGHBORS,
                             title = "LLDP/CDP",
-                            status = TestSectionStatus.INFO,
+                            status = TestSectionStatus.FAIL,
                             warning = message ?: "Unknown error",
-                            rawData = mapOf("error" to message)
+                            rawData = mapOf("error" to message),
+                            error = message
                         )
                         emitSnapshot()
                         emitLog(context.getString(R.string.log_lldp_info, message ?: "unknown error"))
@@ -496,14 +498,6 @@ class RunTestUseCaseImpl @Inject constructor(
                     }
                 }
             } else {
-                recordStep(
-                    id = TestSectionId.NEIGHBORS,
-                    title = "LLDP/CDP",
-                    status = TestSectionStatus.SKIP,
-                    warning = TestSkipReason.PROFILE_DISABLED,
-                    rawData = mapOf("reason" to TestSkipReason.PROFILE_DISABLED)
-                )
-                emitSnapshot()
                 emitLog(context.getString(R.string.log_lldp_skip, TestSkipReason.PROFILE_DISABLED))
             }
 
@@ -946,14 +940,8 @@ private fun buildInitialTypedSections(profile: TestProfile, probe: ProbeConfig):
             warning = TestSkipReason.PROFILE_DISABLED
         )
     }
-    sections += when {
-        profile.runLldp -> TestSectionSnapshot(id = TestSectionId.NEIGHBORS, status = TestSectionStatus.PENDING, title = "LLDP/CDP")
-        else -> TestSectionSnapshot(
-            id = TestSectionId.NEIGHBORS,
-            status = TestSectionStatus.SKIP,
-            title = "LLDP/CDP",
-            warning = TestSkipReason.PROFILE_DISABLED
-        )
+    if (profile.runLldp) {
+        sections += TestSectionSnapshot(id = TestSectionId.NEIGHBORS, status = TestSectionStatus.PENDING, title = "LLDP/CDP")
     }
     sections += when {
         profile.runPing -> TestSectionSnapshot(id = TestSectionId.PING, status = TestSectionStatus.PENDING, title = "Ping")

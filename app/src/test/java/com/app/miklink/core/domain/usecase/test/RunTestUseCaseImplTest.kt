@@ -6,6 +6,7 @@ import com.app.miklink.core.domain.model.ProbeConfig
 import com.app.miklink.core.domain.model.TestProfile
 import com.app.miklink.core.domain.model.report.LinkStatusData
 import com.app.miklink.core.domain.model.report.NeighborData
+import com.app.miklink.core.domain.model.report.ReportData
 import com.app.miklink.core.domain.model.report.SpeedTestData
 import com.app.miklink.core.data.repository.NetworkConfigFeedback
 import com.app.miklink.core.data.repository.client.ClientRepository
@@ -19,6 +20,7 @@ import com.app.miklink.core.domain.test.model.TestError
 import com.app.miklink.core.domain.test.model.TestEvent
 import com.app.miklink.core.domain.test.model.TestPlan
 import com.app.miklink.core.domain.test.model.TestSectionId
+import com.app.miklink.core.domain.test.model.TestSectionPayload
 import com.app.miklink.core.domain.test.model.TestSectionStatus
 import com.app.miklink.core.domain.test.step.CableTestStep
 import com.app.miklink.core.domain.test.step.LinkStatusStep
@@ -321,6 +323,177 @@ class RunTestUseCaseImplTest {
 
         assertNotNull(captured.captured.speedTest)
         assertEquals("900", captured.captured.speedTest?.tcpDownload)
+    }
+
+    @Test
+    fun `execute records enabled empty neighbor discovery as info without failing run`() = runTest {
+        val captured = slot<ReportData>()
+        val emptyNeighborStep = object : NeighborDiscoveryStep {
+            override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<List<NeighborData>> {
+                return StepResult.Success(emptyList())
+            }
+        }
+
+        coEvery { clientRepository.getClient(1) } returns defaultClient()
+        coEvery { probeRepository.getProbeConfig() } returns defaultProbe()
+        coEvery { profileRepository.getProfile(1) } returns defaultProfile()
+        every { reportResultsCodec.encode(capture(captured)) } returns Result.success("{}")
+        every { context.getString(any(), *anyVararg()) } returns "log message"
+        every { context.getString(any()) } returns "log message"
+
+        val useCase = RunTestUseCaseImpl(
+            context = context,
+            clientRepository = clientRepository,
+            probeRepository = probeRepository,
+            testProfileRepository = profileRepository,
+            networkConfigStep = networkStep,
+            linkStatusStep = linkStatusStep,
+            cableTestStep = cableTestStep,
+            neighborDiscoveryStep = emptyNeighborStep,
+            pingStep = pingStep,
+            speedTestStep = speedTestStep,
+            reportResultsCodec = reportResultsCodec
+        )
+
+        val events = useCase.execute(TestPlan(clientId = 1, profileId = 1, socketId = "A1", notes = null)).toList()
+        val completed = events.last { it is TestEvent.Completed } as TestEvent.Completed
+        val neighborsSection = completed.outcome.finalSnapshot.sections.firstOrNull { it.id == TestSectionId.NEIGHBORS }
+
+        assertNotNull(neighborsSection)
+        assertEquals(TestSectionStatus.INFO, neighborsSection?.status)
+        assertEquals("PASS", completed.outcome.overallStatus)
+        assertTrue(captured.captured.neighbors.isEmpty())
+    }
+
+    @Test
+    fun `execute records enabled neighbor discovery with neighbors as info without failing run`() = runTest {
+        val discoveredNeighbor = NeighborData(
+            identity = "Switch-1",
+            interfaceName = "ether1",
+            discoveredBy = "LLDP",
+            vlanId = null,
+            voiceVlanId = null,
+            poeClass = null,
+            systemDescription = null,
+            portId = null
+        )
+        val neighborStep = object : NeighborDiscoveryStep {
+            override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<List<NeighborData>> {
+                return StepResult.Success(listOf(discoveredNeighbor))
+            }
+        }
+
+        coEvery { clientRepository.getClient(1) } returns defaultClient()
+        coEvery { probeRepository.getProbeConfig() } returns defaultProbe()
+        coEvery { profileRepository.getProfile(1) } returns defaultProfile()
+        every { reportResultsCodec.encode(any()) } returns Result.success("{}")
+        every { context.getString(any(), *anyVararg()) } returns "log message"
+        every { context.getString(any()) } returns "log message"
+
+        val useCase = RunTestUseCaseImpl(
+            context = context,
+            clientRepository = clientRepository,
+            probeRepository = probeRepository,
+            testProfileRepository = profileRepository,
+            networkConfigStep = networkStep,
+            linkStatusStep = linkStatusStep,
+            cableTestStep = cableTestStep,
+            neighborDiscoveryStep = neighborStep,
+            pingStep = pingStep,
+            speedTestStep = speedTestStep,
+            reportResultsCodec = reportResultsCodec
+        )
+
+        val events = useCase.execute(TestPlan(clientId = 1, profileId = 1, socketId = "A1", notes = null)).toList()
+        val completed = events.last { it is TestEvent.Completed } as TestEvent.Completed
+        val neighborsSection = completed.outcome.finalSnapshot.sections.firstOrNull { it.id == TestSectionId.NEIGHBORS }
+        val payload = neighborsSection?.payload as? TestSectionPayload.Neighbors
+
+        assertNotNull(neighborsSection)
+        assertEquals(TestSectionStatus.INFO, neighborsSection?.status)
+        assertNotNull(payload)
+        assertEquals(listOf(discoveredNeighbor), payload?.entries)
+        assertEquals("PASS", completed.outcome.overallStatus)
+    }
+
+    @Test
+    fun `execute marks overall fail when enabled neighbor discovery fails`() = runTest {
+        val failingNeighborStep = object : NeighborDiscoveryStep {
+            override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<List<NeighborData>> {
+                return StepResult.Failed(TestError.NetworkError("LLDP discovery failed"))
+            }
+        }
+
+        coEvery { clientRepository.getClient(1) } returns defaultClient()
+        coEvery { probeRepository.getProbeConfig() } returns defaultProbe()
+        coEvery { profileRepository.getProfile(1) } returns defaultProfile()
+        every { reportResultsCodec.encode(any()) } returns Result.success("{}")
+        every { context.getString(any(), *anyVararg()) } returns "log message"
+        every { context.getString(any()) } returns "log message"
+
+        val useCase = RunTestUseCaseImpl(
+            context = context,
+            clientRepository = clientRepository,
+            probeRepository = probeRepository,
+            testProfileRepository = profileRepository,
+            networkConfigStep = networkStep,
+            linkStatusStep = linkStatusStep,
+            cableTestStep = cableTestStep,
+            neighborDiscoveryStep = failingNeighborStep,
+            pingStep = pingStep,
+            speedTestStep = speedTestStep,
+            reportResultsCodec = reportResultsCodec
+        )
+
+        val events = useCase.execute(TestPlan(clientId = 1, profileId = 1, socketId = "A1", notes = null)).toList()
+        val completed = events.last { it is TestEvent.Completed } as TestEvent.Completed
+        val sections = completed.outcome.finalSnapshot.sections.associateBy { it.id }
+
+        assertEquals(TestSectionStatus.FAIL, sections[TestSectionId.NEIGHBORS]?.status)
+        assertEquals("FAIL", completed.outcome.overallStatus)
+    }
+
+    @Test
+    fun `execute does not run or produce neighbor section when discovery is disabled`() = runTest {
+        val captured = slot<ReportData>()
+        var neighborRunCalls = 0
+        val disabledNeighborStep = object : NeighborDiscoveryStep {
+            override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<List<NeighborData>> {
+                neighborRunCalls++
+                return StepResult.Failed(TestError.Unexpected("Neighbor discovery should not run"))
+            }
+        }
+
+        coEvery { clientRepository.getClient(1) } returns defaultClient()
+        coEvery { probeRepository.getProbeConfig() } returns defaultProbe()
+        coEvery { profileRepository.getProfile(1) } returns defaultProfile().copy(runLldp = false)
+        every { reportResultsCodec.encode(capture(captured)) } returns Result.success("{}")
+        every { context.getString(any(), *anyVararg()) } returns "log message"
+        every { context.getString(any()) } returns "log message"
+
+        val useCase = RunTestUseCaseImpl(
+            context = context,
+            clientRepository = clientRepository,
+            probeRepository = probeRepository,
+            testProfileRepository = profileRepository,
+            networkConfigStep = networkStep,
+            linkStatusStep = linkStatusStep,
+            cableTestStep = cableTestStep,
+            neighborDiscoveryStep = disabledNeighborStep,
+            pingStep = pingStep,
+            speedTestStep = speedTestStep,
+            reportResultsCodec = reportResultsCodec
+        )
+
+        val events = useCase.execute(TestPlan(clientId = 1, profileId = 1, socketId = "A1", notes = null)).toList()
+        val completed = events.last { it is TestEvent.Completed } as TestEvent.Completed
+        val snapshots = events.filterIsInstance<TestEvent.SnapshotUpdated>()
+
+        assertEquals(0, neighborRunCalls)
+        assertTrue(completed.outcome.finalSnapshot.sections.none { it.id == TestSectionId.NEIGHBORS })
+        assertTrue(snapshots.all { snapshot -> snapshot.snapshot.sections.none { it.id == TestSectionId.NEIGHBORS } })
+        assertTrue(captured.captured.neighbors.isEmpty())
+        assertTrue(captured.captured.extra.keys.none { it.equals("lldp", ignoreCase = true) })
     }
 
     @Test
