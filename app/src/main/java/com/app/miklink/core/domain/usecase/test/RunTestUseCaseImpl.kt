@@ -14,7 +14,10 @@ import com.app.miklink.core.data.repository.NetworkConfigFeedback
 import com.app.miklink.core.data.repository.client.ClientRepository
 import com.app.miklink.core.data.repository.probe.ProbeRepository
 import com.app.miklink.core.data.repository.test.TestProfileRepository
+import com.app.miklink.core.domain.test.logging.DebugTraceRunContext
+import com.app.miklink.core.domain.test.logging.DebugTraceSink
 import com.app.miklink.core.domain.test.logging.LogSanitizer
+import com.app.miklink.core.domain.test.logging.NoOpDebugTraceSink
 import com.app.miklink.core.domain.test.model.CableTestSummary
 import com.app.miklink.core.domain.test.model.StepResult
 import com.app.miklink.core.domain.test.model.PingMeasurement
@@ -63,12 +66,36 @@ class RunTestUseCaseImpl @Inject constructor(
     private val neighborDiscoveryStep: NeighborDiscoveryStep,
     private val pingStep: PingStep,
     private val speedTestStep: SpeedTestStep,
-    private val reportResultsCodec: ReportResultsCodec
+    private val reportResultsCodec: ReportResultsCodec,
+    private val debugTraceSink: DebugTraceSink = NoOpDebugTraceSink,
+    private val debugTraceRunContext: DebugTraceRunContext = DebugTraceRunContext()
 ) : RunTestUseCase {
     private val logSanitizer = LogSanitizer()
-    private val qualityPolicy = TestQualityPolicy()
+    private val qualityPolicy = TestQualityPolicy { testName, fields ->
+        val currentRunId = debugTraceRunContext.current() ?: return@TestQualityPolicy
+        debugTraceSink.event(
+            runId = currentRunId,
+            event = "threshold_evaluation",
+            fields = mapOf("test" to testName) + fields
+        )
+    }
 
     override fun execute(plan: TestPlan): Flow<TestEvent> = flow {
+        val runId = debugTraceSink.startRun(
+            source = "ui",
+            fields = mapOf(
+                "clientId" to plan.clientId,
+                "profileId" to plan.profileId,
+                "socketId" to plan.socketId
+            )
+        )
+        debugTraceRunContext.set(runId)
+        var finalStatusForTrace = "FAIL"
+
+        fun traceEvent(event: String, fields: Map<String, Any?> = emptyMap()) {
+            debugTraceSink.event(runId = runId, event = event, fields = fields)
+        }
+
         suspend fun emitLog(message: String) {
             val sanitized = logSanitizer.sanitize(message)
             if (sanitized.isNotBlank()) {
@@ -76,12 +103,47 @@ class RunTestUseCaseImpl @Inject constructor(
             }
         }
 
+        traceEvent(
+            event = "run_started",
+            fields = mapOf(
+                "source" to "ui",
+                "clientId" to plan.clientId,
+                "profileId" to plan.profileId,
+                "socketId" to plan.socketId
+            )
+        )
+
         val client = clientRepository.getClient(plan.clientId)
             ?: throw IllegalStateException("Client not found: ${plan.clientId}")
         val probe = probeRepository.getProbeConfig()
             ?: throw IllegalStateException("Probe (singleton) not configured")
         val profile = testProfileRepository.getProfile(plan.profileId)
             ?: throw IllegalStateException("Profile not found: ${plan.profileId}")
+        val thresholds = profile.thresholds
+
+        traceEvent(
+            event = "profile_loaded",
+            fields = mapOf(
+                "profileId" to profile.profileId,
+                "profileName" to profile.profileName
+            )
+        )
+        traceEvent(
+            event = "test_enabled_state",
+            fields = mapOf(
+                "runLinkStatus" to profile.runLinkStatus,
+                "runTdr" to profile.runTdr,
+                "runLldp" to profile.runLldp,
+                "runPing" to profile.runPing,
+                "runSpeedTest" to profile.runSpeedTest
+            )
+        )
+        traceEvent(
+            event = "thresholds_loaded",
+            fields = mapOf(
+                "thresholds" to thresholds
+            )
+        )
 
         val testExecutionContext = TestExecutionContext(
             client = client,
@@ -140,6 +202,34 @@ class RunTestUseCaseImpl @Inject constructor(
                 rawData = rawData,
                 error = error
             )
+            traceEvent(
+                event = "normalized_result",
+                fields = mapOf(
+                    "test" to id.toLegacyName(),
+                    "title" to title,
+                    "status" to status.name,
+                    "warning" to warning,
+                    "rawData" to rawData,
+                    "payload" to payload
+                )
+            )
+            traceEvent(
+                event = "test_decision",
+                fields = mapOf(
+                    "test" to id.toLegacyName(),
+                    "status" to status.name,
+                    "reason" to (warning ?: error)
+                )
+            )
+            if (!error.isNullOrBlank()) {
+                traceEvent(
+                    event = "technical_error",
+                    fields = mapOf(
+                        "test" to id.toLegacyName(),
+                        "message" to error
+                    )
+                )
+            }
         }
 
         suspend fun finishTest() {
@@ -156,6 +246,7 @@ class RunTestUseCaseImpl @Inject constructor(
                 rawResultsJson = buildReportData(plan, reportData)
             )
 
+            finalStatusForTrace = overallStatus
             emitLog(context.getString(R.string.log_result_completed, overallStatus))
             emit(TestEvent.Completed(outcome))
         }
@@ -591,8 +682,22 @@ class RunTestUseCaseImpl @Inject constructor(
             finishTest()
         } catch (e: Exception) {
             if (e is CancellationException) throw e
+            traceEvent(
+                event = "technical_error",
+                fields = mapOf(
+                    "test" to "RUN",
+                    "message" to (e.message ?: "Unknown error"),
+                    "type" to e::class.java.simpleName
+                )
+            )
             emitLog(context.getString(R.string.log_result_error, e.message ?: "unknown error"))
             emit(TestEvent.Failed(TestError.Unexpected(e.message ?: "Unknown error", e)))
+        } finally {
+            debugTraceSink.finishRun(
+                runId = runId,
+                finalStatus = finalStatusForTrace
+            )
+            debugTraceRunContext.clear()
         }
     }
 

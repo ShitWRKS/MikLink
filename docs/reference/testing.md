@@ -23,6 +23,14 @@ Non negoziabili:
 ./gradlew test
 ```
 
+## Live probe E2E (Windows)
+
+Run the live probe instrumentation class from PowerShell without WSL or Git Bash:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\agent\run_live_probe_e2e.ps1
+```
+
 ## Aggiungere un Golden test (ricetta)
 
 1) Aggiungi la fixture in `app/src/test/resources/fixtures/<categoria>/<nome-file>` (se già presente, riusa il percorso esistente).

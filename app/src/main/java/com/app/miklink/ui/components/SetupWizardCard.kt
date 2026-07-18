@@ -28,6 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -47,6 +48,8 @@ fun SetupWizardCard(
     onSelectClient: () -> Unit,
     onSelectProfile: () -> Unit,
     onSocketChange: (String) -> Unit,
+    clientSelectorTag: String? = null,
+    profileSelectorTag: String? = null,
     onManageClient: (() -> Unit)? = null,
     onManageProfile: (() -> Unit)? = null
 ) {
@@ -76,6 +79,7 @@ fun SetupWizardCard(
                 subtitle = clientSubtitle,
                 isComplete = clientReady,
                 onClick = onSelectClient,
+                modifier = modifierForTag(clientSelectorTag),
                 onManage = onManageClient
             )
             WizardStepRow(
@@ -85,6 +89,7 @@ fun SetupWizardCard(
                 subtitle = profileSubtitle,
                 isComplete = profileReady,
                 onClick = onSelectProfile,
+                modifier = modifierForTag(profileSelectorTag),
                 onManage = onManageProfile
             )
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -113,6 +118,10 @@ fun SetupWizardCard(
             }
         }
     }
+}
+
+private fun modifierForTag(tag: String?): Modifier {
+    return if (tag.isNullOrBlank()) Modifier else Modifier.testTag(tag)
 }
 
 @Composable

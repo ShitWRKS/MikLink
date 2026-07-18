@@ -11,6 +11,8 @@ import com.app.miklink.core.domain.model.ProbeConfig
 import com.app.miklink.core.domain.model.report.LinkStatusData
 import com.app.miklink.core.domain.model.report.NeighborData
 import com.app.miklink.core.domain.model.report.SpeedTestData
+import com.app.miklink.core.domain.test.logging.DebugTraceRunContext
+import com.app.miklink.core.domain.test.logging.DebugTraceSink
 import com.app.miklink.core.domain.test.model.CableTestSummary
 import com.app.miklink.core.domain.test.model.PingMeasurement
 import com.app.miklink.data.remote.mikrotik.dto.CableTestRequest
@@ -33,7 +35,9 @@ import javax.inject.Inject
  * Centralizza il fallback HTTPS->HTTP tramite MikroTikCallExecutor e il binding WiFi via service provider.
  */
 class MikroTikTestRepositoryRemote @Inject constructor(
-    private val callExecutor: MikroTikCallExecutor
+    private val callExecutor: MikroTikCallExecutor,
+    private val debugTraceSink: DebugTraceSink,
+    private val debugTraceRunContext: DebugTraceRunContext
 ) : MikroTikTestRepository {
 
     override suspend fun monitorEthernet(
@@ -41,10 +45,27 @@ class MikroTikTestRepositoryRemote @Inject constructor(
         interfaceName: String,
         once: Boolean
     ): LinkStatusData = withContext(Dispatchers.IO) {
+        trace(
+            event = "mikrotik_request",
+            fields = mapOf(
+                "test" to "LINK",
+                "interfaceName" to interfaceName,
+                "once" to once
+            )
+        )
         val outcome = callExecutor.executeWithOutcome(probe) { api ->
             val results = api.getLinkStatus(MonitorRequest(numbers = interfaceName, once = once))
+            trace(
+                event = "mikrotik_raw_response",
+                fields = mapOf("test" to "LINK", "raw" to results)
+            )
             val latest = results.lastOrNull() ?: throw IllegalStateException("No link status returned")
-            latest.toLinkStatusData()
+            val parsed = latest.toLinkStatusData()
+            trace(
+                event = "parsed_response",
+                fields = mapOf("test" to "LINK", "parsed" to parsed)
+            )
+            parsed
         }
         outcome.getOrThrow()
     }
@@ -54,12 +75,29 @@ class MikroTikTestRepositoryRemote @Inject constructor(
         interfaceName: String,
         once: Boolean
     ): CableTestSummary = withContext(Dispatchers.IO) {
+        trace(
+            event = "mikrotik_request",
+            fields = mapOf(
+                "test" to "TDR",
+                "interfaceName" to interfaceName,
+                "once" to once
+            )
+        )
         val outcome = callExecutor.executeWithOutcome(probe) { api ->
             val results = api.runCableTest(CableTestRequest(numbers = interfaceName, duration = "5s"))
+            trace(
+                event = "mikrotik_raw_response",
+                fields = mapOf("test" to "TDR", "raw" to results)
+            )
             val validResult = results.lastOrNull {
                 it.cablePairs != null || it.status.lowercase() in listOf("ok", "open", "link-ok", "running")
             } ?: throw IllegalStateException("No valid cable test results found")
-            validResult.toSummary()
+            val parsed = validResult.toSummary()
+            trace(
+                event = "parsed_response",
+                fields = mapOf("test" to "TDR", "parsed" to parsed)
+            )
+            parsed
         }
         outcome.getOrThrow()
     }
@@ -70,9 +108,27 @@ class MikroTikTestRepositoryRemote @Inject constructor(
         interfaceName: String?,
         count: Int
     ): List<PingMeasurement> = withContext(Dispatchers.IO) {
+        trace(
+            event = "mikrotik_request",
+            fields = mapOf(
+                "test" to "PING",
+                "target" to target,
+                "interfaceName" to interfaceName,
+                "count" to count
+            )
+        )
         val outcome = callExecutor.executeWithOutcome(probe) { api ->
-            api.runPing(PingRequest(address = target, `interface` = interfaceName, count = count.toString()))
-                .map { it.toMeasurement() }
+            val raw = api.runPing(PingRequest(address = target, `interface` = interfaceName, count = count.toString()))
+            trace(
+                event = "mikrotik_raw_response",
+                fields = mapOf("test" to "PING", "target" to target, "raw" to raw)
+            )
+            raw.map { it.toMeasurement() }.also { parsed ->
+                trace(
+                    event = "parsed_response",
+                    fields = mapOf("test" to "PING", "target" to target, "parsed" to parsed)
+                )
+            }
         }
         outcome.getOrThrow()
     }
@@ -81,8 +137,25 @@ class MikroTikTestRepositoryRemote @Inject constructor(
         probe: ProbeConfig,
         interfaceName: String
     ): List<NeighborData> = withContext(Dispatchers.IO) {
+        trace(
+            event = "mikrotik_request",
+            fields = mapOf(
+                "test" to "NEIGHBORS",
+                "interfaceName" to interfaceName
+            )
+        )
         val outcome = callExecutor.executeWithOutcome(probe) { api ->
-            api.getIpNeighbors(interfaceName).map { it.toDomain() }
+            val raw = api.getIpNeighbors(interfaceName)
+            trace(
+                event = "mikrotik_raw_response",
+                fields = mapOf("test" to "NEIGHBORS", "raw" to raw)
+            )
+            raw.map { it.toDomain() }.also { parsed ->
+                trace(
+                    event = "parsed_response",
+                    fields = mapOf("test" to "NEIGHBORS", "parsed" to parsed)
+                )
+            }
         }
         outcome.getOrThrow()
     }
@@ -94,6 +167,14 @@ class MikroTikTestRepositoryRemote @Inject constructor(
         password: String?,
         duration: String
     ): SpeedTestData = withContext(Dispatchers.IO) {
+        trace(
+            event = "mikrotik_request",
+            fields = mapOf(
+                "test" to "SPEED",
+                "serverAddress" to serverAddress,
+                "duration" to duration
+            )
+        )
         val outcome = callExecutor.executeWithOutcome(probe) { api ->
             val requestBody = SpeedTestRequest(
                 address = serverAddress,
@@ -102,10 +183,24 @@ class MikroTikTestRepositoryRemote @Inject constructor(
                 testDuration = duration
             )
             val response = api.runSpeedTest(requestBody)
+            trace(
+                event = "mikrotik_raw_response",
+                fields = mapOf(
+                    "test" to "SPEED",
+                    "code" to response.code(),
+                    "message" to response.message(),
+                    "raw" to response.body()
+                )
+            )
             if (response.isSuccessful) {
                 val body = response.body()
                 val result = body?.lastOrNull { it.status == "done" } ?: body?.lastOrNull()
-                result?.toDomain(serverAddress) ?: throw IllegalStateException("Empty speed test response")
+                val parsed = result?.toDomain(serverAddress) ?: throw IllegalStateException("Empty speed test response")
+                trace(
+                    event = "parsed_response",
+                    fields = mapOf("test" to "SPEED", "parsed" to parsed)
+                )
+                parsed
             } else {
                 when (response.code()) {
                     400 -> throw IllegalArgumentException("Bad request: ${response.message()}")
@@ -115,6 +210,11 @@ class MikroTikTestRepositoryRemote @Inject constructor(
             }
         }
         outcome.getOrThrow()
+    }
+
+    private fun trace(event: String, fields: Map<String, Any?>) {
+        val runId = debugTraceRunContext.current() ?: return
+        debugTraceSink.event(runId = runId, event = event, fields = fields)
     }
 }
 

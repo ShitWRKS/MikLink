@@ -8,8 +8,6 @@ package com.app.miklink.core.domain.policy
 
 import com.app.miklink.core.domain.model.Client
 import com.app.miklink.core.domain.model.GatewayUnresolvedPolicy
-import com.app.miklink.core.domain.model.PingThresholds
-import com.app.miklink.core.domain.model.SpeedThresholds
 import com.app.miklink.core.domain.model.TestProfile
 import com.app.miklink.core.domain.model.TestThresholds
 import com.app.miklink.core.domain.model.report.LinkStatusData
@@ -25,7 +23,8 @@ data class SectionEvaluation(
 )
 
 class TestQualityPolicy(
-    private val defaultThresholds: TestThresholds = TestThresholds.defaults()
+    private val defaultThresholds: TestThresholds = TestThresholds.defaults(),
+    private val thresholdEvaluationObserver: ((testName: String, fields: Map<String, Any?>) -> Unit)? = null
 ) {
 
     fun evaluateLink(
@@ -36,20 +35,33 @@ class TestQualityPolicy(
         val thresholds = profile.thresholds ?: defaultThresholds
         val minRate = thresholds.linkMinRate ?: client.minLinkRate
         val status = linkStatus.status?.lowercase()
+        val currentRate = parseRateMbps(linkStatus.rate)
+        val requiredRate = if (minRate.isNullOrBlank()) null else parseRateMbps(minRate)
+        val input = mapOf(
+            "status" to linkStatus.status,
+            "rate" to linkStatus.rate,
+            "rateMbps" to currentRate
+        )
+        val thresholdFields = mapOf(
+            "linkMinRate" to minRate,
+            "linkMinRateMbps" to requiredRate
+        )
         if (status.isNullOrBlank() || status == "down" || status == "unknown") {
-            return SectionEvaluation(TestSectionStatus.FAIL, "Link inattivo o sconosciuto")
+            val decision = SectionEvaluation(TestSectionStatus.FAIL, "Link inattivo o sconosciuto")
+            notifyThresholdEvaluation("link", input, thresholdFields, decision)
+            return decision
         }
-        if (!minRate.isNullOrBlank()) {
-            val currentRate = parseRateMbps(linkStatus.rate)
-            val requiredRate = parseRateMbps(minRate)
-            if (currentRate != null && requiredRate != null && currentRate < requiredRate) {
-                return SectionEvaluation(
-                    TestSectionStatus.FAIL,
-                    "Velocità link ${linkStatus.rate ?: "-"} sotto soglia $minRate"
-                )
-            }
+        if (!minRate.isNullOrBlank() && currentRate != null && requiredRate != null && currentRate < requiredRate) {
+            val decision = SectionEvaluation(
+                TestSectionStatus.FAIL,
+                "Velocita link ${linkStatus.rate ?: "-"} sotto soglia $minRate"
+            )
+            notifyThresholdEvaluation("link", input, thresholdFields, decision)
+            return decision
         }
-        return SectionEvaluation(TestSectionStatus.PASS)
+        val decision = SectionEvaluation(TestSectionStatus.PASS)
+        notifyThresholdEvaluation("link", input, thresholdFields, decision)
+        return decision
     }
 
     fun evaluateTdr(
@@ -68,11 +80,18 @@ class TestQualityPolicy(
         val failing = statusCandidates.firstOrNull { value ->
             failStatuses.contains(value.lowercase())
         }
-        return if (failing != null) {
+        val decision = if (failing != null) {
             SectionEvaluation(TestSectionStatus.FAIL, "TDR rileva stato critico: $failing")
         } else {
             SectionEvaluation(TestSectionStatus.PASS)
         }
+        notifyThresholdEvaluation(
+            "tdr",
+            input = mapOf("summaryStatus" to summary.status, "entries" to summary.entries),
+            thresholds = mapOf("tdrFailStatuses" to failStatuses),
+            decision = decision
+        )
+        return decision
     }
 
     fun evaluatePing(
@@ -107,11 +126,22 @@ class TestQualityPolicy(
             }
         }
 
-        return if (failReasons.isNotEmpty()) {
+        val decision = if (failReasons.isNotEmpty()) {
             SectionEvaluation(TestSectionStatus.FAIL, failReasons.joinToString("; "))
         } else {
             SectionEvaluation(TestSectionStatus.PASS)
         }
+        notifyThresholdEvaluation(
+            "ping",
+            input = mapOf("outcomes" to outcomes),
+            thresholds = mapOf(
+                "pingLocal" to thresholds.pingLocal,
+                "pingExternal" to thresholds.pingExternal,
+                "gatewayPolicy" to thresholds.gatewayPolicy.name
+            ),
+            decision = decision
+        )
+        return decision
     }
 
     fun evaluateSpeed(
@@ -146,11 +176,47 @@ class TestQualityPolicy(
             failReasons += "Upload ${formatNumber(upload)}Mbps sotto soglia ${thresholds.speed.minUploadMbps}Mbps"
         }
 
-        return if (failReasons.isNotEmpty()) {
+        val decision = if (failReasons.isNotEmpty()) {
             SectionEvaluation(TestSectionStatus.FAIL, failReasons.joinToString("; "))
         } else {
             SectionEvaluation(TestSectionStatus.PASS)
         }
+        notifyThresholdEvaluation(
+            "speed",
+            input = mapOf(
+                "ping" to speed.ping,
+                "jitter" to speed.jitter,
+                "loss" to speed.loss,
+                "tcpDownload" to speed.tcpDownload,
+                "tcpUpload" to speed.tcpUpload
+            ),
+            thresholds = mapOf(
+                "maxPingMs" to thresholds.speed.maxPingMs,
+                "maxJitterMs" to thresholds.speed.maxJitterMs,
+                "maxLossPercent" to thresholds.speed.maxLossPercent,
+                "minDownloadMbps" to thresholds.speed.minDownloadMbps,
+                "minUploadMbps" to thresholds.speed.minUploadMbps
+            ),
+            decision = decision
+        )
+        return decision
+    }
+
+    private fun notifyThresholdEvaluation(
+        testName: String,
+        input: Map<String, Any?>,
+        thresholds: Map<String, Any?>,
+        decision: SectionEvaluation
+    ) {
+        thresholdEvaluationObserver?.invoke(
+            testName,
+            mapOf(
+                "input" to input,
+                "thresholds" to thresholds,
+                "status" to decision.status.name,
+                "reason" to decision.warning
+            )
+        )
     }
 
     private fun isLocalTarget(target: String?): Boolean {

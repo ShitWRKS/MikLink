@@ -22,6 +22,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -31,7 +32,8 @@ fun PrimaryStickyCTA(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     supportingText: String? = null,
-    icon: ImageVector? = null
+    icon: ImageVector? = null,
+    buttonTestTag: String? = null
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -58,7 +60,10 @@ fun PrimaryStickyCTA(
                 enabled = enabled,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(64.dp),
+                    .height(64.dp)
+                    .let {
+                        if (buttonTestTag != null) it.testTag(buttonTestTag) else it
+                    },
                 contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
                 shape = MaterialTheme.shapes.large,
                 colors = ButtonDefaults.buttonColors(

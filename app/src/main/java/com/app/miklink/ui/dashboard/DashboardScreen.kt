@@ -53,6 +53,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -237,7 +238,8 @@ fun DashboardScreen(
                     supportingText = if (ctaEnabled) null else ctaSubtitle,
                     icon = ctaIcon,
                     enabled = ctaEnabled,
-                    onClick = ctaAction
+                    onClick = ctaAction,
+                    buttonTestTag = DashboardTags.START_TEST_BUTTON
                 )
             }
         ) { padding ->
@@ -264,6 +266,8 @@ fun DashboardScreen(
                         onSelectClient = { showClientSheet = true },
                         onSelectProfile = { showProfileSheet = true },
                         onSocketChange = { viewModel.socketName.value = it },
+                        clientSelectorTag = DashboardTags.CLIENT_SELECTOR,
+                        profileSelectorTag = DashboardTags.PROFILE_SELECTOR,
                         onManageClient = { navController.navigate("client_list") },
                         onManageProfile = { navController.navigate("profile_list") }
                     )
@@ -305,6 +309,7 @@ fun DashboardScreen(
                     title = client.companyName,
                     subtitle = client.location ?: "",
                     icon = Icons.Default.Business,
+                    modifier = Modifier.testTag("${DashboardTags.CLIENT_ITEM_PREFIX}_${client.clientId}"),
                     isSelected = selectedClient == client,
                     onClick = {
                         viewModel.onClientSelected(client)
@@ -339,6 +344,7 @@ fun DashboardScreen(
                     title = profile.profileName,
                     subtitle = profile.profileDescription ?: "",
                     icon = Icons.Default.Speed,
+                    modifier = Modifier.testTag("${DashboardTags.PROFILE_ITEM_PREFIX}_${profile.profileId}"),
                     isSelected = selectedProfile == profile,
                     onClick = {
                         viewModel.selectedProfile.value = profile
