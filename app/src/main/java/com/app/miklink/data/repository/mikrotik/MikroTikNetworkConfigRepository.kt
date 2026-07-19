@@ -25,7 +25,7 @@ import com.app.miklink.data.remote.mikrotik.service.MikroTikApiService
 import com.app.miklink.data.remote.mikrotik.service.MikroTikCallExecutor
 import com.app.miklink.data.remote.mikrotik.service.RouterOsOperation
 import com.app.miklink.data.remote.mikrotik.service.RouterOsResponseDecoder
-import com.app.miklink.data.remote.mikrotik.service.RouterOsTransportException
+import com.app.miklink.core.domain.test.model.TestExecutionException
 import com.app.miklink.data.repository.RouteManager
 import retrofit2.Response
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -226,43 +226,27 @@ class MikroTikNetworkConfigRepository @Inject constructor(
         return when (this) {
             is CallOutcome.Success -> value
             is CallOutcome.Failure -> {
-                val primary = failures.firstOrNull()?.throwable ?: IllegalStateException("Unknown call failure")
+                val primary = failures.firstOrNull()?.throwable
+                    ?: IllegalStateException("Unknown call failure")
                 failures.drop(1).forEach { primary.addSuppressed(it.throwable) }
-                throw mapToTransportException(executor.classify(primary))
+                throw TestExecutionException(executor.classify(primary))
             }
         }
     }
 
     private fun <T> decodeList(response: retrofit2.Response<List<T>>, operation: RouterOsOperation): List<T> {
         return when (val decoded = decoder.decode(operation, response)) {
-            is DecodedResult.Error -> throw mapToTransportException(decoded.error)
+            is DecodedResult.Error -> throw TestExecutionException(decoded.error)
             is DecodedResult.Success -> decoded.value
         }
     }
 
     private fun decodeUnit(response: retrofit2.Response<Any>, operation: RouterOsOperation) {
-        // Write endpoints (PUT) may legitimately return an empty success body; only HTTP errors
-        // are classified by the decoder. A successful HTTP status is enough for unit operations.
         if (!response.isSuccessful) {
             when (val decoded = decoder.decode<Any>(operation, response)) {
-                is DecodedResult.Error -> throw mapToTransportException(decoded.error)
+                is DecodedResult.Error -> throw TestExecutionException(decoded.error)
                 is DecodedResult.Success -> Unit
             }
         }
     }
-
-    private fun mapToTransportException(error: TestError): Exception {
-    return when (error) {
-        is TestError.ProbeUnavailable -> java.io.IOException(error.message, error.cause)
-        is TestError.Authentication -> SecurityException(error.message)
-        is TestError.Tls -> javax.net.ssl.SSLHandshakeException(error.message)
-        is TestError.Timeout -> java.net.SocketTimeoutException(error.message)
-        is TestError.RouterOsError -> RouterOsTransportException(error)
-        is TestError.InvalidResponse -> IllegalStateException(error.message)
-        is TestError.Unsupported -> UnsupportedOperationException(error.message)
-        is TestError.ConfigurationError -> IllegalStateException(error.message)
-        is TestError.SerializationError -> IllegalStateException(error.message, error.cause)
-        is TestError.Unexpected -> IllegalStateException(error.message, error.cause)
-    }
-}
 }

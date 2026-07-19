@@ -35,6 +35,7 @@ import com.app.miklink.core.domain.test.model.TestSectionStatus
 import com.app.miklink.core.domain.test.model.TestSkipReason
 import com.app.miklink.core.domain.test.model.TestError
 import com.app.miklink.core.domain.test.model.TestPlan
+import com.app.miklink.core.domain.test.model.TestRunTermination
 import com.app.miklink.core.domain.test.step.CableTestStep
 import com.app.miklink.core.domain.test.step.LinkStatusStep
 import com.app.miklink.core.domain.test.step.NetworkConfigStep
@@ -248,6 +249,79 @@ class RunTestUseCaseImpl @Inject constructor(
             emit(TestEvent.Completed(outcome))
         }
 
+        /**
+         * Marks all PENDING and RUNNING sections as SKIP with PROBE_UNAVAILABLE reason.
+         * Preserves sections already in PASS, FAIL, SKIP, or INFO status.
+         */
+        fun markRemainingSectionsSkipped(sections: MutableList<TestSectionSnapshot>) {
+            for (i in sections.indices) {
+                val section = sections[i]
+                if (section.status == TestSectionStatus.PENDING || section.status == TestSectionStatus.RUNNING) {
+                    sections[i] = section.copy(
+                        status = TestSectionStatus.SKIP,
+                        warning = TestSkipReason.PROBE_UNAVAILABLE
+                    )
+                }
+            }
+        }
+
+        /**
+         * Handles probe disconnection during any step.
+         * Marks current section as FAIL, remaining enabled sections as SKIP/PROBE_UNAVAILABLE,
+         * and emits Completed with partial report.
+         */
+        suspend fun finishForProbeUnavailable(
+            currentSection: TestSectionId,
+            error: TestError.ProbeUnavailable
+        ) {
+            overallStatus = "FAIL"
+
+            // Mark current section as FAIL if not already recorded
+            val currentSnapshot = typedSections.firstOrNull { it.id == currentSection }
+            if (currentSnapshot != null && currentSnapshot.status != TestSectionStatus.FAIL) {
+                updateTypedSection(
+                    typedSections = typedSections,
+                    id = currentSection,
+                    status = TestSectionStatus.FAIL,
+                    warning = error.message
+                )
+            }
+
+            // Mark remaining PENDING/RUNNING sections as SKIP with PROBE_UNAVAILABLE
+            markRemainingSectionsSkipped(typedSections)
+
+            // Build final outcome
+            val finalSnapshot = TestRunSnapshot(
+                sections = typedSectionsSnapshot(typedSections),
+                progress = snapshotProgressKey,
+                percent = snapshotPercent
+            )
+
+            // Add termination info to report
+            reportData.addExtraStep(
+                name = "termination",
+                status = "PROBE_UNAVAILABLE",
+                rawData = mapOf(
+                    "termination" to "PROBE_UNAVAILABLE",
+                    "terminalErrorType" to "ProbeUnavailable",
+                    "terminalErrorMessage" to (error.message.take(200))
+                ),
+                error = null
+            )
+
+            val outcome = TestOutcome(
+                overallStatus = overallStatus,
+                finalSnapshot = finalSnapshot,
+                rawResultsJson = buildReportData(plan, reportData),
+                termination = TestRunTermination.PROBE_UNAVAILABLE,
+                terminalError = error
+            )
+
+            finalStatusForTrace = overallStatus
+            emitLog(textProvider.resultCompleted(overallStatus))
+            emit(TestEvent.Completed(outcome))
+        }
+
         emitSnapshot()
         emitLog(textProvider.initStarting(client.companyName, profile.profileName, plan.socketId ?: ""))
         emitProgress(TestProgressKey.PREPARING, 0, textProvider.labelInit(), textProvider.initLoading())
@@ -296,6 +370,10 @@ class RunTestUseCaseImpl @Inject constructor(
                         emitLog(textProvider.linkStatus(resolvedStatus.name, linkStatus.status ?: "-", linkStatus.rate ?: "-"))
                     }
                     is StepResult.Failed -> {
+                        if (linkResult.error is TestError.ProbeUnavailable) {
+                            finishForProbeUnavailable(TestSectionId.LINK, linkResult.error as TestError.ProbeUnavailable)
+                            return@flow
+                        }
                         overallStatus = "FAIL"
                         layer1Failed = true
                         val errorMessage = linkResult.error.message
@@ -362,6 +440,10 @@ class RunTestUseCaseImpl @Inject constructor(
                         emitLog(textProvider.tdrStatus(evaluation.status.name, cableTest.entries.size))
                     }
                     is StepResult.Failed -> {
+                        if (tdrResult.error is TestError.ProbeUnavailable) {
+                            finishForProbeUnavailable(TestSectionId.TDR, tdrResult.error as TestError.ProbeUnavailable)
+                            return@flow
+                        }
                         val isFatal = tdrResult.error is TestError.Unsupported
                         if (!isFatal) {
                             overallStatus = "FAIL"
@@ -454,6 +536,10 @@ class RunTestUseCaseImpl @Inject constructor(
                     emitLog(textProvider.networkPass(feedback.mode, feedback.interfaceName))
                 }
                 is StepResult.Failed -> {
+                    if (networkResult.error is TestError.ProbeUnavailable) {
+                        finishForProbeUnavailable(TestSectionId.NETWORK, networkResult.error as TestError.ProbeUnavailable)
+                        return@flow
+                    }
                     overallStatus = "FAIL"
                     val errorMessage = networkResult.error.message
                     recordStep(
@@ -510,6 +596,10 @@ class RunTestUseCaseImpl @Inject constructor(
                         emitLog(textProvider.lldpPass(neighbors.size))
                     }
                     is StepResult.Failed -> {
+                        if (lldpResult.error is TestError.ProbeUnavailable) {
+                            finishForProbeUnavailable(TestSectionId.NEIGHBORS, lldpResult.error as TestError.ProbeUnavailable)
+                            return@flow
+                        }
                         overallStatus = "FAIL"
                         val message = lldpResult.error.message
                         recordStep(
@@ -575,6 +665,10 @@ class RunTestUseCaseImpl @Inject constructor(
                         emitLog(textProvider.pingStatus(evaluation.status.name, outcomes.size, evaluation.warning?.let { " warn=$it" } ?: ""))
                     }
                     is StepResult.Failed -> {
+                        if (pingResult.error is TestError.ProbeUnavailable) {
+                            finishForProbeUnavailable(TestSectionId.PING, pingResult.error as TestError.ProbeUnavailable)
+                            return@flow
+                        }
                         overallStatus = "FAIL"
                         val error = pingResult.error.message
                         recordStep(
@@ -647,6 +741,10 @@ class RunTestUseCaseImpl @Inject constructor(
                         emitLog(textProvider.speedStatus(evaluation.status.name, speed.tcpDownload ?: "-", speed.tcpUpload ?: "-", evaluation.warning?.let { " warn=$it" } ?: ""))
                     }
                     is StepResult.Failed -> {
+                        if (speedResult.error is TestError.ProbeUnavailable) {
+                            finishForProbeUnavailable(TestSectionId.SPEED, speedResult.error as TestError.ProbeUnavailable)
+                            return@flow
+                        }
                         overallStatus = "FAIL"
                         val message = speedResult.error.message
                         recordStep(

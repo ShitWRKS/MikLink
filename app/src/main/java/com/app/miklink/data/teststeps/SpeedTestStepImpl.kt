@@ -11,6 +11,7 @@ import com.app.miklink.core.domain.model.report.SpeedTestData
 import com.app.miklink.core.domain.test.model.StepResult
 import com.app.miklink.core.domain.test.model.TestError
 import com.app.miklink.core.domain.test.model.TestExecutionContext
+import com.app.miklink.core.domain.test.model.TestExecutionException
 import com.app.miklink.core.domain.test.step.SpeedTestStep
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
@@ -39,10 +40,11 @@ class SpeedTestStepImpl @Inject constructor(
                 duration = "5"
             )
             StepResult.Success(speedTestResult)
-        } catch (e: SecurityException) {
-            StepResult.Failed(TestError.Authentication(e.message ?: "Authentication failed", e))
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: TestExecutionException) {
+            StepResult.Failed(e.error)
         } catch (e: Exception) {
-            if (e is CancellationException) throw e
             StepResult.Failed(TestError.Unexpected(e.message ?: "Speed test failed", e))
         }
     }

@@ -49,7 +49,7 @@ class MikroTikProbeStatusRepository @Inject constructor(
                                 val response = api.getSystemResource(ProplistRequest(listOf("board-name")))
                                 val decoded = decoder.decode(RouterOsOperation.SYSTEM_RESOURCE, response)
                                 when (decoded) {
-                                    is DecodedResult.Error -> throw mapToTransportException(decoded.error)
+                                    is DecodedResult.Error -> throw com.app.miklink.core.domain.test.model.TestExecutionException(decoded.error)
                                     is DecodedResult.Success -> decoded.value.any { !it.boardName.isNullOrBlank() }
                                 }
                             }
@@ -75,7 +75,7 @@ class MikroTikProbeStatusRepository @Inject constructor(
                             val response = api.getSystemResource(ProplistRequest(listOf("board-name")))
                             val decoded = decoder.decode(RouterOsOperation.SYSTEM_RESOURCE, response)
                             when (decoded) {
-                                is DecodedResult.Error -> throw mapToTransportException(decoded.error)
+                                is DecodedResult.Error -> throw com.app.miklink.core.domain.test.model.TestExecutionException(decoded.error)
                                 is DecodedResult.Success -> decoded.value.any { !it.boardName.isNullOrBlank() }
                             }
                         }
@@ -102,34 +102,10 @@ private fun <T> CallOutcome<T>.getOrThrow(executor: MikroTikCallExecutor): T {
     return when (this) {
         is CallOutcome.Success -> value
         is CallOutcome.Failure -> {
-            val primary = failures.firstOrNull()?.throwable ?: IllegalStateException("Unknown call failure")
+            val primary = failures.firstOrNull()?.throwable
+                ?: IllegalStateException("Unknown call failure")
             failures.drop(1).forEach { primary.addSuppressed(it.throwable) }
-            throw mapToTransportException(executor.classify(primary))
+            throw com.app.miklink.core.domain.test.model.TestExecutionException(executor.classify(primary))
         }
-    }
-}
-
-private fun mapToTransportException(error: com.app.miklink.core.domain.test.model.TestError): Exception {
-    return when (error) {
-        is com.app.miklink.core.domain.test.model.TestError.ProbeUnavailable ->
-            java.io.IOException(error.message, error.cause)
-        is com.app.miklink.core.domain.test.model.TestError.Authentication ->
-            SecurityException(error.message)
-        is com.app.miklink.core.domain.test.model.TestError.Tls ->
-            javax.net.ssl.SSLHandshakeException(error.message)
-        is com.app.miklink.core.domain.test.model.TestError.Timeout ->
-            java.net.SocketTimeoutException(error.message)
-        is com.app.miklink.core.domain.test.model.TestError.RouterOsError ->
-            com.app.miklink.data.remote.mikrotik.service.RouterOsTransportException(error)
-        is com.app.miklink.core.domain.test.model.TestError.InvalidResponse ->
-            IllegalStateException(error.message)
-        is com.app.miklink.core.domain.test.model.TestError.Unsupported ->
-            UnsupportedOperationException(error.message)
-        is com.app.miklink.core.domain.test.model.TestError.ConfigurationError ->
-            IllegalStateException(error.message)
-        is com.app.miklink.core.domain.test.model.TestError.SerializationError ->
-            IllegalStateException(error.message, error.cause)
-        is com.app.miklink.core.domain.test.model.TestError.Unexpected ->
-            IllegalStateException(error.message, error.cause)
     }
 }

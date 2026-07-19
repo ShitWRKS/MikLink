@@ -1,22 +1,22 @@
 /*
- * Purpose: Map low-level probe connectivity exceptions to user-facing messages without leaking sensitive details.
- * Inputs: Throwable from connectivity attempts and localized fallback messages.
- * Outputs: Human-readable error description, differentiating TLS handshake failures from generic errors.
- * Notes: Keeps HTTPS diagnostics centralized; does not alter security posture (no cipher weakening).
+ * Purpose: Map typed TestError from probe connectivity to user-facing messages without leaking sensitive details.
+ * Inputs: TestError from MikroTikCallExecutor classification.
+ * Outputs: Human-readable error description, differentiating TLS failures from generic errors.
+ * Notes: Keeps HTTPS diagnostics centralized; does not alter security posture.
  */
 package com.app.miklink.data.repository.mikrotik
 
-import javax.net.ssl.SSLHandshakeException
+import com.app.miklink.core.domain.test.model.TestError
 
 internal object ProbeErrorMapper {
     fun toMessage(
-        error: Throwable,
+        error: TestError,
         defaultMessage: String,
         handshakeMessage: String
     ): String {
         return when (error) {
-            is SSLHandshakeException -> handshakeMessage
-            else -> error.message ?: defaultMessage
+            is TestError.Tls -> handshakeMessage
+            else -> error.message.ifBlank { defaultMessage }
         }
     }
 }

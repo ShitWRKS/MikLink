@@ -8,6 +8,7 @@ package com.app.miklink.data.remote.mikrotik.service
 
 import com.app.miklink.core.domain.model.ProbeConfig
 import com.app.miklink.core.domain.test.model.TestError
+import com.app.miklink.core.domain.test.model.TestExecutionException
 import java.io.EOFException
 import java.net.ConnectException
 import java.net.NoRouteToHostException
@@ -171,18 +172,17 @@ class MikroTikCallExecutor @Inject constructor(
     /**
      * Classifica un errore di trasporto in TestError secondo ADR-0013 (Fase 2).
      * - CancellationException: rilancio
-     * - 401/403: Authentication (gestito dal decoder; qui solo trasporto)
+     * - TestExecutionException: preserva il TestError tipizzato
      * - ConnectException / NoRouteToHostException / UnknownHostException: ProbeUnavailable
      * - EOF/connection reset/socket closed durante la chiamata: ProbeUnavailable
      * - SSLHandshakeException finale: Tls
      * - SocketTimeoutException: Timeout
-     * - RouterOsTransportException: RouterOsError (già tipizzato dal decoder)
      * Nessun retry automatico.
      */
     fun classify(error: Throwable): TestError {
         return when (error) {
             is CancellationException -> throw error
-            is RouterOsTransportException -> error.error
+            is TestExecutionException -> error.error
             is SSLHandshakeException -> TestError.Tls(
                 message = error.message ?: "TLS handshake failed",
                 cause = error

@@ -10,7 +10,9 @@ import com.app.miklink.core.data.repository.test.MikroTikTestRepository
 import com.app.miklink.core.data.repository.test.PingTargetResolver
 import com.app.miklink.core.domain.test.model.PingTargetOutcome
 import com.app.miklink.core.domain.test.model.StepResult
+import com.app.miklink.core.domain.test.model.TestError
 import com.app.miklink.core.domain.test.model.TestExecutionContext
+import com.app.miklink.core.domain.test.model.TestExecutionException
 import com.app.miklink.core.domain.test.model.TestSkipReason
 import com.app.miklink.core.domain.test.step.PingStep
 import javax.inject.Inject
@@ -46,8 +48,11 @@ class PingStepImpl @Inject constructor(
                     profile = context.testProfile,
                     input = target
                 )
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: TestExecutionException) {
+                return StepResult.Failed(e.error)
             } catch (e: Exception) {
-                if (e is CancellationException) throw e
                 outcomes.add(
                     PingTargetOutcome(
                         target = target,
@@ -91,8 +96,13 @@ class PingStepImpl @Inject constructor(
                         error = null
                     )
                 )
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: TestExecutionException) {
+                // Probe communication failure — propagate as step failure
+                return StepResult.Failed(e.error)
             } catch (e: Exception) {
-                if (e is CancellationException) throw e
+                // Target-specific failure — record per-target error, continue with siblings
                 outcomes.add(
                     PingTargetOutcome(
                         target = target,

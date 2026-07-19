@@ -19,6 +19,8 @@ import com.app.miklink.data.remote.mikrotik.service.MikroTikApiService
 import com.app.miklink.data.remote.mikrotik.service.MikroTikCallExecutor
 import com.app.miklink.data.remote.mikrotik.service.RouterOsOperation
 import com.app.miklink.data.remote.mikrotik.service.RouterOsResponseDecoder
+import com.app.miklink.core.domain.test.model.TestError
+import com.app.miklink.core.domain.test.model.TestExecutionException
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -63,7 +65,7 @@ class MikroTikProbeConnectivityRepository @Inject constructor(
                             ?: IllegalStateException("Unknown call failure")
                     )
                     val message = ProbeErrorMapper.toMessage(
-                        error = mapToTransportException(classified),
+                        error = classified,
                         defaultMessage = context.getString(R.string.error_probe_connection_unknown),
                         handshakeMessage = context.getString(R.string.error_probe_connection_tls_handshake)
                     )
@@ -75,7 +77,7 @@ class MikroTikProbeConnectivityRepository @Inject constructor(
     private suspend fun fetchProbeMetadata(api: MikroTikApiService): Pair<String, List<String>> {
         val systemResourceResponse = api.getSystemResource(ProplistRequest(listOf("board-name")))
         val systemResources = when (val decoded = decoder.decode(RouterOsOperation.SYSTEM_RESOURCE, systemResourceResponse)) {
-            is DecodedResult.Error -> throw mapToTransportException(decoded.error)
+            is DecodedResult.Error -> throw TestExecutionException(decoded.error)
             is DecodedResult.Success -> decoded.value
         }
         if (android.util.Log.isLoggable(logTag, android.util.Log.DEBUG)) {
@@ -90,7 +92,7 @@ class MikroTikProbeConnectivityRepository @Inject constructor(
             ?: "Unknown Board"
         val interfacesResponse = api.getEthernetInterfaces()
         val interfacesRaw = when (val decoded = decoder.decode(RouterOsOperation.ETHERNET_INTERFACES, interfacesResponse)) {
-            is DecodedResult.Error -> throw mapToTransportException(decoded.error)
+            is DecodedResult.Error -> throw TestExecutionException(decoded.error)
             is DecodedResult.Success -> decoded.value
         }
         if (android.util.Log.isLoggable(logTag, android.util.Log.DEBUG)) {
@@ -125,31 +127,6 @@ class MikroTikProbeConnectivityRepository @Inject constructor(
                     attempt.throwable
                 )
             }
-        }
-    }
-
-    private fun mapToTransportException(error: com.app.miklink.core.domain.test.model.TestError): Exception {
-        return when (error) {
-            is com.app.miklink.core.domain.test.model.TestError.ProbeUnavailable ->
-                java.io.IOException(error.message, error.cause)
-            is com.app.miklink.core.domain.test.model.TestError.Authentication ->
-                SecurityException(error.message)
-            is com.app.miklink.core.domain.test.model.TestError.Tls ->
-                javax.net.ssl.SSLHandshakeException(error.message)
-            is com.app.miklink.core.domain.test.model.TestError.Timeout ->
-                java.net.SocketTimeoutException(error.message)
-            is com.app.miklink.core.domain.test.model.TestError.RouterOsError ->
-                com.app.miklink.data.remote.mikrotik.service.RouterOsTransportException(error)
-            is com.app.miklink.core.domain.test.model.TestError.InvalidResponse ->
-                IllegalStateException(error.message)
-            is com.app.miklink.core.domain.test.model.TestError.Unsupported ->
-                UnsupportedOperationException(error.message)
-            is com.app.miklink.core.domain.test.model.TestError.ConfigurationError ->
-                IllegalStateException(error.message)
-            is com.app.miklink.core.domain.test.model.TestError.SerializationError ->
-                IllegalStateException(error.message, error.cause)
-            is com.app.miklink.core.domain.test.model.TestError.Unexpected ->
-                IllegalStateException(error.message, error.cause)
         }
     }
 }

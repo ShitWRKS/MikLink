@@ -6,13 +6,16 @@ import com.app.miklink.core.domain.model.Client
 import com.app.miklink.core.domain.model.ProbeConfig
 import com.app.miklink.core.domain.model.TestProfile
 import com.app.miklink.core.domain.test.model.StepResult
+import com.app.miklink.core.domain.test.model.TestError
 import com.app.miklink.core.domain.test.model.TestExecutionContext
+import com.app.miklink.core.domain.test.model.TestExecutionException
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -150,5 +153,76 @@ class PingStepImplTest {
         val result = runCatching { step.run(context) }
 
         assertTrue(result.exceptionOrNull() is CancellationException)
+    }
+
+    // === Test C: Ping target vs sonda ===
+
+    @Test
+    fun `target ping failure returns Success with per-target error`() = runTest {
+        // RouterOS returns normal results but target is unreachable — this is a target failure
+        val profile = mockk<TestProfile>(relaxed = true) {
+            every { pingTarget1 } returns "8.8.8.8"
+            every { pingTarget2 } returns null
+            every { pingTarget3 } returns null
+            every { pingCount } returns 4
+        }
+        val config = mockk<ProbeConfig>(relaxed = true) {
+            every { testInterface } returns "ether1"
+        }
+        val client = mockk<Client>(relaxed = true)
+        val context = TestExecutionContext(
+            client = client,
+            probeConfig = config,
+            testProfile = profile,
+            socketId = "S1",
+            notes = null
+        )
+
+        coEvery { resolver.resolve(any(), any(), any(), "8.8.8.8") } returns "8.8.8.8"
+        // Generic exception (not TestExecutionException) → treated as target failure
+        coEvery { repository.ping(any(), "8.8.8.8", any(), any()) } throws java.net.SocketTimeoutException("ping timeout")
+
+        val result = step.run(context)
+
+        assertTrue("Expected Success for target failure but got $result", result is StepResult.Success)
+        val outcomes = (result as StepResult.Success).data
+        assertEquals(1, outcomes.size)
+        assertEquals("ping timeout", outcomes[0].error)
+        assertEquals("8.8.8.8", outcomes[0].resolved)
+    }
+
+    @Test
+    fun `probe disconnection returns Failed with ProbeUnavailable`() = runTest {
+        // Probe becomes unreachable → TestExecutionException with ProbeUnavailable
+        val profile = mockk<TestProfile>(relaxed = true) {
+            every { pingTarget1 } returns "8.8.8.8"
+            every { pingTarget2 } returns null
+            every { pingTarget3 } returns null
+            every { pingCount } returns 4
+        }
+        val config = mockk<ProbeConfig>(relaxed = true) {
+            every { testInterface } returns "ether1"
+        }
+        val client = mockk<Client>(relaxed = true)
+        val context = TestExecutionContext(
+            client = client,
+            probeConfig = config,
+            testProfile = profile,
+            socketId = "S1",
+            notes = null
+        )
+
+        coEvery { resolver.resolve(any(), any(), any(), "8.8.8.8") } returns "8.8.8.8"
+        coEvery { repository.ping(any(), "8.8.8.8", any(), any()) } throws TestExecutionException(
+            TestError.ProbeUnavailable("probe disconnected", java.net.ConnectException("Connection refused"))
+        )
+
+        val result = step.run(context)
+
+        assertTrue("Expected Failed but got $result", result is StepResult.Failed)
+        val failed = result as StepResult.Failed
+        assertTrue("Expected ProbeUnavailable but got ${failed.error}", failed.error is TestError.ProbeUnavailable)
+        assertEquals("probe disconnected", failed.error.message)
+        // Must NOT be wrapped in PingTargetOutcome
     }
 }

@@ -24,6 +24,7 @@ import com.app.miklink.core.domain.test.model.TestSectionId
 import com.app.miklink.core.domain.test.model.TestSectionPayload
 import com.app.miklink.core.domain.test.model.TestSectionStatus
 import com.app.miklink.core.domain.test.model.TestSkipReason
+import com.app.miklink.core.domain.test.model.TestRunTermination
 import com.app.miklink.core.domain.test.step.CableTestStep
 import com.app.miklink.core.domain.test.step.LinkStatusStep
 import com.app.miklink.core.domain.test.step.NetworkConfigStep
@@ -756,6 +757,246 @@ class RunTestUseCaseImplTest {
         val result = runCatching { useCase.execute(plan).toList() }
 
         assertTrue(result.exceptionOrNull() is CancellationException)
+    }
+
+    // === Test D: ProbeUnavailable during each step ===
+
+    @Test
+    fun `probe unavailable during LINK terminates with partial report`() = runTest {
+        verifyProbeUnavailableTermination(
+            stepId = "LINK",
+            linkStatusStep = object : LinkStatusStep {
+                override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<LinkStatusData> {
+                    return StepResult.Failed(TestError.ProbeUnavailable("probe lost"))
+                }
+            }
+        )
+    }
+
+    @Test
+    fun `probe unavailable during TDR terminates with partial report`() = runTest {
+        verifyProbeUnavailableTermination(
+            stepId = "TDR",
+            cableTestStep = object : CableTestStep {
+                override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<CableTestSummary> {
+                    return StepResult.Failed(TestError.ProbeUnavailable("probe lost"))
+                }
+            }
+        )
+    }
+
+    @Test
+    fun `probe unavailable during NETWORK terminates with partial report`() = runTest {
+        verifyProbeUnavailableTermination(
+            stepId = "NETWORK",
+            networkConfigStep = object : NetworkConfigStep {
+                override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<NetworkConfigFeedback> {
+                    return StepResult.Failed(TestError.ProbeUnavailable("probe lost"))
+                }
+            }
+        )
+    }
+
+    @Test
+    fun `probe unavailable during NEIGHBORS terminates with partial report`() = runTest {
+        verifyProbeUnavailableTermination(
+            stepId = "NEIGHBORS",
+            neighborDiscoveryStep = object : NeighborDiscoveryStep {
+                override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<List<NeighborData>> {
+                    return StepResult.Failed(TestError.ProbeUnavailable("probe lost"))
+                }
+            }
+        )
+    }
+
+    @Test
+    fun `probe unavailable during PING terminates with partial report`() = runTest {
+        verifyProbeUnavailableTermination(
+            stepId = "PING",
+            pingStep = object : PingStep {
+                override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<List<PingTargetOutcome>> {
+                    return StepResult.Failed(TestError.ProbeUnavailable("probe lost"))
+                }
+            }
+        )
+    }
+
+    @Test
+    fun `probe unavailable during SPEED terminates with partial report`() = runTest {
+        verifyProbeUnavailableTermination(
+            stepId = "SPEED",
+            speedTestStep = object : SpeedTestStep {
+                override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<SpeedTestData> {
+                    return StepResult.Failed(TestError.ProbeUnavailable("probe lost"))
+                }
+            }
+        )
+    }
+
+    private suspend fun verifyProbeUnavailableTermination(
+        stepId: String,
+        linkStatusStep: LinkStatusStep = this.linkStatusStep,
+        cableTestStep: CableTestStep = this.cableTestStep,
+        networkConfigStep: NetworkConfigStep = networkStep,
+        neighborDiscoveryStep: NeighborDiscoveryStep = neighborStep,
+        pingStep: PingStep = this.pingStep,
+        speedTestStep: SpeedTestStep = this.speedTestStep
+    ) {
+        stubRepositories()
+        val useCase = buildUseCase(
+            linkStatusStep = linkStatusStep,
+            cableTestStep = cableTestStep,
+            networkConfigStep = networkConfigStep,
+            neighborDiscoveryStep = neighborDiscoveryStep,
+            pingStep = pingStep,
+            speedTestStep = speedTestStep
+        )
+
+        val events = useCase.execute(TestPlan(clientId = 1, profileId = 1, socketId = "A1", notes = null)).toList()
+        val completed = events.filterIsInstance<TestEvent.Completed>()
+        val failed = events.filterIsInstance<TestEvent.Failed>()
+
+        assertEquals("Expected exactly one Completed event", 1, completed.size)
+        assertTrue("Should not emit Failed", failed.isEmpty())
+
+        val outcome = completed[0].outcome
+        assertEquals("FAIL", outcome.overallStatus)
+        assertEquals(TestRunTermination.PROBE_UNAVAILABLE, outcome.termination)
+        assertTrue("terminalError should be ProbeUnavailable", outcome.terminalError is TestError.ProbeUnavailable)
+
+        val sections = outcome.finalSnapshot.sections.associateBy { it.id }
+
+        // Current step is FAIL
+        val currentSectionId = TestSectionId.valueOf(stepId)
+        assertEquals("Current section should be FAIL", TestSectionStatus.FAIL, sections[currentSectionId]?.status)
+
+        // No section should be PENDING or RUNNING
+        outcome.finalSnapshot.sections.forEach { section ->
+            assertTrue(
+                "Section ${section.id} should not be PENDING, was ${section.status}",
+                section.status != TestSectionStatus.PENDING
+            )
+            assertTrue(
+                "Section ${section.id} should not be RUNNING, was ${section.status}",
+                section.status != TestSectionStatus.RUNNING
+            )
+        }
+
+        // Enabled subsequent sections should be SKIP with PROBE_UNAVAILABLE reason
+        val stepOrder = listOf(
+            TestSectionId.LINK, TestSectionId.TDR, TestSectionId.NETWORK,
+            TestSectionId.NEIGHBORS, TestSectionId.PING, TestSectionId.SPEED
+        )
+        val currentIdx = stepOrder.indexOf(currentSectionId)
+        for (i in (currentIdx + 1) until stepOrder.size) {
+            val sectionId = stepOrder[i]
+            val section = sections[sectionId]
+            if (section != null) {
+                assertEquals(
+                    "Section $sectionId should be SKIP",
+                    TestSectionStatus.SKIP, section.status
+                )
+                assertEquals(
+                    "Section $sectionId skip reason",
+                    TestSkipReason.PROBE_UNAVAILABLE, section.warning
+                )
+            }
+        }
+
+        // Report contains termination info
+        val json = outcome.rawResultsJson ?: ""
+        // The raw JSON depends on the mocked codec; just verify outcome fields
+        assertEquals(TestRunTermination.PROBE_UNAVAILABLE, outcome.termination)
+    }
+
+    // === Test E: Previous results preserved ===
+
+    @Test
+    fun `LINK and TDR results preserved when probe lost during NETWORK`() = runTest {
+        stubRepositories()
+        var linkCalls = 0
+        var tdrCalls = 0
+
+        val useCase = buildUseCase(
+            linkStatusStep = object : LinkStatusStep {
+                override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<LinkStatusData> {
+                    linkCalls++
+                    return StepResult.Success(LinkStatusData(status = "up", rate = "1G"))
+                }
+            },
+            cableTestStep = object : CableTestStep {
+                override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<CableTestSummary> {
+                    tdrCalls++
+                    return StepResult.Success(CableTestSummary(status = "ok", entries = emptyList()))
+                }
+            },
+            networkConfigStep = object : NetworkConfigStep {
+                override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<NetworkConfigFeedback> {
+                    return StepResult.Failed(TestError.ProbeUnavailable("probe lost during network"))
+                }
+            }
+        )
+
+        val events = useCase.execute(TestPlan(clientId = 1, profileId = 1, socketId = "A1", notes = null)).toList()
+        val completed = events.filterIsInstance<TestEvent.Completed>().single()
+        val sections = completed.outcome.finalSnapshot.sections.associateBy { it.id }
+
+        assertEquals(1, linkCalls)
+        assertEquals(1, tdrCalls)
+        assertEquals(TestSectionStatus.PASS, sections[TestSectionId.LINK]?.status)
+        assertEquals(TestSectionStatus.PASS, sections[TestSectionId.TDR]?.status)
+        assertEquals(TestSectionStatus.FAIL, sections[TestSectionId.NETWORK]?.status)
+        assertTrue("LINK payload preserved", sections[TestSectionId.LINK]?.payload is TestSectionPayload.Link)
+        assertTrue("TDR payload preserved", sections[TestSectionId.TDR]?.payload is TestSectionPayload.Tdr)
+        assertEquals(TestRunTermination.PROBE_UNAVAILABLE, completed.outcome.termination)
+        assertTrue(completed.outcome.terminalError is TestError.ProbeUnavailable)
+    }
+
+    // === Test F: New execution after reconnection ===
+
+    @Test
+    fun `second execution after probe reconnection succeeds without residual state`() = runTest {
+        stubRepositories()
+        var executionCount = 0
+
+        val useCase = RunTestUseCaseImpl(
+            textProvider = textProvider,
+            clientRepository = clientRepository,
+            probeRepository = probeRepository,
+            testProfileRepository = profileRepository,
+            networkConfigStep = object : NetworkConfigStep {
+                override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<NetworkConfigFeedback> {
+                    executionCount++
+                    return if (executionCount == 1) {
+                        StepResult.Failed(TestError.ProbeUnavailable("probe lost"))
+                    } else {
+                        StepResult.Success(
+                            NetworkConfigFeedback("dhcp", "ether1", "10.0.0.2", "10.0.0.1", "8.8.8.8", "OK")
+                        )
+                    }
+                }
+            },
+            linkStatusStep = linkStatusStep,
+            cableTestStep = cableTestStep,
+            neighborDiscoveryStep = neighborStep,
+            pingStep = pingStep,
+            speedTestStep = speedTestStep,
+            reportResultsCodec = reportResultsCodec
+        )
+
+        val plan = TestPlan(clientId = 1, profileId = 1, socketId = "A1", notes = null)
+
+        // First execution: probe unavailable
+        val events1 = useCase.execute(plan).toList()
+        val completed1 = events1.filterIsInstance<TestEvent.Completed>().single()
+        assertEquals(TestRunTermination.PROBE_UNAVAILABLE, completed1.outcome.termination)
+
+        // Second execution: normal success
+        val events2 = useCase.execute(plan).toList()
+        val completed2 = events2.filterIsInstance<TestEvent.Completed>().single()
+        assertEquals("PASS", completed2.outcome.overallStatus)
+        assertEquals(TestRunTermination.NORMAL, completed2.outcome.termination)
+        assertEquals(null, completed2.outcome.terminalError)
     }
 
     private fun stubRepositories(

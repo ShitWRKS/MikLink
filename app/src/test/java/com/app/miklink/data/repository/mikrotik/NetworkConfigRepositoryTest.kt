@@ -98,10 +98,11 @@ class NetworkConfigRepositoryTest {
             repo.applyClientNetworkConfig(probe, client, null)
             fail("Expected failure for invalid CIDR")
         } catch (e: Exception) {
-            // Validation errors surface as IllegalStateException wrapping the require() cause.
+            // Validation errors propagate through TestExecutionException wrapping the classified error.
             assertTrue(
-                "Expected an IllegalStateException whose cause is IllegalArgumentException, got $e",
-                e is IllegalStateException && e.cause is IllegalArgumentException
+                "Expected a TestExecutionException with message about CIDR, got $e",
+                e is com.app.miklink.core.domain.test.model.TestExecutionException
+                        && e.error.message?.contains("CIDR") == true
             )
         }
 
@@ -126,8 +127,9 @@ class NetworkConfigRepositoryTest {
             fail("Expected failure for invalid gateway")
         } catch (e: Exception) {
             assertTrue(
-                "Expected an IllegalStateException whose cause is IllegalArgumentException, got $e",
-                e is IllegalStateException && e.cause is IllegalArgumentException
+                "Expected a TestExecutionException with message about gateway, got $e",
+                e is com.app.miklink.core.domain.test.model.TestExecutionException
+                        && e.error.message?.contains("gateway", ignoreCase = true) == true
             )
         }
 

@@ -19,5 +19,8 @@ object TestSkipReason {
     
     // Hardware unsupported
     const val HARDWARE_UNSUPPORTED = "HARDWARE_UNSUPPORTED"
+
+    // Probe became unreachable during test execution
+    const val PROBE_UNAVAILABLE = "PROBE_UNAVAILABLE"
 }
 
