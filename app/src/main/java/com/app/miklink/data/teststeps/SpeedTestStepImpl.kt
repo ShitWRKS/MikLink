@@ -40,10 +40,10 @@ class SpeedTestStepImpl @Inject constructor(
             )
             StepResult.Success(speedTestResult)
         } catch (e: SecurityException) {
-            StepResult.Failed(TestError.AuthError(e.message ?: "Authentication failed"))
+            StepResult.Failed(TestError.Authentication(e.message ?: "Authentication failed", e))
         } catch (e: Exception) {
             if (e is CancellationException) throw e
-            StepResult.Failed(TestError.NetworkError(e.message ?: "Speed test failed"))
+            StepResult.Failed(TestError.Unexpected(e.message ?: "Speed test failed", e))
         }
     }
 }

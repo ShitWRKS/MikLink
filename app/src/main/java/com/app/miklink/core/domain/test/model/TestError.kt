@@ -12,11 +12,19 @@ package com.app.miklink.core.domain.test.model
  */
 sealed class TestError {
     abstract val message: String
-    
-    data class NetworkError(override val message: String) : TestError()
-    data class AuthError(override val message: String) : TestError()
-    data class Timeout(override val message: String) : TestError()
+
+    data class ProbeUnavailable(override val message: String, val cause: Throwable? = null) : TestError()
+    data class Authentication(override val message: String, val cause: Throwable? = null) : TestError()
+    data class Tls(override val message: String, val cause: Throwable? = null) : TestError()
+    data class Timeout(override val message: String, val cause: Throwable? = null) : TestError()
+    data class RouterOsError(
+        override val message: String,
+        val code: Int? = null,
+        val detail: String? = null
+    ) : TestError()
+    data class InvalidResponse(override val message: String, val cause: Throwable? = null) : TestError()
     data class Unsupported(override val message: String) : TestError()
     data class ConfigurationError(override val message: String) : TestError()
+    data class SerializationError(override val message: String, val cause: Throwable? = null) : TestError()
     data class Unexpected(override val message: String, val cause: Throwable? = null) : TestError()
 }

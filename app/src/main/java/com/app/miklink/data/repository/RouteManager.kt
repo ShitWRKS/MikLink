@@ -16,14 +16,15 @@ interface RouteManager {
 
 @javax.inject.Singleton
 class RouteManagerImpl @javax.inject.Inject constructor() : RouteManager {
-    override suspend fun listRoutes(api: MikroTikApiService): List<RouteEntry> = api.getRoutes()
+    override suspend fun listRoutes(api: MikroTikApiService): List<RouteEntry> =
+        api.getRoutes().body() ?: emptyList()
 
     override suspend fun addDefaultRoute(api: MikroTikApiService, gateway: String) {
         api.addRoute(RouteAdd(dstAddress = "0.0.0.0/0", gateway = gateway, comment = "MikLink_Auto"))
     }
 
     override suspend fun removeDefaultRoutes(api: MikroTikApiService, expectedGateway: String?, dryRun: Boolean) {
-        val routes = api.getRoutes()
+        val routes = api.getRoutes().body() ?: emptyList()
         val candidates = routes.filter { r ->
             r.dstAddress == "0.0.0.0/0" && (
                 r.comment == "MikLink_Auto" || (expectedGateway != null && r.gateway == expectedGateway)

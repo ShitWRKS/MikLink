@@ -31,11 +31,11 @@ import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import com.app.miklink.ui.theme.JetBrainsMono
-import coil.ImageLoader
-import coil.decode.GifDecoder
-import coil.decode.ImageDecoderDecoder
-import coil.compose.rememberAsyncImagePainter
-import coil.request.ImageRequest
+import coil3.ImageLoader
+import coil3.gif.AnimatedImageDecoder
+import coil3.gif.GifDecoder
+import coil3.compose.rememberAsyncImagePainter
+import coil3.request.ImageRequest
 
 @Composable
 fun SplashScreen(navController: NavController) {
@@ -46,12 +46,12 @@ fun SplashScreen(navController: NavController) {
 
     // Coil ImageLoader for GIFs
     val imageLoader = remember {
-        coil.ImageLoader.Builder(context)
+        coil3.ImageLoader.Builder(context)
             .components {
                 if (android.os.Build.VERSION.SDK_INT >= 28) {
-                    add(coil.decode.ImageDecoderDecoder.Factory())
+                    add(coil3.gif.AnimatedImageDecoder.Factory())
                 } else {
-                    add(coil.decode.GifDecoder.Factory())
+                    add(coil3.gif.GifDecoder.Factory())
                 }
             }
             .build()
@@ -161,8 +161,8 @@ fun SplashScreen(navController: NavController) {
             ) {
                 // Logo GIF (Small)
                 androidx.compose.foundation.Image(
-                    painter = coil.compose.rememberAsyncImagePainter(
-                        model = coil.request.ImageRequest.Builder(context)
+                    painter = coil3.compose.rememberAsyncImagePainter(
+                        model = coil3.request.ImageRequest.Builder(context)
                             .data(R.drawable.splash_logo)
                             .build(),
                         imageLoader = imageLoader

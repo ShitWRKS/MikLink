@@ -3,6 +3,7 @@ package com.app.miklink.core.domain.usecase.test
 import com.app.miklink.core.domain.model.Client
 import com.app.miklink.core.domain.model.NetworkMode
 import com.app.miklink.core.domain.model.ProbeConfig
+import com.app.miklink.core.domain.model.TdrCapability
 import com.app.miklink.core.domain.model.TestProfile
 import com.app.miklink.core.domain.model.report.LinkStatusData
 import com.app.miklink.core.domain.model.report.NeighborData
@@ -175,7 +176,7 @@ class RunTestUseCaseImplTest {
             testInterface = "ether1",
             isOnline = true,
             modelName = "RB",
-            tdrSupported = true,
+            tdrCapability = TdrCapability.SUPPORTED,
             isHttps = false
         )
         val profile = TestProfile(
@@ -247,7 +248,7 @@ class RunTestUseCaseImplTest {
         val useCase = buildUseCase(
             linkStatusStep = object : LinkStatusStep {
                 override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<LinkStatusData> {
-                    return StepResult.Failed(TestError.NetworkError("link read failed"))
+                    return StepResult.Failed(TestError.Unexpected("link read failed"))
                 }
             },
             cableTestStep = object : CableTestStep {
@@ -284,7 +285,7 @@ class RunTestUseCaseImplTest {
         val useCase = buildUseCase(
             cableTestStep = object : CableTestStep {
                 override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<CableTestSummary> {
-                    return StepResult.Failed(TestError.NetworkError("tdr failed"))
+                    return StepResult.Failed(TestError.Unexpected("tdr failed"))
                 }
             },
             networkConfigStep = countingNetworkStep { networkCalls++ },
@@ -538,7 +539,7 @@ class RunTestUseCaseImplTest {
     fun `execute marks overall fail when enabled neighbor discovery fails`() = runTest {
         val failingNeighborStep = object : NeighborDiscoveryStep {
             override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<List<NeighborData>> {
-                return StepResult.Failed(TestError.NetworkError("LLDP discovery failed"))
+                return StepResult.Failed(TestError.Unexpected("LLDP discovery failed"))
             }
         }
 
@@ -847,7 +848,7 @@ class RunTestUseCaseImplTest {
         testInterface = "ether1",
         isOnline = true,
         modelName = "RB",
-        tdrSupported = true,
+        tdrCapability = TdrCapability.SUPPORTED,
         isHttps = false
     )
 

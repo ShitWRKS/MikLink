@@ -2,12 +2,13 @@ package com.app.miklink.data.report.codec
 
 import com.app.miklink.core.data.report.ReportResultsCodec
 import com.app.miklink.core.domain.model.report.ReportData
+import com.app.miklink.di.AppMoshi
 import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.Moshi
 import javax.inject.Inject
 
 class MoshiReportResultsCodec @Inject constructor(
-    moshi: Moshi
+    @AppMoshi moshi: Moshi
 ) : ReportResultsCodec {
 
     private val reportDataAdapter: JsonAdapter<ReportDataPayload> = moshi.adapter(ReportDataPayload::class.java)

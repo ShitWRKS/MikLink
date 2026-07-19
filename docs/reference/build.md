@@ -2,23 +2,41 @@
 
 ## Requisiti
 
-- Android Gradle Plugin (AGP): **8.13.2**
-- Kotlin: **2.2.21**
-- Compile SDK: **36**
+- Android Gradle Plugin (AGP): **9.3.0**
+- Gradle wrapper: **9.5.0**
+- JDK: **17**
+- Kotlin/KGP: **2.3.21**
+- KSP: **2.3.9**
+- Compose compiler plugin: **2.3.21**
+- Compile SDK: **37**
 - Min SDK: **30**
 - Target SDK: **36**
 
 Version catalog: `gradle/libs.versions.toml`.
 
-## Dipendenze principali (snapshot)
+## Dipendenze principali (baseline ADR-0013)
 
-- Compose BOM: **2025.12.00**
-- Hilt: **2.56.2**
-- Room: **2.8.4**
-- Retrofit: **2.11.0** + OkHttp **4.12.0**
-- Moshi: **1.15.2**
-- Coroutines: **1.10.2**
-- iText: **7.2.6** (PDF)
+- Compose BOM: **2026.06.00**
+- Hilt: **2.59.2** (Dagger) + AndroidX Hilt **1.4.0**
+- Room: **2.8.4** (plugin Room centralizzato nel catalog)
+- Retrofit: **3.0.0** + OkHttp **4.12.0**
+- Moshi: **1.15.2** + Moshi codegen **1.15.2** (KSP)
+- Coroutines: **1.11.0**
+- Core KTX: **1.19.0**
+- Lifecycle: **2.11.0**
+- Activity Compose: **1.13.0**
+- Navigation Compose: **2.9.8**
+- DataStore: **1.2.1**
+- Tracing: **1.3.0**
+- Coil: **3.5.0** (`coil-compose` + `coil-gif`)
+- AndroidX Test JUnit: **1.3.0**
+- Espresso: **3.7.0**
+- MockK: **1.14.9**
+- Robolectric: **4.15**
+- iText: **7.2.6** (PDF, licenza AGPL/commerciale — vedi `THIRD_PARTY_NOTICES.md`)
+
+Vietato: Kotlin 2.4, OkHttp 5, Room 3, versioni pre-release, repository snapshot.
+`com.google.android.material:material` rimosso (non usato dal codice).
 
 ## Annotation processing (KSP/KAPT)
 

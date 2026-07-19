@@ -1,6 +1,7 @@
 package com.app.miklink.data.local.room.mapper
 
 import com.app.miklink.core.domain.model.ProbeConfig
+import com.app.miklink.core.domain.model.TdrCapability
 import com.app.miklink.data.local.room.entity.ProbeConfigEntity
 
 fun ProbeConfigEntity.toDomain(): ProbeConfig {
@@ -12,7 +13,8 @@ fun ProbeConfigEntity.toDomain(): ProbeConfig {
         isHttps = isHttps,
         isOnline = isOnline,
         modelName = modelName,
-        tdrSupported = tdrSupported
+        tdrCapability = runCatching { TdrCapability.valueOf(tdrCapability) }
+            .getOrDefault(TdrCapability.UNKNOWN)
     )
 }
 
@@ -26,6 +28,6 @@ fun ProbeConfig.toEntity(): ProbeConfigEntity {
         isHttps = isHttps,
         isOnline = isOnline,
         modelName = modelName,
-        tdrSupported = tdrSupported
+        tdrCapability = tdrCapability.name
     )
 }

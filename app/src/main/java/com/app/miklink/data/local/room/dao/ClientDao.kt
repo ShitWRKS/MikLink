@@ -20,4 +20,11 @@ interface ClientDao {
 
     @Delete
     suspend fun delete(client: ClientEntity)
+
+    /**
+     * Atomic counter increment (ADR-0010/ADR-0013). Returns the number of rows updated:
+     * 0 means the client does not exist (caller must roll back).
+     */
+    @Query("UPDATE clients SET nextIdNumber = nextIdNumber + 1 WHERE clientId = :clientId")
+    suspend fun incrementNextIdNumber(clientId: Long): Int
 }

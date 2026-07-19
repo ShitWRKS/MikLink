@@ -194,7 +194,7 @@ class LiveProbeE2ETest {
                     isHttps = false,
                     isOnline = false,
                     modelName = null,
-                    tdrSupported = false
+                    tdrCapability = TdrCapability.UNKNOWN
                 )
             )
             logE2e(

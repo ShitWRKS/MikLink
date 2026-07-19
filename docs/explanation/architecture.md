@@ -54,6 +54,16 @@ Per i dettagli operativi e l'albero package, vedi: `reference/project-structure.
 - Le porte espongono solo tipi dominio o boundary model senza annotation Moshi/Retrofit (DIP).
 - Il repository di test MikroTik restituisce `LinkStatusData`, `CableTestSummary`, `PingMeasurement`, `NeighborData`, `SpeedTestData`.
 - La conversione `dto -> domain` è centralizzata in `data/remote/mikrotik/mapper`.
+- Il confine RouterOS è isolato dietro `MikroTikCallExecutor` + `RouterOsResponseDecoder` + `RouterOsNormalizer`
+  (vedi `decisions/ADR-0013-runtime-stability-routeros-boundary-and-verifiable-baseline.md`):
+  - `MikroTikApiService` restituisce `retrofit2.Response<T>` per tutti gli endpoint.
+  - `RouterOsResponseDecoder` classifica HTTP e decodifica l'error body (`RouterOsErrorBody`) in modo strutturato.
+  - `RouterOsNormalizer` normalizza in modelli puri Kotlin (no Retrofit/Moshi) e mantiene il report v1
+    tramite conversione esplicita in un solo punto.
+  - I repository non costruiscono Retrofit, non interpretano direttamente errori HTTP e non analizzano
+    liberamente `Throwable.message`.
+- Moshi è suddiviso in `@AppMoshi` (strict: backup, report, codec applicativi) e `@RouterOsMoshi`
+  (solo Retrofit RouterOS). Nessun adapter globale Boolean/Int, nessuna coercizione globale.
 Vedi ADR: `decisions/ADR-0008-no-dto-leaks-across-ports.md`.
 
 ## Guardrail consigliati

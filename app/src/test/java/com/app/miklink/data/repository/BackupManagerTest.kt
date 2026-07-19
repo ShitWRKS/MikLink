@@ -7,6 +7,7 @@ import com.app.miklink.core.data.repository.probe.ProbeRepository
 import com.app.miklink.core.domain.model.Client
 import com.app.miklink.core.domain.model.NetworkMode
 import com.app.miklink.core.domain.model.ProbeConfig
+import com.app.miklink.core.domain.model.TdrCapability
 import com.app.miklink.core.domain.model.TestProfile
 import com.app.miklink.core.domain.model.TestReport
 import com.squareup.moshi.Moshi
@@ -21,7 +22,7 @@ import org.junit.Test
 
 class BackupManagerTest {
 
-    class FakeTxRunner : com.app.miklink.data.repository.TransactionRunner {
+    class FakeTxRunner : com.app.miklink.core.data.transaction.TransactionRunner {
         override suspend fun <T> runInTransaction(block: suspend () -> T): T = block()
     }
 
@@ -57,6 +58,13 @@ class BackupManagerTest {
         }
         override suspend fun updateClient(client: Client) { store.value = store.value.map { if (it.clientId == client.clientId) client else it } }
         override suspend fun deleteClient(client: Client) { store.value = store.value.filter { it.clientId != client.clientId } }
+        override suspend fun incrementNextIdNumber(clientId: Long): Int {
+            val current = store.value.firstOrNull { it.clientId == clientId } ?: return 0
+            store.value = store.value.map {
+                if (it.clientId == clientId) it.copy(nextIdNumber = it.nextIdNumber + 1) else it
+            }
+            return 1
+        }
     }
 
     class FakeReportRepo(initial: List<TestReport>) : ReportRepository {
@@ -75,7 +83,7 @@ class BackupManagerTest {
 
     @Test
     fun export_includes_single_probe() = runBlocking {
-        val probe = ProbeConfig(ipAddress = "1.2.3.4", username = "u", password = "p", testInterface = "eth0", isHttps = false, isOnline = true, modelName = null, tdrSupported = false)
+        val probe = ProbeConfig(ipAddress = "1.2.3.4", username = "u", password = "p", testInterface = "eth0", isHttps = false, isOnline = true, modelName = null, tdrCapability = TdrCapability.UNKNOWN)
         val probeRepo = FakeProbeRepo(probe)
         val profileRepo = FakeProfileRepo(emptyList())
         val clientRepo = FakeClientRepo(emptyList())
@@ -91,14 +99,14 @@ class BackupManagerTest {
 
     @Test
     fun import_with_probe_restores_singleton() = runBlocking {
-        val initialProbe = ProbeConfig(ipAddress = "0.0.0.0", username = "a", password = "x", testInterface = "eth0", isHttps = false, isOnline = true, modelName = null, tdrSupported = false)
+        val initialProbe = ProbeConfig(ipAddress = "0.0.0.0", username = "a", password = "x", testInterface = "eth0", isHttps = false, isOnline = true, modelName = null, tdrCapability = TdrCapability.UNKNOWN)
         val probeRepo = FakeProbeRepo(initialProbe)
         val profileRepo = FakeProfileRepo(emptyList())
         val clientRepo = FakeClientRepo(emptyList())
         val reportRepo = FakeReportRepo(emptyList())
         val manager = BackupManagerImpl(probeRepo, profileRepo, clientRepo, reportRepo, TestMoshiProvider.provideMoshi(), FakeTxRunner())
 
-        val newProbe = ProbeConfig(ipAddress = "9.9.9.9", username = "new", password = "p", testInterface = "eth1", isHttps = true, isOnline = false, modelName = "m", tdrSupported = true)
+        val newProbe = ProbeConfig(ipAddress = "9.9.9.9", username = "new", password = "p", testInterface = "eth1", isHttps = true, isOnline = false, modelName = "m", tdrCapability = TdrCapability.SUPPORTED)
         val backup = BackupData(probe = newProbe, clients = emptyList(), profiles = emptyList(), reports = emptyList())
         val res = manager.importBackupData(backup)
         assertTrue(res.isSuccess)
@@ -107,7 +115,7 @@ class BackupManagerTest {
 
     @Test
     fun import_with_null_probe_does_not_crash() = runBlocking {
-        val initialProbe = ProbeConfig(ipAddress = "0.0.0.0", username = "a", password = "x", testInterface = "eth0", isHttps = false, isOnline = true, modelName = null, tdrSupported = false)
+        val initialProbe = ProbeConfig(ipAddress = "0.0.0.0", username = "a", password = "x", testInterface = "eth0", isHttps = false, isOnline = true, modelName = null, tdrCapability = TdrCapability.UNKNOWN)
         val probeRepo = FakeProbeRepo(initialProbe)
         val profileRepo = FakeProfileRepo(emptyList())
         val clientRepo = FakeClientRepo(emptyList())
@@ -169,8 +177,9 @@ class BackupManagerTest {
         val adapter = TestMoshiProvider.provideMoshi().adapter(BackupData::class.java)
         val parsed = adapter.fromJson(json)
         assertNotNull(parsed)
-        val exportedClientKey = parsed!!.clients.single().clientKey
-        assertNotNull(exportedClientKey)
+        assertEquals(2, parsed!!.version)
+        val exportedClientRef = parsed.clients.single().clientRef
+        assertTrue(exportedClientRef.isNotBlank())
         // Clear repos to simulate fresh import target
         val emptyClientRepo = FakeClientRepo(emptyList())
         val emptyProfileRepo = FakeProfileRepo(emptyList())
@@ -189,8 +198,8 @@ class BackupManagerTest {
         val newClient = clientsAfter.single()
         val newReport = reportsAfter.single()
         assertEquals(newClient.clientId, newReport.clientId)
-        // clientKey normalized should match
+        // clientRef normalized should match
         fun keyOf(c: Client) = c.companyName.trim().lowercase().replace("\\s+".toRegex(), "_") + "|" + (c.location ?: "").trim().lowercase().replace("\\s+".toRegex(), "_")
-        assertEquals(keyOf(newClient), exportedClientKey)
+        assertEquals(keyOf(newClient), exportedClientRef)
     }
 }

@@ -32,7 +32,7 @@ class LinkStatusStepImpl @Inject constructor(
             StepResult.Success(linkStatus)
         } catch (e: Exception) {
             if (e is CancellationException) throw e
-            StepResult.Failed(TestError.NetworkError(e.message ?: "Link status check failed"))
+            StepResult.Failed(TestError.Unexpected(e.message ?: "Link status check failed", e))
         }
     }
 }

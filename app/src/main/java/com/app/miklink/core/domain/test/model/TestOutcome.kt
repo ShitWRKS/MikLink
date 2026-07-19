@@ -7,11 +7,22 @@
 package com.app.miklink.core.domain.test.model
 
 /**
+ * Additive termination reason for a test run (ADR-0013). Source-compatible: defaults keep
+ * existing call sites unchanged. `overallStatus` remains PASS/FAIL (no third value).
+ */
+enum class TestRunTermination {
+    NORMAL,
+    PROBE_UNAVAILABLE
+}
+
+/**
  * Output consumato da UI + persistenza Report.
  * Contiene lo stato complessivo del test e il payload finale tipizzato.
  */
 data class TestOutcome(
     val overallStatus: String, // PASS, FAIL
     val finalSnapshot: TestRunSnapshot,
-    val rawResultsJson: String? = null // JSON serializzato per compatibilità con Report esistente
+    val rawResultsJson: String? = null, // JSON serializzato per compatibilità con Report esistente
+    val termination: TestRunTermination = TestRunTermination.NORMAL,
+    val terminalError: TestError? = null
 )

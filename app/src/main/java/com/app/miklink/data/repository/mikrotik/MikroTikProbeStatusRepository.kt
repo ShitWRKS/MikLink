@@ -13,7 +13,10 @@ import com.app.miklink.core.data.repository.probe.ProbeStatusRepository
 import com.app.miklink.core.domain.model.ProbeConfig
 import com.app.miklink.data.remote.mikrotik.dto.ProplistRequest
 import com.app.miklink.data.remote.mikrotik.service.CallOutcome
+import com.app.miklink.data.remote.mikrotik.service.DecodedResult
 import com.app.miklink.data.remote.mikrotik.service.MikroTikCallExecutor
+import com.app.miklink.data.remote.mikrotik.service.RouterOsOperation
+import com.app.miklink.data.remote.mikrotik.service.RouterOsResponseDecoder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -23,7 +26,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
-import retrofit2.HttpException
 import javax.inject.Inject
 
 /**
@@ -33,6 +35,7 @@ import javax.inject.Inject
 class MikroTikProbeStatusRepository @Inject constructor(
     private val probeRepository: ProbeRepository,
     private val callExecutor: MikroTikCallExecutor,
+    private val decoder: RouterOsResponseDecoder,
     private val userPreferencesRepository: UserPreferencesRepository
 ) : ProbeStatusRepository {
 
@@ -43,12 +46,14 @@ class MikroTikProbeStatusRepository @Inject constructor(
                     while (true) {
                         val isOnline = try {
                             val outcome = callExecutor.executeWithOutcome(probe) { api ->
-                                api.getSystemResource(ProplistRequest(listOf("board-name")))
-                                    .any { !it.boardName.isNullOrBlank() }
+                                val response = api.getSystemResource(ProplistRequest(listOf("board-name")))
+                                val decoded = decoder.decode(RouterOsOperation.SYSTEM_RESOURCE, response)
+                                when (decoded) {
+                                    is DecodedResult.Error -> throw mapToTransportException(decoded.error)
+                                    is DecodedResult.Success -> decoded.value.any { !it.boardName.isNullOrBlank() }
+                                }
                             }
-                            outcome.getOrThrow()
-                        } catch (_: HttpException) {
-                            false
+                            outcome.getOrThrow(callExecutor)
                         } catch (_: Exception) {
                             false
                         }
@@ -67,10 +72,14 @@ class MikroTikProbeStatusRepository @Inject constructor(
                 withContext(Dispatchers.IO) {
                     val isOnline = try {
                         val outcome = callExecutor.executeWithOutcome(probe) { api ->
-                            val result = api.getSystemResource(ProplistRequest(listOf("board-name")))
-                            result.any { !it.boardName.isNullOrBlank() }
+                            val response = api.getSystemResource(ProplistRequest(listOf("board-name")))
+                            val decoded = decoder.decode(RouterOsOperation.SYSTEM_RESOURCE, response)
+                            when (decoded) {
+                                is DecodedResult.Error -> throw mapToTransportException(decoded.error)
+                                is DecodedResult.Success -> decoded.value.any { !it.boardName.isNullOrBlank() }
+                            }
                         }
-                        outcome.getOrThrow()
+                        outcome.getOrThrow(callExecutor)
                     } catch (e: Exception) {
                         if (com.app.miklink.BuildConfig.DEBUG) android.util.Log.w("ProbeStatusRepository", "Sonda @ ${probe.ipAddress} offline: ${e.message}")
                         false
@@ -89,13 +98,38 @@ private fun tickerFlow(periodMs: Long): Flow<Unit> = flow {
     }
 }
 
-private fun <T> CallOutcome<T>.getOrThrow(): T {
+private fun <T> CallOutcome<T>.getOrThrow(executor: MikroTikCallExecutor): T {
     return when (this) {
         is CallOutcome.Success -> value
         is CallOutcome.Failure -> {
             val primary = failures.firstOrNull()?.throwable ?: IllegalStateException("Unknown call failure")
             failures.drop(1).forEach { primary.addSuppressed(it.throwable) }
-            throw primary
+            throw mapToTransportException(executor.classify(primary))
         }
+    }
+}
+
+private fun mapToTransportException(error: com.app.miklink.core.domain.test.model.TestError): Exception {
+    return when (error) {
+        is com.app.miklink.core.domain.test.model.TestError.ProbeUnavailable ->
+            java.io.IOException(error.message, error.cause)
+        is com.app.miklink.core.domain.test.model.TestError.Authentication ->
+            SecurityException(error.message)
+        is com.app.miklink.core.domain.test.model.TestError.Tls ->
+            javax.net.ssl.SSLHandshakeException(error.message)
+        is com.app.miklink.core.domain.test.model.TestError.Timeout ->
+            java.net.SocketTimeoutException(error.message)
+        is com.app.miklink.core.domain.test.model.TestError.RouterOsError ->
+            com.app.miklink.data.remote.mikrotik.service.RouterOsTransportException(error)
+        is com.app.miklink.core.domain.test.model.TestError.InvalidResponse ->
+            IllegalStateException(error.message)
+        is com.app.miklink.core.domain.test.model.TestError.Unsupported ->
+            UnsupportedOperationException(error.message)
+        is com.app.miklink.core.domain.test.model.TestError.ConfigurationError ->
+            IllegalStateException(error.message)
+        is com.app.miklink.core.domain.test.model.TestError.SerializationError ->
+            IllegalStateException(error.message, error.cause)
+        is com.app.miklink.core.domain.test.model.TestError.Unexpected ->
+            IllegalStateException(error.message, error.cause)
     }
 }

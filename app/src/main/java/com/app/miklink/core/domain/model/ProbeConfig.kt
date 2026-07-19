@@ -8,5 +8,8 @@ data class ProbeConfig(
     val isHttps: Boolean,
     val isOnline: Boolean,
     val modelName: String?,
+    val tdrCapability: TdrCapability
+) {
     val tdrSupported: Boolean
-)
+        get() = tdrCapability == TdrCapability.SUPPORTED
+}

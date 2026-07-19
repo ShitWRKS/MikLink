@@ -7,6 +7,13 @@
 package com.app.miklink.data.remote.mikrotik.service
 
 import com.app.miklink.core.domain.model.ProbeConfig
+import com.app.miklink.core.domain.test.model.TestError
+import java.io.EOFException
+import java.net.ConnectException
+import java.net.NoRouteToHostException
+import java.net.SocketException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import javax.inject.Inject
 import javax.net.ssl.SSLHandshakeException
 import kotlinx.coroutines.CancellationException
@@ -159,5 +166,55 @@ class MikroTikCallExecutor @Inject constructor(
             ?: IllegalStateException("CallOutcome.Failure without root cause")
         failures.drop(1).forEach { primary.addSuppressed(it.throwable) }
         return primary
+    }
+
+    /**
+     * Classifica un errore di trasporto in TestError secondo ADR-0013 (Fase 2).
+     * - CancellationException: rilancio
+     * - 401/403: Authentication (gestito dal decoder; qui solo trasporto)
+     * - ConnectException / NoRouteToHostException / UnknownHostException: ProbeUnavailable
+     * - EOF/connection reset/socket closed durante la chiamata: ProbeUnavailable
+     * - SSLHandshakeException finale: Tls
+     * - SocketTimeoutException: Timeout
+     * - RouterOsTransportException: RouterOsError (già tipizzato dal decoder)
+     * Nessun retry automatico.
+     */
+    fun classify(error: Throwable): TestError {
+        return when (error) {
+            is CancellationException -> throw error
+            is RouterOsTransportException -> error.error
+            is SSLHandshakeException -> TestError.Tls(
+                message = error.message ?: "TLS handshake failed",
+                cause = error
+            )
+            is SocketTimeoutException -> TestError.Timeout(
+                message = error.message ?: "Request timed out",
+                cause = error
+            )
+            is ConnectException -> TestError.ProbeUnavailable(
+                message = error.message ?: "Probe unreachable",
+                cause = error
+            )
+            is NoRouteToHostException -> TestError.ProbeUnavailable(
+                message = error.message ?: "No route to probe",
+                cause = error
+            )
+            is UnknownHostException -> TestError.ProbeUnavailable(
+                message = error.message ?: "Unknown probe host",
+                cause = error
+            )
+            is EOFException -> TestError.ProbeUnavailable(
+                message = error.message ?: "Connection closed by probe",
+                cause = error
+            )
+            is SocketException -> TestError.ProbeUnavailable(
+                message = error.message ?: "Probe connection lost",
+                cause = error
+            )
+            else -> TestError.Unexpected(
+                message = error.message ?: "Unexpected transport error",
+                cause = error
+            )
+        }
     }
 }

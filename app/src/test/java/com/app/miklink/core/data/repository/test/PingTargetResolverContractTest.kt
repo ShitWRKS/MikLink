@@ -2,6 +2,7 @@ package com.app.miklink.core.data.repository.test
 
 import com.app.miklink.core.domain.model.Client
 import com.app.miklink.core.domain.model.ProbeConfig
+import com.app.miklink.core.domain.model.TdrCapability
 import com.app.miklink.core.domain.model.TestProfile
 import com.app.miklink.core.domain.model.NetworkMode
 import com.app.miklink.data.repositoryimpl.PingTargetResolverImpl
@@ -27,7 +28,7 @@ class PingTargetResolverContractTest {
         testInterface = "ether1",
         isOnline = false,
         modelName = null,
-        tdrSupported = false,
+        tdrCapability = TdrCapability.UNKNOWN,
         isHttps = false
     )
 

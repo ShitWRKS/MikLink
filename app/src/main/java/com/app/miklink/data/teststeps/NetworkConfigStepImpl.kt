@@ -32,7 +32,7 @@ class NetworkConfigStepImpl @Inject constructor(
             StepResult.Success(feedback)
         } catch (e: Exception) {
             if (e is CancellationException) throw e
-            StepResult.Failed(TestError.NetworkError(e.message ?: "Network configuration failed"))
+            StepResult.Failed(TestError.Unexpected(e.message ?: "Network configuration failed", e))
         }
     }
 }

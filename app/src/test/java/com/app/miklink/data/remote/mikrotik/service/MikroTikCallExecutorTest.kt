@@ -7,6 +7,7 @@
 package com.app.miklink.data.remote.mikrotik.service
 
 import com.app.miklink.core.domain.model.ProbeConfig
+import com.app.miklink.core.domain.model.TdrCapability
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -33,7 +34,7 @@ class MikroTikCallExecutorTest {
         isHttps = true,
         isOnline = false,
         modelName = null,
-        tdrSupported = false
+        tdrCapability = TdrCapability.UNKNOWN
     )
 
     @Test

@@ -38,7 +38,7 @@ class NeighborDiscoveryStepImpl @Inject constructor(
             StepResult.Success(neighbors)
         } catch (e: Exception) {
             if (e is CancellationException) throw e
-            StepResult.Failed(TestError.NetworkError(e.message ?: "Neighbor discovery failed"))
+            StepResult.Failed(TestError.Unexpected(e.message ?: "Neighbor discovery failed", e))
         }
     }
 

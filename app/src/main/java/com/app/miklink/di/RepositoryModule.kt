@@ -37,8 +37,8 @@ import com.app.miklink.data.repository.BackupManagerImpl
 import com.app.miklink.data.repository.DefaultBackupRepository
 import com.app.miklink.data.repository.RouteManager
 import com.app.miklink.data.repository.RouteManagerImpl
+import com.app.miklink.core.data.transaction.TransactionRunner
 import com.app.miklink.data.repository.RoomTransactionRunner
-import com.app.miklink.data.repository.TransactionRunner
 import com.app.miklink.data.repositoryimpl.PingTargetResolverImpl
 import com.app.miklink.data.repository.mikrotik.MikroTikDhcpGatewayRepository
 import com.app.miklink.data.repository.mikrotik.MikroTikNetworkConfigRepository

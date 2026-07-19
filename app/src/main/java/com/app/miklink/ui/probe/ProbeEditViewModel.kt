@@ -12,6 +12,8 @@ import com.app.miklink.core.data.repository.ProbeCheckResult
 import com.app.miklink.core.data.repository.probe.ProbeConnectivityRepository
 import com.app.miklink.core.data.repository.probe.ProbeRepository
 import com.app.miklink.core.domain.model.ProbeConfig
+import com.app.miklink.core.domain.model.TdrCapability
+import com.app.miklink.core.domain.model.TdrCapabilityClassifier
 import com.app.miklink.ui.common.BaseEditViewModel
 import com.app.miklink.utils.Compatibility
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -38,7 +40,7 @@ class ProbeEditViewModel @Inject constructor(
 
     private val _modelName = MutableStateFlow<String?>(null)
     private val _isOnline = MutableStateFlow(false)
-    private val _tdrSupported = MutableStateFlow(false)
+    private val _tdrCapability = MutableStateFlow(TdrCapability.UNKNOWN)
     private var suppressVerificationReset = false
     private var lastVerifiedConnection: ProbeConfig? = null
 
@@ -64,7 +66,7 @@ class ProbeEditViewModel @Inject constructor(
             testInterface = "", // Default value
             isOnline = false, // Default value
             modelName = null, // Default value
-            tdrSupported = false // Default value
+            tdrCapability = TdrCapability.UNKNOWN // Default value
         )
     }
     init {
@@ -77,7 +79,7 @@ class ProbeEditViewModel @Inject constructor(
                 isHttps.value = probe.isHttps
                 testInterface.value = probe.testInterface
                 _modelName.value = probe.modelName
-                _tdrSupported.value = probe.tdrSupported
+                _tdrCapability.value = probe.tdrCapability
                 _isOnline.value = probe.isOnline
                 if (probe.modelName != null) {
                     _verificationState.value = VerificationState.Success(
@@ -131,7 +133,7 @@ class ProbeEditViewModel @Inject constructor(
                     // Sync scheme with effective transport to reflect fallback or HTTPS success.
                     isHttps.value = result.effectiveIsHttps
                     _isOnline.value = true
-                    _tdrSupported.value = Compatibility.isTdrSupported(result.boardName)
+                    _tdrCapability.value = TdrCapabilityClassifier.classify(result.boardName)
                     _modelName.value = result.boardName
                     testInterface.value = result.interfaces.firstOrNull() ?: ""
                     lastVerifiedConnection = tempProbe.copy(isHttps = result.effectiveIsHttps)
@@ -162,7 +164,7 @@ class ProbeEditViewModel @Inject constructor(
                 testInterface = testInterface.value,
                 isOnline = _isOnline.value,
                 modelName = _modelName.value,
-                tdrSupported = _tdrSupported.value
+                tdrCapability = _tdrCapability.value
             )
             probeRepository.saveProbeConfig(probeToSave)
             markSaved()

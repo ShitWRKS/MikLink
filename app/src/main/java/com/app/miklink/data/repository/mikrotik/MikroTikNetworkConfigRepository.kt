@@ -13,14 +13,21 @@ import com.app.miklink.core.data.repository.test.NetworkConfigRepository
 import com.app.miklink.core.domain.model.Client
 import com.app.miklink.core.domain.model.NetworkMode
 import com.app.miklink.core.domain.model.ProbeConfig
+import com.app.miklink.core.domain.test.model.TestError
 import com.app.miklink.data.remote.mikrotik.dto.DhcpClientAdd
 import com.app.miklink.data.remote.mikrotik.dto.DhcpClientStatus
 import com.app.miklink.data.remote.mikrotik.dto.IpAddressAdd
 import com.app.miklink.data.remote.mikrotik.dto.NumbersRequest
 import com.app.miklink.data.remote.mikrotik.dto.RouteAdd
 import com.app.miklink.data.remote.mikrotik.service.CallOutcome
+import com.app.miklink.data.remote.mikrotik.service.DecodedResult
+import com.app.miklink.data.remote.mikrotik.service.MikroTikApiService
 import com.app.miklink.data.remote.mikrotik.service.MikroTikCallExecutor
+import com.app.miklink.data.remote.mikrotik.service.RouterOsOperation
+import com.app.miklink.data.remote.mikrotik.service.RouterOsResponseDecoder
+import com.app.miklink.data.remote.mikrotik.service.RouterOsTransportException
 import com.app.miklink.data.repository.RouteManager
+import retrofit2.Response
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.delay
 import javax.inject.Inject
@@ -31,6 +38,7 @@ import javax.inject.Inject
 class MikroTikNetworkConfigRepository @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val callExecutor: MikroTikCallExecutor,
+    private val decoder: RouterOsResponseDecoder,
     private val routeManager: RouteManager
 ) : NetworkConfigRepository {
 
@@ -45,7 +53,7 @@ class MikroTikNetworkConfigRepository @Inject constructor(
 
             // Helper: rimuovi IP statici su interfaccia
             suspend fun removeStaticAddressesOnInterface() {
-                val addresses = api.getIpAddresses()
+                val addresses = decodeList(api.getIpAddresses(), RouterOsOperation.IP_ADDRESSES)
                 addresses.filter { it.iface == iface }.forEach { entry ->
                     entry.id?.let { api.removeIpAddress(NumbersRequest(it)) }
                 }
@@ -53,7 +61,7 @@ class MikroTikNetworkConfigRepository @Inject constructor(
 
             if (effective.networkMode == NetworkMode.DHCP) {
                 // DHCP: verifica se gia configurato e bound, altrimenti configura
-                val existingDhcp = api.getDhcpClientStatus(iface).firstOrNull()
+                val existingDhcp = decodeList(api.getDhcpClientStatus(iface), RouterOsOperation.DHCP_CLIENT_STATUS).firstOrNull()
 
                 // Se il client DHCP esiste ed e gia bound, non fare nulla
                 if (existingDhcp != null &&
@@ -91,7 +99,7 @@ class MikroTikNetworkConfigRepository @Inject constructor(
                         // Se il client esiste gia (race condition), recuperalo e abilitalo
                         if (e.message?.contains("already exists", ignoreCase = true) == true) {
                             delay(500)
-                            val existingId = api.getDhcpClientStatus(iface).firstOrNull()?.id
+                            val existingId = decodeList(api.getDhcpClientStatus(iface), RouterOsOperation.DHCP_CLIENT_STATUS).firstOrNull()?.id
                             if (existingId != null) {
                                 api.enableDhcpClient(NumbersRequest(existingId))
                             } else {
@@ -106,14 +114,14 @@ class MikroTikNetworkConfigRepository @Inject constructor(
                 // Attendi lease (max 6 secondi)
                 var lease: DhcpClientStatus? = null
                 repeat(6) {
-                    val cur = api.getDhcpClientStatus(iface).firstOrNull()
+                    val cur = decodeList(api.getDhcpClientStatus(iface), RouterOsOperation.DHCP_CLIENT_STATUS).firstOrNull()
                     if (cur?.status?.equals("bound", true) == true) {
                         lease = cur
                         return@repeat
                     }
                     delay(1000)
                 }
-                val bound = lease ?: api.getDhcpClientStatus(iface).firstOrNull()
+                val bound = lease ?: decodeList(api.getDhcpClientStatus(iface), RouterOsOperation.DHCP_CLIENT_STATUS).firstOrNull()
                 NetworkConfigFeedback(
                     mode = "DHCP",
                     interfaceName = iface,
@@ -129,7 +137,7 @@ class MikroTikNetworkConfigRepository @Inject constructor(
             } else {
                 // STATIC
                 // Disabilita DHCP se presente
-                val dhcpId = api.getDhcpClientStatus(iface).firstOrNull()?.id
+                val dhcpId = decodeList(api.getDhcpClientStatus(iface), RouterOsOperation.DHCP_CLIENT_STATUS).firstOrNull()?.id
                 if (dhcpId != null) {
                     api.disableDhcpClient(NumbersRequest(dhcpId))
                 }
@@ -152,8 +160,9 @@ class MikroTikNetworkConfigRepository @Inject constructor(
 
                 validateStaticInput(cidr, gw)
 
-                api.addIpAddress(IpAddressAdd(address = cidr, `interface` = iface))
-                api.addRoute(RouteAdd(dstAddress = "0.0.0.0/0", gateway = gw, comment = "MikLink_Auto"))
+                // Le chiamate di scrittura non restituiscono body significativi; il decoder verifica l'esito HTTP.
+                decodeUnit(api.addIpAddress(IpAddressAdd(address = cidr, `interface` = iface)), RouterOsOperation.IP_ADDRESS_ADD)
+                decodeUnit(api.addRoute(RouteAdd(dstAddress = "0.0.0.0/0", gateway = gw, comment = "MikLink_Auto")), RouterOsOperation.ROUTE_ADD)
 
                 NetworkConfigFeedback(
                     mode = "STATIC",
@@ -165,7 +174,7 @@ class MikroTikNetworkConfigRepository @Inject constructor(
                 )
             }
         }
-        return outcome.getOrThrow()
+        return outcome.getOrThrow(callExecutor)
     }
 
     private fun validateStaticInput(cidr: String, gateway: String) {
@@ -212,15 +221,48 @@ class MikroTikNetworkConfigRepository @Inject constructor(
         val inverted = value.inv()
         return (inverted + 1) and inverted == 0
     }
-}
 
-private fun <T> CallOutcome<T>.getOrThrow(): T {
-    return when (this) {
-        is CallOutcome.Success -> value
-        is CallOutcome.Failure -> {
-            val primary = failures.firstOrNull()?.throwable ?: IllegalStateException("Unknown call failure")
-            failures.drop(1).forEach { primary.addSuppressed(it.throwable) }
-            throw primary
+    private fun <T> CallOutcome<T>.getOrThrow(executor: MikroTikCallExecutor): T {
+        return when (this) {
+            is CallOutcome.Success -> value
+            is CallOutcome.Failure -> {
+                val primary = failures.firstOrNull()?.throwable ?: IllegalStateException("Unknown call failure")
+                failures.drop(1).forEach { primary.addSuppressed(it.throwable) }
+                throw mapToTransportException(executor.classify(primary))
+            }
         }
     }
+
+    private fun <T> decodeList(response: retrofit2.Response<List<T>>, operation: RouterOsOperation): List<T> {
+        return when (val decoded = decoder.decode(operation, response)) {
+            is DecodedResult.Error -> throw mapToTransportException(decoded.error)
+            is DecodedResult.Success -> decoded.value
+        }
+    }
+
+    private fun decodeUnit(response: retrofit2.Response<Any>, operation: RouterOsOperation) {
+        // Write endpoints (PUT) may legitimately return an empty success body; only HTTP errors
+        // are classified by the decoder. A successful HTTP status is enough for unit operations.
+        if (!response.isSuccessful) {
+            when (val decoded = decoder.decode<Any>(operation, response)) {
+                is DecodedResult.Error -> throw mapToTransportException(decoded.error)
+                is DecodedResult.Success -> Unit
+            }
+        }
+    }
+
+    private fun mapToTransportException(error: TestError): Exception {
+    return when (error) {
+        is TestError.ProbeUnavailable -> java.io.IOException(error.message, error.cause)
+        is TestError.Authentication -> SecurityException(error.message)
+        is TestError.Tls -> javax.net.ssl.SSLHandshakeException(error.message)
+        is TestError.Timeout -> java.net.SocketTimeoutException(error.message)
+        is TestError.RouterOsError -> RouterOsTransportException(error)
+        is TestError.InvalidResponse -> IllegalStateException(error.message)
+        is TestError.Unsupported -> UnsupportedOperationException(error.message)
+        is TestError.ConfigurationError -> IllegalStateException(error.message)
+        is TestError.SerializationError -> IllegalStateException(error.message, error.cause)
+        is TestError.Unexpected -> IllegalStateException(error.message, error.cause)
+    }
+}
 }

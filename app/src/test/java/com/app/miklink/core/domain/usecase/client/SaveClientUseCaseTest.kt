@@ -162,6 +162,8 @@ class SaveClientUseCaseTest {
         }
 
         override suspend fun deleteClient(client: Client) = Unit
+
+        override suspend fun incrementNextIdNumber(clientId: Long): Int = 0
     }
 
     private suspend fun assertValidationFailsWithoutSaving(client: Client, expectedMessage: String) {

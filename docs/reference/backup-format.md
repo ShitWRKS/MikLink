@@ -6,47 +6,54 @@ Fonte: `data/repository/BackupData.kt` + mapping in `data/repository/BackupManag
 
 Il JSON serializza `BackupData`:
 
-- `version` (Int) — attualmente **1**
+- `version` (Int) — **2** (dal baseline ADR-0013; v1 ancora importabile)
 - `probe` (ProbeConfig?) — nullable (la probe è singleton; se null l'import mantiene quella esistente)
 - `clients` (List<BackupClient>)
 - `profiles` (List<TestProfile>)
 - `reports` (List<BackupReport>)
 
-## clientKey (stable key)
+## clientRef (v2) / clientKey (v1)
 
-Per evitare di esportare ID DB (`clientId`), il backup usa una chiave stabile:
+Per evitare di esportare ID DB (`clientId`), il backup usa un riferimento stabile:
 
-- `BackupClient.clientKey: String` (**sempre presente**)
-- `BackupReport.clientKey: String?` (**nullable**)
+- **v2**: `BackupClient.clientRef: String` (sempre presente), `BackupReport.clientRef: String?` (nullable)
+- **v1** (legacy): `BackupClient.clientKey: String` (sempre presente), `BackupReport.clientKey: String?` (nullable)
 
-### Generazione
+`clientRef` è un riferimento opaco unico per il file; **non** aggiunge UUID al database.
+
+### Generazione (v2 export)
 
 In export (`BackupManagerImpl`):
 
 - `companyName` → trim + lowercase
 - `location` → trim + lowercase + whitespace → `_`
-- `clientKey = "<company>|<location>"`  
+- `clientRef = "<company>|<location>"`  
   (se `location` è vuota, la parte dopo `|` è vuota)
 
 ### Uso in export
 
-- Si costruisce una mappa `clientId -> clientKey`
-- Ogni report esporta `clientKey = report.clientId?.let { clientIdToKey[it] }`
+- Si costruisce una mappa `clientId -> clientRef`
+- Ogni report esporta `clientRef = report.clientId?.let { clientIdToRef[it] }`
 
-Quindi i report “orfani” (senza `clientId`) vengono esportati con `clientKey = null`.
+Quindi i report “orfani” (senza `clientId`) vengono esportati con `clientRef = null`.
 
 ## Import
 
 In import:
 
-1) Si inseriscono tutti i clienti e si costruisce `clientKey -> newClientId`
-2) Per ogni report:
-   - `clientId = r.clientKey?.let { clientKeyToNewId[it] }`
-   - se `clientKey` è null (o non trovata) il report viene importato con `clientId = null`
+1) Si inserisce il formato in base a `version`:
+   - **version 2**: usa `clientRef`;
+   - **version 1**: usa `clientKey` (legacy);
+   - versioni diverse da 1 e 2: **rifiuto**.
+2) Per v2: `clientRef` duplicati → **rifiuto**; report con `clientRef` inesistente → **rifiuto**.
+3) Per v1: `clientKey` duplicati → **rifiuto esplicito**.
+4) Per ogni report:
+   - `clientId = ref?.let { refToNewId[it] }`
+   - se `ref` è null (o non trovata) il report viene importato con `clientId = null` (orfano).
+5) Credenziali preservate.
 
 ## Compatibilità
 
-- Il formato è pensato per essere estendibile: usa `version`.
-- Se in futuro rendi `clientKey` obbligatorio sui report, serve:
-  - migrazione del formato (bump `version`)
-  - strategia per report orfani (es. client “UNKNOWN” o drop controllato)
+- Il formato è estendibile tramite `version`.
+- v2 introduce `clientRef` come riferimento primario; v1 mantenuto per retrocompatibilità.
+- Report orfano: riferimento `null` (preservato in entrambe le versioni).

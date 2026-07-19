@@ -1,9 +1,11 @@
 package com.app.miklink.di
 
+import com.app.miklink.core.domain.test.TestRunTextProvider
 import com.app.miklink.core.domain.test.step.*
 import com.app.miklink.core.domain.usecase.test.RunTestUseCase
 import com.app.miklink.core.domain.usecase.test.RunTestUseCaseImpl
 import com.app.miklink.data.teststeps.*
+import com.app.miklink.ui.test.AndroidTestRunTextProvider
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -19,6 +21,9 @@ abstract class TestRunnerModule {
     @Binds
     @Singleton
     abstract fun bindRunTestUseCase(impl: RunTestUseCaseImpl): RunTestUseCase
+
+    @Binds
+    abstract fun bindTestRunTextProvider(impl: AndroidTestRunTextProvider): TestRunTextProvider
 
     @Binds
     abstract fun bindNetworkConfigStep(impl: NetworkConfigStepImpl): NetworkConfigStep

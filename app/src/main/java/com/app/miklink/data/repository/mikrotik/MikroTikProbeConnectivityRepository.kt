@@ -14,8 +14,11 @@ import com.app.miklink.core.domain.model.ProbeConfig
 import com.app.miklink.data.remote.mikrotik.dto.ProplistRequest
 import com.app.miklink.data.remote.mikrotik.service.AttemptFailure
 import com.app.miklink.data.remote.mikrotik.service.CallOutcome
+import com.app.miklink.data.remote.mikrotik.service.DecodedResult
 import com.app.miklink.data.remote.mikrotik.service.MikroTikApiService
 import com.app.miklink.data.remote.mikrotik.service.MikroTikCallExecutor
+import com.app.miklink.data.remote.mikrotik.service.RouterOsOperation
+import com.app.miklink.data.remote.mikrotik.service.RouterOsResponseDecoder
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -29,7 +32,8 @@ import javax.net.ssl.SSLHandshakeException
  */
 class MikroTikProbeConnectivityRepository @Inject constructor(
     @param:ApplicationContext private val context: Context,
-    private val callExecutor: MikroTikCallExecutor
+    private val callExecutor: MikroTikCallExecutor,
+    private val decoder: RouterOsResponseDecoder
 ) : ProbeConnectivityRepository {
 
     private val logTag = "ProbeConnectivityRepo"
@@ -54,9 +58,12 @@ class MikroTikProbeConnectivityRepository @Inject constructor(
                 }
                 is CallOutcome.Failure -> {
                     logFailures(outcome.failures)
+                    val classified = callExecutor.classify(
+                        outcome.failures.firstOrNull()?.throwable
+                            ?: IllegalStateException("Unknown call failure")
+                    )
                     val message = ProbeErrorMapper.toMessage(
-                        error = outcome.failures.firstOrNull()?.throwable
-                            ?: IllegalStateException("Unknown call failure"),
+                        error = mapToTransportException(classified),
                         defaultMessage = context.getString(R.string.error_probe_connection_unknown),
                         handshakeMessage = context.getString(R.string.error_probe_connection_tls_handshake)
                     )
@@ -66,7 +73,11 @@ class MikroTikProbeConnectivityRepository @Inject constructor(
         }
 
     private suspend fun fetchProbeMetadata(api: MikroTikApiService): Pair<String, List<String>> {
-        val systemResources = api.getSystemResource(ProplistRequest(listOf("board-name")))
+        val systemResourceResponse = api.getSystemResource(ProplistRequest(listOf("board-name")))
+        val systemResources = when (val decoded = decoder.decode(RouterOsOperation.SYSTEM_RESOURCE, systemResourceResponse)) {
+            is DecodedResult.Error -> throw mapToTransportException(decoded.error)
+            is DecodedResult.Success -> decoded.value
+        }
         if (android.util.Log.isLoggable(logTag, android.util.Log.DEBUG)) {
             android.util.Log.d(
                 logTag,
@@ -77,7 +88,11 @@ class MikroTikProbeConnectivityRepository @Inject constructor(
             .mapNotNull { it.boardName?.trim()?.takeIf { name -> name.isNotEmpty() } }
             .firstOrNull()
             ?: "Unknown Board"
-        val interfacesRaw = api.getEthernetInterfaces()
+        val interfacesResponse = api.getEthernetInterfaces()
+        val interfacesRaw = when (val decoded = decoder.decode(RouterOsOperation.ETHERNET_INTERFACES, interfacesResponse)) {
+            is DecodedResult.Error -> throw mapToTransportException(decoded.error)
+            is DecodedResult.Success -> decoded.value
+        }
         if (android.util.Log.isLoggable(logTag, android.util.Log.DEBUG)) {
             android.util.Log.d(logTag, "checkProbeConnection: Ricevute ${interfacesRaw.size} interfacce dall'API")
         }
@@ -110,6 +125,31 @@ class MikroTikProbeConnectivityRepository @Inject constructor(
                     attempt.throwable
                 )
             }
+        }
+    }
+
+    private fun mapToTransportException(error: com.app.miklink.core.domain.test.model.TestError): Exception {
+        return when (error) {
+            is com.app.miklink.core.domain.test.model.TestError.ProbeUnavailable ->
+                java.io.IOException(error.message, error.cause)
+            is com.app.miklink.core.domain.test.model.TestError.Authentication ->
+                SecurityException(error.message)
+            is com.app.miklink.core.domain.test.model.TestError.Tls ->
+                javax.net.ssl.SSLHandshakeException(error.message)
+            is com.app.miklink.core.domain.test.model.TestError.Timeout ->
+                java.net.SocketTimeoutException(error.message)
+            is com.app.miklink.core.domain.test.model.TestError.RouterOsError ->
+                com.app.miklink.data.remote.mikrotik.service.RouterOsTransportException(error)
+            is com.app.miklink.core.domain.test.model.TestError.InvalidResponse ->
+                IllegalStateException(error.message)
+            is com.app.miklink.core.domain.test.model.TestError.Unsupported ->
+                UnsupportedOperationException(error.message)
+            is com.app.miklink.core.domain.test.model.TestError.ConfigurationError ->
+                IllegalStateException(error.message)
+            is com.app.miklink.core.domain.test.model.TestError.SerializationError ->
+                IllegalStateException(error.message, error.cause)
+            is com.app.miklink.core.domain.test.model.TestError.Unexpected ->
+                IllegalStateException(error.message, error.cause)
         }
     }
 }

@@ -10,28 +10,46 @@ import android.content.Context
 import com.app.miklink.core.domain.model.Client
 import com.app.miklink.core.domain.model.NetworkMode
 import com.app.miklink.core.domain.model.ProbeConfig
+import com.app.miklink.core.domain.model.TdrCapability
 import com.app.miklink.data.remote.mikrotik.dto.IpAddressAdd
 import com.app.miklink.data.remote.mikrotik.dto.RouteAdd
 import com.app.miklink.data.remote.mikrotik.service.MikroTikApiService
 import com.app.miklink.data.remote.mikrotik.service.MikroTikCallExecutor
 import com.app.miklink.data.remote.mikrotik.service.MikroTikServiceProvider
+import com.app.miklink.data.remote.mikrotik.service.RouterOsResponseDecoder
+import com.squareup.moshi.Moshi
 import com.app.miklink.data.repository.RouteManager
 import com.app.miklink.data.repository.mikrotik.MikroTikNetworkConfigRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
 import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
+import org.junit.Before
 import org.junit.Test
+import retrofit2.Response
 
 class NetworkConfigRepositoryTest {
+
+    @Before
+    fun mockAndroidLog() {
+        mockkStatic("android.util.Log")
+        every { android.util.Log.isLoggable(any(), any()) } returns false
+        every { android.util.Log.d(any(), any()) } returns 0
+        every { android.util.Log.w(any(), any(), any()) } returns 0
+        every { android.util.Log.e(any(), any(), any()) } returns 0
+    }
 
     private val context: Context = mockk(relaxed = true)
     private val api: MikroTikApiService = mockk(relaxed = true)
     private val serviceProvider: MikroTikServiceProvider = mockk()
     private val routeManager: RouteManager = mockk(relaxed = true)
+    private val decoder: RouterOsResponseDecoder = RouterOsResponseDecoder(Moshi.Builder().build())
     private val callExecutor = MikroTikCallExecutor(serviceProvider)
-    private val repo = MikroTikNetworkConfigRepository(context, callExecutor, routeManager)
+    private val repo = MikroTikNetworkConfigRepository(context, callExecutor, decoder, routeManager)
 
     private val probe = ProbeConfig(
         ipAddress = "192.168.0.10",
@@ -41,14 +59,16 @@ class NetworkConfigRepositoryTest {
         isHttps = false,
         isOnline = true,
         modelName = "hAP",
-        tdrSupported = true
+        tdrCapability = TdrCapability.SUPPORTED
     )
 
     @Test
     fun `valid static config reaches api`() = runBlocking {
         coEvery { serviceProvider.build(probe) } returns api
-        coEvery { api.getDhcpClientStatus(any()) } returns emptyList()
-        coEvery { api.getIpAddresses(any()) } returns emptyList()
+        coEvery { api.getDhcpClientStatus(any()) } returns Response.success(emptyList())
+        coEvery { api.getIpAddresses(any()) } returns Response.success(emptyList())
+        coEvery { api.addIpAddress(any()) } returns Response.success(null)
+        coEvery { api.addRoute(any()) } returns Response.success(null)
 
         val client = baseClient().copy(
             networkMode = NetworkMode.STATIC,
@@ -65,8 +85,8 @@ class NetworkConfigRepositoryTest {
     @Test
     fun `invalid cidr fails fast`() = runBlocking {
         coEvery { serviceProvider.build(probe) } returns api
-        coEvery { api.getDhcpClientStatus(any()) } returns emptyList()
-        coEvery { api.getIpAddresses(any()) } returns emptyList()
+        coEvery { api.getDhcpClientStatus(any()) } returns Response.success(emptyList())
+        coEvery { api.getIpAddresses(any()) } returns Response.success(emptyList())
 
         val client = baseClient().copy(
             networkMode = NetworkMode.STATIC,
@@ -76,9 +96,13 @@ class NetworkConfigRepositoryTest {
 
         try {
             repo.applyClientNetworkConfig(probe, client, null)
-            fail("Expected IllegalArgumentException for invalid CIDR")
-        } catch (_: IllegalArgumentException) {
-            // Expected
+            fail("Expected failure for invalid CIDR")
+        } catch (e: Exception) {
+            // Validation errors surface as IllegalStateException wrapping the require() cause.
+            assertTrue(
+                "Expected an IllegalStateException whose cause is IllegalArgumentException, got $e",
+                e is IllegalStateException && e.cause is IllegalArgumentException
+            )
         }
 
         coVerify(exactly = 0) { api.addIpAddress(any<IpAddressAdd>()) }
@@ -88,8 +112,8 @@ class NetworkConfigRepositoryTest {
     @Test
     fun `invalid gateway fails fast`() = runBlocking {
         coEvery { serviceProvider.build(probe) } returns api
-        coEvery { api.getDhcpClientStatus(any()) } returns emptyList()
-        coEvery { api.getIpAddresses(any()) } returns emptyList()
+        coEvery { api.getDhcpClientStatus(any()) } returns Response.success(emptyList())
+        coEvery { api.getIpAddresses(any()) } returns Response.success(emptyList())
 
         val client = baseClient().copy(
             networkMode = NetworkMode.STATIC,
@@ -99,9 +123,12 @@ class NetworkConfigRepositoryTest {
 
         try {
             repo.applyClientNetworkConfig(probe, client, null)
-            fail("Expected IllegalArgumentException for invalid gateway")
-        } catch (_: IllegalArgumentException) {
-            // Expected
+            fail("Expected failure for invalid gateway")
+        } catch (e: Exception) {
+            assertTrue(
+                "Expected an IllegalStateException whose cause is IllegalArgumentException, got $e",
+                e is IllegalStateException && e.cause is IllegalArgumentException
+            )
         }
 
         coVerify(exactly = 0) { api.addIpAddress(any<IpAddressAdd>()) }

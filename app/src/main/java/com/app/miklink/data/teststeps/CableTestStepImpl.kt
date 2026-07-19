@@ -38,7 +38,7 @@ class CableTestStepImpl @Inject constructor(
             if (isUnsupported) {
                 StepResult.Failed(TestError.Unsupported(e.message ?: "TDR not supported"))
             } else {
-                StepResult.Failed(TestError.NetworkError(e.message ?: "Cable test failed"))
+                StepResult.Failed(TestError.Unexpected(e.message ?: "Cable test failed", e))
             }
         }
     }

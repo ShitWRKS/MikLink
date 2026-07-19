@@ -99,6 +99,13 @@ class DashboardViewModelTest {
         override suspend fun deleteClient(client: Client) {
             flow.value = flow.value.filterNot { it.clientId == client.clientId }
         }
+        override suspend fun incrementNextIdNumber(clientId: Long): Int {
+            val current = flow.value.firstOrNull { it.clientId == clientId } ?: return 0
+            flow.value = flow.value.map {
+                if (it.clientId == clientId) it.copy(nextIdNumber = it.nextIdNumber + 1) else it
+            }
+            return 1
+        }
     }
 
     private class FakeTestProfileRepository : TestProfileRepository {

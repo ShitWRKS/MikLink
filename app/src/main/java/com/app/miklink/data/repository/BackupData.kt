@@ -19,7 +19,10 @@ data class BackupReport(
     val overallStatus: String,
     val resultFormatVersion: Int = 1,
     val resultsJson: String,
-    val clientKey: String?
+    // v2: opaque per-file reference to the owning client (null = orphan report).
+    val clientRef: String? = null,
+    // v1 legacy field, kept only for backward-compatible import of version 1 backups.
+    val clientKey: String? = null
 )
 
 data class BackupClient(
@@ -39,13 +42,15 @@ data class BackupClient(
     val nextIdNumber: Int,
     val speedTestServerAddress: String?,
     val speedTestServerUser: String?,
-    val speedTestServerPassword: String?
-    ,
-    val clientKey: String
+    val speedTestServerPassword: String?,
+    // v2: opaque per-file unique reference (primary identifier inside the backup file).
+    val clientRef: String = "",
+    // v1 legacy field, kept only for backward-compatible import of version 1 backups.
+    val clientKey: String? = null
 )
 
 data class BackupData(
-    val version: Int = 1,
+    val version: Int = 2,
     val probe: ProbeConfig?, // nullable singleton
     val clients: List<BackupClient> = emptyList(),
     val profiles: List<TestProfile> = emptyList(),

@@ -19,15 +19,15 @@ import com.app.miklink.data.remote.mikrotik.dto.CableTestRequest
 import com.app.miklink.data.remote.mikrotik.dto.MonitorRequest
 import com.app.miklink.data.remote.mikrotik.dto.PingRequest
 import com.app.miklink.data.remote.mikrotik.dto.SpeedTestRequest
-import com.app.miklink.data.remote.mikrotik.mapper.toDomain
-import com.app.miklink.data.remote.mikrotik.mapper.toLinkStatusData
-import com.app.miklink.data.remote.mikrotik.mapper.toMeasurement
-import com.app.miklink.data.remote.mikrotik.mapper.toSummary
+import com.app.miklink.data.remote.mikrotik.mapper.RouterOsNormalizer
 import com.app.miklink.data.remote.mikrotik.service.CallOutcome
+import com.app.miklink.data.remote.mikrotik.service.DecodedResult
 import com.app.miklink.data.remote.mikrotik.service.MikroTikCallExecutor
+import com.app.miklink.data.remote.mikrotik.service.RouterOsOperation
+import com.app.miklink.data.remote.mikrotik.service.RouterOsResponseDecoder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import retrofit2.HttpException
+import java.io.IOException
 import javax.inject.Inject
 
 /**
@@ -36,6 +36,7 @@ import javax.inject.Inject
  */
 class MikroTikTestRepositoryRemote @Inject constructor(
     private val callExecutor: MikroTikCallExecutor,
+    private val decoder: RouterOsResponseDecoder,
     private val debugTraceSink: DebugTraceSink,
     private val debugTraceRunContext: DebugTraceRunContext
 ) : MikroTikTestRepository {
@@ -54,20 +55,27 @@ class MikroTikTestRepositoryRemote @Inject constructor(
             )
         )
         val outcome = callExecutor.executeWithOutcome(probe) { api ->
-            val results = api.getLinkStatus(MonitorRequest(numbers = interfaceName, once = once))
-            trace(
-                event = "mikrotik_raw_response",
-                fields = mapOf("test" to "LINK", "raw" to results)
-            )
-            val latest = results.lastOrNull() ?: throw IllegalStateException("No link status returned")
-            val parsed = latest.toLinkStatusData()
-            trace(
-                event = "parsed_response",
-                fields = mapOf("test" to "LINK", "parsed" to parsed)
-            )
-            parsed
+            val response = api.getLinkStatus(MonitorRequest(numbers = interfaceName, once = once))
+            val decoded = decoder.decode(RouterOsOperation.LINK_STATUS, response)
+            when (decoded) {
+                is DecodedResult.Error -> throw mapToTransportException(decoded.error)
+                is DecodedResult.Success -> {
+                    trace(
+                        event = "mikrotik_raw_response",
+                        fields = mapOf("test" to "LINK", "raw" to decoded.value)
+                    )
+                    val latest = decoded.value.lastOrNull()
+                        ?: throw IllegalStateException("No link status returned")
+                    val parsed = RouterOsNormalizer.normalizeLinkStatus(latest)
+                    trace(
+                        event = "parsed_response",
+                        fields = mapOf("test" to "LINK", "parsed" to parsed)
+                    )
+                    parsed
+                }
+            }
         }
-        outcome.getOrThrow()
+        outcome.getOrThrow(callExecutor)
     }
 
     override suspend fun cableTest(
@@ -84,22 +92,28 @@ class MikroTikTestRepositoryRemote @Inject constructor(
             )
         )
         val outcome = callExecutor.executeWithOutcome(probe) { api ->
-            val results = api.runCableTest(CableTestRequest(numbers = interfaceName, duration = "5s"))
-            trace(
-                event = "mikrotik_raw_response",
-                fields = mapOf("test" to "TDR", "raw" to results)
-            )
-            val validResult = results.lastOrNull {
-                it.cablePairs != null || it.status.lowercase() in listOf("ok", "open", "link-ok", "running")
-            } ?: throw IllegalStateException("No valid cable test results found")
-            val parsed = validResult.toSummary()
-            trace(
-                event = "parsed_response",
-                fields = mapOf("test" to "TDR", "parsed" to parsed)
-            )
-            parsed
+            val response = api.runCableTest(CableTestRequest(numbers = interfaceName, duration = "5s"))
+            val decoded = decoder.decode(RouterOsOperation.CABLE_TEST, response)
+            when (decoded) {
+                is DecodedResult.Error -> throw mapToTransportException(decoded.error)
+                is DecodedResult.Success -> {
+                    trace(
+                        event = "mikrotik_raw_response",
+                        fields = mapOf("test" to "TDR", "raw" to decoded.value)
+                    )
+                    val validResult = decoded.value.lastOrNull {
+                        it.cablePairs != null || it.status.lowercase() in listOf("ok", "open", "link-ok", "running")
+                    } ?: throw IllegalStateException("No valid cable test results found")
+                    val parsed = RouterOsNormalizer.normalizeCableTest(validResult)
+                    trace(
+                        event = "parsed_response",
+                        fields = mapOf("test" to "TDR", "parsed" to parsed)
+                    )
+                    parsed
+                }
+            }
         }
-        outcome.getOrThrow()
+        outcome.getOrThrow(callExecutor)
     }
 
     override suspend fun ping(
@@ -119,18 +133,24 @@ class MikroTikTestRepositoryRemote @Inject constructor(
         )
         val outcome = callExecutor.executeWithOutcome(probe) { api ->
             val raw = api.runPing(PingRequest(address = target, `interface` = interfaceName, count = count.toString()))
-            trace(
-                event = "mikrotik_raw_response",
-                fields = mapOf("test" to "PING", "target" to target, "raw" to raw)
-            )
-            raw.map { it.toMeasurement() }.also { parsed ->
-                trace(
-                    event = "parsed_response",
-                    fields = mapOf("test" to "PING", "target" to target, "parsed" to parsed)
-                )
+            val decoded = decoder.decode(RouterOsOperation.PING, raw)
+            when (decoded) {
+                is DecodedResult.Error -> throw mapToTransportException(decoded.error)
+                is DecodedResult.Success -> {
+                    trace(
+                        event = "mikrotik_raw_response",
+                        fields = mapOf("test" to "PING", "target" to target, "raw" to decoded.value)
+                    )
+                    decoded.value.map { RouterOsNormalizer.normalizePing(it) }.also { parsed ->
+                        trace(
+                            event = "parsed_response",
+                            fields = mapOf("test" to "PING", "target" to target, "parsed" to parsed)
+                        )
+                    }
+                }
             }
         }
-        outcome.getOrThrow()
+        outcome.getOrThrow(callExecutor)
     }
 
     override suspend fun neighbors(
@@ -146,18 +166,24 @@ class MikroTikTestRepositoryRemote @Inject constructor(
         )
         val outcome = callExecutor.executeWithOutcome(probe) { api ->
             val raw = api.getIpNeighbors(interfaceName)
-            trace(
-                event = "mikrotik_raw_response",
-                fields = mapOf("test" to "NEIGHBORS", "raw" to raw)
-            )
-            raw.map { it.toDomain() }.also { parsed ->
-                trace(
-                    event = "parsed_response",
-                    fields = mapOf("test" to "NEIGHBORS", "parsed" to parsed)
-                )
+            val decoded = decoder.decode(RouterOsOperation.NEIGHBORS, raw)
+            when (decoded) {
+                is DecodedResult.Error -> throw mapToTransportException(decoded.error)
+                is DecodedResult.Success -> {
+                    trace(
+                        event = "mikrotik_raw_response",
+                        fields = mapOf("test" to "NEIGHBORS", "raw" to decoded.value)
+                    )
+                    decoded.value.map { RouterOsNormalizer.normalizeNeighbor(it) }.also { parsed ->
+                        trace(
+                            event = "parsed_response",
+                            fields = mapOf("test" to "NEIGHBORS", "parsed" to parsed)
+                        )
+                    }
+                }
             }
         }
-        outcome.getOrThrow()
+        outcome.getOrThrow(callExecutor)
     }
 
     override suspend fun speedTest(
@@ -183,33 +209,32 @@ class MikroTikTestRepositoryRemote @Inject constructor(
                 testDuration = duration
             )
             val response = api.runSpeedTest(requestBody)
-            trace(
-                event = "mikrotik_raw_response",
-                fields = mapOf(
-                    "test" to "SPEED",
-                    "code" to response.code(),
-                    "message" to response.message(),
-                    "raw" to response.body()
-                )
-            )
-            if (response.isSuccessful) {
-                val body = response.body()
-                val result = body?.lastOrNull { it.status == "done" } ?: body?.lastOrNull()
-                val parsed = result?.toDomain(serverAddress) ?: throw IllegalStateException("Empty speed test response")
-                trace(
-                    event = "parsed_response",
-                    fields = mapOf("test" to "SPEED", "parsed" to parsed)
-                )
-                parsed
-            } else {
-                when (response.code()) {
-                    400 -> throw IllegalArgumentException("Bad request: ${response.message()}")
-                    401, 403 -> throw SecurityException("Authentication failed")
-                    else -> throw HttpException(response)
+            val decoded = decoder.decode(RouterOsOperation.SPEED_TEST, response)
+            when (decoded) {
+                is DecodedResult.Error -> throw mapToTransportException(decoded.error)
+                is DecodedResult.Success -> {
+                    trace(
+                        event = "mikrotik_raw_response",
+                        fields = mapOf(
+                            "test" to "SPEED",
+                            "code" to response.code(),
+                            "message" to response.message(),
+                            "raw" to decoded.value
+                        )
+                    )
+                    val body = decoded.value
+                    val result = body.lastOrNull { it.status == "done" } ?: body.lastOrNull()
+                    val parsed = result?.let { RouterOsNormalizer.normalizeSpeedTest(it, serverAddress) }
+                        ?: throw IllegalStateException("Empty speed test response")
+                    trace(
+                        event = "parsed_response",
+                        fields = mapOf("test" to "SPEED", "parsed" to parsed)
+                    )
+                    parsed
                 }
             }
         }
-        outcome.getOrThrow()
+        outcome.getOrThrow(callExecutor)
     }
 
     private fun trace(event: String, fields: Map<String, Any?>) {
@@ -218,13 +243,38 @@ class MikroTikTestRepositoryRemote @Inject constructor(
     }
 }
 
-private fun <T> CallOutcome<T>.getOrThrow(): T {
+private fun mapToTransportException(error: com.app.miklink.core.domain.test.model.TestError): Exception {
+    return when (error) {
+        is com.app.miklink.core.domain.test.model.TestError.ProbeUnavailable ->
+            IOException(error.message, error.cause)
+        is com.app.miklink.core.domain.test.model.TestError.Authentication ->
+            SecurityException(error.message)
+        is com.app.miklink.core.domain.test.model.TestError.Tls ->
+            javax.net.ssl.SSLHandshakeException(error.message)
+        is com.app.miklink.core.domain.test.model.TestError.Timeout ->
+            java.net.SocketTimeoutException(error.message)
+        is com.app.miklink.core.domain.test.model.TestError.RouterOsError ->
+            com.app.miklink.data.remote.mikrotik.service.RouterOsTransportException(error)
+        is com.app.miklink.core.domain.test.model.TestError.InvalidResponse ->
+            IllegalStateException(error.message)
+        is com.app.miklink.core.domain.test.model.TestError.Unsupported ->
+            UnsupportedOperationException(error.message)
+        is com.app.miklink.core.domain.test.model.TestError.ConfigurationError ->
+            IllegalStateException(error.message)
+        is com.app.miklink.core.domain.test.model.TestError.SerializationError ->
+            IllegalStateException(error.message, error.cause)
+        is com.app.miklink.core.domain.test.model.TestError.Unexpected ->
+            IllegalStateException(error.message, error.cause)
+    }
+}
+
+private fun <T> CallOutcome<T>.getOrThrow(executor: MikroTikCallExecutor): T {
     return when (this) {
         is CallOutcome.Success -> value
         is CallOutcome.Failure -> {
             val primary = failures.firstOrNull()?.throwable ?: IllegalStateException("Unknown call failure")
             failures.drop(1).forEach { primary.addSuppressed(it.throwable) }
-            throw primary
+            throw mapToTransportException(executor.classify(primary))
         }
     }
 }

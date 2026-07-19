@@ -9,12 +9,15 @@ package com.app.miklink.core.data.repository.probe
 import android.content.Context
 import com.app.miklink.R
 import com.app.miklink.core.domain.model.ProbeConfig
+import com.app.miklink.core.domain.model.TdrCapability
 import com.app.miklink.data.remote.mikrotik.dto.EthernetInterface
 import com.app.miklink.data.remote.mikrotik.dto.ProplistRequest
 import com.app.miklink.data.remote.mikrotik.dto.SystemResource
 import com.app.miklink.data.remote.mikrotik.service.MikroTikApiService
 import com.app.miklink.data.remote.mikrotik.service.MikroTikServiceProvider
 import com.app.miklink.data.remote.mikrotik.service.MikroTikCallExecutor
+import com.app.miklink.data.remote.mikrotik.service.RouterOsResponseDecoder
+import com.squareup.moshi.Moshi
 import com.app.miklink.core.data.repository.ProbeCheckResult
 import com.app.miklink.data.repository.mikrotik.MikroTikProbeConnectivityRepository
 import io.mockk.coEvery
@@ -25,6 +28,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.*
 import org.junit.Test
 import retrofit2.HttpException
+import retrofit2.Response
 import javax.net.ssl.SSLHandshakeException
 
 /**
@@ -36,10 +40,12 @@ class ProbeConnectivityRepositoryContractTest {
     private val mockContext = mockk<Context>(relaxed = true)
     private val mockServiceProvider = mockk<MikroTikServiceProvider>()
     private val mockApiService = mockk<MikroTikApiService>()
+    private val mockDecoder = RouterOsResponseDecoder(Moshi.Builder().build())
     private val callExecutor = MikroTikCallExecutor(mockServiceProvider)
     private val repository: ProbeConnectivityRepository = MikroTikProbeConnectivityRepository(
         mockContext,
-        callExecutor
+        callExecutor,
+        mockDecoder
     )
 
     private val testProbe = ProbeConfig(
@@ -49,7 +55,7 @@ class ProbeConnectivityRepositoryContractTest {
         testInterface = "ether1",
         isOnline = false,
         modelName = null,
-        tdrSupported = false,
+        tdrCapability = TdrCapability.UNKNOWN,
         isHttps = false
     )
 
@@ -62,12 +68,14 @@ class ProbeConnectivityRepositoryContractTest {
         every { android.util.Log.isLoggable(any(), any()) } returns false
         // Given: Connessione riuscita
         every { mockServiceProvider.build(testProbe) } returns mockApiService
-        coEvery { mockApiService.getSystemResource(any<ProplistRequest>()) } returns listOf(
-            SystemResource(boardName = "RB4011")
+        coEvery { mockApiService.getSystemResource(any<ProplistRequest>()) } returns Response.success(
+            listOf(SystemResource(boardName = "RB4011"))
         )
-        coEvery { mockApiService.getEthernetInterfaces() } returns listOf(
-            EthernetInterface(name = "ether1"),
-            EthernetInterface(name = "ether2")
+        coEvery { mockApiService.getEthernetInterfaces() } returns Response.success(
+            listOf(
+                EthernetInterface(name = "ether1"),
+                EthernetInterface(name = "ether2")
+            )
         )
         every { mockContext.getString(R.string.probe_verify_http_fallback_warning) } returns "Fallback HTTP"
 
@@ -119,9 +127,9 @@ class ProbeConnectivityRepositoryContractTest {
         every { android.util.Log.isLoggable(any(), any()) } returns false
         // Given: Risposta API senza board-name
         every { mockServiceProvider.build(testProbe) } returns mockApiService
-        coEvery { mockApiService.getSystemResource(any<ProplistRequest>()) } returns emptyList()
-        coEvery { mockApiService.getEthernetInterfaces() } returns listOf(
-            EthernetInterface(name = "ether1")
+        coEvery { mockApiService.getSystemResource(any<ProplistRequest>()) } returns Response.success(emptyList())
+        coEvery { mockApiService.getEthernetInterfaces() } returns Response.success(
+            listOf(EthernetInterface(name = "ether1"))
         )
 
         // When
@@ -142,11 +150,13 @@ class ProbeConnectivityRepositoryContractTest {
         every { android.util.Log.w(any(), any(), any()) } returns 0
         every { android.util.Log.isLoggable(any(), any()) } returns false
         every { mockServiceProvider.build(testProbe) } returns mockApiService
-        coEvery { mockApiService.getSystemResource(any<ProplistRequest>()) } returns listOf(
-            SystemResource(boardName = null),
-            SystemResource(boardName = "RB5000")
+        coEvery { mockApiService.getSystemResource(any<ProplistRequest>()) } returns Response.success(
+            listOf(
+                SystemResource(boardName = null),
+                SystemResource(boardName = "RB5000")
+            )
         )
-        coEvery { mockApiService.getEthernetInterfaces() } returns listOf(EthernetInterface(name = "ether1"))
+        coEvery { mockApiService.getEthernetInterfaces() } returns Response.success(listOf(EthernetInterface(name = "ether1")))
 
         val result = repository.checkProbeConnection(testProbe)
 
@@ -168,10 +178,10 @@ class ProbeConnectivityRepositoryContractTest {
         every { mockServiceProvider.build(match { it.isHttps }) } returns mockHttpsApi
         every { mockServiceProvider.build(match { !it.isHttps }) } returns mockHttpApi
         coEvery { mockHttpsApi.getSystemResource(any<ProplistRequest>()) } throws SSLHandshakeException("protocol_version")
-        coEvery { mockHttpApi.getSystemResource(any<ProplistRequest>()) } returns listOf(
-            SystemResource(boardName = "RB4011")
+        coEvery { mockHttpApi.getSystemResource(any<ProplistRequest>()) } returns Response.success(
+            listOf(SystemResource(boardName = "RB4011"))
         )
-        coEvery { mockHttpApi.getEthernetInterfaces() } returns listOf(EthernetInterface(name = "ether1"))
+        coEvery { mockHttpApi.getEthernetInterfaces() } returns Response.success(listOf(EthernetInterface(name = "ether1")))
         every { mockContext.getString(R.string.probe_verify_http_fallback_warning) } returns "HTTPS failed, used HTTP"
 
         val result = repository.checkProbeConnection(httpsProbe)

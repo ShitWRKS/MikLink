@@ -1,15 +1,15 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
+    // AGP 9.x has built-in Kotlin support: the org.jetbrains.kotlin.android plugin is no longer applied.
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.ksp) // Annotation processing defaults to KSP; enable kapt only if a processor lacks KSP support.
-    id("androidx.room")
+    alias(libs.plugins.room)
 }
 
 android {
     namespace = "com.app.miklink"
-    compileSdk = 36
+    compileSdk = 37
     defaultConfig {
         applicationId = "com.app.miklink"
         minSdk = 30
@@ -71,12 +71,21 @@ room {
     schemaDirectory("$projectDir/schemas")
 }
 
+// KGP 2.3.21 emits Kotlin 2.4 metadata, but Hilt 2.59.2's javac aggregation step
+// (hiltJavaCompile) bundles kotlin-metadata-jvm 2.2.20 which only reads up to 2.3.0.
+// Force a metadata reader aligned with KGP so the Hilt javac step can parse Kotlin 2.4 metadata.
+configurations.configureEach {
+    resolutionStrategy {
+        force("org.jetbrains.kotlin:kotlin-metadata-jvm:2.3.21")
+    }
+}
+
 dependencies {
-    implementation("io.coil-kt:coil-gif:2.7.0")
-    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
-    implementation("androidx.compose.material:material-icons-extended")
-    implementation(libs.material)
+    implementation(libs.coil.gif)
+    implementation(libs.androidx.hilt.navigation.compose)
+    implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.appcompat)
     implementation(libs.androidx.lifecycle.runtime.ktx)
 
     // Hilt (running on KSP; if reverting, apply kotlin("kapt") and swap this to kapt)
@@ -107,6 +116,7 @@ dependencies {
     implementation(libs.converter.moshi)
     implementation(libs.moshi)
     implementation(libs.moshi.kotlin)
+    ksp(libs.moshi.kotlin.codegen)
     implementation(libs.okhttp)
 
     // DataStore
