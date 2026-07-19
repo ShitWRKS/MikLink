@@ -31,6 +31,7 @@ import com.app.miklink.core.domain.test.step.NeighborDiscoveryStep
 import com.app.miklink.core.domain.test.step.PingStep
 import com.app.miklink.core.domain.test.step.SpeedTestStep
 import com.app.miklink.core.data.report.ReportResultsCodec
+import com.app.miklink.core.domain.test.TestRunTextProvider
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -43,6 +44,47 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+/**
+ * Deterministic pure-Kotlin [TestRunTextProvider] for JVM unit tests.
+ * Every method returns a stable, human-readable string so that assertions
+ * against log lines remain predictable without touching Android resources.
+ */
+private class FakeTestRunTextProvider : TestRunTextProvider {
+    override fun resultCompleted(overallStatus: String) = "Result: $overallStatus"
+    override fun initStarting(clientName: String, profileName: String, socketId: String) =
+        "Starting: $clientName / $profileName / $socketId"
+    override fun labelInit() = "Init"
+    override fun initLoading() = "Loading"
+    override fun linkChecking() = "Checking link"
+    override fun linkStatus(status: String, linkState: String, rate: String) =
+        "Link $status: $linkState @ $rate"
+    override fun linkFail(error: String) = "Link fail: $error"
+    override fun linkSkip(reason: String) = "Link skip: $reason"
+    override fun tdrStarting(testInterface: String) = "TDR start: $testInterface"
+    override fun tdrStatus(status: String, entries: Int) = "TDR $status ($entries)"
+    override fun tdrFail(statusLabel: String, error: String) = "TDR fail: $statusLabel - $error"
+    override fun tdrSkip(reason: String) = "TDR skip: $reason"
+    override fun linkCableDisconnected() = "Cable disconnected"
+    override fun networkStarting(testInterface: String) = "Network start: $testInterface"
+    override fun networkPass(mode: String, interfaceName: String) = "Network pass: $mode/$interfaceName"
+    override fun networkFail(error: String) = "Network fail: $error"
+    override fun networkSkip(reason: String) = "Network skip: $reason"
+    override fun lldpStarting() = "LLDP start"
+    override fun lldpPass(neighbors: Int) = "LLDP pass: $neighbors"
+    override fun lldpInfo(message: String) = "LLDP info: $message"
+    override fun lldpSkip(reason: String) = "LLDP skip: $reason"
+    override fun pingStarting() = "Ping start"
+    override fun pingStatus(status: String, targets: Int, warnSuffix: String) = "Ping $status ($targets)$warnSuffix"
+    override fun pingFail(error: String) = "Ping fail: $error"
+    override fun pingSkip(reason: String) = "Ping skip: $reason"
+    override fun speedStarting() = "Speed start"
+    override fun speedStatus(status: String, download: String, upload: String, warnSuffix: String) =
+        "Speed $status: $download/$upload$warnSuffix"
+    override fun speedFail(error: String) = "Speed fail: $error"
+    override fun speedSkip(reason: String) = "Speed skip: $reason"
+    override fun resultError(error: String) = "Error: $error"
+}
+
 class RunTestUseCaseImplTest {
 
     private val clientRepository: ClientRepository = mockk()
@@ -50,7 +92,7 @@ class RunTestUseCaseImplTest {
     private val profileRepository: TestProfileRepository = mockk()
 
     private val reportResultsCodec: ReportResultsCodec = mockk()
-    private val context: android.content.Context = mockk()
+    private val textProvider: TestRunTextProvider = FakeTestRunTextProvider()
 
     private val networkStep = object : NetworkConfigStep {
         override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<NetworkConfigFeedback> {
@@ -134,7 +176,7 @@ class RunTestUseCaseImplTest {
     }
 
     private val useCase = RunTestUseCaseImpl(
-        context = context,
+        textProvider = textProvider,
         clientRepository = clientRepository,
         probeRepository = probeRepository,
         testProfileRepository = profileRepository,
@@ -199,8 +241,6 @@ class RunTestUseCaseImplTest {
         coEvery { probeRepository.getProbeConfig() } returns probe
         coEvery { profileRepository.getProfile(1) } returns profile
         every { reportResultsCodec.encode(any()) } returns Result.success("{}")
-        every { context.getString(any(), *anyVararg()) } returns "log message"
-        every { context.getString(any()) } returns "log message"
 
         val plan = TestPlan(
             clientId = 1,
@@ -363,8 +403,6 @@ class RunTestUseCaseImplTest {
         coEvery { probeRepository.getProbeConfig() } returns probe
         coEvery { profileRepository.getProfile(1) } returns profile
         every { reportResultsCodec.encode(any()) } returns Result.success("{}")
-        every { context.getString(any(), *anyVararg()) } returns "log message"
-        every { context.getString(any()) } returns "log message"
 
         val failingPingStep = object : PingStep {
             override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<List<PingTargetOutcome>> {
@@ -402,7 +440,7 @@ class RunTestUseCaseImplTest {
         }
 
         val useCase = RunTestUseCaseImpl(
-            context = context,
+            textProvider = textProvider,
             clientRepository = clientRepository,
             probeRepository = probeRepository,
             testProfileRepository = profileRepository,
@@ -434,8 +472,6 @@ class RunTestUseCaseImplTest {
         coEvery { probeRepository.getProbeConfig() } returns defaultProbe()
         coEvery { profileRepository.getProfile(1) } returns defaultProfile()
         every { reportResultsCodec.encode(capture(captured)) } returns Result.success("{}")
-        every { context.getString(any(), *anyVararg()) } returns "log message"
-        every { context.getString(any()) } returns "log message"
 
         val plan = TestPlan(clientId = 1, profileId = 1, socketId = "A1", notes = null)
         useCase.execute(plan).toList()
@@ -457,11 +493,9 @@ class RunTestUseCaseImplTest {
         coEvery { probeRepository.getProbeConfig() } returns defaultProbe()
         coEvery { profileRepository.getProfile(1) } returns defaultProfile()
         every { reportResultsCodec.encode(capture(captured)) } returns Result.success("{}")
-        every { context.getString(any(), *anyVararg()) } returns "log message"
-        every { context.getString(any()) } returns "log message"
 
         val useCase = RunTestUseCaseImpl(
-            context = context,
+            textProvider = textProvider,
             clientRepository = clientRepository,
             probeRepository = probeRepository,
             testProfileRepository = profileRepository,
@@ -506,11 +540,9 @@ class RunTestUseCaseImplTest {
         coEvery { probeRepository.getProbeConfig() } returns defaultProbe()
         coEvery { profileRepository.getProfile(1) } returns defaultProfile()
         every { reportResultsCodec.encode(any()) } returns Result.success("{}")
-        every { context.getString(any(), *anyVararg()) } returns "log message"
-        every { context.getString(any()) } returns "log message"
 
         val useCase = RunTestUseCaseImpl(
-            context = context,
+            textProvider = textProvider,
             clientRepository = clientRepository,
             probeRepository = probeRepository,
             testProfileRepository = profileRepository,
@@ -547,11 +579,9 @@ class RunTestUseCaseImplTest {
         coEvery { probeRepository.getProbeConfig() } returns defaultProbe()
         coEvery { profileRepository.getProfile(1) } returns defaultProfile()
         every { reportResultsCodec.encode(any()) } returns Result.success("{}")
-        every { context.getString(any(), *anyVararg()) } returns "log message"
-        every { context.getString(any()) } returns "log message"
 
         val useCase = RunTestUseCaseImpl(
-            context = context,
+            textProvider = textProvider,
             clientRepository = clientRepository,
             probeRepository = probeRepository,
             testProfileRepository = profileRepository,
@@ -587,11 +617,9 @@ class RunTestUseCaseImplTest {
         coEvery { probeRepository.getProbeConfig() } returns defaultProbe()
         coEvery { profileRepository.getProfile(1) } returns defaultProfile().copy(runLldp = false)
         every { reportResultsCodec.encode(capture(captured)) } returns Result.success("{}")
-        every { context.getString(any(), *anyVararg()) } returns "log message"
-        every { context.getString(any()) } returns "log message"
 
         val useCase = RunTestUseCaseImpl(
-            context = context,
+            textProvider = textProvider,
             clientRepository = clientRepository,
             probeRepository = probeRepository,
             testProfileRepository = profileRepository,
@@ -629,11 +657,9 @@ class RunTestUseCaseImplTest {
         coEvery { probeRepository.getProbeConfig() } returns defaultProbe()
         coEvery { profileRepository.getProfile(1) } returns defaultProfile()
         every { reportResultsCodec.encode(any()) } returns Result.success("{}")
-        every { context.getString(any(), *anyVararg()) } returns "log message"
-        every { context.getString(any()) } returns "log message"
 
         val useCase = RunTestUseCaseImpl(
-            context = context,
+            textProvider = textProvider,
             clientRepository = clientRepository,
             probeRepository = probeRepository,
             testProfileRepository = profileRepository,
@@ -669,11 +695,9 @@ class RunTestUseCaseImplTest {
         coEvery { probeRepository.getProbeConfig() } returns defaultProbe()
         coEvery { profileRepository.getProfile(1) } returns defaultProfile().copy(runSpeedTest = false)
         every { reportResultsCodec.encode(capture(captured)) } returns Result.success("{}")
-        every { context.getString(any(), *anyVararg()) } returns "log message"
-        every { context.getString(any()) } returns "log message"
 
         val useCase = RunTestUseCaseImpl(
-            context = context,
+            textProvider = textProvider,
             clientRepository = clientRepository,
             probeRepository = probeRepository,
             testProfileRepository = profileRepository,
@@ -707,8 +731,6 @@ class RunTestUseCaseImplTest {
         coEvery { probeRepository.getProbeConfig() } returns probe
         coEvery { profileRepository.getProfile(1) } returns profile
         every { reportResultsCodec.encode(any()) } returns Result.success("{}")
-        every { context.getString(any(), *anyVararg()) } returns "log message"
-        every { context.getString(any()) } returns "log message"
 
         val cancellingPingStep = object : PingStep {
             override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<List<PingTargetOutcome>> {
@@ -717,7 +739,7 @@ class RunTestUseCaseImplTest {
         }
 
         val useCase = RunTestUseCaseImpl(
-            context = context,
+            textProvider = textProvider,
             clientRepository = clientRepository,
             probeRepository = probeRepository,
             testProfileRepository = profileRepository,
@@ -745,8 +767,6 @@ class RunTestUseCaseImplTest {
         coEvery { probeRepository.getProbeConfig() } returns probe
         coEvery { profileRepository.getProfile(1) } returns profile
         every { reportResultsCodec.encode(any()) } returns Result.success("{}")
-        every { context.getString(any(), *anyVararg()) } returns "log message"
-        every { context.getString(any()) } returns "log message"
     }
 
     private fun buildUseCase(
@@ -757,7 +777,7 @@ class RunTestUseCaseImplTest {
         pingStep: PingStep = this.pingStep,
         speedTestStep: SpeedTestStep = this.speedTestStep
     ): RunTestUseCaseImpl = RunTestUseCaseImpl(
-        context = context,
+        textProvider = textProvider,
         clientRepository = clientRepository,
         probeRepository = probeRepository,
         testProfileRepository = profileRepository,
