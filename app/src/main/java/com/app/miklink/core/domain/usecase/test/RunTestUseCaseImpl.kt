@@ -34,6 +34,7 @@ import com.app.miklink.core.domain.test.model.TestSectionSnapshot
 import com.app.miklink.core.domain.test.model.TestSectionStatus
 import com.app.miklink.core.domain.test.model.TestSkipReason
 import com.app.miklink.core.domain.test.model.TestError
+import com.app.miklink.core.domain.test.model.TestExecutionException
 import com.app.miklink.core.domain.test.model.TestPlan
 import com.app.miklink.core.domain.test.model.TestRunTermination
 import com.app.miklink.core.domain.test.step.CableTestStep
@@ -231,6 +232,8 @@ class RunTestUseCaseImpl @Inject constructor(
         }
 
         suspend fun finishTest() {
+            val json = buildReportData(plan, reportData)
+
             emitProgress(TestProgressKey.COMPLETED, 100, "Completato", "Test completato")
 
             val finalSnapshot = TestRunSnapshot(
@@ -241,7 +244,7 @@ class RunTestUseCaseImpl @Inject constructor(
             val outcome = TestOutcome(
                 overallStatus = overallStatus,
                 finalSnapshot = finalSnapshot,
-                rawResultsJson = buildReportData(plan, reportData)
+                rawResultsJson = json
             )
 
             finalStatusForTrace = overallStatus
@@ -309,10 +312,12 @@ class RunTestUseCaseImpl @Inject constructor(
                 error = null
             )
 
+            val json = buildReportData(plan, reportData)
+
             val outcome = TestOutcome(
                 overallStatus = overallStatus,
                 finalSnapshot = finalSnapshot,
-                rawResultsJson = buildReportData(plan, reportData),
+                rawResultsJson = json,
                 termination = TestRunTermination.PROBE_UNAVAILABLE,
                 terminalError = error
             )
@@ -777,6 +782,10 @@ class RunTestUseCaseImpl @Inject constructor(
             finishTest()
         } catch (e: Exception) {
             if (e is CancellationException) throw e
+            val error = when (e) {
+                is TestExecutionException -> e.error
+                else -> TestError.Unexpected(e.message ?: "Unknown error", e)
+            }
             traceEvent(
                 event = "technical_error",
                 fields = mapOf(
@@ -786,7 +795,7 @@ class RunTestUseCaseImpl @Inject constructor(
                 )
             )
             emitLog(textProvider.resultError(e.message ?: "unknown error"))
-            emit(TestEvent.Failed(TestError.Unexpected(e.message ?: "Unknown error", e)))
+            emit(TestEvent.Failed(error))
         } finally {
             debugTraceSink.finishRun(
                 runId = runId,
@@ -806,7 +815,39 @@ class RunTestUseCaseImpl @Inject constructor(
 
     private fun buildReportData(plan: TestPlan, accumulator: ReportDataAccumulator): String {
         val reportData = accumulator.toReportData(plan)
-        return reportResultsCodec.encode(reportData).getOrElse { "{}" }
+
+        val json = try {
+            reportResultsCodec.encode(reportData)
+                .getOrElse { cause ->
+                    throw TestExecutionException(
+                        TestError.SerializationError(
+                            message = cause.message ?: "Report serialization failed",
+                            cause = cause
+                        )
+                    )
+                }
+        } catch (e: TestExecutionException) {
+            throw e
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            throw TestExecutionException(
+                TestError.SerializationError(
+                    message = e.message ?: "Report serialization failed",
+                    cause = e
+                )
+            )
+        }
+
+        if (json.isBlank()) {
+            throw TestExecutionException(
+                TestError.SerializationError(
+                    message = "Report serialization produced an empty payload"
+                )
+            )
+        }
+
+        return json
     }
 
     // Flattens per-target ping results into report rows, keeping target-level loss when present.

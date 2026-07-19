@@ -22,7 +22,7 @@ enum class TestRunTermination {
 data class TestOutcome(
     val overallStatus: String, // PASS, FAIL
     val finalSnapshot: TestRunSnapshot,
-    val rawResultsJson: String? = null, // JSON serializzato per compatibilità con Report esistente
+    val rawResultsJson: String, // JSON serializzato — obbligatorio, nessun fallback
     val termination: TestRunTermination = TestRunTermination.NORMAL,
     val terminalError: TestError? = null
 )

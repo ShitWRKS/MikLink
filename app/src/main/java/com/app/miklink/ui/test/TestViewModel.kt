@@ -196,7 +196,7 @@ class TestViewModel @Inject constructor(
             profileName = null,
             overallStatus = outcome.overallStatus,
             resultFormatVersion = 1,
-            resultsJson = outcome.rawResultsJson ?: "{}"
+            resultsJson = outcome.rawResultsJson
         )
     }
 

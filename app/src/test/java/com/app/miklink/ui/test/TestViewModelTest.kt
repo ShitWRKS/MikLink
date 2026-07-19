@@ -181,7 +181,7 @@ class TestViewModelTest {
     private val defaultOutcome = TestOutcome(
         overallStatus = "PASS",
         finalSnapshot = defaultSnapshot.copy(percent = 100),
-        rawResultsJson = "{}"
+        rawResultsJson = """{"test":"valid"}"""
     )
 
     private companion object {
@@ -243,7 +243,7 @@ class TestViewModelTest {
         inv.emit(TestEvent.SnapshotUpdated(finalSnapshot))
         runCurrent()
 
-        inv.emit(TestEvent.Completed(TestOutcome(overallStatus = "FAIL", finalSnapshot = finalSnapshot, rawResultsJson = "{}")))
+        inv.emit(TestEvent.Completed(TestOutcome(overallStatus = "FAIL", finalSnapshot = finalSnapshot, rawResultsJson = """{"test":"valid"}""")))
         runCurrent()
 
         assertTrue(viewModel.uiState.value is UiState.Success<*>)
@@ -657,5 +657,70 @@ class TestViewModelTest {
         assertTrue("uiState must be Error on timeout", viewModel.uiState.value is UiState.Error)
         assertEquals("Test timeout", (viewModel.uiState.value as UiState.Error).message)
         assertFalse("isRunning must be false after timeout", viewModel.isRunning.value)
+    }
+
+    // =======================================================================
+    // Test G — ViewModel does not create report after SerializationError
+    // =======================================================================
+
+    @Test
+    fun `serialization error produces error state without creating report`() = runViewModelTest {
+        val useCase = ControllableRunTestUseCase()
+        val viewModel = createViewModel(useCase)
+
+        viewModel.startTest()
+        runCurrent()
+
+        val inv = useCase.invocations.first()
+
+        // Emit a valid snapshot first.
+        inv.emit(TestEvent.SnapshotUpdated(defaultSnapshot))
+        runCurrent()
+
+        assertEquals(defaultSnapshot, viewModel.snapshot.value)
+
+        // Emit SerializationError.
+        inv.emit(TestEvent.Failed(TestError.SerializationError("codec failure")))
+        runCurrent()
+
+        assertTrue("uiState must be Error", viewModel.uiState.value is UiState.Error)
+        assertEquals("Snapshot must be preserved", defaultSnapshot, viewModel.snapshot.value)
+        assertTrue("uiState must not be Success", viewModel.uiState.value !is UiState.Success<*>)
+
+        inv.allowFinallyToComplete.complete(Unit)
+        runCurrent()
+    }
+
+    // =======================================================================
+    // Test H — ViewModel uses exactly the JSON received
+    // =======================================================================
+
+    @Test
+    fun `report uses exactly the json from outcome`() = runViewModelTest {
+        val useCase = ControllableRunTestUseCase()
+        val viewModel = createViewModel(useCase)
+
+        viewModel.startTest()
+        runCurrent()
+
+        val inv = useCase.invocations.first()
+
+        val exactPayload = """{"identity":"exact-payload"}"""
+        val outcome = TestOutcome(
+            overallStatus = "PASS",
+            finalSnapshot = defaultSnapshot.copy(percent = 100),
+            rawResultsJson = exactPayload
+        )
+
+        inv.emit(TestEvent.SnapshotUpdated(outcome.finalSnapshot))
+        inv.emit(TestEvent.Completed(outcome))
+        runCurrent()
+
+        assertTrue(viewModel.uiState.value is UiState.Success<*>)
+        val report = (viewModel.uiState.value as UiState.Success<TestReport>).data
+        assertEquals("Report must contain exact payload", exactPayload, report.resultsJson)
+
+        inv.allowFinallyToComplete.complete(Unit)
+        runCurrent()
     }
 }

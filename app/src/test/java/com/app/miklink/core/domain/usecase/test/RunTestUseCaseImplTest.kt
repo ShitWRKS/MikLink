@@ -241,7 +241,7 @@ class RunTestUseCaseImplTest {
         coEvery { clientRepository.getClient(1) } returns client
         coEvery { probeRepository.getProbeConfig() } returns probe
         coEvery { profileRepository.getProfile(1) } returns profile
-        every { reportResultsCodec.encode(any()) } returns Result.success("{}")
+        every { reportResultsCodec.encode(any()) } returns Result.success("""{"test":"valid"}""")
 
         val plan = TestPlan(
             clientId = 1,
@@ -273,7 +273,7 @@ class RunTestUseCaseImplTest {
                 com.app.miklink.core.domain.test.model.TestProgressKey.COMPLETED,
                 event.outcome.finalSnapshot.progress
             )
-            assertTrue("rawResultsJson should be present", !event.outcome.rawResultsJson.isNullOrBlank())
+            assertTrue("rawResultsJson should be present", event.outcome.rawResultsJson.isNotBlank())
         }
     }
 
@@ -403,7 +403,7 @@ class RunTestUseCaseImplTest {
         coEvery { clientRepository.getClient(1) } returns client
         coEvery { probeRepository.getProbeConfig() } returns probe
         coEvery { profileRepository.getProfile(1) } returns profile
-        every { reportResultsCodec.encode(any()) } returns Result.success("{}")
+        every { reportResultsCodec.encode(any()) } returns Result.success("""{"test":"valid"}""")
 
         val failingPingStep = object : PingStep {
             override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<List<PingTargetOutcome>> {
@@ -472,7 +472,7 @@ class RunTestUseCaseImplTest {
         coEvery { clientRepository.getClient(1) } returns defaultClient()
         coEvery { probeRepository.getProbeConfig() } returns defaultProbe()
         coEvery { profileRepository.getProfile(1) } returns defaultProfile()
-        every { reportResultsCodec.encode(capture(captured)) } returns Result.success("{}")
+        every { reportResultsCodec.encode(capture(captured)) } returns Result.success("""{"test":"valid"}""")
 
         val plan = TestPlan(clientId = 1, profileId = 1, socketId = "A1", notes = null)
         useCase.execute(plan).toList()
@@ -493,7 +493,7 @@ class RunTestUseCaseImplTest {
         coEvery { clientRepository.getClient(1) } returns defaultClient()
         coEvery { probeRepository.getProbeConfig() } returns defaultProbe()
         coEvery { profileRepository.getProfile(1) } returns defaultProfile()
-        every { reportResultsCodec.encode(capture(captured)) } returns Result.success("{}")
+        every { reportResultsCodec.encode(capture(captured)) } returns Result.success("""{"test":"valid"}""")
 
         val useCase = RunTestUseCaseImpl(
             textProvider = textProvider,
@@ -540,7 +540,7 @@ class RunTestUseCaseImplTest {
         coEvery { clientRepository.getClient(1) } returns defaultClient()
         coEvery { probeRepository.getProbeConfig() } returns defaultProbe()
         coEvery { profileRepository.getProfile(1) } returns defaultProfile()
-        every { reportResultsCodec.encode(any()) } returns Result.success("{}")
+        every { reportResultsCodec.encode(any()) } returns Result.success("""{"test":"valid"}""")
 
         val useCase = RunTestUseCaseImpl(
             textProvider = textProvider,
@@ -579,7 +579,7 @@ class RunTestUseCaseImplTest {
         coEvery { clientRepository.getClient(1) } returns defaultClient()
         coEvery { probeRepository.getProbeConfig() } returns defaultProbe()
         coEvery { profileRepository.getProfile(1) } returns defaultProfile()
-        every { reportResultsCodec.encode(any()) } returns Result.success("{}")
+        every { reportResultsCodec.encode(any()) } returns Result.success("""{"test":"valid"}""")
 
         val useCase = RunTestUseCaseImpl(
             textProvider = textProvider,
@@ -617,7 +617,7 @@ class RunTestUseCaseImplTest {
         coEvery { clientRepository.getClient(1) } returns defaultClient()
         coEvery { probeRepository.getProbeConfig() } returns defaultProbe()
         coEvery { profileRepository.getProfile(1) } returns defaultProfile().copy(runLldp = false)
-        every { reportResultsCodec.encode(capture(captured)) } returns Result.success("{}")
+        every { reportResultsCodec.encode(capture(captured)) } returns Result.success("""{"test":"valid"}""")
 
         val useCase = RunTestUseCaseImpl(
             textProvider = textProvider,
@@ -657,7 +657,7 @@ class RunTestUseCaseImplTest {
         coEvery { clientRepository.getClient(1) } returns defaultClient()
         coEvery { probeRepository.getProbeConfig() } returns defaultProbe()
         coEvery { profileRepository.getProfile(1) } returns defaultProfile()
-        every { reportResultsCodec.encode(any()) } returns Result.success("{}")
+        every { reportResultsCodec.encode(any()) } returns Result.success("""{"test":"valid"}""")
 
         val useCase = RunTestUseCaseImpl(
             textProvider = textProvider,
@@ -695,7 +695,7 @@ class RunTestUseCaseImplTest {
         coEvery { clientRepository.getClient(1) } returns defaultClient()
         coEvery { probeRepository.getProbeConfig() } returns defaultProbe()
         coEvery { profileRepository.getProfile(1) } returns defaultProfile().copy(runSpeedTest = false)
-        every { reportResultsCodec.encode(capture(captured)) } returns Result.success("{}")
+        every { reportResultsCodec.encode(capture(captured)) } returns Result.success("""{"test":"valid"}""")
 
         val useCase = RunTestUseCaseImpl(
             textProvider = textProvider,
@@ -731,7 +731,7 @@ class RunTestUseCaseImplTest {
         coEvery { clientRepository.getClient(1) } returns client
         coEvery { probeRepository.getProbeConfig() } returns probe
         coEvery { profileRepository.getProfile(1) } returns profile
-        every { reportResultsCodec.encode(any()) } returns Result.success("{}")
+        every { reportResultsCodec.encode(any()) } returns Result.success("""{"test":"valid"}""")
 
         val cancellingPingStep = object : PingStep {
             override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<List<PingTargetOutcome>> {
@@ -904,7 +904,7 @@ class RunTestUseCaseImplTest {
         }
 
         // Report contains termination info
-        val json = outcome.rawResultsJson ?: ""
+        val json = outcome.rawResultsJson
         // The raw JSON depends on the mocked codec; just verify outcome fields
         assertEquals(TestRunTermination.PROBE_UNAVAILABLE, outcome.termination)
     }
@@ -999,6 +999,158 @@ class RunTestUseCaseImplTest {
         assertEquals(null, completed2.outcome.terminalError)
     }
 
+    // === Test A: Serialization success ===
+
+    @Test
+    fun `serialization success emits completed with valid json`() = runTest {
+        stubRepositories()
+        every { reportResultsCodec.encode(any()) } returns Result.success("""{"result":"ok"}""")
+
+        val events = useCase.execute(TestPlan(clientId = 1, profileId = 1, socketId = "A1", notes = null)).toList()
+        val completed = events.filterIsInstance<TestEvent.Completed>()
+        val failed = events.filterIsInstance<TestEvent.Failed>()
+
+        assertEquals("Expected exactly one Completed event", 1, completed.size)
+        assertTrue("Should not emit Failed", failed.isEmpty())
+        assertEquals("""{"result":"ok"}""", completed[0].outcome.rawResultsJson)
+
+        val snapshots = events.filterIsInstance<TestEvent.SnapshotUpdated>()
+        val lastSnapshot = snapshots.last().snapshot
+        assertEquals(com.app.miklink.core.domain.test.model.TestProgressKey.COMPLETED, lastSnapshot.progress)
+        assertEquals(100, lastSnapshot.percent)
+    }
+
+    // === Test B: Codec Result.failure ===
+
+    @Test
+    fun `codec result failure emits serialization error without completed`() = runTest {
+        stubRepositories()
+        every { reportResultsCodec.encode(any()) } returns Result.failure(IllegalStateException("codec failure"))
+
+        val events = useCase.execute(TestPlan(clientId = 1, profileId = 1, socketId = "A1", notes = null)).toList()
+        val completed = events.filterIsInstance<TestEvent.Completed>()
+        val failed = events.filterIsInstance<TestEvent.Failed>()
+
+        assertTrue("Should not emit Completed", completed.isEmpty())
+        assertEquals("Expected exactly one Failed event", 1, failed.size)
+        assertTrue("Error should be SerializationError", failed[0].error is TestError.SerializationError)
+        val serError = failed[0].error as TestError.SerializationError
+        assertTrue("Cause should be preserved", serError.cause is IllegalStateException)
+        assertTrue("Message should contain info", serError.message.contains("codec failure"))
+
+        val snapshots = events.filterIsInstance<TestEvent.SnapshotUpdated>()
+        assertTrue("Should have snapshots", snapshots.isNotEmpty())
+        val lastSnapshot = snapshots.last().snapshot
+        assertTrue("Last snapshot should not declare false completion",
+            lastSnapshot.progress != com.app.miklink.core.domain.test.model.TestProgressKey.COMPLETED || lastSnapshot.percent != 100
+        )
+    }
+
+    // === Test C: Codec throws exception directly ===
+
+    @Test
+    fun `codec exception emits serialization error without completed`() = runTest {
+        stubRepositories()
+        every { reportResultsCodec.encode(any()) } throws IllegalArgumentException("codec exploded")
+
+        val events = useCase.execute(TestPlan(clientId = 1, profileId = 1, socketId = "A1", notes = null)).toList()
+        val completed = events.filterIsInstance<TestEvent.Completed>()
+        val failed = events.filterIsInstance<TestEvent.Failed>()
+
+        assertTrue("Should not emit Completed", completed.isEmpty())
+        assertEquals("Expected exactly one Failed event", 1, failed.size)
+        assertTrue("Error should be SerializationError", failed[0].error is TestError.SerializationError)
+        val serError = failed[0].error as TestError.SerializationError
+        assertTrue("Cause should be preserved", serError.cause is IllegalArgumentException)
+        assertTrue("Message should contain info", serError.message.contains("codec exploded"))
+    }
+
+    // === Test D: Empty and blank payload ===
+
+    @Test
+    fun `empty payload emits serialization error without completed`() = runTest {
+        stubRepositories()
+        every { reportResultsCodec.encode(any()) } returns Result.success("")
+
+        val events = useCase.execute(TestPlan(clientId = 1, profileId = 1, socketId = "A1", notes = null)).toList()
+        val completed = events.filterIsInstance<TestEvent.Completed>()
+        val failed = events.filterIsInstance<TestEvent.Failed>()
+
+        assertTrue("Should not emit Completed", completed.isEmpty())
+        assertEquals("Expected exactly one Failed event", 1, failed.size)
+        assertTrue("Error should be SerializationError", failed[0].error is TestError.SerializationError)
+    }
+
+    @Test
+    fun `blank payload emits serialization error without completed`() = runTest {
+        stubRepositories()
+        every { reportResultsCodec.encode(any()) } returns Result.success("   ")
+
+        val events = useCase.execute(TestPlan(clientId = 1, profileId = 1, socketId = "A1", notes = null)).toList()
+        val completed = events.filterIsInstance<TestEvent.Completed>()
+        val failed = events.filterIsInstance<TestEvent.Failed>()
+
+        assertTrue("Should not emit Completed", completed.isEmpty())
+        assertEquals("Expected exactly one Failed event", 1, failed.size)
+        assertTrue("Error should be SerializationError", failed[0].error is TestError.SerializationError)
+    }
+
+    // === Test E: ProbeUnavailable with serialization success ===
+
+    @Test
+    fun `probe unavailable with serialization success emits completed with partial report`() = runTest {
+        stubRepositories()
+        every { reportResultsCodec.encode(any()) } returns Result.success("""{"partial":"data"}""")
+
+        val useCase = buildUseCase(
+            networkConfigStep = object : NetworkConfigStep {
+                override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<NetworkConfigFeedback> {
+                    return StepResult.Failed(TestError.ProbeUnavailable("probe lost during network"))
+                }
+            }
+        )
+
+        val events = useCase.execute(TestPlan(clientId = 1, profileId = 1, socketId = "A1", notes = null)).toList()
+        val completed = events.filterIsInstance<TestEvent.Completed>()
+        val failed = events.filterIsInstance<TestEvent.Failed>()
+
+        assertEquals("Expected exactly one Completed event", 1, completed.size)
+        assertTrue("Should not emit Failed", failed.isEmpty())
+
+        val outcome = completed[0].outcome
+        assertEquals(TestRunTermination.PROBE_UNAVAILABLE, outcome.termination)
+        assertEquals("FAIL", outcome.overallStatus)
+        assertTrue("JSON should be valid and non-blank", outcome.rawResultsJson.isNotBlank())
+        assertEquals("""{"partial":"data"}""", outcome.rawResultsJson)
+    }
+
+    // === Test F: ProbeUnavailable with serialization failure ===
+
+    @Test
+    fun `probe unavailable with serialization failure emits serialization error without completed`() = runTest {
+        stubRepositories()
+        every { reportResultsCodec.encode(any()) } returns Result.failure(RuntimeException("partial serialization failed"))
+
+        val useCase = buildUseCase(
+            networkConfigStep = object : NetworkConfigStep {
+                override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<NetworkConfigFeedback> {
+                    return StepResult.Failed(TestError.ProbeUnavailable("probe lost during network"))
+                }
+            }
+        )
+
+        val events = useCase.execute(TestPlan(clientId = 1, profileId = 1, socketId = "A1", notes = null)).toList()
+        val completed = events.filterIsInstance<TestEvent.Completed>()
+        val failed = events.filterIsInstance<TestEvent.Failed>()
+
+        assertTrue("Should not emit Completed", completed.isEmpty())
+        assertEquals("Expected exactly one Failed event", 1, failed.size)
+        assertTrue("Error should be SerializationError", failed[0].error is TestError.SerializationError)
+
+        val snapshots = events.filterIsInstance<TestEvent.SnapshotUpdated>()
+        assertTrue("Should have partial snapshots preserved", snapshots.isNotEmpty())
+    }
+
     private fun stubRepositories(
         client: Client = defaultClient(),
         probe: ProbeConfig = defaultProbe(),
@@ -1007,7 +1159,7 @@ class RunTestUseCaseImplTest {
         coEvery { clientRepository.getClient(1) } returns client
         coEvery { probeRepository.getProbeConfig() } returns probe
         coEvery { profileRepository.getProfile(1) } returns profile
-        every { reportResultsCodec.encode(any()) } returns Result.success("{}")
+        every { reportResultsCodec.encode(any()) } returns Result.success("""{"test":"valid"}""")
     }
 
     private fun buildUseCase(
