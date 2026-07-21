@@ -8,6 +8,7 @@
 package com.app.miklink.data.remote.mikrotik.service
 
 import com.app.miklink.core.domain.test.model.TestError
+import com.app.miklink.core.domain.test.model.RouterOsErrorCategory
 import com.squareup.moshi.Moshi
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.ResponseBody.Companion.toResponseBody
@@ -71,6 +72,20 @@ class RouterOsResponseDecoderTest {
         val result = decoder.decode(RouterOsOperation.SPEED_TEST, response)
         assertTrue("Expected Error", result is DecodedResult.Error)
         assertTrue((result as DecodedResult.Error).error is TestError.RouterOsError)
+    }
+
+    @Test
+    fun `decode classifies structured DHCP duplicate detail`() {
+        val response = Response.error<Any>(
+            400,
+            """{"error":400,"message":"Bad Request","detail":"failure: already have such interface"}"""
+                .toResponseBody("application/json".toMediaType())
+        )
+
+        val result = decoder.decode(RouterOsOperation.DHCP_CLIENT_ADD, response) as DecodedResult.Error
+        val error = result.error as TestError.RouterOsError
+
+        assertEquals(RouterOsErrorCategory.ALREADY_EXISTS, error.category)
     }
 
     @Test

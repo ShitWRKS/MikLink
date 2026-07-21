@@ -45,3 +45,12 @@
 /.continue
 /build
 /artifacts
+
+build.gradle.kts
+build.gradle.kts
+gradle.properties
+.codex-wrapper-bootstrap/build.gradle
+.codex-wrapper-bootstrap/gradlew
+.codex-wrapper-bootstrap/gradlew.bat
+.codex-wrapper-bootstrap/settings.gradle
+.codex-wrapper-bootstrap/gradle/wrapper/gradle-wrapper.properties

@@ -11,8 +11,9 @@ import javax.inject.Inject
 private data class ForbiddenPattern(
     val regex: Regex,
     val message: String,
-    val appliesOnlyIfPathContains: String? = null,
-    val skipIfPathContains: String? = null
+    val appliesOnlyIfPathContains: List<String> = emptyList(),
+    val appliesOnlyIfPathContainsAll: List<String> = emptyList(),
+    val skipIfPathContains: List<String> = emptyList()
 )
 
 abstract class ForbiddenPatternsTask @Inject constructor(
@@ -59,35 +60,55 @@ abstract class ForbiddenPatternsTask @Inject constructor(
             // Fase 2/9: repository MikroTik non devono costruire Retrofit o usare la factory direttamente
             ForbiddenPattern(
                 regex = Regex("""Retrofit\.Builder"""),
-                message = "core/data and data/repository must not build Retrofit; use MikroTikCallExecutor"
+                message = "core, ui and data/repository must not build Retrofit; use MikroTikCallExecutor",
+                appliesOnlyIfPathContains = listOf("/core/", "/ui/", "/data/repository/"),
+                appliesOnlyIfPathContainsAll = listOf("app/src/main/")
             ),
             ForbiddenPattern(
                 regex = Regex("""MikroTikServiceFactory"""),
-                message = "MikroTikServiceFactory must not be used in repositories; use MikroTikCallExecutor"
+                message = "MikroTikServiceFactory must not be used outside remote infrastructure or DI",
+                appliesOnlyIfPathContains = listOf("/core/", "/ui/", "/data/repository/"),
+                appliesOnlyIfPathContainsAll = listOf("app/src/main/")
             ),
             // DTO remoti non devono uscire da data/remote
             // (i file dentro data/remote possono usare i DTO: decoder/mapper vivono li')
             ForbiddenPattern(
                 regex = Regex("""import com\.app\.miklink\.data\.remote\.mikrotik\.dto\."""),
-                message = "Remote DTOs must not leave data/remote; map to domain models",
-                skipIfPathContains = "data/remote"
+                message = "Remote DTOs must not enter core modules; map to domain models",
+                appliesOnlyIfPathContainsAll = listOf("app/src/main/", "/core/")
             ),
             // Nessun fallback a {} nel flusso report
             ForbiddenPattern(
-                regex = Regex("""getOrElse\s*\(\s*\{\s*"\{\}"\s*\}\s*\)"""),
-                message = "Do not fall back to \"{}\" in the report serialization flow (ADR-0013)"
+                regex = Regex("""getOrElse\s*(?:\(\s*)?\{\s*"\{\}"\s*\}(?:\s*\))?"""),
+                message = "Do not fall back to \"{}\" in the report serialization flow (ADR-0013)",
+                appliesOnlyIfPathContains = listOf("app/src/main/")
+            ),
+            ForbiddenPattern(
+                regex = Regex("""getOrDefault\s*\(\s*"\{\}"\s*\)"""),
+                message = "Do not use getOrDefault(\"{}\") in the report serialization flow (ADR-0013)",
+                appliesOnlyIfPathContains = listOf("app/src/main/")
+            ),
+            ForbiddenPattern(
+                regex = Regex("""\?:\s*"\{\}"""),
+                message = "Do not use an Elvis \"{}\" fallback in production (ADR-0013)",
+                appliesOnlyIfPathContains = listOf("app/src/main/")
+            ),
+            ForbiddenPattern(
+                regex = Regex("""\b(?:rawResultsJson|resultsJson)\s*=\s*"\{\}"""),
+                message = "Do not assign an empty JSON fallback to report results (ADR-0013)",
+                appliesOnlyIfPathContains = listOf("app/src/main/")
             ),
             // core/domain non deve importare Android/AndroidX/UI/data
             ForbiddenPattern(
                 regex = Regex("""^import (android\.|androidx\.|com\.app\.miklink\.data\.|com\.app\.miklink\.ui\.|com\.app\.miklink\.di\.)"""),
                 message = "core/domain must not import android, androidx, data, ui or di",
-                appliesOnlyIfPathContains = "core/domain"
+                appliesOnlyIfPathContainsAll = listOf("app/src/main/", "core/domain")
             ),
             // core/data non deve importare Retrofit/Moshi/implementazioni concrete
             ForbiddenPattern(
                 regex = Regex("""^import (retrofit2\.|com\.squareup\.moshi\.|com\.app\.miklink\.data\.)"""),
                 message = "core/data must not import Retrofit, Moshi or concrete data implementations",
-                appliesOnlyIfPathContains = "core/data"
+                appliesOnlyIfPathContainsAll = listOf("app/src/main/", "core/data")
             )
         )
 
@@ -102,13 +123,15 @@ abstract class ForbiddenPatternsTask @Inject constructor(
                         val relativePath = file.relativeTo(projectDir).toString().replace(File.separatorChar, '/')
                         file.readLines().forEachIndexed { index, line ->
                             patterns.forEach { pattern ->
-                                if (pattern.appliesOnlyIfPathContains != null &&
-                                    !relativePath.contains(pattern.appliesOnlyIfPathContains)
+                                if (pattern.appliesOnlyIfPathContains.isNotEmpty() &&
+                                    pattern.appliesOnlyIfPathContains.none(relativePath::contains)
                                 ) {
                                     return@forEach
                                 }
-                                if (pattern.skipIfPathContains != null &&
-                                    relativePath.contains(pattern.skipIfPathContains)
+                                if (pattern.appliesOnlyIfPathContainsAll.any { !relativePath.contains(it) }) {
+                                    return@forEach
+                                }
+                                if (pattern.skipIfPathContains.any(relativePath::contains)
                                 ) {
                                     return@forEach
                                 }

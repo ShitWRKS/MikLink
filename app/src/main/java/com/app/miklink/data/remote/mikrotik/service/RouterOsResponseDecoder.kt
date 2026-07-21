@@ -10,6 +10,7 @@
 package com.app.miklink.data.remote.mikrotik.service
 
 import com.app.miklink.core.domain.test.model.TestError
+import com.app.miklink.core.domain.test.model.RouterOsErrorCategory
 import com.app.miklink.data.remote.mikrotik.dto.RouterOsErrorBody
 import com.app.miklink.di.RouterOsMoshi
 import com.squareup.moshi.Moshi
@@ -76,13 +77,27 @@ class RouterOsResponseDecoder @javax.inject.Inject constructor(
                 val message = decoded?.message ?: fallbackMessage(code, operation)
                 val detail = decoded?.detail
                 DecodedResult.Error(
-                    TestError.RouterOsError(
-                        message = message,
-                        code = code,
-                        detail = detail
-                    )
+                TestError.RouterOsError(
+                    message = message,
+                    code = code,
+                    detail = detail,
+                    category = classifyCategory(operation, decoded)
+                )
                 )
             }
+        }
+    }
+
+    private fun classifyCategory(
+        operation: RouterOsOperation,
+        body: RouterOsErrorBody?
+    ): RouterOsErrorCategory? {
+        if (operation != RouterOsOperation.DHCP_CLIENT_ADD || body == null) return null
+        val structuredDetail = body.detail?.trim()?.lowercase()
+        return if (structuredDetail in DHCP_ALREADY_EXISTS_DETAILS) {
+            RouterOsErrorCategory.ALREADY_EXISTS
+        } else {
+            null
         }
     }
 
@@ -117,3 +132,8 @@ class RouterOsResponseDecoder @javax.inject.Inject constructor(
         }
     }
 }
+
+private val DHCP_ALREADY_EXISTS_DETAILS = setOf(
+    "already exists",
+    "failure: already have such interface"
+)

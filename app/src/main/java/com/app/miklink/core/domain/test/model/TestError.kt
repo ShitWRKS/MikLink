@@ -20,11 +20,16 @@ sealed class TestError {
     data class RouterOsError(
         override val message: String,
         val code: Int? = null,
-        val detail: String? = null
+        val detail: String? = null,
+        val category: RouterOsErrorCategory? = null
     ) : TestError()
     data class InvalidResponse(override val message: String, val cause: Throwable? = null) : TestError()
     data class Unsupported(override val message: String) : TestError()
     data class ConfigurationError(override val message: String) : TestError()
     data class SerializationError(override val message: String, val cause: Throwable? = null) : TestError()
     data class Unexpected(override val message: String, val cause: Throwable? = null) : TestError()
+}
+
+enum class RouterOsErrorCategory {
+    ALREADY_EXISTS
 }

@@ -133,9 +133,10 @@ class ProbeEditViewModel @Inject constructor(
                     // Sync scheme with effective transport to reflect fallback or HTTPS success.
                     isHttps.value = result.effectiveIsHttps
                     _isOnline.value = true
-                    _tdrCapability.value = TdrCapabilityClassifier.classify(result.boardName)
+                    val detectedInterface = result.interfaces.firstOrNull()
+                    _tdrCapability.value = TdrCapabilityClassifier.classify(result.boardName, detectedInterface)
                     _modelName.value = result.boardName
-                    testInterface.value = result.interfaces.firstOrNull() ?: ""
+                    testInterface.value = detectedInterface ?: ""
                     lastVerifiedConnection = tempProbe.copy(isHttps = result.effectiveIsHttps)
                     _verificationState.value = VerificationState.Success(
                         boardName = result.boardName,

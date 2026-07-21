@@ -12,6 +12,8 @@ import com.app.miklink.core.domain.model.NetworkMode
 import com.app.miklink.core.domain.model.ProbeConfig
 import com.app.miklink.core.domain.model.TdrCapability
 import com.app.miklink.data.remote.mikrotik.dto.IpAddressAdd
+import com.app.miklink.data.remote.mikrotik.dto.IpAddressEntry
+import com.app.miklink.data.remote.mikrotik.dto.DhcpClientStatus
 import com.app.miklink.data.remote.mikrotik.dto.RouteAdd
 import com.app.miklink.data.remote.mikrotik.service.MikroTikApiService
 import com.app.miklink.data.remote.mikrotik.service.MikroTikCallExecutor
@@ -26,6 +28,8 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import kotlinx.coroutines.runBlocking
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Before
@@ -136,6 +140,79 @@ class NetworkConfigRepositoryTest {
         coVerify(exactly = 0) { api.addIpAddress(any<IpAddressAdd>()) }
         coVerify(exactly = 0) { api.addRoute(any<RouteAdd>()) }
     }
+
+    @Test
+    fun `addDhcpClient HTTP 400 fails without success feedback`() = runBlocking {
+        coEvery { serviceProvider.build(probe) } returns api
+        coEvery { api.getDhcpClientStatus(any()) } returns Response.success(emptyList())
+        coEvery { api.addDhcpClient(any()) } returns errorResponse(400)
+
+        assertRouterOsFailure(400) {
+            repo.applyClientNetworkConfig(probe, baseClient(), null)
+        }
+    }
+
+    @Test
+    fun `enableDhcpClient HTTP 401 fails with authentication`() = runBlocking {
+        coEvery { serviceProvider.build(probe) } returns api
+        coEvery { api.getDhcpClientStatus(any()) } returns Response.success(
+            listOf(DhcpClientStatus(id = "*1", disabled = "true", status = "stopped"))
+        )
+        coEvery { api.enableDhcpClient(any()) } returns errorResponse(401)
+
+        val failure = runCatching {
+            repo.applyClientNetworkConfig(probe, baseClient(), null)
+        }.exceptionOrNull() as com.app.miklink.core.domain.test.model.TestExecutionException
+
+        assertTrue(failure.error is com.app.miklink.core.domain.test.model.TestError.Authentication)
+    }
+
+    @Test
+    fun `disableDhcpClient HTTP 500 fails`() = runBlocking {
+        coEvery { serviceProvider.build(probe) } returns api
+        coEvery { api.getDhcpClientStatus(any()) } returns Response.success(
+            listOf(DhcpClientStatus(id = "*1", disabled = "false", status = "bound"))
+        )
+        coEvery { api.disableDhcpClient(any()) } returns errorResponse(500)
+
+        assertRouterOsFailure(500) {
+            repo.applyClientNetworkConfig(probe, validStaticClient(), null)
+        }
+    }
+
+    @Test
+    fun `removeIpAddress HTTP 500 fails`() = runBlocking {
+        coEvery { serviceProvider.build(probe) } returns api
+        coEvery { api.getDhcpClientStatus(any()) } returns Response.success(emptyList())
+        coEvery { api.getIpAddresses(any()) } returns Response.success(
+            listOf(IpAddressEntry(id = "*2", address = "192.168.0.2/24", iface = "ether1"))
+        )
+        coEvery { api.removeIpAddress(any()) } returns errorResponse(500)
+
+        assertRouterOsFailure(500) {
+            repo.applyClientNetworkConfig(probe, validStaticClient(), null)
+        }
+        coVerify(exactly = 0) { api.addIpAddress(any()) }
+    }
+
+    private suspend fun assertRouterOsFailure(code: Int, block: suspend () -> Unit) {
+        val failure = runCatching { block() }.exceptionOrNull()
+            as com.app.miklink.core.domain.test.model.TestExecutionException
+        val error = failure.error as com.app.miklink.core.domain.test.model.TestError.RouterOsError
+        org.junit.Assert.assertEquals(code, error.code)
+    }
+
+    private fun validStaticClient() = baseClient().copy(
+        networkMode = NetworkMode.STATIC,
+        staticCidr = "192.168.0.100/24",
+        staticGateway = "192.168.0.1"
+    )
+
+    private fun <T> errorResponse(code: Int): Response<T> = Response.error(
+        code,
+        """{"error":$code,"message":"request failed","detail":"failure"}"""
+            .toResponseBody("application/json".toMediaType())
+    )
 
     private fun baseClient() = Client(
         clientId = 1L,

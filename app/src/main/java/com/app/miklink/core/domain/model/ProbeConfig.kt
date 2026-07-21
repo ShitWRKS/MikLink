@@ -10,6 +10,6 @@ data class ProbeConfig(
     val modelName: String?,
     val tdrCapability: TdrCapability
 ) {
-    val tdrSupported: Boolean
-        get() = tdrCapability == TdrCapability.SUPPORTED
+    val shouldAttemptTdr: Boolean
+        get() = tdrCapability != TdrCapability.UNSUPPORTED
 }

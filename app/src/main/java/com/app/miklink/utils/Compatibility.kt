@@ -14,6 +14,6 @@ object Compatibility {
      */
     @Deprecated("Use TdrCapabilityClassifier.classify for typed capability")
     fun isTdrSupported(boardName: String?): Boolean {
-        return TdrCapabilityClassifier.classify(boardName) == TdrCapability.SUPPORTED
+        return TdrCapabilityClassifier.classify(boardName, null) == TdrCapability.SUPPORTED
     }
 }

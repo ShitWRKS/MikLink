@@ -33,6 +33,8 @@ import com.app.miklink.core.domain.test.step.PingStep
 import com.app.miklink.core.domain.test.step.SpeedTestStep
 import com.app.miklink.core.data.report.ReportResultsCodec
 import com.app.miklink.core.domain.test.TestRunTextProvider
+import com.app.miklink.core.domain.test.logging.DebugTraceRunContext
+import com.app.miklink.core.domain.test.logging.DebugTraceSink
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -84,6 +86,27 @@ private class FakeTestRunTextProvider : TestRunTextProvider {
     override fun speedFail(error: String) = "Speed fail: $error"
     override fun speedSkip(reason: String) = "Speed skip: $reason"
     override fun resultError(error: String) = "Error: $error"
+}
+
+private class RecordingDebugTraceSink(
+    private val startFailure: Throwable? = null,
+    private val finishFailure: Throwable? = null
+) : DebugTraceSink {
+    var startCalls: Int = 0
+    val finishes = mutableListOf<Pair<String, String>>()
+
+    override fun startRun(source: String, fields: Map<String, Any?>): String {
+        startCalls++
+        startFailure?.let { throw it }
+        return "run-$startCalls"
+    }
+
+    override fun event(runId: String, event: String, fields: Map<String, Any?>) = Unit
+
+    override fun finishRun(runId: String, finalStatus: String, fields: Map<String, Any?>) {
+        finishes += runId to finalStatus
+        finishFailure?.let { throw it }
+    }
 }
 
 class RunTestUseCaseImplTest {
@@ -149,7 +172,7 @@ class RunTestUseCaseImplTest {
                         target = "8.8.8.8",
                         resolved = "8.8.8.8",
                         packetLoss = "0",
-                        results = emptyList<PingMeasurement>(),
+                        results = listOf(validPingMeasurement()),
                         error = null
                     )
                 )
@@ -366,6 +389,76 @@ class RunTestUseCaseImplTest {
         assertEquals(1, networkCalls)
         assertEquals(TestSectionStatus.SKIP, sections[TestSectionId.TDR]?.status)
         assertEquals("PASS", completed.outcome.overallStatus)
+    }
+
+    @Test
+    fun `supported TDR capability invokes step`() = runTest {
+        var calls = 0
+        stubRepositories(
+            probe = defaultProbe().copy(tdrCapability = TdrCapability.SUPPORTED),
+            profile = defaultProfile().copy(runLldp = false, runPing = false, runSpeedTest = false)
+        )
+
+        buildUseCase(cableTestStep = countingCableStep { calls++ })
+            .execute(TestPlan(1, 1, "A1", null)).toList()
+
+        assertEquals(1, calls)
+    }
+
+    @Test
+    fun `unknown TDR capability invokes step and evaluates success normally`() = runTest {
+        var calls = 0
+        stubRepositories(
+            probe = defaultProbe().copy(tdrCapability = TdrCapability.UNKNOWN),
+            profile = defaultProfile().copy(runLldp = false, runPing = false, runSpeedTest = false)
+        )
+
+        val events = buildUseCase(cableTestStep = countingCableStep { calls++ })
+            .execute(TestPlan(1, 1, "A1", null)).toList()
+        val completed = events.filterIsInstance<TestEvent.Completed>().single()
+
+        assertEquals(1, calls)
+        assertEquals(TestSectionStatus.PASS, completed.outcome.finalSnapshot.sections.single { it.id == TestSectionId.TDR }.status)
+    }
+
+    @Test
+    fun `unsupported TDR capability skips without invoking step`() = runTest {
+        var calls = 0
+        stubRepositories(
+            probe = defaultProbe().copy(tdrCapability = TdrCapability.UNSUPPORTED),
+            profile = defaultProfile().copy(runLldp = false, runPing = false, runSpeedTest = false)
+        )
+
+        val events = buildUseCase(cableTestStep = countingCableStep { calls++ })
+            .execute(TestPlan(1, 1, "A1", null)).toList()
+        val completed = events.filterIsInstance<TestEvent.Completed>().single()
+
+        assertEquals(0, calls)
+        val tdr = completed.outcome.finalSnapshot.sections.single { it.id == TestSectionId.TDR }
+        assertEquals(TestSectionStatus.SKIP, tdr.status)
+        assertEquals(TestSkipReason.HARDWARE_UNSUPPORTED, tdr.warning)
+    }
+
+    @Test
+    fun `unknown TDR returning Unsupported becomes hardware skip without failing run`() = runTest {
+        stubRepositories(
+            probe = defaultProbe().copy(tdrCapability = TdrCapability.UNKNOWN),
+            profile = defaultProfile().copy(runLldp = false, runPing = false, runSpeedTest = false)
+        )
+        val unsupportedStep = object : CableTestStep {
+            override suspend fun run(
+                context: com.app.miklink.core.domain.test.model.TestExecutionContext
+            ): StepResult<CableTestSummary> = StepResult.Failed(TestError.Unsupported("not supported"))
+        }
+
+        val events = buildUseCase(cableTestStep = unsupportedStep)
+            .execute(TestPlan(1, 1, "A1", null)).toList()
+        val completed = events.filterIsInstance<TestEvent.Completed>().single()
+        val tdr = completed.outcome.finalSnapshot.sections.single { it.id == TestSectionId.TDR }
+
+        assertEquals("PASS", completed.outcome.overallStatus)
+        assertEquals(TestSectionStatus.SKIP, tdr.status)
+        assertEquals(TestSkipReason.HARDWARE_UNSUPPORTED, tdr.warning)
     }
 
     @Test
@@ -1151,6 +1244,195 @@ class RunTestUseCaseImplTest {
         assertTrue("Should have partial snapshots preserved", snapshots.isNotEmpty())
     }
 
+    @Test
+    fun `trace records SUCCESS exactly once for passing run`() = runTest {
+        stubRepositories()
+        val trace = RecordingDebugTraceSink()
+        val context = DebugTraceRunContext()
+
+        val events = buildUseCase(debugTraceSink = trace, debugTraceRunContext = context)
+            .execute(TestPlan(1, 1, "A1", null)).toList()
+
+        assertEquals("PASS", events.filterIsInstance<TestEvent.Completed>().single().outcome.overallStatus)
+        assertEquals(listOf("run-1" to "SUCCESS"), trace.finishes)
+        assertEquals(null, context.current())
+    }
+
+    @Test
+    fun `trace records FAIL for application failure`() = runTest {
+        stubRepositories()
+        val trace = RecordingDebugTraceSink()
+        val failingStep = object : NetworkConfigStep {
+            override suspend fun run(
+                context: com.app.miklink.core.domain.test.model.TestExecutionContext
+            ): StepResult<NetworkConfigFeedback> =
+                StepResult.Failed(TestError.InvalidResponse("bad network response"))
+        }
+
+        val events = buildUseCase(networkConfigStep = failingStep, debugTraceSink = trace)
+            .execute(TestPlan(1, 1, "A1", null)).toList()
+
+        assertEquals("FAIL", events.filterIsInstance<TestEvent.Completed>().single().outcome.overallStatus)
+        assertEquals(listOf("run-1" to "FAIL"), trace.finishes)
+    }
+
+    @Test
+    fun `trace records FAIL for probe unavailable`() = runTest {
+        stubRepositories()
+        val trace = RecordingDebugTraceSink()
+        val unavailableStep = object : NetworkConfigStep {
+            override suspend fun run(
+                context: com.app.miklink.core.domain.test.model.TestExecutionContext
+            ): StepResult<NetworkConfigFeedback> =
+                StepResult.Failed(TestError.ProbeUnavailable("probe lost"))
+        }
+
+        buildUseCase(networkConfigStep = unavailableStep, debugTraceSink = trace)
+            .execute(TestPlan(1, 1, "A1", null)).toList()
+
+        assertEquals(listOf("run-1" to "FAIL"), trace.finishes)
+    }
+
+    @Test
+    fun `trace records FAIL for serialization error`() = runTest {
+        stubRepositories()
+        every { reportResultsCodec.encode(any()) } returns Result.failure(IllegalStateException("codec failed"))
+        val trace = RecordingDebugTraceSink()
+
+        val events = buildUseCase(debugTraceSink = trace)
+            .execute(TestPlan(1, 1, "A1", null)).toList()
+
+        assertTrue(events.filterIsInstance<TestEvent.Failed>().single().error is TestError.SerializationError)
+        assertEquals(listOf("run-1" to "FAIL"), trace.finishes)
+    }
+
+    @Test
+    fun `trace finalizes when client loading fails`() = runTest {
+        coEvery { clientRepository.getClient(1) } throws IllegalStateException("client load failed")
+        val trace = RecordingDebugTraceSink()
+        val context = DebugTraceRunContext()
+
+        val events = buildUseCase(debugTraceSink = trace, debugTraceRunContext = context)
+            .execute(TestPlan(1, 1, "A1", null)).toList()
+
+        assertTrue(events.single { it is TestEvent.Failed } is TestEvent.Failed)
+        assertEquals(listOf("run-1" to "FAIL"), trace.finishes)
+        assertEquals(null, context.current())
+    }
+
+    @Test
+    fun `trace finalizes when probe loading fails`() = runTest {
+        coEvery { clientRepository.getClient(1) } returns defaultClient()
+        coEvery { probeRepository.getProbeConfig() } throws IllegalStateException("probe load failed")
+        val trace = RecordingDebugTraceSink()
+
+        buildUseCase(debugTraceSink = trace).execute(TestPlan(1, 1, "A1", null)).toList()
+
+        assertEquals(listOf("run-1" to "FAIL"), trace.finishes)
+    }
+
+    @Test
+    fun `trace finalizes when profile loading fails`() = runTest {
+        coEvery { clientRepository.getClient(1) } returns defaultClient()
+        coEvery { probeRepository.getProbeConfig() } returns defaultProbe()
+        coEvery { profileRepository.getProfile(1) } throws IllegalStateException("profile load failed")
+        val trace = RecordingDebugTraceSink()
+
+        buildUseCase(debugTraceSink = trace).execute(TestPlan(1, 1, "A1", null)).toList()
+
+        assertEquals(listOf("run-1" to "FAIL"), trace.finishes)
+    }
+
+    @Test
+    fun `cancellation during loading records CANCELLED and clears context`() = runTest {
+        coEvery { clientRepository.getClient(1) } throws CancellationException("cancel load")
+        val trace = RecordingDebugTraceSink()
+        val context = DebugTraceRunContext()
+
+        val failure = runCatching {
+            buildUseCase(debugTraceSink = trace, debugTraceRunContext = context)
+                .execute(TestPlan(1, 1, "A1", null)).toList()
+        }.exceptionOrNull()
+
+        assertTrue(failure is CancellationException)
+        assertEquals(listOf("run-1" to "CANCELLED"), trace.finishes)
+        assertEquals(null, context.current())
+    }
+
+    @Test
+    fun `cancellation during step records CANCELLED`() = runTest {
+        stubRepositories()
+        val trace = RecordingDebugTraceSink()
+        val cancellingStep = object : NetworkConfigStep {
+            override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<NetworkConfigFeedback> {
+                throw CancellationException("cancel step")
+            }
+        }
+
+        val failure = runCatching {
+            buildUseCase(networkConfigStep = cancellingStep, debugTraceSink = trace)
+                .execute(TestPlan(1, 1, "A1", null)).toList()
+        }.exceptionOrNull()
+
+        assertTrue(failure is CancellationException)
+        assertEquals(listOf("run-1" to "CANCELLED"), trace.finishes)
+    }
+
+    @Test
+    fun `start failure does not set context or finalize nonexistent run`() = runTest {
+        val trace = RecordingDebugTraceSink(startFailure = IllegalStateException("start failed"))
+        val context = DebugTraceRunContext()
+
+        val failure = runCatching {
+            buildUseCase(debugTraceSink = trace, debugTraceRunContext = context)
+                .execute(TestPlan(1, 1, "A1", null)).toList()
+        }.exceptionOrNull()
+
+        assertEquals("start failed", failure?.message)
+        assertTrue(trace.finishes.isEmpty())
+        assertEquals(null, context.current())
+    }
+
+    @Test
+    fun `finish failure clears context and is propagated without primary failure`() = runTest {
+        stubRepositories()
+        val trace = RecordingDebugTraceSink(finishFailure = IllegalStateException("finish failed"))
+        val context = DebugTraceRunContext()
+
+        val failure = runCatching {
+            buildUseCase(debugTraceSink = trace, debugTraceRunContext = context)
+                .execute(TestPlan(1, 1, "A1", null)).toList()
+        }.exceptionOrNull()
+
+        assertEquals("finish failed", failure?.message)
+        assertEquals(1, trace.finishes.size)
+        assertEquals(null, context.current())
+    }
+
+    @Test
+    fun `finish failure is suppressed by primary loading failure`() = runTest {
+        coEvery { clientRepository.getClient(1) } throws IllegalStateException("load failed")
+        val trace = RecordingDebugTraceSink(finishFailure = IllegalArgumentException("finish failed"))
+
+        val events = buildUseCase(debugTraceSink = trace)
+            .execute(TestPlan(1, 1, "A1", null)).toList()
+
+        val error = events.filterIsInstance<TestEvent.Failed>().single().error as TestError.Unexpected
+        assertEquals("finish failed", error.cause?.suppressed?.single()?.message)
+        assertEquals(1, trace.finishes.size)
+    }
+
+    @Test
+    fun `stale run cannot clear context owned by newer run`() {
+        val context = DebugTraceRunContext()
+        context.set("old")
+        context.set("new")
+
+        assertEquals(false, context.clear("old"))
+        assertEquals("new", context.current())
+        assertEquals(true, context.clear("new"))
+    }
+
     private fun stubRepositories(
         client: Client = defaultClient(),
         probe: ProbeConfig = defaultProbe(),
@@ -1168,7 +1450,9 @@ class RunTestUseCaseImplTest {
         cableTestStep: CableTestStep = this.cableTestStep,
         neighborDiscoveryStep: NeighborDiscoveryStep = neighborStep,
         pingStep: PingStep = this.pingStep,
-        speedTestStep: SpeedTestStep = this.speedTestStep
+        speedTestStep: SpeedTestStep = this.speedTestStep,
+        debugTraceSink: DebugTraceSink = RecordingDebugTraceSink(),
+        debugTraceRunContext: DebugTraceRunContext = DebugTraceRunContext()
     ): RunTestUseCaseImpl = RunTestUseCaseImpl(
         textProvider = textProvider,
         clientRepository = clientRepository,
@@ -1180,7 +1464,9 @@ class RunTestUseCaseImplTest {
         neighborDiscoveryStep = neighborDiscoveryStep,
         pingStep = pingStep,
         speedTestStep = speedTestStep,
-        reportResultsCodec = reportResultsCodec
+        reportResultsCodec = reportResultsCodec,
+        debugTraceSink = debugTraceSink,
+        debugTraceRunContext = debugTraceRunContext
     )
 
     private fun countingNetworkStep(onRun: () -> Unit): NetworkConfigStep = object : NetworkConfigStep {
@@ -1199,6 +1485,15 @@ class RunTestUseCaseImplTest {
         }
     }
 
+    private fun countingCableStep(onRun: () -> Unit): CableTestStep = object : CableTestStep {
+        override suspend fun run(
+            context: com.app.miklink.core.domain.test.model.TestExecutionContext
+        ): StepResult<CableTestSummary> {
+            onRun()
+            return StepResult.Success(CableTestSummary(status = "ok", entries = emptyList()))
+        }
+    }
+
     private fun countingNeighborStep(onRun: () -> Unit): NeighborDiscoveryStep = object : NeighborDiscoveryStep {
         override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<List<NeighborData>> {
             onRun()
@@ -1209,9 +1504,33 @@ class RunTestUseCaseImplTest {
     private fun countingPingStep(onRun: () -> Unit): PingStep = object : PingStep {
         override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<List<PingTargetOutcome>> {
             onRun()
-            return StepResult.Success(emptyList())
+            return StepResult.Success(
+                listOf(
+                    PingTargetOutcome(
+                        target = "8.8.8.8",
+                        resolved = "8.8.8.8",
+                        packetLoss = "0",
+                        results = listOf(validPingMeasurement()),
+                        error = null
+                    )
+                )
+            )
         }
     }
+
+    private fun validPingMeasurement() = PingMeasurement(
+        host = "8.8.8.8",
+        minRtt = "8ms",
+        avgRtt = "10ms",
+        maxRtt = "12ms",
+        packetLoss = "0%",
+        sent = "4",
+        received = "4",
+        seq = "1",
+        time = "10ms",
+        ttl = "58",
+        size = "64"
+    )
 
     private fun countingSpeedStep(onRun: () -> Unit): SpeedTestStep = object : SpeedTestStep {
         override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<SpeedTestData> {

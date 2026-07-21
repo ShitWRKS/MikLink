@@ -88,8 +88,8 @@ class RunTestUseCaseImpl @Inject constructor(
                 "socketId" to plan.socketId
             )
         )
-        debugTraceRunContext.set(runId)
-        var finalStatusForTrace = "FAIL"
+        var finalStatusForTrace = TraceTerminalStatus.FAIL
+        var primaryFailure: Throwable? = null
 
         fun traceEvent(event: String, fields: Map<String, Any?> = emptyMap()) {
             debugTraceSink.event(runId = runId, event = event, fields = fields)
@@ -101,6 +101,9 @@ class RunTestUseCaseImpl @Inject constructor(
                 emit(TestEvent.LogLine(sanitized))
             }
         }
+
+        try {
+            debugTraceRunContext.set(runId)
 
         traceEvent(
             event = "run_started",
@@ -247,7 +250,11 @@ class RunTestUseCaseImpl @Inject constructor(
                 rawResultsJson = json
             )
 
-            finalStatusForTrace = overallStatus
+            finalStatusForTrace = if (overallStatus == "PASS") {
+                TraceTerminalStatus.SUCCESS
+            } else {
+                TraceTerminalStatus.FAIL
+            }
             emitLog(textProvider.resultCompleted(overallStatus))
             emit(TestEvent.Completed(outcome))
         }
@@ -322,7 +329,7 @@ class RunTestUseCaseImpl @Inject constructor(
                 terminalError = error
             )
 
-            finalStatusForTrace = overallStatus
+            finalStatusForTrace = TraceTerminalStatus.FAIL
             emitLog(textProvider.resultCompleted(overallStatus))
             emit(TestEvent.Completed(outcome))
         }
@@ -331,7 +338,6 @@ class RunTestUseCaseImpl @Inject constructor(
         emitLog(textProvider.initStarting(client.companyName, profile.profileName, plan.socketId ?: ""))
         emitProgress(TestProgressKey.PREPARING, 0, textProvider.labelInit(), textProvider.initLoading())
 
-        try {
             // 1) Link Status
             if (profile.runLinkStatus) {
                 // Cooperative cancellation checkpoint: allows coroutine to be cancelled before long step
@@ -410,7 +416,7 @@ class RunTestUseCaseImpl @Inject constructor(
             }
 
             // 2) TDR
-            if (profile.runTdr && probe.tdrSupported) {
+            if (profile.runTdr && probe.shouldAttemptTdr) {
                 // Cooperative cancellation checkpoint
                 coroutineContext.ensureActive()
                 emitProgress(TestProgressKey.TDR, 30, "TDR", "Test cavo in corso...")
@@ -449,23 +455,25 @@ class RunTestUseCaseImpl @Inject constructor(
                             finishForProbeUnavailable(TestSectionId.TDR, tdrResult.error as TestError.ProbeUnavailable)
                             return@flow
                         }
-                        val isFatal = tdrResult.error is TestError.Unsupported
-                        if (!isFatal) {
+                        val unsupportedOnUnknown =
+                            probe.tdrCapability == com.app.miklink.core.domain.model.TdrCapability.UNKNOWN &&
+                                tdrResult.error is TestError.Unsupported
+                        if (!unsupportedOnUnknown) {
                             overallStatus = "FAIL"
                             layer1Failed = true
                         }
-                        val status = if (isFatal) TestSectionStatus.SKIP else TestSectionStatus.FAIL
+                        val status = if (unsupportedOnUnknown) TestSectionStatus.SKIP else TestSectionStatus.FAIL
                         val message = tdrResult.error.message
                         recordStep(
                             id = TestSectionId.TDR,
                             title = "TDR",
                             status = status,
-                            warning = message ?: TestSkipReason.HARDWARE_UNSUPPORTED,
+                            warning = if (unsupportedOnUnknown) TestSkipReason.HARDWARE_UNSUPPORTED else message,
                             rawData = mapOf("error" to message),
                             error = message
                         )
                         emitSnapshot()
-                        val statusLabel = if (isFatal) "SKIP" else "FAIL"
+                        val statusLabel = if (unsupportedOnUnknown) "SKIP" else "FAIL"
                         emitLog(textProvider.tdrFail(statusLabel, message ?: "unknown error"))
                     }
                     is StepResult.Skipped -> {
@@ -480,7 +488,7 @@ class RunTestUseCaseImpl @Inject constructor(
                         emitLog(textProvider.tdrSkip(tdrResult.reason))
                     }
                 }
-            } else if (profile.runTdr && !probe.tdrSupported) {
+            } else if (profile.runTdr && !probe.shouldAttemptTdr) {
                 recordStep(
                     id = TestSectionId.TDR,
                     title = "TDR",
@@ -780,8 +788,13 @@ class RunTestUseCaseImpl @Inject constructor(
             }
 
             finishTest()
+        } catch (e: CancellationException) {
+            finalStatusForTrace = TraceTerminalStatus.CANCELLED
+            primaryFailure = e
+            throw e
         } catch (e: Exception) {
-            if (e is CancellationException) throw e
+            finalStatusForTrace = TraceTerminalStatus.FAIL
+            primaryFailure = e
             val error = when (e) {
                 is TestExecutionException -> e.error
                 else -> TestError.Unexpected(e.message ?: "Unknown error", e)
@@ -797,11 +810,21 @@ class RunTestUseCaseImpl @Inject constructor(
             emitLog(textProvider.resultError(e.message ?: "unknown error"))
             emit(TestEvent.Failed(error))
         } finally {
-            debugTraceSink.finishRun(
-                runId = runId,
-                finalStatus = finalStatusForTrace
-            )
-            debugTraceRunContext.clear(runId)
+            try {
+                debugTraceSink.finishRun(
+                    runId = runId,
+                    finalStatus = finalStatusForTrace.name
+                )
+            } catch (finishFailure: Throwable) {
+                val failure = primaryFailure
+                if (failure != null) {
+                    failure.addSuppressed(finishFailure)
+                } else {
+                    throw finishFailure
+                }
+            } finally {
+                debugTraceRunContext.clear(runId)
+            }
         }
     }
 
@@ -1082,6 +1105,12 @@ class RunTestUseCaseImpl @Inject constructor(
 
 }
 
+private enum class TraceTerminalStatus {
+    SUCCESS,
+    FAIL,
+    CANCELLED
+}
+
 private const val SECTION_NETWORK = "NETWORK"
 private const val SECTION_LINK = "LINK"
 private const val SECTION_TDR = "TDR"
@@ -1105,9 +1134,9 @@ private fun buildInitialTypedSections(profile: TestProfile, probe: ProbeConfig):
     if (profile.runLinkStatus) {
         sections += TestSectionSnapshot(id = TestSectionId.LINK, status = TestSectionStatus.PENDING, title = "Link")
     }
-    if (profile.runTdr && probe.tdrSupported) {
+    if (profile.runTdr && probe.shouldAttemptTdr) {
         sections += TestSectionSnapshot(id = TestSectionId.TDR, status = TestSectionStatus.PENDING, title = "TDR")
-    } else if (profile.runTdr && !probe.tdrSupported) {
+    } else if (profile.runTdr && !probe.shouldAttemptTdr) {
         sections += TestSectionSnapshot(
             id = TestSectionId.TDR,
             status = TestSectionStatus.SKIP,

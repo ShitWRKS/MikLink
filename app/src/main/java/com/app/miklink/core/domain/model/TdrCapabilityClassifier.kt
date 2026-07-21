@@ -25,8 +25,7 @@ object TdrCapabilityClassifier {
         "RB450G",    // RB450G series
         "RB951",     // RB951 series
         "RB2011",    // RB2011 series
-        "RB4011",    // RB4011 series
-        "RB5009"     // RB5009 series (eth1 only; handled via model list below)
+        "RB4011"     // RB4011 series
     )
 
     // Models or series supported (exact or documented prefix)
@@ -63,10 +62,19 @@ object TdrCapabilityClassifier {
         // Documented combo-port exclusions; matched as exact model tokens.
     )
 
-    fun classify(boardName: String?): TdrCapability {
+    fun classify(boardName: String?, interfaceName: String? = null): TdrCapability {
         if (boardName.isNullOrBlank()) return TdrCapability.UNKNOWN
 
         val name = boardName.trim()
+        val normalized = name.uppercase().filter { it.isLetterOrDigit() }
+
+        if (normalized.startsWith("RB5009")) {
+            return when {
+                interfaceName.isNullOrBlank() -> TdrCapability.UNKNOWN
+                interfaceName.equals("ether1", ignoreCase = true) -> TdrCapability.SUPPORTED
+                else -> TdrCapability.UNSUPPORTED
+            }
+        }
 
         // Combo port exclusion
         if (unsupportedComboPortModels.any { name.equals(it, ignoreCase = true) }) {
@@ -80,7 +88,6 @@ object TdrCapabilityClassifier {
 
         // Series match only for documented series. Normalize by removing non-alphanumeric
         // separators so that "OmniTIK 5 ac" -> "OMNITIK5AC" matches the "OMNITIK" prefix.
-        val normalized = name.uppercase().filter { it.isLetterOrDigit() }
         if (supportedSeries.any { normalized.startsWith(it.uppercase()) }) {
             return TdrCapability.SUPPORTED
         }

@@ -7,6 +7,12 @@ plugins {
     alias(libs.plugins.room) apply false
 }
 
-tasks.register<ForbiddenPatternsTask>("checkForbiddenPatterns") {
+val checkForbiddenPatterns by tasks.registering(ForbiddenPatternsTask::class) {
     roots.set(listOf("app/src", "docs"))
+}
+
+tasks.register("check") {
+    group = "verification"
+    description = "Runs repository verification tasks."
+    dependsOn(checkForbiddenPatterns)
 }

@@ -22,8 +22,7 @@ class TdrCapabilityClassifierTest {
             "RB450G x3",
             "RB951Ui-2HnD",
             "RB2011iL-IN",
-            "RB4011iGS+RM",
-            "RB5009UG+S+IN"
+            "RB4011iGS+RM"
         ).forEach { board ->
             assertEquals(
                 "Board '$board' deve essere SUPPORTED",
@@ -31,6 +30,22 @@ class TdrCapabilityClassifierTest {
                 TdrCapabilityClassifier.classify(board)
             )
         }
+    }
+
+    @Test
+    fun rb5009_support_depends_on_test_interface() {
+        assertEquals(
+            TdrCapability.SUPPORTED,
+            TdrCapabilityClassifier.classify("RB5009UG+S+IN", "ether1")
+        )
+        assertEquals(
+            TdrCapability.UNSUPPORTED,
+            TdrCapabilityClassifier.classify("RB5009UG+S+IN", "ether2")
+        )
+        assertEquals(
+            TdrCapability.UNKNOWN,
+            TdrCapabilityClassifier.classify("RB5009UG+S+IN", null)
+        )
     }
 
     @Test

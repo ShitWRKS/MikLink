@@ -14,6 +14,7 @@ import com.app.miklink.core.domain.model.Client
 import com.app.miklink.core.domain.model.NetworkMode
 import com.app.miklink.core.domain.model.ProbeConfig
 import com.app.miklink.core.domain.test.model.TestError
+import com.app.miklink.core.domain.test.model.RouterOsErrorCategory
 import com.app.miklink.data.remote.mikrotik.dto.DhcpClientAdd
 import com.app.miklink.data.remote.mikrotik.dto.DhcpClientStatus
 import com.app.miklink.data.remote.mikrotik.dto.IpAddressAdd
@@ -55,7 +56,9 @@ class MikroTikNetworkConfigRepository @Inject constructor(
             suspend fun removeStaticAddressesOnInterface() {
                 val addresses = decodeList(api.getIpAddresses(), RouterOsOperation.IP_ADDRESSES)
                 addresses.filter { it.iface == iface }.forEach { entry ->
-                    entry.id?.let { api.removeIpAddress(NumbersRequest(it)) }
+                    entry.id?.let {
+                        decodeUnit(api.removeIpAddress(NumbersRequest(it)), RouterOsOperation.IP_ADDRESS_REMOVE)
+                    }
                 }
             }
 
@@ -83,25 +86,26 @@ class MikroTikNetworkConfigRepository @Inject constructor(
                     existingDhcp.id?.let { dhcpId ->
                         // Client esiste ma e disabilitato o non bound: riabilita
                         if (existingDhcp.disabled == "true") {
-                            api.enableDhcpClient(NumbersRequest(dhcpId))
+                            decodeUnit(api.enableDhcpClient(NumbersRequest(dhcpId)), RouterOsOperation.DHCP_CLIENT_ENABLE)
                         } else {
                             // Client abilitato ma non bound: disable/enable per refresh
-                            api.disableDhcpClient(NumbersRequest(dhcpId))
+                            decodeUnit(api.disableDhcpClient(NumbersRequest(dhcpId)), RouterOsOperation.DHCP_CLIENT_DISABLE)
                             delay(500)
-                            api.enableDhcpClient(NumbersRequest(dhcpId))
+                            decodeUnit(api.enableDhcpClient(NumbersRequest(dhcpId)), RouterOsOperation.DHCP_CLIENT_ENABLE)
                         }
                     }
                 } else {
                     // Client non esiste: crea
                     try {
-                        api.addDhcpClient(DhcpClientAdd(`interface` = iface))
-                    } catch (e: Exception) {
+                        decodeUnit(api.addDhcpClient(DhcpClientAdd(`interface` = iface)), RouterOsOperation.DHCP_CLIENT_ADD)
+                    } catch (e: TestExecutionException) {
                         // Se il client esiste gia (race condition), recuperalo e abilitalo
-                        if (e.message?.contains("already exists", ignoreCase = true) == true) {
+                        val routerOsError = e.error as? TestError.RouterOsError
+                        if (routerOsError?.category == RouterOsErrorCategory.ALREADY_EXISTS) {
                             delay(500)
                             val existingId = decodeList(api.getDhcpClientStatus(iface), RouterOsOperation.DHCP_CLIENT_STATUS).firstOrNull()?.id
                             if (existingId != null) {
-                                api.enableDhcpClient(NumbersRequest(existingId))
+                                decodeUnit(api.enableDhcpClient(NumbersRequest(existingId)), RouterOsOperation.DHCP_CLIENT_ENABLE)
                             } else {
                                 throw e
                             }
@@ -139,7 +143,7 @@ class MikroTikNetworkConfigRepository @Inject constructor(
                 // Disabilita DHCP se presente
                 val dhcpId = decodeList(api.getDhcpClientStatus(iface), RouterOsOperation.DHCP_CLIENT_STATUS).firstOrNull()?.id
                 if (dhcpId != null) {
-                    api.disableDhcpClient(NumbersRequest(dhcpId))
+                    decodeUnit(api.disableDhcpClient(NumbersRequest(dhcpId)), RouterOsOperation.DHCP_CLIENT_DISABLE)
                 }
                 removeStaticAddressesOnInterface()
                 // Ensure we have gateway value for a better match
