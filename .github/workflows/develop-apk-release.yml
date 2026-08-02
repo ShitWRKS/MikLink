@@ -103,6 +103,38 @@ jobs:
           MIKLINK_VERSION_NAME: ${{ steps.metadata.outputs.version_name }}
         run: ./gradlew test :app:assembleRelease --stacktrace
 
+      - name: Locate Android apksigner
+        run: |
+          set -euo pipefail
+          sdk_root="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          build_tools_root="$sdk_root/build-tools"
+
+          if [ ! -d "$build_tools_root" ]; then
+            echo "::error::Android SDK Build Tools directory not found at $build_tools_root"
+            exit 1
+          fi
+
+          apksigner_path="$(
+            find "$build_tools_root" \
+              -mindepth 2 \
+              -maxdepth 2 \
+              -type f \
+              -name apksigner \
+              -print \
+              | sort -V \
+              | tail -n 1
+          )"
+
+          if [ -z "$apksigner_path" ] || [ ! -x "$apksigner_path" ]; then
+            echo "::error::No executable apksigner found under $build_tools_root"
+            find "$build_tools_root" -mindepth 1 -maxdepth 2 -type f -name apksigner -print || true
+            exit 1
+          fi
+
+          echo "Using apksigner: $apksigner_path"
+          "$apksigner_path" version
+          echo "$(dirname "$apksigner_path")" >> "$GITHUB_PATH"
+
       - name: Verify and stage APK
         id: apk
         run: |
