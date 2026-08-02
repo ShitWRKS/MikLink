@@ -18,6 +18,8 @@
 *.iml
 *.class
 *.jar
+# The Gradle Wrapper bootstrap JAR is source-controlled and required for reproducible builds.
+!gradle/wrapper/gradle-wrapper.jar
 
 # Files generati dal Debug
 # * Se hai un problema con .idea, potresti doverlo aggiungere e rimuovere l'intera cartella
