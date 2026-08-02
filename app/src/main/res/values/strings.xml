@@ -300,6 +300,7 @@
     <string name="skip_reason_speed_no_server">Speed test server not configured</string>
     <string name="skip_reason_profile_disabled">Test disabled in profile</string>
     <string name="skip_reason_hardware_unsupported">Hardware does not support this test</string>
+    <string name="skip_reason_layer1_failed">Skipped because Layer 1 failed</string>
     <string name="skip_reason_unknown">Unknown reason</string>
     <string name="title_add_probe">Add Probe</string>
     <string name="title_edit_probe">Edit Probe</string>
@@ -323,6 +324,7 @@
     <string name="log_link_fail">[Link] FAIL %1$s</string>
     <string name="log_link_skip">[Link] SKIP reason=%1$s</string>
     <string name="log_link_cable_disconnected">[Link] Cable disconnected, skipping remaining tests</string>
+    <string name="log_layer1_failed_skipping">[Layer 1] Failed, skipping dependent sections</string>
     <string name="log_network_starting">[Network] Configuration started on %1$s</string>
     <string name="log_network_pass">[Network] PASS mode=%1$s iface=%2$s</string>
     <string name="log_network_fail">[Network] FAIL %1$s</string>
@@ -346,6 +348,7 @@
     <string name="log_result_completed">[Result] Completed with status=%1$s</string>
     <string name="log_result_error">[Result] Unexpected error: %1$s</string>
     <string name="test_timeout_error">Test interrupted: maximum time (%1$ds) exceeded</string>
+    <string name="test_execution_save_error">Unable to save the report. Please try again.</string>
     
     <!-- Detail formatter labels -->
     <string name="detail_label_mode">Mode</string>
@@ -537,4 +540,16 @@
     <!-- Splash -->
     <string name="splash_logo_description">MikLink Logo</string>
     <string name="splash_shitworks_logo_description">Shitworks Logo</string>
+    <string name="client_edit_preview">Preview</string>
+    <string name="client_list_empty_title">No clients</string>
+    <string name="client_list_empty_body">Add your first client to get started.</string>
+    <string name="client_list_empty_search">No results found for "%1$s"</string>
+    <string name="profile_edit_gateway_dhcp">DHCP gateway</string>
+    <string name="profile_edit_custom">Custom…</string>
+    <string name="profile_list_empty_title">No test profiles</string>
+    <string name="profile_list_empty_body">Create your first test profile to configure the tests to run.</string>
+    <string name="splash_featured_by">Featured by</string>
+    <string name="splash_shitworks_name">SHITWORKS</string>
+    <string name="splash_shitworks_tagline">Built by Shitworks</string>
+    <string name="test_execution_invalid_navigation">Invalid navigation parameters.</string>
 </resources>
