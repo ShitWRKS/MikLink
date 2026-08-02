@@ -1,0 +1,128 @@
+name: Develop APK prerelease
+
+on:
+  push:
+    branches:
+      - develop
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: develop-apk-release
+  cancel-in-progress: false
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    env:
+      MIKLINK_KEYSTORE_PASSWORD: ${{ secrets.MIKLINK_KEYSTORE_PASSWORD }}
+      MIKLINK_KEY_ALIAS: ${{ secrets.MIKLINK_KEY_ALIAS }}
+      MIKLINK_KEY_PASSWORD: ${{ secrets.MIKLINK_KEY_PASSWORD }}
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Validate signing secrets
+        env:
+          MIKLINK_KEYSTORE_BASE64: ${{ secrets.MIKLINK_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          missing=0
+          for variable in \
+            MIKLINK_KEYSTORE_BASE64 \
+            MIKLINK_KEYSTORE_PASSWORD \
+            MIKLINK_KEY_ALIAS \
+            MIKLINK_KEY_PASSWORD; do
+            if [ -z "${!variable:-}" ]; then
+              echo "::error::Missing required GitHub secret: ${variable}"
+              missing=1
+            fi
+          done
+          exit "$missing"
+
+      - name: Prepare release metadata
+        id: metadata
+        run: |
+          set -euo pipefail
+          short_sha="${GITHUB_SHA::7}"
+          version_code="${GITHUB_RUN_NUMBER}"
+          version_name="1.0.0-dev.${GITHUB_RUN_NUMBER}+${short_sha}"
+          tag="develop-${GITHUB_RUN_NUMBER}-${short_sha}"
+          apk_name="MikLink-develop-${GITHUB_RUN_NUMBER}-${short_sha}.apk"
+
+          echo "short_sha=${short_sha}" >> "$GITHUB_OUTPUT"
+          echo "version_code=${version_code}" >> "$GITHUB_OUTPUT"
+          echo "version_name=${version_name}" >> "$GITHUB_OUTPUT"
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          echo "apk_name=${apk_name}" >> "$GITHUB_OUTPUT"
+
+      - name: Restore release keystore
+        env:
+          MIKLINK_KEYSTORE_BASE64: ${{ secrets.MIKLINK_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          keystore_path="$RUNNER_TEMP/miklink-release.jks"
+          printf '%s' "$MIKLINK_KEYSTORE_BASE64" | base64 --decode > "$keystore_path"
+          chmod 600 "$keystore_path"
+          echo "MIKLINK_KEYSTORE_PATH=$keystore_path" >> "$GITHUB_ENV"
+
+      - name: Run tests and build signed APK
+        env:
+          MIKLINK_VERSION_CODE: ${{ steps.metadata.outputs.version_code }}
+          MIKLINK_VERSION_NAME: ${{ steps.metadata.outputs.version_name }}
+        run: ./gradlew test :app:assembleRelease --stacktrace
+
+      - name: Verify and stage APK
+        id: apk
+        run: |
+          set -euo pipefail
+          source_apk="app/build/outputs/apk/release/app-release.apk"
+          if [ ! -f "$source_apk" ]; then
+            echo "::error::Expected signed APK not found at $source_apk"
+            exit 1
+          fi
+
+          mkdir -p dist
+          target_apk="dist/${{ steps.metadata.outputs.apk_name }}"
+          cp "$source_apk" "$target_apk"
+          echo "path=${target_apk}" >> "$GITHUB_OUTPUT"
+
+      - name: Publish or update prerelease
+        run: |
+          set -euo pipefail
+          tag="${{ steps.metadata.outputs.tag }}"
+          apk="${{ steps.apk.outputs.path }}"
+          title="MikLink develop #${GITHUB_RUN_NUMBER} (${{ steps.metadata.outputs.short_sha }})"
+          notes=$(cat <<EOF
+          Automated APK prerelease for commit ${GITHUB_SHA} on branch develop.
+
+          - Version: ${{ steps.metadata.outputs.version_name }}
+          - Version code: ${{ steps.metadata.outputs.version_code }}
+          - Workflow run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
+          EOF
+          )
+
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" "$apk" --clobber
+          else
+            gh release create "$tag" "$apk" \
+              --target "$GITHUB_SHA" \
+              --title "$title" \
+              --notes "$notes" \
+              --prerelease
+          fi
