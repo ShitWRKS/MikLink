@@ -94,6 +94,10 @@ android {
     testOptions {
         unitTests.isIncludeAndroidResources = true
     }
+
+    lint {
+        lintConfig = file("lint.xml")
+    }
 }
 
 room {
@@ -172,6 +176,7 @@ dependencies {
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.espresso.core)
     androidTestImplementation(libs.androidx.ui.test.junit4)
+    androidTestImplementation(libs.room.testing)
 
     debugImplementation(libs.androidx.ui.test.manifest)
 }

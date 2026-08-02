@@ -8,7 +8,7 @@
 
 ## Policy pre-production
 
-In pre-production usiamo `fallbackToDestructiveMigration(dropAllTables = true)` (vedi `di/DatabaseModule.kt` e **ADR-0012**). Ogni bump di versione resetta i dati locali per velocizzare l'iterazione.
+Gli aggiornamenti di schema usano migrazioni Room esplicite e non distruttive registrate in `DatabaseMigrations.kt` (vedi **ADR-0014**).
 
 ## Atomicità report + contatore (ADR-0010/ADR-0013)
 

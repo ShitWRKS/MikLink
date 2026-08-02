@@ -11,6 +11,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.app.miklink.core.domain.model.TestThresholds
+import com.app.miklink.data.local.room.ALL_MIGRATIONS
 import com.app.miklink.data.local.room.MikLinkDatabase
 import com.app.miklink.data.local.room.dao.TestProfileDao
 import com.app.miklink.data.local.room.entity.TestProfileEntity
@@ -42,7 +43,7 @@ object DatabaseModule {
             MikLinkDatabase::class.java,
             "miklink"
         )
-        .fallbackToDestructiveMigration(dropAllTables = true)
+        .addMigrations(*ALL_MIGRATIONS)
         .addCallback(object : RoomDatabase.Callback() {
             override fun onCreate(db: SupportSQLiteDatabase) {
                 super.onCreate(db)

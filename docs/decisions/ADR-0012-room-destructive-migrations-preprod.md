@@ -1,6 +1,6 @@
 # ADR-0012 — Destructive migrations in pre-production
 
-- **Status:** Accepted
+- **Status:** Superseded by ADR-0014
 - **Data:** 2025-12-30
 
 ## Contesto
@@ -10,7 +10,7 @@ La gestione esplicita delle migrazioni Room aggiunge overhead che rallenta lo sv
 
 ## Decisione
 
-In **pre-production**, usiamo `fallbackToDestructiveMigration(dropAllTables = true)` in `DatabaseModule`.
+Questa decisione e' stata superata da ADR-0014, che impone migrazioni Room esplicite e testate.
 
 **Source of truth dello schema:**
 
