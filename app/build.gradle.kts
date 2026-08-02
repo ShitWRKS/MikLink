@@ -7,6 +7,21 @@ plugins {
     alias(libs.plugins.room)
 }
 
+val ciVersionCode = providers.environmentVariable("MIKLINK_VERSION_CODE")
+    .orNull
+    ?.toIntOrNull()
+val ciVersionName = providers.environmentVariable("MIKLINK_VERSION_NAME").orNull
+val releaseKeystorePath = providers.environmentVariable("MIKLINK_KEYSTORE_PATH").orNull
+val releaseStorePassword = providers.environmentVariable("MIKLINK_KEYSTORE_PASSWORD").orNull
+val releaseKeyAlias = providers.environmentVariable("MIKLINK_KEY_ALIAS").orNull
+val releaseKeyPassword = providers.environmentVariable("MIKLINK_KEY_PASSWORD").orNull
+val hasReleaseSigning = listOf(
+    releaseKeystorePath,
+    releaseStorePassword,
+    releaseKeyAlias,
+    releaseKeyPassword
+).all { !it.isNullOrBlank() }
+
 android {
     namespace = "com.app.miklink"
     compileSdk = 37
@@ -14,10 +29,21 @@ android {
         applicationId = "com.app.miklink"
         minSdk = 30
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = ciVersionCode ?: 1
+        versionName = ciVersionName ?: "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = file(requireNotNull(releaseKeystorePath))
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
     }
 
     buildFeatures {
@@ -33,6 +59,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 
