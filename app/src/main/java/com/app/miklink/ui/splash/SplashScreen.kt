@@ -127,7 +127,7 @@ fun SplashScreen(navController: NavController) {
 
             // MikLink App Name
             androidx.compose.material3.Text(
-                text = "MikLink",
+                text = stringResource(R.string.app_name),
                 style = MaterialTheme.typography.displayMedium,
                 fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
@@ -145,7 +145,7 @@ fun SplashScreen(navController: NavController) {
         ) {
             // "Featured By"
             androidx.compose.material3.Text(
-                text = "Featured By",
+                text = stringResource(R.string.splash_featured_by),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
                 fontFamily = JetBrainsMono,
@@ -175,7 +175,7 @@ fun SplashScreen(navController: NavController) {
 
                 // "SHITWORKS" text
                 androidx.compose.material3.Text(
-                    text = "SHITWORKS",
+                text = stringResource(R.string.splash_shitworks_name),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = androidx.compose.ui.text.font.FontWeight.Black,
                     color = MaterialTheme.colorScheme.primary,
@@ -188,7 +188,7 @@ fun SplashScreen(navController: NavController) {
 
             // Tagline
             androidx.compose.material3.Text(
-                text = "'cause shit always works",
+                text = stringResource(R.string.splash_shitworks_tagline),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
             )

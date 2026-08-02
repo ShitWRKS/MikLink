@@ -117,13 +117,13 @@ fun TestProfileListScreen(
                         }
                         Spacer(Modifier.height(24.dp))
                         Text(
-                            text = "Nessun Profilo Test",
+                            text = stringResource(R.string.profile_list_empty_title),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold
                         )
                         Spacer(Modifier.height(8.dp))
                         Text(
-                            text = "Crea il tuo primo profilo di test\nper configurare i test da eseguire",
+                            text = stringResource(R.string.profile_list_empty_body),
                             style = MaterialTheme.typography.bodyMedium,
                             textAlign = TextAlign.Center,
                             color = MaterialTheme.colorScheme.onSurfaceVariant

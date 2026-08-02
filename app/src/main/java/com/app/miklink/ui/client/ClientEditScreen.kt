@@ -334,7 +334,7 @@ fun ClientEditScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            "Preview",
+                            stringResource(R.string.client_edit_preview),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )

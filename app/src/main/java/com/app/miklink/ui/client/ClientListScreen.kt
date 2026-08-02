@@ -146,13 +146,13 @@ fun ClientListScreen(
                         }
                         Spacer(Modifier.height(24.dp))
                         Text(
-                            text = "No clients",
+                            text = stringResource(R.string.client_list_empty_title),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold
                         )
                         Spacer(Modifier.height(8.dp))
                         Text(
-                            text = "Add your first client to get started.",
+                            text = stringResource(R.string.client_list_empty_body),
                             style = MaterialTheme.typography.bodyMedium,
                             textAlign = TextAlign.Center,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -168,7 +168,7 @@ fun ClientListScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "No results found for \"$searchQuery\"",
+                        text = stringResource(R.string.client_list_empty_search, searchQuery),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

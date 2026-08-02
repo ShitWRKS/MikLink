@@ -636,7 +636,7 @@ private fun GatewayPolicyItem(
     onCheckedChange: (Boolean) -> Unit
 ) {
     ListItem(
-        headlineContent = { Text("Gateway DHCP") },
+        headlineContent = { Text(stringResource(R.string.profile_edit_gateway_dhcp)) },
         supportingContent = { Text(stringResource(R.string.profile_edit_gateway_policy_label)) }, // "Fail se non risolto"
         trailingContent = { Switch(checked = checked, onCheckedChange = onCheckedChange) },
         modifier = Modifier.fillMaxWidth()
@@ -687,7 +687,7 @@ private fun LinkRatePicker(
             HorizontalDivider()
 
             DropdownMenuItem(
-                text = { Text("Custom…") },
+                text = { Text(stringResource(R.string.profile_edit_custom)) },
                 onClick = {
                     expanded = false
                     customValue = value
