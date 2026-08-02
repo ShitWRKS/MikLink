@@ -33,7 +33,7 @@ Version catalog: `gradle/libs.versions.toml`.
 - Espresso: **3.7.0**
 - MockK: **1.14.9**
 - Robolectric: **4.15**
-- iText: **7.2.6** (PDF, licenza AGPL/commerciale — vedi `THIRD_PARTY_NOTICES.md`)
+- iText: **7.2.6** (PDF)
 
 Vietato: Kotlin 2.4, OkHttp 5, Room 3, versioni pre-release, repository snapshot.
 `com.google.android.material:material` rimosso (non usato dal codice).

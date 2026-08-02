@@ -1,32 +1,5 @@
 # Third-party notices
 
-## iText 7 Core
-
-MikLink uses **iText 7 Core** (`com.itextpdf:itext7-core:7.2.6`) for PDF report generation.
-
-iText 7 is dual-licensed:
-
-- **GNU Affero General Public License (AGPL) v3** — free use under the conditions of the AGPL;
-  or
-- a **commercial license** from Apryse, required when the AGPL conditions cannot be met
-  (e.g. proprietary/closed-source distribution without disclosing source code).
-
-Source:
-https://github.com/itext/itext7
-
-License text (AGPL v3):
-https://www.gnu.org/licenses/agpl-3.0.txt
-
-### Notes for MikLink
-
-- This notice documents the **AGPL/commercial dual licensing** of iText.
-- The **project license of MikLink is NOT determined by this intervention**: this file only
-  records third-party obligations and does not create or change any project license.
-- **iText migration is out of scope** for the current work (see ADR-0013 non-goals).
-- **BLOCKER before any public distribution**: before distributing MikLink publicly, the AGPL
-  obligations of iText (source disclosure / copyleft) or a commercial Apryse license must be
-  resolved. This must be addressed and decided separately; it is intentionally left open here.
-
 ## JetBrains Mono
 
 JetBrains Mono is distributed under the SIL Open Font License, Version 1.1.
