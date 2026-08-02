@@ -71,14 +71,21 @@ jobs:
           echo "tag=${tag}" >> "$GITHUB_OUTPUT"
           echo "apk_name=${apk_name}" >> "$GITHUB_OUTPUT"
 
-      - name: Restore release keystore
+      - name: Restore and validate PKCS12 keystore
         env:
           MIKLINK_KEYSTORE_BASE64: ${{ secrets.MIKLINK_KEYSTORE_BASE64 }}
         run: |
           set -euo pipefail
-          keystore_path="$RUNNER_TEMP/miklink-release.jks"
+          keystore_path="$RUNNER_TEMP/miklink-release.p12"
           printf '%s' "$MIKLINK_KEYSTORE_BASE64" | base64 --decode > "$keystore_path"
           chmod 600 "$keystore_path"
+
+          keytool -list \
+            -storetype PKCS12 \
+            -keystore "$keystore_path" \
+            -storepass "$MIKLINK_KEYSTORE_PASSWORD" \
+            -alias "$MIKLINK_KEY_ALIAS" >/dev/null
+
           echo "MIKLINK_KEYSTORE_PATH=$keystore_path" >> "$GITHUB_ENV"
 
       - name: Run tests and build signed APK
@@ -96,6 +103,8 @@ jobs:
             echo "::error::Expected signed APK not found at $source_apk"
             exit 1
           fi
+
+          apksigner verify --verbose --print-certs "$source_apk"
 
           mkdir -p dist
           target_apk="dist/${{ steps.metadata.outputs.apk_name }}"
