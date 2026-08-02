@@ -68,6 +68,7 @@ private class FakeTestRunTextProvider : TestRunTextProvider {
     override fun tdrFail(statusLabel: String, error: String) = "TDR fail: $statusLabel - $error"
     override fun tdrSkip(reason: String) = "TDR skip: $reason"
     override fun linkCableDisconnected() = "Cable disconnected"
+    override fun layer1FailedSkipping() = "Layer 1 failed"
     override fun networkStarting(testInterface: String) = "Network start: $testInterface"
     override fun networkPass(mode: String, interfaceName: String) = "Network pass: $mode/$interfaceName"
     override fun networkFail(error: String) = "Network fail: $error"

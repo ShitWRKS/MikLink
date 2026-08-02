@@ -22,5 +22,6 @@ object TestSkipReason {
 
     // Probe became unreachable during test execution
     const val PROBE_UNAVAILABLE = "PROBE_UNAVAILABLE"
+    const val LAYER1_FAILED = "LAYER1_FAILED"
 }
 

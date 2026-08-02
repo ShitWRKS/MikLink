@@ -21,6 +21,7 @@ interface TestRunTextProvider {
     fun tdrFail(statusLabel: String, error: String): String
     fun tdrSkip(reason: String): String
     fun linkCableDisconnected(): String
+    fun layer1FailedSkipping(): String
     fun networkStarting(testInterface: String): String
     fun networkPass(mode: String, interfaceName: String): String
     fun networkFail(error: String): String

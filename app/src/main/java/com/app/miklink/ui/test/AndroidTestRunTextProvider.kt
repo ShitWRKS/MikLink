@@ -55,6 +55,9 @@ class AndroidTestRunTextProvider @Inject constructor(
     override fun linkCableDisconnected(): String =
         context.getString(R.string.log_link_cable_disconnected)
 
+    override fun layer1FailedSkipping(): String =
+        context.getString(R.string.log_layer1_failed_skipping)
+
     override fun networkStarting(testInterface: String): String =
         context.getString(R.string.log_network_starting, testInterface)
 

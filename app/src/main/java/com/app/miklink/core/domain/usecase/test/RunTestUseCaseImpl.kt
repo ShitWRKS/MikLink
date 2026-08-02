@@ -259,17 +259,17 @@ class RunTestUseCaseImpl @Inject constructor(
             emit(TestEvent.Completed(outcome))
         }
 
-        /**
-         * Marks all PENDING and RUNNING sections as SKIP with PROBE_UNAVAILABLE reason.
-         * Preserves sections already in PASS, FAIL, SKIP, or INFO status.
-         */
-        fun markRemainingSectionsSkipped(sections: MutableList<TestSectionSnapshot>) {
+        /** Marks only unfinished sections as skipped, preserving completed results. */
+        fun skipUnfinishedSections(
+            sections: MutableList<TestSectionSnapshot>,
+            reason: String
+        ) {
             for (i in sections.indices) {
                 val section = sections[i]
                 if (section.status == TestSectionStatus.PENDING || section.status == TestSectionStatus.RUNNING) {
                     sections[i] = section.copy(
                         status = TestSectionStatus.SKIP,
-                        warning = TestSkipReason.PROBE_UNAVAILABLE
+                        warning = reason
                     )
                 }
             }
@@ -298,7 +298,7 @@ class RunTestUseCaseImpl @Inject constructor(
             }
 
             // Mark remaining PENDING/RUNNING sections as SKIP with PROBE_UNAVAILABLE
-            markRemainingSectionsSkipped(typedSections)
+            skipUnfinishedSections(typedSections, TestSkipReason.PROBE_UNAVAILABLE)
 
             // Build final outcome
             val finalSnapshot = TestRunSnapshot(
@@ -503,7 +503,9 @@ class RunTestUseCaseImpl @Inject constructor(
             }
 
             if (layer1Failed) {
-                emitLog(textProvider.linkCableDisconnected())
+                skipUnfinishedSections(typedSections, TestSkipReason.LAYER1_FAILED)
+                emitSnapshot()
+                emitLog(textProvider.layer1FailedSkipping())
                 finishTest()
                 return@flow
             }
