@@ -17,6 +17,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
@@ -27,6 +28,7 @@ import androidx.compose.ui.res.stringResource
 import com.app.miklink.R
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import com.app.miklink.ui.theme.MikLinkThemeTokens
+import com.app.miklink.ui.testing.AgentUiTags
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,6 +53,7 @@ fun ProbeEditScreen(
     var passwordVisible by remember { mutableStateOf(false) }
 
     Scaffold(
+        modifier = Modifier.testTag(AgentUiTags.Probe.SCREEN),
         topBar = {
             TopAppBar(
                 title = { Text(if (viewModel.isEditing) stringResource(id = R.string.title_edit_probe) else stringResource(id = R.string.title_add_probe)) },
@@ -67,7 +70,8 @@ fun ProbeEditScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp)
-                    .navigationBarsPadding(),
+                    .navigationBarsPadding()
+                    .testTag(AgentUiTags.Probe.SAVE),
                 enabled = ipAddress.isNotBlank() && verificationState is VerificationState.Success
             ) {
                 Text(stringResource(R.string.save))
@@ -84,13 +88,13 @@ fun ProbeEditScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             // NAME input removed by design: probe should be generically named "Sonda"
-            OutlinedTextField(value = ipAddress, onValueChange = { viewModel.ipAddress.value = it }, label = { Text(stringResource(R.string.probe_edit_ip_label)) }, modifier = Modifier.fillMaxWidth(), singleLine = true)
-            OutlinedTextField(value = username, onValueChange = { viewModel.username.value = it }, label = { Text(stringResource(R.string.client_edit_username_label)) }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+            OutlinedTextField(value = ipAddress, onValueChange = { viewModel.ipAddress.value = it }, label = { Text(stringResource(R.string.probe_edit_ip_label)) }, modifier = Modifier.fillMaxWidth().testTag(AgentUiTags.Probe.ADDRESS), singleLine = true)
+            OutlinedTextField(value = username, onValueChange = { viewModel.username.value = it }, label = { Text(stringResource(R.string.client_edit_username_label)) }, modifier = Modifier.fillMaxWidth().testTag(AgentUiTags.Probe.USERNAME), singleLine = true)
             OutlinedTextField(
                 value = password,
                 onValueChange = { viewModel.password.value = it },
                 label = { Text(stringResource(R.string.client_edit_password_label)) },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().testTag(AgentUiTags.Probe.PASSWORD),
                 singleLine = true,
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
@@ -171,7 +175,7 @@ fun ProbeEditScreen(
 
 @Composable
 private fun VerifyProbeButton(onClick: () -> Unit) {
-    Button(onClick = onClick) {
+    Button(onClick = onClick, modifier = Modifier.testTag(AgentUiTags.Probe.VERIFY)) {
         Text(stringResource(R.string.probe_edit_verify_button))
     }
 }

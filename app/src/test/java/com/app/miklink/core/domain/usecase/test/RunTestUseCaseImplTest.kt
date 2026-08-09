@@ -33,6 +33,7 @@ import com.app.miklink.core.domain.test.step.PingStep
 import com.app.miklink.core.domain.test.step.SpeedTestStep
 import com.app.miklink.core.data.report.ReportResultsCodec
 import com.app.miklink.core.domain.test.TestRunTextProvider
+import com.app.miklink.core.domain.test.logging.DebugTraceCorrelation
 import com.app.miklink.core.domain.test.logging.DebugTraceRunContext
 import com.app.miklink.core.domain.test.logging.DebugTraceSink
 import io.mockk.coEvery
@@ -95,6 +96,7 @@ private class RecordingDebugTraceSink(
 ) : DebugTraceSink {
     var startCalls: Int = 0
     val finishes = mutableListOf<Pair<String, String>>()
+    val events = mutableListOf<Triple<String, String, Map<String, Any?>>>()
 
     override fun startRun(source: String, fields: Map<String, Any?>): String {
         startCalls++
@@ -102,7 +104,9 @@ private class RecordingDebugTraceSink(
         return "run-$startCalls"
     }
 
-    override fun event(runId: String, event: String, fields: Map<String, Any?>) = Unit
+    override fun event(runId: String, event: String, fields: Map<String, Any?>) {
+        events += Triple(runId, event, fields)
+    }
 
     override fun finishRun(runId: String, finalStatus: String, fields: Map<String, Any?>) {
         finishes += runId to finalStatus
@@ -1305,6 +1309,33 @@ class RunTestUseCaseImplTest {
 
         assertTrue(events.filterIsInstance<TestEvent.Failed>().single().error is TestError.SerializationError)
         assertEquals(listOf("run-1" to "FAIL"), trace.finishes)
+    }
+
+    @Test
+    fun `threshold trace preserves live exchange correlation`() = runTest {
+        stubRepositories()
+        val trace = RecordingDebugTraceSink()
+        val traceContext = DebugTraceRunContext().apply {
+            set(DebugTraceCorrelation("requested", "live-session", "live-link"))
+        }
+        val linkWithRepositoryCorrelation = object : LinkStatusStep {
+            override suspend fun run(context: com.app.miklink.core.domain.test.model.TestExecutionContext): StepResult<LinkStatusData> {
+                traceContext.withOperation("LINK", "exchange-1")
+                return StepResult.Success(LinkStatusData(status = "up", rate = "1G"))
+            }
+        }
+
+        buildUseCase(
+            linkStatusStep = linkWithRepositoryCorrelation,
+            debugTraceSink = trace,
+            debugTraceRunContext = traceContext
+        ).execute(TestPlan(1, 1, "A1", null)).toList()
+
+        val threshold = trace.events.first { it.second == "threshold_evaluation" }.third
+        assertEquals("live-session", threshold["sessionId"])
+        assertEquals("live-link", threshold["scenarioId"])
+        assertEquals("LINK", threshold["operationId"])
+        assertEquals("exchange-1", threshold["exchangeId"])
     }
 
     @Test

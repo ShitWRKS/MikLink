@@ -14,6 +14,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.draw.scale
@@ -22,6 +23,7 @@ import com.app.miklink.core.data.pdf.PdfExportConfig
 import com.app.miklink.core.data.pdf.PdfPageOrientation
 import androidx.compose.ui.res.stringResource
 import com.app.miklink.R
+import com.app.miklink.ui.testing.AgentUiTags
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,6 +56,7 @@ fun PdfExportDialog(
     var isColumnsExpanded by remember { mutableStateOf(false) }
 
     AlertDialog(
+        modifier = Modifier.testTag(AgentUiTags.Report.PDF_DIALOG),
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.pdf_export_title)) },
         text = {
@@ -306,6 +309,7 @@ fun PdfExportDialog(
         confirmButton = {
             val defaultTitle = stringResource(R.string.pdf_default_title)
             Button(
+                modifier = Modifier.testTag(AgentUiTags.Report.PDF_CONFIRM),
                 onClick = {
                     val orderedColumns = ExportColumn.values().filter { localColumns.contains(it.name) }
                     

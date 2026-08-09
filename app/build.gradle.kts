@@ -11,6 +11,12 @@ val ciVersionCode = providers.environmentVariable("MIKLINK_VERSION_CODE")
     .orNull
     ?.toIntOrNull()
 val ciVersionName = providers.environmentVariable("MIKLINK_VERSION_NAME").orNull
+val sourceRevision = providers.environmentVariable("MIKLINK_SOURCE_REVISION").orElse(
+    providers.exec {
+        commandLine("git", "rev-parse", "--verify", "HEAD")
+        isIgnoreExitValue = true
+    }.standardOutput.asText.map { output -> output.trim().ifEmpty { "unknown" } }
+)
 val releaseKeystorePath = providers.environmentVariable("MIKLINK_KEYSTORE_PATH").orNull
 val releaseStorePassword = providers.environmentVariable("MIKLINK_KEYSTORE_PASSWORD").orNull
 val releaseKeyAlias = providers.environmentVariable("MIKLINK_KEY_ALIAS").orNull
@@ -31,6 +37,7 @@ android {
         targetSdk = 36
         versionCode = ciVersionCode ?: 1
         versionName = ciVersionName ?: "1.0"
+        buildConfigField("String", "SOURCE_REVISION", "\"${sourceRevision.get()}\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -92,6 +99,7 @@ android {
     }
 
     testOptions {
+        animationsDisabled = true
         unitTests.isIncludeAndroidResources = true
     }
 
@@ -175,6 +183,7 @@ dependencies {
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.espresso.core)
+    androidTestImplementation(libs.androidx.test.uiautomator)
     androidTestImplementation(libs.androidx.ui.test.junit4)
     androidTestImplementation(libs.room.testing)
 

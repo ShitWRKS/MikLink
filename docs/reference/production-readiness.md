@@ -16,3 +16,36 @@
 ```bash
 ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.app.miklink.e2e.LiveProbeE2ETest
 ```
+
+## Gate agentico nativo
+
+La capacità agentica è un artefatto di sviluppo: entry point E2E, resource ID
+semantici e trace avanzato esistono soltanto nella variante `debug`. La variante
+`release` usa una policy semantica disabilitata e un sink di trace senza scritture;
+non espone flag runtime, extra di Intent, argomenti di instrumentation, componenti
+esportati o impostazioni per riattivare il controllo.
+
+Prima di una release eseguire:
+
+```bash
+./gradlew testDebugUnitTest lint assembleRelease
+```
+
+Sul device designato installare l'APK release firmato esatto e verificare dall'esterno:
+
+- `run-as com.app.miklink` deve fallire;
+- extra/azioni Intent come `agentMode`, `e2eMode` e `testControl` non devono cambiare
+  il comportamento;
+- argomenti AndroidJUnitRunner non devono trovare un runner nel pacchetto release;
+- il manifest non deve contenere componenti agent/E2E/test-control esportati;
+- la gerarchia non deve esporre i test tag come resource ID e non devono comparire
+  file `debug_trace_*.ndjson` o log `MIKLINK_E2E_TRACE`;
+- launch e navigazione black-box rappresentativa devono restare funzionanti.
+
+I test con sonda richiedono una configurazione esplicita già presente nell'app;
+assenza/autenticazione/capacità/speed server producono `NOT_RUN` o `SKIP` mirati.
+Backup con sostituzione dati e interruzione Wi‑Fi restano esclusi senza i rispettivi
+opt-in; la Wi‑Fi richiede anche controllo host USB/ADB trattenuto e ripristino
+verificato. I runner PowerShell e Bash correnti restano versionati finché la tabella
+di parity non è interamente `PASS` e il proprietario non ne autorizza la rimozione in
+una modifica separata.

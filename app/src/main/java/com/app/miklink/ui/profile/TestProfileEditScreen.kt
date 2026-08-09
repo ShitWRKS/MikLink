@@ -10,6 +10,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
@@ -21,6 +22,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.app.miklink.R
 import com.app.miklink.ui.theme.MikLinkThemeTokens
+import com.app.miklink.ui.testing.AgentUiTags
 import com.app.miklink.utils.NetworkValidator
 
 private const val DHCP_GATEWAY_TOKEN = "DHCP_GATEWAY"
@@ -92,6 +94,7 @@ fun TestProfileEditScreen(
     val titleRes = if (viewModel.isEditing) R.string.title_edit_profile else R.string.title_add_profile
 
     Scaffold(
+        modifier = Modifier.testTag(AgentUiTags.Profile.EDIT),
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(titleRes)) },
@@ -111,7 +114,8 @@ fun TestProfileEditScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp)
-                    .navigationBarsPadding(),
+                    .navigationBarsPadding()
+                    .testTag(AgentUiTags.Profile.SAVE),
                 enabled = viewModel.isValidForSave()
             ) {
                 Text(stringResource(R.string.save))
@@ -130,7 +134,7 @@ fun TestProfileEditScreen(
                     value = profileName,
                     onValueChange = { viewModel.profileName.value = it },
                     label = { Text(stringResource(R.string.profile_edit_name_label)) },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().testTag(AgentUiTags.Profile.NAME),
                     singleLine = true,
                     isError = profileName.isBlank()
                 )

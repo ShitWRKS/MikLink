@@ -132,6 +132,7 @@ fun TestExecutionScreen(
     BackHandler(enabled = saveState.isSaving) { }
 
     Scaffold(
+        modifier = Modifier.testTag(TestExecutionTags.SCREEN),
         topBar = {
             AppTopBar(
                 title = topBarTitle(uiState, isRunning),

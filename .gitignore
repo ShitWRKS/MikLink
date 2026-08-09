@@ -4,6 +4,11 @@
 /.idea/workspace.xml
 /.idea/libraries/
 .DS_Store
+Thumbs.db
+*.tmp
+*.swp
+*.log
+.env*
 
 /build
 # Ignore all build/ folders recursively

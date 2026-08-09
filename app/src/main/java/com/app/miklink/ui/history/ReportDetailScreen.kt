@@ -71,6 +71,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.app.miklink.R
+import com.app.miklink.ui.testing.AgentUiTags
 import com.app.miklink.core.domain.model.TestReport
 import com.app.miklink.core.domain.model.report.ReportData
 import com.app.miklink.core.domain.test.model.TestSectionId
@@ -168,6 +169,7 @@ fun ReportDetailScreen(
     }
 
     Scaffold(
+        modifier = Modifier.testTag(AgentUiTags.Report.SCREEN),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
@@ -182,7 +184,10 @@ fun ReportDetailScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { showExportDialog = true }) {
+                    IconButton(
+                        onClick = { showExportDialog = true },
+                        modifier = Modifier.testTag(AgentUiTags.Report.EXPORT_PDF)
+                    ) {
                         Icon(Icons.Filled.PictureAsPdf, contentDescription = null)
                     }
                 },

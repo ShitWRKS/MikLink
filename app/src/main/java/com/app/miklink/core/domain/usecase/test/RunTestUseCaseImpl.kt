@@ -15,6 +15,7 @@ import com.app.miklink.core.data.repository.client.ClientRepository
 import com.app.miklink.core.data.repository.probe.ProbeRepository
 import com.app.miklink.core.data.repository.test.TestProfileRepository
 import com.app.miklink.core.domain.test.logging.DebugTraceRunContext
+import com.app.miklink.core.domain.test.logging.DebugTraceCorrelation
 import com.app.miklink.core.domain.test.logging.DebugTraceSink
 import com.app.miklink.core.domain.test.logging.LogSanitizer
 import com.app.miklink.core.domain.test.logging.NoOpDebugTraceSink
@@ -71,18 +72,21 @@ class RunTestUseCaseImpl @Inject constructor(
 ) : RunTestUseCase {
     private val logSanitizer = LogSanitizer()
     private val qualityPolicy = TestQualityPolicy { testName, fields ->
-        val currentRunId = debugTraceRunContext.current() ?: return@TestQualityPolicy
-        debugTraceSink.event(
-            runId = currentRunId,
+        val correlation = debugTraceRunContext.correlation() ?: return@TestQualityPolicy
+        debugTraceSink.correlatedEvent(
+            correlation = correlation,
             event = "threshold_evaluation",
             fields = mapOf("test" to testName) + fields
         )
     }
 
     override fun execute(plan: TestPlan): Flow<TestEvent> = flow {
+        val requestedCorrelation = debugTraceRunContext.correlation()
         val runId = debugTraceSink.startRun(
             source = "ui",
             fields = mapOf(
+                "sessionId" to requestedCorrelation?.sessionId,
+                "scenarioId" to requestedCorrelation?.scenarioId,
                 "clientId" to plan.clientId,
                 "profileId" to plan.profileId,
                 "socketId" to plan.socketId
@@ -92,7 +96,12 @@ class RunTestUseCaseImpl @Inject constructor(
         var primaryFailure: Throwable? = null
 
         fun traceEvent(event: String, fields: Map<String, Any?> = emptyMap()) {
-            debugTraceSink.event(runId = runId, event = event, fields = fields)
+            val correlation = debugTraceRunContext.correlation()
+            if (correlation != null) {
+                debugTraceSink.correlatedEvent(correlation, event, fields)
+            } else {
+                debugTraceSink.event(runId = runId, event = event, fields = fields)
+            }
         }
 
         suspend fun emitLog(message: String) {
@@ -103,7 +112,13 @@ class RunTestUseCaseImpl @Inject constructor(
         }
 
         try {
-            debugTraceRunContext.set(runId)
+            debugTraceRunContext.set(
+                DebugTraceCorrelation(
+                    runId = runId,
+                    sessionId = requestedCorrelation?.sessionId ?: runId,
+                    scenarioId = requestedCorrelation?.scenarioId ?: "ui-run"
+                )
+            )
 
         traceEvent(
             event = "run_started",
@@ -163,6 +178,16 @@ class RunTestUseCaseImpl @Inject constructor(
         var layer1Failed = false
 
         suspend fun emitSnapshot() {
+            traceEvent(
+                event = "ui_snapshot",
+                fields = mapOf(
+                    "progress" to snapshotProgressKey.name,
+                    "percent" to snapshotPercent,
+                    "sections" to typedSections.map { section ->
+                        mapOf("id" to section.id.name, "status" to section.status.name)
+                    }
+                )
+            )
             emit(
                 TestEvent.SnapshotUpdated(
                     TestRunSnapshot(

@@ -21,6 +21,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -31,6 +32,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.app.miklink.core.domain.model.TestProfile
 import com.app.miklink.R
+import com.app.miklink.ui.testing.AgentUiTags
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,6 +43,7 @@ fun TestProfileListScreen(
     val profiles by viewModel.profiles.collectAsStateWithLifecycle()
 
     Scaffold(
+        modifier = Modifier.testTag(AgentUiTags.Profile.LIST),
         topBar = {
             TopAppBar(
                 title = {
@@ -75,6 +78,7 @@ fun TestProfileListScreen(
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 onClick = { navController.navigate("profile_edit/-1") },
+                modifier = Modifier.testTag(AgentUiTags.Profile.ADD),
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
                 text = { Text(stringResource(R.string.profile_list_new_profile)) },
                 containerColor = MaterialTheme.colorScheme.primary,
@@ -157,6 +161,7 @@ fun TestProfileListScreen(
                     ) {
                         TestProfileCard(
                             profile = profile,
+                            modifier = Modifier.testTag("${AgentUiTags.Profile.ITEM_PREFIX}_${profile.profileId}"),
                             onClick = { navController.navigate("profile_edit/${profile.profileId}") }
                         )
                     }
@@ -169,6 +174,7 @@ fun TestProfileListScreen(
 @Composable
 fun TestProfileCard(
     profile: TestProfile,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
     // Conta i test attivi
@@ -180,7 +186,7 @@ fun TestProfileCard(
     ).count { it }
 
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .animateContentSize(),
         shape = RoundedCornerShape(12.dp),

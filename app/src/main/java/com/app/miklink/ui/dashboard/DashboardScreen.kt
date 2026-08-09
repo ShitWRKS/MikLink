@@ -209,6 +209,7 @@ fun DashboardScreen(
         }
 
         Scaffold(
+            modifier = Modifier.testTag(DashboardTags.SCREEN),
             containerColor = Color.Transparent,
             topBar = {
                 AppTopBar(

@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
+import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
@@ -18,94 +19,104 @@ class DebugTraceSinkImpl @Inject constructor(
 ) : DebugTraceSink {
     private data class RunState(
         val file: File,
+        val sessionId: String,
+        val scenarioId: String,
         val sequence: AtomicLong = AtomicLong(0)
     )
 
     private val runs = ConcurrentHashMap<String, RunState>()
+    private val sanitizer = LogSanitizer(maxLength = MAX_TRACE_VALUE_LENGTH)
 
     override fun startRun(source: String, fields: Map<String, Any?>): String {
+        require(source.isNotBlank()) { "Trace source is required" }
         val runId = UUID.randomUUID().toString()
-        val baseDir = File(context.getExternalFilesDir(null), "e2e-trace")
-        if (!baseDir.exists()) {
-            baseDir.mkdirs()
-        }
+        val baseDir = File(context.getExternalFilesDir(null), TRACE_DIRECTORY)
+        check(baseDir.exists() || baseDir.mkdirs()) { "Unable to create debug trace directory" }
         val runFile = File(baseDir, "debug_trace_$runId.ndjson")
-        runs[runId] = RunState(file = runFile)
+        val sessionId = fields["sessionId"]?.toString()?.takeIf { it.isNotBlank() } ?: runId
+        val scenarioId = fields["scenarioId"]?.toString()?.takeIf { it.isNotBlank() } ?: source
+        runs[runId] = RunState(runFile, sessionId, scenarioId)
         Log.i(E2E_TAG, """MIKLINK_E2E_TRACE {"runId":"$runId","path":"${runFile.absolutePath}"}""")
         return runId
     }
 
     override fun event(runId: String, event: String, fields: Map<String, Any?>) {
         val state = runs[runId] ?: return
-        val seq = state.sequence.incrementAndGet()
+        require(event in SUPPORTED_EVENT_TYPES) { "Unsupported trace event type: $event" }
+        val sequence = state.sequence.incrementAndGet()
+        val sessionId = fields["sessionId"]?.toString()?.takeIf { it.isNotBlank() } ?: state.sessionId
+        val scenarioId = fields["scenarioId"]?.toString()?.takeIf { it.isNotBlank() } ?: state.scenarioId
+        val operationId = fields["operationId"]?.toString()?.takeIf { it.isNotBlank() }
+        val exchangeId = fields["exchangeId"]?.toString()?.takeIf { it.isNotBlank() }
+        val payloadFields = fields - CORRELATION_KEYS
+        val safePayload = sanitizer.sanitizeValue(payloadFields)
+
         val payload = JSONObject()
+            .put("schemaVersion", TRACE_SCHEMA_VERSION)
+            .put("timestamp", Instant.now().toString())
+            .put("sessionId", sessionId)
+            .put("scenarioId", scenarioId)
+            .put("operationId", operationId ?: JSONObject.NULL)
+            .put("exchangeId", exchangeId ?: JSONObject.NULL)
+            .put("eventType", event)
+            .put("payload", toJsonValue(safePayload))
+            // Transitional aliases retained until both host runners pass parity.
             .put("runId", runId)
-            .put("seq", seq)
+            .put("seq", sequence)
             .put("event", event)
 
-        fields.forEach { (key, value) ->
-            payload.put(key, toJsonValue(key, value))
+        synchronized(state) {
+            state.file.appendText(payload.toString() + "\n")
         }
-
-        state.file.appendText(payload.toString() + "\n")
     }
 
     override fun finishRun(runId: String, finalStatus: String, fields: Map<String, Any?>) {
-        event(
-            runId = runId,
-            event = "run_finished",
-            fields = fields + ("finalStatus" to finalStatus)
-        )
+        event(runId, "run_finished", fields + ("finalStatus" to finalStatus))
         runs.remove(runId)
     }
 
-    private fun toJsonValue(key: String, value: Any?): Any? {
-        if (value == null) return JSONObject.NULL
-        if (shouldRedact(key)) return REDACTED_VALUE
-
-        return when (value) {
-            is Map<*, *> -> {
-                val json = JSONObject()
-                value.entries.forEach { (childKey, childValue) ->
-                    if (childKey != null) {
-                        val childName = childKey.toString()
-                        json.put(childName, toJsonValue(childName, childValue))
-                    }
-                }
-                json
-            }
-            is Iterable<*> -> {
-                val json = JSONArray()
-                value.forEach { element ->
-                    json.put(toJsonValue(key, element))
-                }
-                json
-            }
-            is Array<*> -> {
-                val json = JSONArray()
-                value.forEach { element ->
-                    json.put(toJsonValue(key, element))
-                }
-                json
-            }
-            is Number, is Boolean, is String -> value
-            else -> value.toString()
+    private fun toJsonValue(value: Any?): Any = when (value) {
+        null -> JSONObject.NULL
+        is Map<*, *> -> JSONObject().also { json ->
+            value.forEach { (key, child) -> if (key != null) json.put(key.toString(), toJsonValue(child)) }
         }
-    }
-
-    private fun shouldRedact(key: String): Boolean {
-        val normalized = key.lowercase()
-        return normalized.contains("password") ||
-            normalized.contains("token") ||
-            normalized.contains("secret") ||
-            normalized.contains("authorization") ||
-            normalized.contains("cookie") ||
-            normalized.contains("privatekey") ||
-            normalized.contains("private_key")
+        is Iterable<*> -> JSONArray().also { json -> value.forEach { json.put(toJsonValue(it)) } }
+        is Array<*> -> JSONArray().also { json -> value.forEach { json.put(toJsonValue(it)) } }
+        is Number, is Boolean, is String -> value
+        else -> sanitizer.sanitize(value.toString())
     }
 
     private companion object {
+        private const val TRACE_SCHEMA_VERSION = "1.0.0"
+        private const val TRACE_DIRECTORY = "e2e-trace"
         private const val E2E_TAG = "MIKLINK_E2E"
-        private const val REDACTED_VALUE = "<redacted>"
+        private const val MAX_TRACE_VALUE_LENGTH = 16_384
+        private val CORRELATION_KEYS = setOf("sessionId", "scenarioId", "operationId", "exchangeId")
+        private val SUPPORTED_EVENT_TYPES = setOf(
+            "run_started",
+            "run_finished",
+            "profile_loaded",
+            "test_enabled_state",
+            "thresholds_loaded",
+            "scenario_started",
+            "prerequisite",
+            "step_started",
+            "step_finished",
+            "mikrotik_request",
+            "mikrotik_raw_response",
+            "probe_request",
+            "probe_response",
+            "probe_error",
+            "probe_exchange_completed",
+            "parsed_response",
+            "normalized_response",
+            "normalized_result",
+            "threshold_evaluation",
+            "test_decision",
+            "ui_snapshot",
+            "technical_error",
+            "cleanup",
+            "scenario_finished"
+        )
     }
 }

@@ -6,6 +6,7 @@
 package com.app.miklink.ui.test.components
 
 object TestExecutionTags {
+    const val SCREEN = "test_execution_screen"
     const val IN_PROGRESS_TOGGLE = "test_execution_toggle_in_progress_logs"
     const val COMPLETED_TOGGLE = "test_execution_toggle_completed_logs"
     const val LOG_PANE = "test_execution_log_pane"
@@ -18,4 +19,18 @@ object TestExecutionTags {
     const val BOTTOM_REPEAT = "test_execution_bottom_repeat"
     const val BOTTOM_SAVE = "test_execution_bottom_save"
     const val PING_SAMPLES_LIST = "test_execution_ping_samples_list"
+
+    val stableTags: Set<String> = setOf(
+        SCREEN,
+        IN_PROGRESS_TOGGLE,
+        COMPLETED_TOGGLE,
+        LOG_PANE,
+        HERO_RUNNING,
+        HERO_COMPLETED,
+        LOGS_BOX,
+        BOTTOM_CLOSE,
+        BOTTOM_REPEAT,
+        BOTTOM_SAVE,
+        PING_SAMPLES_LIST
+    )
 }

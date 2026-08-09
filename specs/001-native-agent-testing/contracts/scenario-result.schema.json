@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://miklink.test/contracts/scenario-result.schema.json",
+  "title": "MikLink Scenario Result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "sessionId", "scenarioId", "startedAt", "endedAt", "status", "reasonCode", "prerequisites", "steps", "cleanup"],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "sessionId": { "type": "string", "minLength": 1 },
+    "scenarioId": { "type": "string", "minLength": 1 },
+    "startedAt": { "type": "string", "format": "date-time" },
+    "endedAt": { "type": "string", "format": "date-time" },
+    "status": { "enum": ["PASS", "FAIL", "NOT_RUN", "SKIP"] },
+    "reasonCode": { "type": "string", "minLength": 1 },
+    "detail": { "type": ["string", "null"] },
+    "lastSuccessfulStepId": { "type": ["string", "null"] },
+    "prerequisites": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "required", "status", "reasonCode"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "required": { "type": "boolean" },
+          "status": { "enum": ["AVAILABLE", "UNAVAILABLE", "NOT_APPLICABLE"] },
+          "reasonCode": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["stepId", "kind", "status", "startedAt", "endedAt"],
+        "properties": {
+          "stepId": { "type": "string", "minLength": 1 },
+          "kind": { "enum": ["SETUP", "ACTION", "ASSERTION", "OBSERVATION", "CLEANUP"] },
+          "status": { "enum": ["PASS", "FAIL", "SKIP"] },
+          "startedAt": { "type": "string", "format": "date-time" },
+          "endedAt": { "type": "string", "format": "date-time" },
+          "operationId": { "type": ["string", "null"], "minLength": 1 },
+          "detail": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "crashExitReason": { "type": ["string", "null"] },
+    "artifactPaths": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^(?![/\\\\])(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*//).+"
+      },
+      "uniqueItems": true
+    },
+    "cleanup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": { "enum": ["NOT_REQUIRED", "PASS", "FAIL"] },
+        "reasonCode": { "type": ["string", "null"] }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "status": { "const": "PASS" } },
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "steps": {
+            "items": {
+              "not": {
+                "properties": { "status": { "const": "FAIL" } },
+                "required": ["status"]
+              }
+            }
+          },
+          "prerequisites": {
+            "items": {
+              "not": {
+                "properties": {
+                  "required": { "const": true },
+                  "status": { "const": "UNAVAILABLE" }
+                },
+                "required": ["required", "status"]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "status": { "enum": ["NOT_RUN", "SKIP"] } },
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "steps": {
+            "items": {
+              "not": {
+                "properties": { "kind": { "enum": ["ACTION", "ASSERTION"] } },
+                "required": ["kind"]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "cleanup": {
+            "properties": { "status": { "const": "FAIL" } },
+            "required": ["status"]
+          }
+        },
+        "required": ["cleanup"]
+      },
+      "then": {
+        "properties": { "status": { "const": "FAIL" } }
+      }
+    }
+  ]
+}
