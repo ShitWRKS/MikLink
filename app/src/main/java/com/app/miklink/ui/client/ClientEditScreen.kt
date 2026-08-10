@@ -165,7 +165,7 @@ fun ClientEditScreen(
                 onValueChange = { viewModel.location.value = it },
                 labelResId = R.string.client_edit_location_label,
                 placeholderResId = R.string.client_edit_location_placeholder,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth().testTag(AgentUiTags.Client.LOCATION)
             )
             
             LabeledTextField(
@@ -173,7 +173,7 @@ fun ClientEditScreen(
                 onValueChange = { viewModel.notes.value = it },
                 labelResId = R.string.report_detail_edit_notes,
                 placeholderResId = R.string.client_edit_notes_placeholder,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().testTag(AgentUiTags.Client.NOTES),
                 singleLine = false,
                 minLines = 2,
                 maxLines = 4
@@ -206,7 +206,7 @@ fun ClientEditScreen(
                         onClick = { viewModel.networkMode.value = NetworkMode.DHCP },
                         icon = Icons.Default.Wifi,
                         labelResId = R.string.detail_value_dhcp,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f).testTag(AgentUiTags.Client.NETWORK_DHCP)
                     )
 
                     NetworkModeButton(
@@ -214,7 +214,7 @@ fun ClientEditScreen(
                         onClick = { viewModel.networkMode.value = NetworkMode.STATIC },
                         icon = Icons.Default.Settings,
                         labelResId = R.string.detail_value_static,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f).testTag(AgentUiTags.Client.NETWORK_STATIC)
                     )
                 }
 
@@ -232,7 +232,7 @@ fun ClientEditScreen(
                             staticCidrInvalid -> R.string.client_edit_static_cidr_invalid
                             else -> R.string.client_edit_static_ip_support
                         },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().testTag(AgentUiTags.Client.STATIC_CIDR),
                         isError = staticCidrInvalid
                     )
                     
@@ -246,7 +246,7 @@ fun ClientEditScreen(
                             staticGatewayInvalid -> R.string.client_edit_static_gateway_invalid
                             else -> null
                         },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().testTag(AgentUiTags.Client.STATIC_GATEWAY),
                         isError = staticGatewayInvalid
                     )
                 }

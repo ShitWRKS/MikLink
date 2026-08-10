@@ -142,7 +142,7 @@ fun TestProfileEditScreen(
                     value = profileDescription,
                     onValueChange = { viewModel.profileDescription.value = it },
                     label = { Text(stringResource(R.string.profile_edit_description_label)) },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().testTag(AgentUiTags.Profile.DESCRIPTION)
                 )
             }
 
@@ -153,28 +153,33 @@ fun TestProfileEditScreen(
                     checked = runTdr,
                     onCheckedChange = { viewModel.runTdr.value = it },
                     headlineText = stringResource(R.string.profile_edit_run_tdr_title),
-                    supportingText = stringResource(R.string.profile_edit_run_tdr_support)
+                    supportingText = stringResource(R.string.profile_edit_run_tdr_support),
+                    modifier = Modifier.testTag(AgentUiTags.Profile.RUN_TDR)
                 )
                 SwitchListItem(
                     checked = runLinkStatus,
                     onCheckedChange = { viewModel.runLinkStatus.value = it },
-                    headlineText = stringResource(R.string.profile_edit_run_link_title)
+                    headlineText = stringResource(R.string.profile_edit_run_link_title),
+                    modifier = Modifier.testTag(AgentUiTags.Profile.RUN_LINK)
                 )
                 SwitchListItem(
                     checked = runLldp,
                     onCheckedChange = { viewModel.runLldp.value = it },
-                    headlineText = stringResource(R.string.profile_edit_run_lldp_title)
+                    headlineText = stringResource(R.string.profile_edit_run_lldp_title),
+                    modifier = Modifier.testTag(AgentUiTags.Profile.RUN_NEIGHBORS)
                 )
                 SwitchListItem(
                     checked = runPing,
                     onCheckedChange = { viewModel.runPing.value = it },
-                    headlineText = stringResource(R.string.profile_edit_run_ping_title)
+                    headlineText = stringResource(R.string.profile_edit_run_ping_title),
+                    modifier = Modifier.testTag(AgentUiTags.Profile.RUN_PING)
                 )
                 SwitchListItem(
                     checked = runSpeedTest,
                     onCheckedChange = { viewModel.runSpeedTest.value = it },
                     headlineText = stringResource(R.string.profile_edit_run_speed_title),
-                    supportingText = stringResource(R.string.profile_edit_run_speed_support)
+                    supportingText = stringResource(R.string.profile_edit_run_speed_support),
+                    modifier = Modifier.testTag(AgentUiTags.Profile.RUN_SPEED)
                 )
                 if (!viewModel.hasAtLeastOneTestEnabled()) {
                     Text(
@@ -192,7 +197,8 @@ fun TestProfileEditScreen(
                         title = stringResource(R.string.profile_edit_ping_header),
                         subtitle = stringResource(R.string.profile_edit_ping_header_description),
                         expanded = pingConfigExpanded,
-                        onExpandedChange = { pingConfigExpanded = it }
+                        onExpandedChange = { pingConfigExpanded = it },
+                        modifier = Modifier.testTag(AgentUiTags.Profile.PING_CONFIG)
                     ) {
                         Text(
                             stringResource(R.string.profile_edit_quick_fill),
@@ -245,7 +251,7 @@ fun TestProfileEditScreen(
                             onValueChange = { viewModel.pingTarget1.value = it },
                             invalidText = stringResource(R.string.profile_edit_invalid_target_full),
                             failureColor = semantic.failure,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth().testTag(AgentUiTags.Profile.PING_TARGET_1)
                         )
 
                         if (showTarget2) {
@@ -277,7 +283,7 @@ fun TestProfileEditScreen(
                         }
 
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().testTag(AgentUiTags.Profile.PING_COUNT),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             if (!showTarget2) {
@@ -446,6 +452,7 @@ private fun CollapsibleCard(
     subtitle: String,
     expanded: Boolean,
     onExpandedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit
 ) {
     Card(
@@ -458,7 +465,10 @@ private fun CollapsibleCard(
             headlineContent = { Text(title, style = MaterialTheme.typography.titleMedium) },
             supportingContent = { Text(subtitle, style = MaterialTheme.typography.bodySmall) },
             trailingContent = {
-                IconButton(onClick = { onExpandedChange(!expanded) }) {
+                IconButton(
+                    onClick = { onExpandedChange(!expanded) },
+                    modifier = modifier
+                ) {
                     Icon(
                         imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                         contentDescription = null
@@ -483,12 +493,19 @@ private fun SwitchListItem(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     headlineText: String,
-    supportingText: String? = null
+    supportingText: String? = null,
+    modifier: Modifier = Modifier
 ) {
     ListItem(
         headlineContent = { Text(headlineText) },
         supportingContent = supportingText?.let { { Text(it) } },
-        trailingContent = { Switch(checked = checked, onCheckedChange = onCheckedChange) },
+        trailingContent = {
+            Switch(
+                checked = checked,
+                onCheckedChange = onCheckedChange,
+                modifier = modifier
+            )
+        },
         modifier = Modifier.fillMaxWidth()
     )
 }

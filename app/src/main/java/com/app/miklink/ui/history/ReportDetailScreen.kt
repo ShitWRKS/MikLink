@@ -295,6 +295,7 @@ fun ReportDetailScreen(
             title = stringResource(id = R.string.report_detail_delete_title),
             message = stringResource(id = R.string.report_detail_delete_body),
             confirmLabel = stringResource(id = R.string.report_detail_delete_confirm),
+            confirmTag = AgentUiTags.Report.DELETE_CONFIRM,
             onDismiss = { showDeleteDialog = false },
             onConfirm = {
                 showDeleteDialog = false
@@ -596,7 +597,7 @@ private fun ActionsCard(
             ) {
                 OutlinedButton(
                     onClick = onDelete,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f).testTag(AgentUiTags.Report.DELETE)
                 ) {
                     Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(8.dp))
@@ -604,7 +605,7 @@ private fun ActionsCard(
                 }
                 Button(
                     onClick = onRepeat,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f).testTag(AgentUiTags.Report.REPEAT)
                 ) {
                     Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(8.dp))
@@ -620,6 +621,7 @@ private fun ConfirmDialog(
     title: String,
     message: String,
     confirmLabel: String,
+    confirmTag: String? = null,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit
 ) {
@@ -628,7 +630,10 @@ private fun ConfirmDialog(
         title = { Text(title, fontWeight = FontWeight.Bold) },
         text = { Text(message) },
         confirmButton = {
-            Button(onClick = onConfirm) {
+            Button(
+                onClick = onConfirm,
+                modifier = confirmTag?.let { Modifier.testTag(it) } ?: Modifier
+            ) {
                 Text(confirmLabel)
             }
         },

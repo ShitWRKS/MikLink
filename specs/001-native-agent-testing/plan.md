@@ -1,6 +1,6 @@
 # Implementation Plan: Native Agent-Driven Application Testing
 
-**Branch**: `001-native-agent-testing` | **Date**: 2026-08-09 | **Spec**: [spec.md](spec.md)  
+**Branch**: `001-native-agent-testing-functional-acceptance` | **Date**: 2026-08-10 | **Spec**: [spec.md](spec.md)  
 **Input**: Feature specification from `/specs/001-native-agent-testing/spec.md`
 
 ## Summary
@@ -12,6 +12,11 @@ on-device catalog using AndroidJUnitRunner, Compose tests, and stable UI Automat
 the normal MikLink UI/domain/repository/network/export paths, strengthen the existing
 debug trace into a versioned secret-safe evidence stream, isolate session-created
 fixtures, and retain current wrappers until native parity is accepted.
+
+The completion increment keeps existing repository/use-case scenarios as instrumented
+integration tests and adds a separate physical-device Functional UI catalog. A
+fixture may arrange prerequisites or clean session-owned records, but the journey
+named by a Functional UI scenario is driven and verified only through rendered UI.
 
 ## Technical Context
 
@@ -32,7 +37,7 @@ have explicit scenario bounds; evidence writes remain incremental and size-bound
 production/release activation path; no custom app-control protocol; no hard-coded
 live credentials; no implicit data reset/Wi-Fi disruption; normal product
 communication path  
-**Scale/Scope**: 10 user-visible feature groups, five prioritized journeys, one
+**Scale/Scope**: 10 user-visible feature groups, six prioritized journeys, one
 physical-device catalog, one exploratory contract, three versioned evidence schemas
 
 ## Constitution Check
@@ -46,6 +51,10 @@ physical-device catalog, one exploratory contract, three versioned evidence sche
 | III. Secret-Safe, Correlated Evidence | PASS | Versioned schemas, source-time recursive redaction, operation/exchange correlations, acceptance scans |
 | IV. Deterministic Native Validation | PASS | Explicit serial/prerequisites/outcomes/bounds; session-owned data; supported adb/Gradle/AndroidX mechanisms |
 | V. Preservation Until Verified Parity | PASS | Responsibility map in `research.md`; both wrappers retained until acceptance evidence |
+
+The 2026-08-10 Functional UI increment rechecked the gates: production paths remain
+authoritative; integration tests are preserved; no new flavor, protocol, RouterOS
+client, host wrapper, destructive permission, video, or release activation exists.
 
 No violation requires complexity justification.
 
@@ -163,12 +172,28 @@ All technical unknowns are resolved in [research.md](research.md). Key decisions
 
 ### Regression catalog
 
-- Deliver probe-independent CRUD/settings/history/report/PDF/backup and result-card
-  scenarios first, so value remains when the lab is absent.
+- Preserve probe-independent repository/use-case CRUD/settings/history/report/PDF/
+  backup and result-card scenarios as integration coverage.
+- Add independently selectable UI Automator/Compose Functional UI scenarios for
+  launch/navigation, client/profile CRUD, representative settings/report settings,
+  history/detail, real result presentation, and PDF export. They use dynamic semantic
+  selectors and never hard-coded coordinates.
 - Migrate live link/TDR/network/neighbors/ping/speed coverage from the current test,
   with per-step capability/prerequisite semantics and correlated trace assertions.
 - Add rapid-start, background/resume, and opted-in Wi-Fi loss/recovery scenarios.
 - Validate every `FG-*` row and preserve lower-level tests as complementary coverage.
+
+### Device preflight and evidence
+
+- Discover exactly one explicit ADB serial, wake the device if needed, and evaluate
+  keyguard state. A lock requests manual user action and is polled only for a bounded
+  interval; no credential automation is allowed. Timeout maps to
+  `NOT_RUN/DEVICE_LOCKED` and the requested operation is not replaced.
+- Capture hierarchy plus targeted before/after/final/failure screenshots. Prefer the
+  existing structured trace and targeted logcat to repeated images. Do not produce
+  screen recordings.
+- Use preserving `adb install -r -t` and direct AndroidJUnitRunner invocation as the
+  primary workflow. No shell-language runner is part of correctness.
 
 ### Migration and release gates
 
@@ -195,6 +220,8 @@ All technical unknowns are resolved in [research.md](research.md). Key decisions
 6. Release smoke and static inspection verify isolation.
 7. Current wrappers are run for comparison, not deleted, until the parity matrix is
    fully accepted.
+8. Functional UI results are reported separately from integration and live-hardware
+   results; an integration PASS cannot promote a Functional UI row.
 
 ## Complexity Tracking
 

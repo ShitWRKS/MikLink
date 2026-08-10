@@ -181,6 +181,31 @@ validate screenshots, hierarchy, actions, and observation claims.
 
 ---
 
+## Phase 9: Complete Physical-Device Functional UI Acceptance
+
+**Goal**: Correct integration-only PASS claims and add independently runnable primary
+user journeys that operate and verify the real UI without a new host platform.
+
+- [X] T065 [US6] Define integration, Functional UI, live-hardware, and exploratory coverage levels plus the fixture fidelity rule in `spec.md`, `plan.md`, and `coverage-inventory.md`
+- [X] T066 [P] [US6] Add only the missing stable interactive/observable identifiers in `app/src/main/java/com/app/miklink/ui/testing/AgentUiTags.kt` and the existing client/profile/settings/history/PDF/result screens
+- [X] T067 [P] [US6] Extend connected-device wake/locked/unlock-wait/DEVICE_LOCKED preflight contracts in `app/src/androidTest/java/com/app/miklink/e2e/support/DeviceKeyguard.kt` and focused tests
+- [X] T068 [US6] Add shared dynamic semantic UI operations and targeted before/after/failure evidence support without coordinates or video in `app/src/androidTest/java/com/app/miklink/e2e/functional/FunctionalUiSupport.kt`
+- [X] T069 [P] [US6] Add dashboard launch, section navigation, and return Functional UI acceptance in `app/src/androidTest/java/com/app/miklink/e2e/functional/LaunchNavigationUiTest.kt`
+- [X] T081 [P] [US6] Add configured-probe open/save/reopen Functional UI acceptance with precise NOT_RUN prerequisites in `app/src/androidTest/java/com/app/miklink/e2e/functional/ProbeConfigurationUiTest.kt`
+- [X] T070 [P] [US6] Add UI-driven client create/reopen/edit/persist plus representative network validation and session-owned cleanup in `app/src/androidTest/java/com/app/miklink/e2e/functional/ClientCrudUiTest.kt`
+- [X] T071 [P] [US6] Add UI-driven profile create/toggle/target/save/reopen/edit plus session-owned cleanup in `app/src/androidTest/java/com/app/miklink/e2e/functional/ProfileCrudUiTest.kt`
+- [X] T072 [P] [US6] Add representative UI settings persistence/restoration acceptance in `app/src/androidTest/java/com/app/miklink/e2e/functional/SettingsUiTest.kt`
+- [X] T073 [P] [US6] Add UI report-settings persistence and real-result PDF export acceptance in `app/src/androidTest/java/com/app/miklink/e2e/functional/ReportSettingsUiTest.kt` and `PdfExportUiTest.kt`
+- [X] T074 [P] [US6] Add UI history search/detail/action and completed-result presentation acceptance in `app/src/androidTest/java/com/app/miklink/e2e/functional/HistoryUiTest.kt`
+- [X] T075 [US6] Register Functional UI scenario IDs and suite selection without relabeling integration scenarios in `app/src/androidTest/java/com/app/miklink/e2e/catalog/E2ETestCatalog.kt` and `FunctionalAcceptanceSuite.kt`
+- [X] T076 [US6] Extend the existing live-probe UI flow to verify Completed, visible result sections, save, history persistence, detail, and session-owned delete through the normal UI
+- [X] T077 [US6] Update `docs/reference/testing.md` with direct Gradle/ADB build-install-unlock-targeted/full-rerun and artifact retrieval workflow; explicitly prohibit coordinates/video and keep legacy runners pending parity
+- [X] T078 [US6] Run local/unit/contract/lint and compile the Functional UI test APK; correct product defects rather than weakening assertions
+- [ ] T079 [US6] Run targeted Functional UI scenarios and then the complete applicable suite on the unlocked physical device; record separate outcomes and evidence in `coverage-inventory.md` and `verification.md`
+- [ ] T080 [US6] Run Spec Kit analyze after the modified spec/plan/tasks are stable and reconcile all material findings before final acceptance
+
+---
+
 ## Dependencies and Execution Order
 
 - Phase 1 precedes Phase 2; Phase 2 blocks all stories.
@@ -211,6 +236,11 @@ validate screenshots, hierarchy, actions, and observation claims.
 | FR-024–FR-025 | T026–T027, T047, T058, T062, T064 |
 | FR-026–FR-027 | T010, T055–T057, T061 |
 
+| FR-028-FR-030 | T065-T076 |
+| FR-031 | T067-T069, T077, T079 |
+| FR-032 | T068-T069, T077-T079 |
+| FR-033 | T073, T077-T079 |
+
 | Success criteria | Acceptance tasks |
 |---|---|
 | SC-001 | T027 |
@@ -221,6 +251,10 @@ validate screenshots, hierarchy, actions, and observation claims.
 | SC-010 | T057, T061 |
 | SC-011 | T047, T062, T064 |
 | SC-012 | T054–T056 |
+
+| SC-013 | T065-T076, T079 |
+| SC-014 | T067, T077, T079 |
+| SC-015 | T068, T077, T079 |
 
 ## Parallel Opportunities
 

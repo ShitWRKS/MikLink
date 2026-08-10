@@ -1,5 +1,30 @@
 # Verification — Native Agent Testing
 
+## Functional UI completion increment — 2026-08-10
+
+**Baseline**: `develop` at `fa2e9d15e542850956e3db92bdadd2b41dbfe9d4`  
+**Branch**: `001-native-agent-testing-functional-acceptance`  
+**Device preflight**: `NOT_RUN / DEVICE_NOT_CONNECTED` — the configured Android SDK
+ADB returned an empty device list, so no new physical-device PASS is claimed.
+
+| Verification | Result |
+|---|---|
+| Functional UI source + debug/androidTest compilation | PASS |
+| `:app:testDebugUnitTest` | PASS |
+| `:app:lint` | PASS |
+| `:app:assembleDebug :app:assembleDebugAndroidTest` | PASS |
+| Functional UI physical suite | NOT_RUN — compatible unlocked device not connected |
+| Live probe extension | NOT_RUN — device and configured reachable probe unavailable |
+
+The new classes keep integration coverage separate and compile independently for
+launch/navigation, client/profile UI CRUD, settings/report-settings persistence,
+history/detail/delete, and PDF export/retrieval. `LiveProbeE2ETest` now also verifies
+produced section cards, saves through UI, reopens the session report through History,
+and deletes the session report through the visible action. Device execution remains
+required before any new Functional UI row can become PASS.
+
+## Previous accepted baseline — 2026-08-09
+
 **Date**: 2026-08-09  
 **Baseline revision**: `cd629064968db3b633d0a16b6e7e4e63bf209e6d`  
 **Device**: `6pr8q4nncyhqrcx8`, model `22101316G`, API 34  

@@ -230,6 +230,8 @@ fun DashboardScreen(
                     containerColor = Color.Transparent,
                     onReport = { navController.navigate("history") },
                     onSettings = { navController.navigate("settings") },
+                    reportTestTag = DashboardTags.HISTORY_BUTTON,
+                    settingsTestTag = DashboardTags.SETTINGS_BUTTON,
                     reportBadge = true
                 )
             },
@@ -269,6 +271,8 @@ fun DashboardScreen(
                         onSocketChange = { viewModel.socketName.value = it },
                         clientSelectorTag = DashboardTags.CLIENT_SELECTOR,
                         profileSelectorTag = DashboardTags.PROFILE_SELECTOR,
+                        manageClientTag = DashboardTags.MANAGE_CLIENTS,
+                        manageProfileTag = DashboardTags.MANAGE_PROFILES,
                         onManageClient = { navController.navigate("client_list") },
                         onManageProfile = { navController.navigate("profile_list") }
                     )

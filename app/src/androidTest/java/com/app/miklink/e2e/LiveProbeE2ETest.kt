@@ -5,12 +5,15 @@ import android.util.Log
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
+import androidx.test.uiautomator.Direction
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
 import com.app.miklink.core.domain.model.TdrCapability
 import com.app.miklink.core.domain.test.logging.DebugTraceCorrelation
 import com.app.miklink.R
+import com.app.miklink.core.domain.model.TestReport
 import com.app.miklink.ui.dashboard.DashboardTags
+import com.app.miklink.ui.testing.AgentUiTags
 import com.app.miklink.ui.test.components.TestExecutionTags
 import dagger.hilt.android.EntryPointAccessors
 import com.app.miklink.e2e.support.ArtifactSecretScanner
@@ -23,6 +26,7 @@ import com.app.miklink.e2e.support.dismissKeyguardIfPossible
 import java.io.File
 import java.util.UUID
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.first
 import org.json.JSONObject
 import org.junit.Rule
 import org.junit.Test
@@ -35,6 +39,7 @@ import org.junit.runners.model.Statement
 class LiveProbeE2ETest {
     private var fixtureManager: TestFixtureManager? = null
     private lateinit var fixtures: CoreFixtures
+    private var savedSessionReport: TestReport? = null
     private val device: UiDevice by lazy {
         UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
     }
@@ -42,10 +47,7 @@ class LiveProbeE2ETest {
     private val scenarioRule = ScenarioRule.catalog(
         scenarioId = "legacy-live-probe",
         timeoutMs = 240_000L,
-        cleanup = {
-            fixtureManager?.cleanup()
-                ?: com.app.miklink.e2e.support.CleanupResult(CleanupStatus.NOT_REQUIRED)
-        }
+        cleanup = { cleanupLiveFixtures() }
     )
 
     @get:Rule
@@ -70,6 +72,9 @@ class LiveProbeE2ETest {
             logE2e("MIKLINK_E2E_STEP", mapOf("step" to "app_started"))
 
             ensureLiveFixtures()
+            val reportIdsBefore = runBlocking {
+                dependencies().reportRepository().observeAllReports().first().map { it.reportId }.toSet()
+            }
 
             val selectedClientId = selectClient()
             val selectedProfileId = selectProfile()
@@ -140,7 +145,36 @@ class LiveProbeE2ETest {
                 throw AssertionError("Run appears stuck in running state")
             }
 
+            listOf("network", "link", "neighbors", "ping").forEach { section ->
+                waitForScrollableTag(
+                    "${TestExecutionTags.SECTION_CARD_PREFIX}_$section",
+                    10_000L
+                )
+            }
+            if (fixtures.profile.runTdr) {
+                waitForScrollableTag("${TestExecutionTags.SECTION_CARD_PREFIX}_tdr", 10_000L)
+            }
+
             collectAndRegisterTrace(tracesBefore)
+            requireObject(TestExecutionTags.BOTTOM_SAVE).click()
+            waitForTag(DashboardTags.SCREEN, 15_000L, "dashboard_not_reached_after_save", notRunOnTimeout = false)
+            savedSessionReport = awaitSavedSessionReport(reportIdsBefore)
+
+            requireObject(DashboardTags.HISTORY_BUTTON).click()
+            waitForTag(AgentUiTags.History.SCREEN, 10_000L, "history_not_reached", notRunOnTimeout = false)
+            requireObject(AgentUiTags.History.SEARCH).text = fixtures.client.companyName
+            val savedReport = requireNotNull(savedSessionReport)
+            requireObject("${AgentUiTags.History.CLIENT_EXPAND_PREFIX}_${fixtures.client.clientId}").click()
+            requireObject("${AgentUiTags.History.REPORT_ITEM_PREFIX}_${savedReport.reportId}").click()
+            waitForTag(AgentUiTags.Report.SCREEN, 10_000L, "saved_report_detail_not_reached", notRunOnTimeout = false)
+            if (!hasVisibleText(savedReport.socketName.orEmpty())) {
+                throw AssertionError("Saved report socket is not visible in history detail")
+            }
+
+            requireScrollableObject(AgentUiTags.Report.DELETE).click()
+            requireObject(AgentUiTags.Report.DELETE_CONFIRM).click()
+            waitForTag(AgentUiTags.History.SCREEN, 10_000L, "history_not_reached_after_delete", notRunOnTimeout = false)
+            savedSessionReport = null
             logE2e("MIKLINK_E2E_END", mapOf("status" to "PASS"))
         } catch (notRun: NotRunException) {
             logE2e(
@@ -296,6 +330,54 @@ class LiveProbeE2ETest {
             mediaType = "application/x-ndjson",
             redactionStatus = RedactionStatus.VERIFIED_SCAN
         )
+    }
+
+    private suspend fun cleanupLiveFixtures(): com.app.miklink.e2e.support.CleanupResult {
+        savedSessionReport?.let { report ->
+            runCatching {
+                dependencies().reportRepository().getReport(report.reportId)?.let {
+                    dependencies().reportRepository().deleteReport(it)
+                }
+            }.onFailure {
+                return com.app.miklink.e2e.support.CleanupResult(
+                    CleanupStatus.FAIL,
+                    "SAVED_REPORT_CLEANUP_FAILED"
+                )
+            }
+            savedSessionReport = null
+        }
+        return fixtureManager?.cleanup()
+            ?: com.app.miklink.e2e.support.CleanupResult(CleanupStatus.NOT_REQUIRED)
+    }
+
+    private fun awaitSavedSessionReport(existingIds: Set<Long>): TestReport {
+        val deadline = SystemClock.uptimeMillis() + 10_000L
+        while (SystemClock.uptimeMillis() < deadline) {
+            val report = runBlocking {
+                dependencies().reportRepository().observeAllReports().first()
+                    .firstOrNull { it.reportId !in existingIds && it.clientId == fixtures.client.clientId }
+            }
+            if (report != null) return report
+            SystemClock.sleep(100L)
+        }
+        throw AssertionError("Completed UI result was not persisted to history")
+    }
+
+    private fun waitForScrollableTag(tag: String, timeoutMs: Long) {
+        val deadline = SystemClock.uptimeMillis() + timeoutMs
+        while (SystemClock.uptimeMillis() < deadline) {
+            if (device.hasObject(By.res(tag))) return
+            device.findObject(By.scrollable(true))?.let { scrollable ->
+                runCatching { scrollable.scroll(Direction.DOWN, 0.75f) }
+            }
+            SystemClock.sleep(100L)
+        }
+        throw AssertionError("Result section not visible: $tag")
+    }
+
+    private fun requireScrollableObject(tag: String): androidx.test.uiautomator.UiObject2 {
+        waitForScrollableTag(tag, 10_000L)
+        return requireObject(tag)
     }
 
     private fun traceFiles(): List<File> {

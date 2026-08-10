@@ -147,6 +147,7 @@ fun SettingsScreen(
                     headline = stringResource(R.string.settings_configure_probe),
                     subtitle = stringResource(R.string.settings_configure_probe_desc),
                     leadingIcon = Icons.Default.Router,
+                    modifier = Modifier.testTag(AgentUiTags.Settings.PROBE),
                     onClick = { navController.navigate("probe_config") }
                 )
 
@@ -185,7 +186,7 @@ fun SettingsScreen(
                             viewModel.updateProbePollingInterval((roundedSeconds * 1000).toLong())
                         },
                         valueRange = 2f..30f,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth().testTag(AgentUiTags.Settings.POLLING)
                     )
                 }
 
@@ -220,7 +221,7 @@ fun SettingsScreen(
                         value = glowIntensity,
                         onValueChange = { viewModel.updateDashboardGlowIntensity(it) },
                         valueRange = 0f..1f,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth().testTag(AgentUiTags.Settings.GLOW)
                     )
                 }
             }
@@ -276,6 +277,7 @@ fun SettingsScreen(
                     headline = stringResource(R.string.settings_id_strategy),
                     subtitle = "Incremento continuo o riuso ID",
                     leadingIcon = Icons.Default.Numbers,
+                    modifier = Modifier.testTag(AgentUiTags.Settings.ID_STRATEGY),
                     onClick = { showIdStrategyDialog = true },
                     trailingContent = {
                         Surface(
@@ -300,6 +302,7 @@ fun SettingsScreen(
                     headline = stringResource(R.string.settings_discovery_protocols_title),
                     subtitle = stringResource(R.string.settings_discovery_protocols_desc),
                     leadingIcon = Icons.Default.FilterList,
+                    modifier = Modifier.testTag(AgentUiTags.Settings.DISCOVERY_PROTOCOLS),
                     onClick = { showDiscoveryProtocolsDialog = true },
                     trailingContent = {
                         Surface(

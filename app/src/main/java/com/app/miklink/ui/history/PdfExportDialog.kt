@@ -75,7 +75,10 @@ fun PdfExportDialog(
                 
                 // Collapsible Override Section
                 Card(
-                     modifier = Modifier.fillMaxWidth().clickable { isExpanded = !isExpanded },
+                     modifier = Modifier
+                         .fillMaxWidth()
+                         .testTag(AgentUiTags.Report.PDF_OPTIONS)
+                         .clickable { isExpanded = !isExpanded },
                      colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
@@ -109,7 +112,7 @@ fun PdfExportDialog(
                                     value = reportTitle,
                                     onValueChange = { reportTitle = it },
                                     label = { Text(stringResource(R.string.pdf_report_title)) },
-                                    modifier = Modifier.fillMaxWidth(),
+                                    modifier = Modifier.fillMaxWidth().testTag(AgentUiTags.Report.PDF_TITLE),
                                     singleLine = true
                                 )
                                 
@@ -121,13 +124,15 @@ fun PdfExportDialog(
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         RadioButton(
                                             selected = selectedOrientation == PdfPageOrientation.PORTRAIT,
-                                            onClick = { selectedOrientation = PdfPageOrientation.PORTRAIT }
+                                            onClick = { selectedOrientation = PdfPageOrientation.PORTRAIT },
+                                            modifier = Modifier.testTag(AgentUiTags.Report.PDF_ORIENTATION_PORTRAIT)
                                         )
                                         Text(stringResource(R.string.pdf_orientation_portrait), style = MaterialTheme.typography.bodyMedium)
                                         Spacer(Modifier.width(16.dp))
                                         RadioButton(
                                             selected = selectedOrientation == PdfPageOrientation.LANDSCAPE,
-                                            onClick = { selectedOrientation = PdfPageOrientation.LANDSCAPE }
+                                            onClick = { selectedOrientation = PdfPageOrientation.LANDSCAPE },
+                                            modifier = Modifier.testTag(AgentUiTags.Report.PDF_ORIENTATION_LANDSCAPE)
                                         )
                                         Text(stringResource(R.string.pdf_orientation_landscape), style = MaterialTheme.typography.bodyMedium)
                                     }
@@ -142,7 +147,7 @@ fun PdfExportDialog(
                                         Switch(
                                             checked = showSignatures,
                                             onCheckedChange = { showSignatures = it },
-                                            modifier = Modifier.scale(0.8f)
+                                            modifier = Modifier.scale(0.8f).testTag(AgentUiTags.Report.PDF_SIGNATURES)
                                         )
                                     }
                                     
@@ -182,6 +187,7 @@ fun PdfExportDialog(
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
+                                            .testTag(AgentUiTags.Report.PDF_INCLUDE_EMPTY)
                                             .clickable { localIncludeEmpty = !localIncludeEmpty },
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
@@ -210,6 +216,7 @@ fun PdfExportDialog(
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
+                                            .testTag(AgentUiTags.Report.PDF_HIDE_EMPTY_COLUMNS)
                                             .clickable { localHideEmptyColumns = !localHideEmptyColumns },
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
