@@ -1,85 +1,63 @@
 package com.app.miklink.quality
 
-import org.junit.Assert
-import org.junit.Test
-import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.util.regex.Pattern
+import org.junit.Assert.assertEquals
+import org.junit.Test
+
+internal object HardcodedUiTextScanner {
+    private val patterns = listOf(
+        Regex("""Text\s*\(\s*(?:text\s*=\s*)?\"([^\"]+)\"""", setOf(RegexOption.DOT_MATCHES_ALL)),
+        Regex("""contentDescription\s*=\s*\"([^\"]+)\"""", setOf(RegexOption.DOT_MATCHES_ALL)),
+        Regex("""showSnackbar\s*\(.*?message\s*=\s*\"([^\"]+)\"""", setOf(RegexOption.DOT_MATCHES_ALL)),
+        Regex("""Toast\.makeText\s*\(.*?\"([^\"]+)\"""", setOf(RegexOption.DOT_MATCHES_ALL)),
+        Regex("""UiState\.Error\s*\(\s*\"([^\"]+)\"""", setOf(RegexOption.DOT_MATCHES_ALL))
+    )
+
+    fun violations(source: String): List<String> = patterns.flatMap { pattern ->
+        pattern.findAll(source).mapNotNull { match ->
+            val literal = match.groupValues[1]
+            val line = source.substring(0, match.range.first).count { it == '\n' } + 1
+            val localContext = source.substring(0, match.range.first).takeLast(200)
+            if (literal.isBlank() || literal.contains('$') || literal.all { !it.isLetterOrDigit() && !it.isWhitespace() } || localContext.contains("i18n-ignore")) null
+            else "$line: $literal"
+        }.toList()
+    }.distinct()
+}
 
 class HardcodedStringsScanTest {
-
-    private val projectRoot: Path = Paths.get("app", "src", "main", "java")
-
-    // Patterns to detect (simple, line-based patterns as specified)
-    private val textPattern = Pattern.compile("Text\\s*\\(\\s*\".*?\".*\\)")
-    private val textNamedPattern = Pattern.compile("Text\\s*\\(.*text\\s*=\\s*\".*?\".*\\)")
-    private val contentDescPattern = Pattern.compile("contentDescription\\s*=\\s*\".*?\"")
-
-    // Allowlist: empty string or strings made only of punctuation/symbols
-    private val allowSymbolOnly = Pattern.compile("^\\p{Punct}+$")
+    @Test
+    fun scansAllMainKotlinSources() {
+        val sourceRoot: Path = sequenceOf(Paths.get("app", "src", "main"), Paths.get("src", "main")).first { Files.exists(it) }
+        val violations = Files.walk(sourceRoot).use { paths ->
+            paths.filter { Files.isRegularFile(it) && it.toString().endsWith(".kt") }
+                .flatMap { path ->
+                    if (path.toString().replace('\\', '/').contains("/data/")) java.util.stream.Stream.empty()
+                    else HardcodedUiTextScanner.violations(Files.readString(path)).stream()
+                        .map { "${sourceRoot.relativize(path)}:$it" }
+                }
+                .toList()
+        }
+        assertEquals("Hard-coded user-facing strings found:\n${violations.joinToString("\n")}", emptyList<String>(), violations)
+    }
 
     @Test
-    fun scanUiForHardcodedStrings() {
-        val uiDirs = listOf(
-            Paths.get("com", "app", "miklink", "ui"),
-            Paths.get("com", "app", "miklink", "core", "presentation")
-        )
+    fun detectsInlineMultilineNamedAndAccessibleText() {
+        val source = """
+            Text("Inline")
+            Text( text = "Named" )
+            contentDescription =
+                "Accessible"
+            snackbarHostState.showSnackbar(
+                message = "Snackbar",
+            )
+        """.trimIndent()
+        assertEquals(4, HardcodedUiTextScanner.violations(source).size)
+    }
 
-        val violations = mutableListOf<String>()
-
-        if (!Files.exists(projectRoot)) {
-            // Nothing to scan
-            return
-        }
-
-        Files.walk(projectRoot).use { stream ->
-            stream.filter { Files.isRegularFile(it) && it.toString().endsWith(".kt") }
-                .forEach { filePath ->
-                    val relative = projectRoot.relativize(filePath).toString().replace('\\', '/')
-                    val inUi = uiDirs.any { relative.startsWith(it.toString().replace('\\', '/')) }
-                    if (!inUi) return@forEach
-
-                    val lines = filePath.toFile().readLines()
-                    for ((idx, raw) in lines.withIndex()) {
-                        val line = raw.trim()
-                        // ignore explicit i18n-ignore marker
-                        if (line.contains("// i18n-ignore")) continue
-
-                        // check patterns
-                        val matched = (textPattern.matcher(line).find()
-                                || textNamedPattern.matcher(line).find()
-                                || contentDescPattern.matcher(line).find())
-
-                        if (matched) {
-                            // extract the string literal if possible
-                            val literalRegex = Pattern.compile("\"(.*)\"")
-                            val m = literalRegex.matcher(line)
-                            var skip = false
-                            if (m.find()) {
-                                val content = m.group(1) ?: ""
-                                if (content.isEmpty()) skip = true
-                                if (allowSymbolOnly.matcher(content).matches()) skip = true
-                            }
-
-                            if (!skip) {
-                                val snippet = line.trim()
-                                violations.add("HARD_CODED_UI_TEXT: $relative:${idx + 1} -> $snippet")
-                            }
-                        }
-                    }
-                }
-        }
-
-        if (violations.isNotEmpty()) {
-            val header = violations.joinToString("\n")
-            val fix = "\n\nFIX (standard)\n" +
-                    "crea una key in res/values/strings.xml\n" +
-                    "crea la traduzione in res/values-it/strings.xml\n" +
-                    "sostituisci con stringResource(R.string.<key>) (o context.getString(...) se non sei in composable)\n"
-
-            Assert.fail(header + fix)
-        }
+    @Test
+    fun honoursLocalTechnicalIgnore() {
+        assertEquals(emptyList<String>(), HardcodedUiTextScanner.violations("// i18n-ignore: technical protocol token\nText(\"DHCP\")"))
     }
 }

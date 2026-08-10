@@ -13,12 +13,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.app.miklink.R
+import com.app.miklink.ui.testing.AgentUiTags
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,6 +39,7 @@ fun BackupSettingsScreen(
     }
 
     Scaffold(
+        modifier = Modifier.testTag(AgentUiTags.Settings.BACKUP_SCREEN),
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.settings_backup)) },
@@ -64,11 +67,11 @@ fun BackupSettingsScreen(
                 style = MaterialTheme.typography.bodyMedium
             )
 
-            Button(onClick = { createLauncher.launch("miklink_backup.json") }, modifier = Modifier.fillMaxWidth()) {
+            Button(onClick = { createLauncher.launch("miklink_backup.json") }, modifier = Modifier.fillMaxWidth().testTag(AgentUiTags.Settings.BACKUP_EXPORT)) {
                 Text(stringResource(R.string.backup_export))
             }
 
-            OutlinedButton(onClick = { openLauncher.launch(arrayOf("application/json")) }, modifier = Modifier.fillMaxWidth()) {
+            OutlinedButton(onClick = { openLauncher.launch(arrayOf("application/json")) }, modifier = Modifier.fillMaxWidth().testTag(AgentUiTags.Settings.BACKUP_IMPORT)) {
                 Text(stringResource(R.string.backup_import))
             }
 

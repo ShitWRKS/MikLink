@@ -17,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -28,6 +29,7 @@ import androidx.navigation.NavController
 import com.app.miklink.core.domain.model.NetworkMode
 import com.app.miklink.core.domain.policy.socketid.SocketIdLite
 import com.app.miklink.R
+import com.app.miklink.ui.testing.AgentUiTags
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -91,6 +93,7 @@ fun ClientEditScreen(
     }
 
     Scaffold(
+        modifier = Modifier.testTag(AgentUiTags.Client.EDIT),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
@@ -128,7 +131,8 @@ fun ClientEditScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp)
-                    .navigationBarsPadding(),
+                    .navigationBarsPadding()
+                    .testTag(AgentUiTags.Client.SAVE),
                 enabled = isSaveEnabled
             ) {
                 Text(stringResource(R.string.client_edit_save))
@@ -152,7 +156,7 @@ fun ClientEditScreen(
                 value = companyName,
                 onValueChange = { viewModel.companyName.value = it },
                 labelResId = R.string.client_edit_company_label,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().testTag(AgentUiTags.Client.NAME),
                 isError = companyName.isBlank()
             )
             
@@ -334,7 +338,7 @@ fun ClientEditScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            "Preview",
+                            stringResource(R.string.client_edit_preview),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )

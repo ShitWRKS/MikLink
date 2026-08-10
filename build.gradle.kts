@@ -14,5 +14,5 @@ val checkForbiddenPatterns by tasks.registering(ForbiddenPatternsTask::class) {
 tasks.register("check") {
     group = "verification"
     description = "Runs repository verification tasks."
-    dependsOn(checkForbiddenPatterns)
+    dependsOn(checkForbiddenPatterns, ":app:check")
 }

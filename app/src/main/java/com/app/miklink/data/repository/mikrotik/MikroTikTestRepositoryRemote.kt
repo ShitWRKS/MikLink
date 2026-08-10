@@ -30,6 +30,7 @@ import kotlinx.coroutines.withContext
 import com.app.miklink.core.domain.test.model.TestError
 import com.app.miklink.core.domain.test.model.TestExecutionException
 import javax.inject.Inject
+import java.util.UUID
 
 /**
  * Implementazione remota di MikroTikTestRepository che usa MikroTikApiService.
@@ -47,6 +48,7 @@ class MikroTikTestRepositoryRemote @Inject constructor(
         interfaceName: String,
         once: Boolean
     ): LinkStatusData = withContext(Dispatchers.IO) {
+        executeExchange("LINK", mapOf("interfaceName" to interfaceName, "once" to once)) {
         trace(
             event = "mikrotik_request",
             fields = mapOf(
@@ -62,21 +64,23 @@ class MikroTikTestRepositoryRemote @Inject constructor(
                 is DecodedResult.Error -> throw TestExecutionException(decoded.error)
                 is DecodedResult.Success -> {
                     trace(
-                        event = "mikrotik_raw_response",
+                        event = "probe_response",
                         fields = mapOf("test" to "LINK", "raw" to decoded.value)
                     )
+                    trace("parsed_response", mapOf("test" to "LINK", "parsed" to decoded.value))
                     val latest = decoded.value.lastOrNull()
                         ?: throw TestExecutionException(TestError.InvalidResponse("No link status returned"))
                     val parsed = RouterOsNormalizer.normalizeLinkStatus(latest)
                     trace(
-                        event = "parsed_response",
+                        event = "normalized_response",
                         fields = mapOf("test" to "LINK", "parsed" to parsed)
                     )
                     parsed
                 }
             }
         }
-        outcome.getOrThrow(callExecutor)
+            outcome.getOrThrow(callExecutor)
+        }
     }
 
     override suspend fun cableTest(
@@ -84,6 +88,7 @@ class MikroTikTestRepositoryRemote @Inject constructor(
         interfaceName: String,
         once: Boolean
     ): CableTestSummary = withContext(Dispatchers.IO) {
+        executeExchange("TDR", mapOf("interfaceName" to interfaceName, "once" to once)) {
         trace(
             event = "mikrotik_request",
             fields = mapOf(
@@ -99,22 +104,24 @@ class MikroTikTestRepositoryRemote @Inject constructor(
                 is DecodedResult.Error -> throw TestExecutionException(decoded.error)
                 is DecodedResult.Success -> {
                     trace(
-                        event = "mikrotik_raw_response",
+                        event = "probe_response",
                         fields = mapOf("test" to "TDR", "raw" to decoded.value)
                     )
+                    trace("parsed_response", mapOf("test" to "TDR", "parsed" to decoded.value))
                     val validResult = decoded.value.lastOrNull {
                         it.cablePairs != null || it.status.lowercase() in listOf("ok", "open", "link-ok", "running")
                     } ?: throw TestExecutionException(TestError.InvalidResponse("No valid cable test results found"))
                     val parsed = RouterOsNormalizer.normalizeCableTest(validResult)
                     trace(
-                        event = "parsed_response",
+                        event = "normalized_response",
                         fields = mapOf("test" to "TDR", "parsed" to parsed)
                     )
                     parsed
                 }
             }
         }
-        outcome.getOrThrow(callExecutor)
+            outcome.getOrThrow(callExecutor)
+        }
     }
 
     override suspend fun ping(
@@ -123,6 +130,7 @@ class MikroTikTestRepositoryRemote @Inject constructor(
         interfaceName: String?,
         count: Int
     ): List<PingMeasurement> = withContext(Dispatchers.IO) {
+        executeExchange("PING", mapOf("target" to target, "interfaceName" to interfaceName, "count" to count)) {
         trace(
             event = "mikrotik_request",
             fields = mapOf(
@@ -139,25 +147,28 @@ class MikroTikTestRepositoryRemote @Inject constructor(
                 is DecodedResult.Error -> throw TestExecutionException(decoded.error)
                 is DecodedResult.Success -> {
                     trace(
-                        event = "mikrotik_raw_response",
+                        event = "probe_response",
                         fields = mapOf("test" to "PING", "target" to target, "raw" to decoded.value)
                     )
+                    trace("parsed_response", mapOf("test" to "PING", "target" to target, "parsed" to decoded.value))
                     decoded.value.map { RouterOsNormalizer.normalizePing(it) }.also { parsed ->
                         trace(
-                            event = "parsed_response",
+                            event = "normalized_response",
                             fields = mapOf("test" to "PING", "target" to target, "parsed" to parsed)
                         )
                     }
                 }
             }
         }
-        outcome.getOrThrow(callExecutor)
+            outcome.getOrThrow(callExecutor)
+        }
     }
 
     override suspend fun neighbors(
         probe: ProbeConfig,
         interfaceName: String
     ): List<NeighborData> = withContext(Dispatchers.IO) {
+        executeExchange("NEIGHBORS", mapOf("interfaceName" to interfaceName)) {
         trace(
             event = "mikrotik_request",
             fields = mapOf(
@@ -172,19 +183,21 @@ class MikroTikTestRepositoryRemote @Inject constructor(
                 is DecodedResult.Error -> throw TestExecutionException(decoded.error)
                 is DecodedResult.Success -> {
                     trace(
-                        event = "mikrotik_raw_response",
+                        event = "probe_response",
                         fields = mapOf("test" to "NEIGHBORS", "raw" to decoded.value)
                     )
+                    trace("parsed_response", mapOf("test" to "NEIGHBORS", "parsed" to decoded.value))
                     decoded.value.map { RouterOsNormalizer.normalizeNeighbor(it) }.also { parsed ->
                         trace(
-                            event = "parsed_response",
+                            event = "normalized_response",
                             fields = mapOf("test" to "NEIGHBORS", "parsed" to parsed)
                         )
                     }
                 }
             }
         }
-        outcome.getOrThrow(callExecutor)
+            outcome.getOrThrow(callExecutor)
+        }
     }
 
     override suspend fun speedTest(
@@ -194,6 +207,7 @@ class MikroTikTestRepositoryRemote @Inject constructor(
         password: String?,
         duration: String
     ): SpeedTestData = withContext(Dispatchers.IO) {
+        executeExchange("SPEED", mapOf("serverAddress" to serverAddress, "duration" to duration)) {
         trace(
             event = "mikrotik_request",
             fields = mapOf(
@@ -215,7 +229,7 @@ class MikroTikTestRepositoryRemote @Inject constructor(
                 is DecodedResult.Error -> throw TestExecutionException(decoded.error)
                 is DecodedResult.Success -> {
                     trace(
-                        event = "mikrotik_raw_response",
+                        event = "probe_response",
                         fields = mapOf(
                             "test" to "SPEED",
                             "code" to response.code(),
@@ -223,26 +237,63 @@ class MikroTikTestRepositoryRemote @Inject constructor(
                             "raw" to decoded.value
                         )
                     )
+                    trace("parsed_response", mapOf("test" to "SPEED", "parsed" to decoded.value))
                     val body = decoded.value
                     val result = body.lastOrNull { it.status == "done" } ?: body.lastOrNull()
                     val parsed = result?.let { RouterOsNormalizer.normalizeSpeedTest(it, serverAddress) }
                         ?: throw TestExecutionException(TestError.InvalidResponse("Empty speed test response"))
                     trace(
-                        event = "parsed_response",
+                        event = "normalized_response",
                         fields = mapOf("test" to "SPEED", "parsed" to parsed)
                     )
                     parsed
                 }
             }
         }
-        outcome.getOrThrow(callExecutor)
+            outcome.getOrThrow(callExecutor)
+        }
     }
 
     private fun trace(event: String, fields: Map<String, Any?>) {
-        val runId = debugTraceRunContext.current() ?: return
-        debugTraceSink.event(runId = runId, event = event, fields = fields)
+        val correlation = debugTraceRunContext.correlation() ?: return
+        compatibleTraceEventTypes(event).forEach { eventType ->
+            debugTraceSink.correlatedEvent(correlation = correlation, event = eventType, fields = fields)
+        }
+    }
+
+    private suspend fun <T> executeExchange(
+        operationId: String,
+        requestFields: Map<String, Any?>,
+        block: suspend () -> T
+    ): T {
+        val exchangeId = UUID.randomUUID().toString()
+        debugTraceRunContext.withOperation(operationId, exchangeId)
+        trace("probe_request", mapOf("operation" to operationId) + requestFields)
+        return try {
+            block().also {
+                trace("probe_exchange_completed", mapOf("operation" to operationId, "outcome" to "success"))
+            }
+        } catch (failure: Throwable) {
+            trace(
+                "probe_error",
+                mapOf(
+                    "operation" to operationId,
+                    "type" to failure::class.java.simpleName,
+                    "message" to failure.message
+                )
+            )
+            throw failure
+        }
     }
 }
+
+internal fun compatibleTraceEventTypes(event: String): List<String> =
+    if (event == "probe_response") {
+        // Transitional alias consumed by the unchanged legacy live-probe runners.
+        listOf(event, "mikrotik_raw_response")
+    } else {
+        listOf(event)
+    }
 
 private fun <T> CallOutcome<T>.getOrThrow(executor: MikroTikCallExecutor): T {
     return when (this) {

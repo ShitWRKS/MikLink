@@ -25,6 +25,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -47,6 +48,7 @@ import androidx.compose.foundation.clickable
 
 import androidx.compose.ui.res.stringResource
 import com.app.miklink.R
+import com.app.miklink.ui.testing.AgentUiTags
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -101,6 +103,7 @@ fun HistoryScreen(
     }
 
     Scaffold(
+        modifier = Modifier.testTag(AgentUiTags.History.SCREEN),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             Column {
@@ -125,7 +128,8 @@ fun HistoryScreen(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .testTag(AgentUiTags.History.SEARCH),
                     placeholder = { Text(stringResource(R.string.history_search_placeholder)) },
                     leadingIcon = {
                         Icon(Icons.Default.Search, contentDescription = stringResource(R.string.common_search))

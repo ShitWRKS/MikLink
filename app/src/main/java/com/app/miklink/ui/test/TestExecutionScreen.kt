@@ -7,6 +7,7 @@
 package com.app.miklink.ui.test
 
 import android.content.res.Configuration
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -43,6 +44,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -51,6 +53,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -104,7 +108,9 @@ fun TestExecutionScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snapshot by viewModel.snapshot.collectAsStateWithLifecycle()
     val isRunning by viewModel.isRunning.collectAsStateWithLifecycle()
+    val saveState by viewModel.reportSaveState.collectAsStateWithLifecycle()
     val logs by viewModel.logs.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
     var showRepeatDialog by remember { mutableStateOf(false) }
     var hasAutoStarted by remember { mutableStateOf(false) }
     var showLogs by rememberSaveable { mutableStateOf(false) }
@@ -117,12 +123,21 @@ fun TestExecutionScreen(
         }
     }
 
+    LaunchedEffect(saveState.isSaved) {
+        if (saveState.isSaved) navController.popBackStack()
+    }
+    LaunchedEffect(saveState.errorMessage) {
+        saveState.errorMessage?.let { snackbarHostState.showSnackbar(it) }
+    }
+    BackHandler(enabled = saveState.isSaving) { }
+
     Scaffold(
+        modifier = Modifier.testTag(TestExecutionTags.SCREEN),
         topBar = {
             AppTopBar(
                 title = topBarTitle(uiState, isRunning),
                 subtitle = topBarSubtitle(uiState, isRunning),
-                onBack = { navController.popBackStack() }
+                onBack = { if (!saveState.isSaving) navController.popBackStack() }
             )
         },
         bottomBar = {
@@ -130,18 +145,17 @@ fun TestExecutionScreen(
             if (report != null) {
                 CompletedActionBar(
                     isFailed = report.overallStatus != "PASS",
-                    onClose = { navController.popBackStack() },
-                    onRepeat = { showRepeatDialog = true },
-                    onSave = {
-                        viewModel.saveReportToDb(report)
-                        navController.popBackStack()
-                    },
+                    isSaving = saveState.isSaving,
+                    onClose = { if (!saveState.isSaving) navController.popBackStack() },
+                    onRepeat = { if (!saveState.isSaving) showRepeatDialog = true },
+                    onSave = { viewModel.saveReportToDb(report) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .navigationBarsPadding()
                 )
             }
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
         Box(
             modifier = Modifier
@@ -513,6 +527,7 @@ private fun logToggleLabel(showLogs: Boolean): String =
 @Composable
 private fun CompletedActionBar(
     isFailed: Boolean,
+    isSaving: Boolean,
     onClose: () -> Unit,
     onRepeat: () -> Unit,
     onSave: () -> Unit,
@@ -539,6 +554,7 @@ private fun CompletedActionBar(
                     icon = Icons.Default.Close,
                     labelResId = R.string.test_execution_action_close,
                     onClick = onClose,
+                    enabled = !isSaving,
                     modifier = Modifier
                         .weight(1f)
                         .testTag(TestExecutionTags.BOTTOM_CLOSE)
@@ -547,6 +563,7 @@ private fun CompletedActionBar(
                     icon = Icons.Default.Refresh,
                     labelResId = R.string.test_execution_action_repeat_short,
                     onClick = onRepeat,
+                    enabled = !isSaving,
                     modifier = Modifier
                         .weight(1f)
                         .testTag(TestExecutionTags.BOTTOM_REPEAT)
@@ -560,6 +577,8 @@ private fun CompletedActionBar(
                     icon = if (isFailed) Icons.Default.Error else Icons.Default.Check,
                     labelResId = R.string.test_execution_action_save,
                     onClick = onSave,
+                    enabled = !isSaving,
+                    isLoading = isSaving,
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag(TestExecutionTags.BOTTOM_SAVE),
@@ -581,17 +600,23 @@ private fun ActionButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     colors: ButtonColors = ButtonDefaults.buttonColors(),
-    outlined: Boolean = true
+    outlined: Boolean = true,
+    enabled: Boolean = true,
+    isLoading: Boolean = false
 ) {
     val content = @Composable {
         Icon(icon, contentDescription = null, modifier = Modifier.size(16.dp))
         Spacer(modifier = Modifier.size(6.dp))
-        Text(stringResource(id = labelResId))
+        if (isLoading) {
+            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+        } else {
+            Text(stringResource(id = labelResId))
+        }
     }
     if (outlined) {
-        OutlinedButton(onClick = onClick, modifier = modifier) { content() }
+        OutlinedButton(onClick = onClick, modifier = modifier, enabled = enabled) { content() }
     } else {
-        Button(onClick = onClick, modifier = modifier, colors = colors) { content() }
+        Button(onClick = onClick, modifier = modifier, colors = colors, enabled = enabled) { content() }
     }
 }
 

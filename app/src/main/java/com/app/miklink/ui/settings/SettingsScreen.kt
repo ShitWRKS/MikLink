@@ -21,6 +21,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -33,6 +34,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.res.stringResource
 import com.app.miklink.R
 import com.app.miklink.core.domain.model.preferences.IdNumberingStrategy
+import com.app.miklink.ui.testing.AgentUiTags
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -54,6 +56,7 @@ fun SettingsScreen(
     }
 
     Scaffold(
+        modifier = Modifier.testTag(AgentUiTags.Settings.SCREEN),
         topBar = {
             TopAppBar(
                 title = {
@@ -245,6 +248,7 @@ fun SettingsScreen(
                     headline = stringResource(R.string.settings_backup),
                     subtitle = stringResource(R.string.settings_backup_desc),
                     leadingIcon = Icons.Default.CloudUpload,
+                    modifier = Modifier.testTag(AgentUiTags.Settings.BACKUP),
                     onClick = { navController.navigate("backup_settings") }
                 )
             }
@@ -258,6 +262,7 @@ fun SettingsScreen(
                     headline = stringResource(R.string.settings_pdf_preferences),
                     subtitle = stringResource(R.string.settings_pdf_preferences_desc),
                     leadingIcon = Icons.Default.SettingsApplications,
+                    modifier = Modifier.testTag(AgentUiTags.Settings.PDF),
                     onClick = { navController.navigate("pdf_settings") }
                 )
             }
@@ -491,11 +496,12 @@ private fun SettingsCard(
     headline: String,
     subtitle: String,
     leadingIcon: ImageVector,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit,
     trailingContent: (@Composable () -> Unit)? = null
 ) {
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),

@@ -1,0 +1,45 @@
+name: Master APK release
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Build signed release
+        env:
+          MIKLINK_KEYSTORE_BASE64: ${{ secrets.MIKLINK_KEYSTORE_BASE64 }}
+          MIKLINK_KEYSTORE_PASSWORD: ${{ secrets.MIKLINK_KEYSTORE_PASSWORD }}
+          MIKLINK_KEY_ALIAS: ${{ secrets.MIKLINK_KEY_ALIAS }}
+          MIKLINK_KEY_PASSWORD: ${{ secrets.MIKLINK_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          for name in MIKLINK_KEYSTORE_BASE64 MIKLINK_KEYSTORE_PASSWORD MIKLINK_KEY_ALIAS MIKLINK_KEY_PASSWORD; do test -n "${!name:-}" || exit 1; done
+          epoch="$(date -u +%s)"; days_since_2020="$(( (epoch - 1577836800) / 86400 ))"; seconds_of_day="$(( epoch % 86400 ))"; export MIKLINK_VERSION_CODE="$(( days_since_2020 * 100000 + seconds_of_day ))"
+          export MIKLINK_VERSION_NAME="1.0.0.${GITHUB_RUN_NUMBER}"
+          printf '%s' "$MIKLINK_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/miklink-release.p12"; chmod 600 "$RUNNER_TEMP/miklink-release.p12"
+          export MIKLINK_KEYSTORE_PATH="$RUNNER_TEMP/miklink-release.p12"
+          keytool -list -storetype PKCS12 -keystore "$MIKLINK_KEYSTORE_PATH" -storepass "$MIKLINK_KEYSTORE_PASSWORD" -alias "$MIKLINK_KEY_ALIAS" >/dev/null
+          ./gradlew check :app:assembleRelease
+      - name: Verify and publish APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          apksigner_path="$(find "${ANDROID_SDK_ROOT:-$ANDROID_HOME}"/build-tools -type f -name apksigner -perm -u+x | sort -V | tail -n 1)"; test -n "$apksigner_path"
+          mapfile -t apks < <(find app/build/outputs/apk/release -type f -name '*.apk' ! -name '*unsigned*' ! -path '*intermediates*'); test "${#apks[@]}" -eq 1
+          "$apksigner_path" verify --verbose "${apks[0]}"
+          name="MikLink-1.0.0.${GITHUB_RUN_NUMBER}.apk"; mkdir -p dist; cp "${apks[0]}" "dist/$name"
+          gh release create "v1.0.0.${GITHUB_RUN_NUMBER}" "dist/$name" --title "MikLink 1.0.0.${GITHUB_RUN_NUMBER}" --notes "Stable APK release"

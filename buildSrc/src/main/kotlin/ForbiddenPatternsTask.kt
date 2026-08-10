@@ -34,8 +34,8 @@ abstract class ForbiddenPatternsTask @Inject constructor(
     fun check() {
         val patterns = listOf(
             ForbiddenPattern(
-                regex = Regex("""fallbackToDestructiveMigration\(\s*\)"""),
-                message = "Use fallbackToDestructiveMigration(dropAllTables = true)"
+                regex = Regex("""fallbackToDestructiveMigration"""),
+                message = "Production databases must use explicit Room migrations"
             ),
             ForbiddenPattern(
                 regex = Regex("""\bTabRow\("""),

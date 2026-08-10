@@ -43,7 +43,6 @@ import javax.inject.Singleton
 
 /**
  * PDF Generator using iText 7 for professional PDF generation with advanced table handling.
- * Licensed under AGPL v3 - suitable for open source projects.
  */
 @Singleton
 class PdfGeneratorIText @Inject constructor(

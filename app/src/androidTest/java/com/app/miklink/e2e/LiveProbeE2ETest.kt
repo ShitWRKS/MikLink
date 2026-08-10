@@ -1,44 +1,57 @@
 package com.app.miklink.e2e
 
+import android.os.SystemClock
 import android.util.Log
-import androidx.compose.ui.semantics.SemanticsProperties
-import androidx.compose.ui.semantics.getOrNull
-import androidx.compose.ui.test.SemanticsMatcher
-import androidx.compose.ui.test.assertIsEnabled
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.test.onAllNodesWithTag
-import androidx.compose.ui.test.onAllNodesWithText
-import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import com.app.miklink.core.data.repository.client.ClientRepository
-import com.app.miklink.core.data.repository.probe.ProbeRepository
-import com.app.miklink.core.data.repository.test.TestProfileRepository
-import com.app.miklink.core.domain.model.Client
-import com.app.miklink.core.domain.model.NetworkMode
-import com.app.miklink.core.domain.model.ProbeConfig
-import com.app.miklink.core.domain.model.TestProfile
-import com.app.miklink.core.domain.model.TestThresholds
-import com.app.miklink.MainActivity
+import androidx.test.uiautomator.By
+import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.Until
+import com.app.miklink.core.domain.model.TdrCapability
+import com.app.miklink.core.domain.test.logging.DebugTraceCorrelation
 import com.app.miklink.R
 import com.app.miklink.ui.dashboard.DashboardTags
 import com.app.miklink.ui.test.components.TestExecutionTags
-import dagger.hilt.EntryPoint
-import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
-import dagger.hilt.components.SingletonComponent
-import kotlinx.coroutines.flow.first
+import com.app.miklink.e2e.support.ArtifactSecretScanner
+import com.app.miklink.e2e.support.CleanupStatus
+import com.app.miklink.e2e.support.CoreFixtures
+import com.app.miklink.e2e.support.RedactionStatus
+import com.app.miklink.e2e.support.ScenarioRule
+import com.app.miklink.e2e.support.TestFixtureManager
+import com.app.miklink.e2e.support.dismissKeyguardIfPossible
+import java.io.File
+import java.util.UUID
 import kotlinx.coroutines.runBlocking
+import org.json.JSONObject
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.RuleChain
+import org.junit.rules.TestRule
 import org.junit.runner.RunWith
+import org.junit.runners.model.Statement
 
 @RunWith(AndroidJUnit4::class)
 class LiveProbeE2ETest {
+    private var fixtureManager: TestFixtureManager? = null
+    private lateinit var fixtures: CoreFixtures
+    private val device: UiDevice by lazy {
+        UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+    }
+
+    private val scenarioRule = ScenarioRule.catalog(
+        scenarioId = "legacy-live-probe",
+        timeoutMs = 240_000L,
+        cleanup = {
+            fixtureManager?.cleanup()
+                ?: com.app.miklink.e2e.support.CleanupResult(CleanupStatus.NOT_REQUIRED)
+        }
+    )
 
     @get:Rule
-    val composeRule = createAndroidComposeRule<MainActivity>()
+    val ruleChain: TestRule = RuleChain
+        .outerRule(scenarioRule)
+        .around(preflightRule())
 
     @Test
     fun runLiveProbeE2E() {
@@ -50,7 +63,9 @@ class LiveProbeE2ETest {
             )
         )
 
+        var requestedTraceRunId: String? = null
         try {
+            device.executeShellCommand("am start -W -n com.app.miklink/.MainActivity")
             waitForTag(DashboardTags.CLIENT_SELECTOR, 20_000L, "dashboard_not_ready", notRunOnTimeout = false)
             logE2e("MIKLINK_E2E_STEP", mapOf("step" to "app_started"))
 
@@ -59,11 +74,11 @@ class LiveProbeE2ETest {
             val selectedClientId = selectClient()
             val selectedProfileId = selectProfile()
 
-            val startNode = composeRule.onNodeWithTag(DashboardTags.START_TEST_BUTTON, useUnmergedTree = true)
-            startNode.assertExists()
-            try {
-                startNode.assertIsEnabled()
-            } catch (_: AssertionError) {
+            val startNode = device.wait(
+                Until.findObject(By.res(DashboardTags.START_TEST_BUTTON)),
+                10_000L
+            ) ?: throw AssertionError("start_button_not_found")
+            if (!startNode.isEnabled) {
                 emitNotRun("missing_live_probe_or_configuration")
             }
 
@@ -76,7 +91,17 @@ class LiveProbeE2ETest {
                 )
             )
 
-            startNode.performClick()
+            val tracesBefore = traceFiles().map(File::getCanonicalPath).toSet()
+            val traceRequestId = "requested-${UUID.randomUUID()}"
+            requestedTraceRunId = traceRequestId
+            dependencies().debugTraceRunContext().set(
+                DebugTraceCorrelation(
+                    runId = traceRequestId,
+                    sessionId = scenarioRule.sessionId,
+                    scenarioId = LEGACY_SCENARIO_ID
+                )
+            )
+            startNode.click()
             logE2e("MIKLINK_E2E_STEP", mapOf("step" to "test_started_from_ui"))
 
             waitForTag(TestExecutionTags.HERO_RUNNING, 30_000L, "running_state_not_reached", notRunOnTimeout = false)
@@ -110,239 +135,191 @@ class LiveProbeE2ETest {
                 )
             )
 
-            val runningStillVisible = composeRule
-                .onAllNodesWithTag(TestExecutionTags.HERO_RUNNING, useUnmergedTree = true)
-                .fetchSemanticsNodes().isNotEmpty()
+            val runningStillVisible = device.hasObject(By.res(TestExecutionTags.HERO_RUNNING))
             if (runningStillVisible) {
                 throw AssertionError("Run appears stuck in running state")
             }
 
+            collectAndRegisterTrace(tracesBefore)
             logE2e("MIKLINK_E2E_END", mapOf("status" to "PASS"))
         } catch (notRun: NotRunException) {
             logE2e(
                 event = "MIKLINK_E2E_END",
                 fields = mapOf("status" to "NOT_RUN", "reason" to notRun.reason)
             )
-            throw AssertionError("NOT_RUN: ${notRun.reason}")
+            scenarioRule.notRun(notRun.reason, "live-probe-prerequisite")
         } catch (error: Throwable) {
             logE2e(
                 event = "MIKLINK_E2E_END",
                 fields = mapOf("status" to "FAIL", "reason" to (error.message ?: "unknown_failure"))
             )
             throw error
+        } finally {
+            requestedTraceRunId?.let { expectedRunId ->
+                runCatching { dependencies().debugTraceRunContext().clear(expectedRunId) }
+            }
         }
+    }
+
+    private fun preflightRule(): TestRule = TestRule { base, _ ->
+        object : Statement() {
+            override fun evaluate() {
+                val instrumentation = InstrumentationRegistry.getInstrumentation()
+                val device = androidx.test.uiautomator.UiDevice.getInstance(instrumentation)
+                if (!device.dismissKeyguardIfPossible(instrumentation.targetContext)) {
+                    abortPreflight("DEVICE_LOCKED", "device-unlocked")
+                }
+                val probe = runBlocking { dependencies().probeRepository().getProbeConfig() }
+                if (probe == null || probe.ipAddress.isBlank() || probe.username.isBlank()) {
+                    abortPreflight("PROBE_NOT_CONFIGURED", "configured-probe")
+                }
+                if (probe.testInterface.isBlank()) {
+                    abortPreflight("PROBE_INTERFACE_NOT_SELECTED", "probe-interface")
+                }
+                base.evaluate()
+            }
+        }
+    }
+
+    private fun abortPreflight(reason: String, prerequisiteId: String): Nothing {
+        // Keep the unchanged legacy shell wrappers able to classify an early
+        // prerequisite exit before the Compose rule launches the Activity.
+        logE2e(
+            event = "MIKLINK_E2E_END",
+            fields = mapOf("status" to "NOT_RUN", "reason" to reason)
+        )
+        scenarioRule.notRun(reason, prerequisiteId)
     }
 
     private fun selectClient(): Long {
-        composeRule.onNodeWithTag(DashboardTags.CLIENT_SELECTOR, useUnmergedTree = true).performClick()
-        val args = InstrumentationRegistry.getArguments()
-        val explicitId = args.getString("clientId")?.toLongOrNull()
-        return selectFromSheet(
-            explicitId = explicitId,
-            itemPrefix = DashboardTags.CLIENT_ITEM_PREFIX,
-            missingReason = "missing_live_client"
-        ).also { selectedId ->
-            if (explicitId == null) {
-                logE2e(
-                    event = "MIKLINK_E2E_STEP",
-                    fields = mapOf("step" to "fallback_client_selection", "clientId" to selectedId)
-                )
-            }
-        }
+        requireObject(DashboardTags.CLIENT_SELECTOR).click()
+        return selectFixtureFromSheet(fixtures.client.clientId, fixtures.client.companyName)
     }
 
     private fun selectProfile(): Long {
-        composeRule.onNodeWithTag(DashboardTags.PROFILE_SELECTOR, useUnmergedTree = true).performClick()
-        val args = InstrumentationRegistry.getArguments()
-        val explicitId = args.getString("profileId")?.toLongOrNull()
-        return selectFromSheet(
-            explicitId = explicitId,
-            itemPrefix = DashboardTags.PROFILE_ITEM_PREFIX,
-            missingReason = "missing_live_profile"
-        ).also { selectedId ->
-            if (explicitId == null) {
-                logE2e(
-                    event = "MIKLINK_E2E_STEP",
-                    fields = mapOf("step" to "fallback_profile_selection", "profileId" to selectedId)
-                )
-            }
-        }
+        requireObject(DashboardTags.PROFILE_SELECTOR).click()
+        return selectFixtureFromSheet(fixtures.profile.profileId, fixtures.profile.profileName)
     }
 
     private fun ensureLiveFixtures() {
         runBlocking {
             val deps = dependencies()
-            val probeRepository = deps.probeRepository()
-            val clientRepository = deps.clientRepository()
-            val profileRepository = deps.testProfileRepository()
+            val configuredProbe = deps.probeRepository().getProbeConfig()
+                ?: emitNotRun("probe_not_configured")
+            if (configuredProbe.ipAddress.isBlank() || configuredProbe.username.isBlank()) {
+                emitNotRun("probe_configuration_incomplete")
+            }
+            if (configuredProbe.testInterface.isBlank()) {
+                emitNotRun("probe_interface_not_selected")
+            }
 
-            ensureProbe(probeRepository)
-            ensureClient(clientRepository)
-            ensureProfile(profileRepository)
-        }
-    }
-
-    private suspend fun ensureProbe(probeRepository: ProbeRepository) {
-        val existingProbe = probeRepository.getProbeConfig()
-        if (existingProbe == null) {
-            probeRepository.saveProbeConfig(
-                ProbeConfig(
-                    ipAddress = AUTO_PROBE_IP,
-                    username = AUTO_PROBE_USERNAME,
-                    password = AUTO_PROBE_PASSWORD,
-                    testInterface = AUTO_PROBE_INTERFACE,
-                    isHttps = false,
-                    isOnline = false,
-                    modelName = null,
-                    tdrCapability = TdrCapability.UNKNOWN
-                )
+            val manager = TestFixtureManager(
+                sessionId = "legacy-live-${System.nanoTime()}",
+                clients = deps.clientRepository(),
+                profiles = deps.testProfileRepository(),
+                reports = deps.reportRepository()
             )
-            logE2e(
-                event = "MIKLINK_E2E_STEP",
-                fields = mapOf(
-                    "step" to "auto_probe_created",
-                    "ipAddress" to AUTO_PROBE_IP
-                )
-            )
-            return
-        }
-
-        if (existingProbe.ipAddress.isBlank()) {
-            probeRepository.saveProbeConfig(
-                existingProbe.copy(ipAddress = AUTO_PROBE_IP)
-            )
-            logE2e(
-                event = "MIKLINK_E2E_STEP",
-                fields = mapOf(
-                    "step" to "auto_probe_ip_updated",
-                    "ipAddress" to AUTO_PROBE_IP
-                )
-            )
-        }
-    }
-
-    private suspend fun ensureClient(clientRepository: ClientRepository) {
-        val clients = clientRepository.observeAllClients().first()
-        if (clients.isNotEmpty()) {
-            return
-        }
-
-        val clientId = clientRepository.insertClient(
-            Client(
-                clientId = 0L,
-                companyName = AUTO_CLIENT_NAME,
-                location = null,
-                notes = "Auto-generated for LiveProbeE2E",
-                networkMode = NetworkMode.DHCP,
-                staticIp = null,
-                staticSubnet = null,
-                staticGateway = null,
-                staticCidr = null,
-                minLinkRate = "1G",
-                socketPrefix = "E2E",
-                socketSuffix = "",
-                socketSeparator = "-",
-                socketNumberPadding = 2,
-                nextIdNumber = 1,
-                speedTestServerAddress = null,
-                speedTestServerUser = null,
-                speedTestServerPassword = null
-            )
-        )
-        logE2e(
-            event = "MIKLINK_E2E_STEP",
-            fields = mapOf(
-                "step" to "auto_client_created",
-                "clientId" to clientId
-            )
-        )
-    }
-
-    private suspend fun ensureProfile(profileRepository: TestProfileRepository) {
-        val profiles = profileRepository.observeAllProfiles().first()
-        val exists = profiles.any { profile ->
-            profile.runPing &&
-                profile.pingTarget1.equals(DHCP_GATEWAY_TARGET, ignoreCase = true) &&
-                profile.pingTarget2.equals(PUBLIC_DNS_TARGET, ignoreCase = true)
-        }
-        if (exists) {
-            return
-        }
-
-        val profileId = profileRepository.insertProfile(
-            TestProfile(
-                profileId = 0L,
-                profileName = AUTO_PROFILE_NAME,
-                profileDescription = "Auto-generated for LiveProbeE2E",
-                runTdr = true,
+            fixtureManager = manager
+            val created = manager.createCoreFixtures()
+            val liveProfile = created.profile.copy(
+                runTdr = configuredProbe.tdrCapability != TdrCapability.UNSUPPORTED,
                 runLinkStatus = true,
                 runLldp = true,
                 runPing = true,
                 pingTarget1 = DHCP_GATEWAY_TARGET,
                 pingTarget2 = PUBLIC_DNS_TARGET,
-                pingTarget3 = null,
-                pingCount = 4,
-                runSpeedTest = false,
-                thresholds = TestThresholds.defaults()
+                pingCount = 4
             )
+            deps.testProfileRepository().updateProfile(liveProfile)
+            fixtures = created.copy(profile = liveProfile)
+        }
+    }
+
+    private fun collectAndRegisterTrace(existingPaths: Set<String>) {
+        val deadline = SystemClock.uptimeMillis() + TRACE_FINALIZATION_TIMEOUT_MS
+        var trace: File? = null
+        while (SystemClock.uptimeMillis() < deadline) {
+            trace = traceFiles()
+                .filterNot { it.canonicalPath in existingPaths }
+                .filter { file ->
+                    runCatching {
+                        file.useLines { lines ->
+                            lines.lastOrNull()?.let(::JSONObject)?.getString("eventType") == "run_finished"
+                        }
+                    }.getOrDefault(false)
+                }
+                .maxByOrNull(File::lastModified)
+            if (trace != null) break
+            SystemClock.sleep(TRACE_FINALIZATION_POLL_MS)
+        }
+
+        val completedTrace = requireNotNull(trace) { "Completed debug trace was not produced" }
+        val events = completedTrace.readLines()
+            .filter(String::isNotBlank)
+            .map(::JSONObject)
+        check(events.isNotEmpty()) { "Debug trace is empty" }
+        check(events.all { it.getString("sessionId") == scenarioRule.sessionId }) {
+            "Trace session correlation changed"
+        }
+        check(events.all { it.getString("scenarioId") == LEGACY_SCENARIO_ID }) {
+            "Trace scenario correlation changed"
+        }
+        val eventTypes = events.map { it.getString("eventType") }.toSet()
+        val requiredEvents = setOf(
+            "run_started",
+            "probe_request",
+            "probe_response",
+            "parsed_response",
+            "normalized_response",
+            "normalized_result",
+            "test_decision",
+            "ui_snapshot",
+            "run_finished"
         )
-        logE2e(
-            event = "MIKLINK_E2E_STEP",
-            fields = mapOf(
-                "step" to "auto_profile_created",
-                "profileId" to profileId
-            )
-        )
-    }
+        check(eventTypes.containsAll(requiredEvents)) {
+            "Trace is missing required events: ${(requiredEvents - eventTypes).sorted()}"
+        }
 
-    private fun dependencies(): LiveProbeE2EDependencies {
-        val appContext = InstrumentationRegistry.getInstrumentation().targetContext.applicationContext
-        return EntryPointAccessors.fromApplication(appContext, LiveProbeE2EDependencies::class.java)
-    }
-
-    @EntryPoint
-    @InstallIn(SingletonComponent::class)
-    interface LiveProbeE2EDependencies {
-        fun clientRepository(): ClientRepository
-        fun testProfileRepository(): TestProfileRepository
-        fun probeRepository(): ProbeRepository
-    }
-
-    private fun selectFromSheet(
-        explicitId: Long?,
-        itemPrefix: String,
-        missingReason: String
-    ): Long {
-        if (explicitId != null) {
-            val targetTag = "${itemPrefix}_$explicitId"
-            val exists = composeRule.onAllNodesWithTag(targetTag, useUnmergedTree = true)
-                .fetchSemanticsNodes().isNotEmpty()
-            if (!exists) {
-                emitNotRun("${missingReason}_id_not_found")
+        val probe = runBlocking { dependencies().probeRepository().getProbeConfig() }
+            ?: error("Configured probe disappeared before trace validation")
+        val credentialCanaries = setOf(probe.username, probe.password)
+            .filter(String::isNotBlank)
+            .toSet()
+        if (credentialCanaries.isNotEmpty()) {
+            check(ArtifactSecretScanner(credentialCanaries).scan(listOf(completedTrace)).isEmpty()) {
+                "A configured probe credential reached the debug trace"
             }
-            composeRule.onNodeWithTag(targetTag, useUnmergedTree = true).performClick()
-            return explicitId
         }
+        scenarioRule.copyArtifact(
+            source = completedTrace,
+            filename = "probe-trace.ndjson",
+            mediaType = "application/x-ndjson",
+            redactionStatus = RedactionStatus.VERIFIED_SCAN
+        )
+    }
 
-        val matcher = SemanticsMatcher("$itemPrefix prefix matcher") { node ->
-            val tag = node.config.getOrNull(SemanticsProperties.TestTag)
-            tag?.startsWith("${itemPrefix}_") == true
-        }
-        val nodes = composeRule.onAllNodes(matcher, useUnmergedTree = true).fetchSemanticsNodes()
-        if (nodes.isEmpty()) {
-            emitNotRun(missingReason)
-        }
-        val selectedTag = nodes.first().config.getOrNull(SemanticsProperties.TestTag) ?: emitNotRun(missingReason)
-        composeRule.onNodeWithTag(selectedTag, useUnmergedTree = true).performClick()
-        return selectedTag.removePrefix("${itemPrefix}_").toLongOrNull() ?: emitNotRun("${missingReason}_invalid_id")
+    private fun traceFiles(): List<File> {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val directory = File(context.getExternalFilesDir(null), TRACE_DIRECTORY)
+        return directory.listFiles { file ->
+            file.isFile && file.name.startsWith("debug_trace_") && file.extension == "ndjson"
+        }?.toList().orEmpty()
+    }
+
+    private fun dependencies(): DebugE2EEntryPoint {
+        val appContext = InstrumentationRegistry.getInstrumentation().targetContext.applicationContext
+        return EntryPointAccessors.fromApplication(appContext, DebugE2EEntryPoint::class.java)
+    }
+
+    private fun selectFixtureFromSheet(id: Long, visibleLabel: String): Long {
+        val target = device.wait(Until.findObject(By.text(visibleLabel)), 10_000L)
+            ?: emitNotRun("session_fixture_not_visible")
+        target.click()
+        return id
     }
 
     private fun waitForTag(tag: String, timeoutMs: Long, reason: String, notRunOnTimeout: Boolean) {
-        val found = runCatching {
-            composeRule.waitUntil(timeoutMs) {
-                composeRule.onAllNodesWithTag(tag, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
-            }
-        }.isSuccess
+        val found = device.wait(Until.hasObject(By.res(tag)), timeoutMs)
         if (!found) {
             if (notRunOnTimeout) {
                 emitNotRun(reason)
@@ -353,9 +330,12 @@ class LiveProbeE2ETest {
     }
 
     private fun hasVisibleText(text: String): Boolean {
-        return composeRule.onAllNodesWithText(text, substring = false, useUnmergedTree = true)
-            .fetchSemanticsNodes().isNotEmpty()
+        return device.hasObject(By.text(text))
     }
+
+    private fun requireObject(resourceId: String) =
+        device.wait(Until.findObject(By.res(resourceId)), 10_000L)
+            ?: throw AssertionError("Required UI object not found: $resourceId")
 
     private fun emitNotRun(reason: String): Nothing {
         throw NotRunException(reason)
@@ -376,15 +356,13 @@ class LiveProbeE2ETest {
 
     private companion object {
         private const val E2E_TAG = "MIKLINK_E2E"
+        private const val LEGACY_SCENARIO_ID = "legacy-live-probe"
+        private const val TRACE_DIRECTORY = "e2e-trace"
+        private const val TRACE_FINALIZATION_TIMEOUT_MS = 10_000L
+        private const val TRACE_FINALIZATION_POLL_MS = 100L
         // RunTestUseCase has a 90s timeout; this leaves room for splash and UI transitions on real devices.
         private const val LIVE_RESULT_TIMEOUT_MS = 150_000L
-        private const val AUTO_CLIENT_NAME = "E2E Auto Client"
-        private const val AUTO_PROFILE_NAME = "E2E Auto Profile"
         private const val DHCP_GATEWAY_TARGET = "DHCP_GATEWAY"
         private const val PUBLIC_DNS_TARGET = "8.8.8.8"
-        private const val AUTO_PROBE_IP = "172.29.0.1"
-        private const val AUTO_PROBE_USERNAME = "admin"
-        private const val AUTO_PROBE_PASSWORD = ""
-        private const val AUTO_PROBE_INTERFACE = "ether1"
     }
 }

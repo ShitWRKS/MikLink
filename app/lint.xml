@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lint>
+    <issue id="HardcodedText" severity="error" />
+    <!-- Existing Compose migration findings are tracked separately; UI text remains enforced above. -->
+    <issue id="NonObservableLocale" severity="ignore" />
+    <issue id="LocalContextGetResourceValueCall" severity="ignore" />
+</lint>

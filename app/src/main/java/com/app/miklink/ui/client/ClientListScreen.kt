@@ -17,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -28,6 +29,7 @@ import androidx.navigation.NavController
 import com.app.miklink.ui.components.MinimalListItem
 import com.app.miklink.ui.components.ModernSearchBar
 import com.app.miklink.R
+import com.app.miklink.ui.testing.AgentUiTags
 import kotlinx.coroutines.launch
 
 // Removed legacy WebView-based printing imports
@@ -63,6 +65,7 @@ fun ClientListScreen(
     // PDF generation is now handled by PdfGenerator (iText). The old HTML/WebView pipeline was removed
 
     Scaffold(
+        modifier = Modifier.testTag(AgentUiTags.Client.LIST),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
@@ -99,6 +102,7 @@ fun ClientListScreen(
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 onClick = { navController.navigate("client_add") },
+                modifier = Modifier.testTag(AgentUiTags.Client.ADD),
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
                 text = { Text(stringResource(R.string.client_list_new_client)) },
                 containerColor = MaterialTheme.colorScheme.primary,
@@ -115,7 +119,7 @@ fun ClientListScreen(
             ModernSearchBar(
                 query = searchQuery,
                 onQueryChange = { searchQuery = it },
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp).testTag(AgentUiTags.Client.SEARCH),
                 placeholder = stringResource(R.string.dashboard_search_client)
             )
 
@@ -146,13 +150,13 @@ fun ClientListScreen(
                         }
                         Spacer(Modifier.height(24.dp))
                         Text(
-                            text = "No clients",
+                            text = stringResource(R.string.client_list_empty_title),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold
                         )
                         Spacer(Modifier.height(8.dp))
                         Text(
-                            text = "Add your first client to get started.",
+                            text = stringResource(R.string.client_list_empty_body),
                             style = MaterialTheme.typography.bodyMedium,
                             textAlign = TextAlign.Center,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -168,7 +172,7 @@ fun ClientListScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "No results found for \"$searchQuery\"",
+                        text = stringResource(R.string.client_list_empty_search, searchQuery),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -189,6 +193,7 @@ fun ClientListScreen(
                                 title = client.companyName,
                                 subtitle = client.location ?: "No location specified",
                                 icon = Icons.Default.Business,
+                                modifier = Modifier.testTag("${AgentUiTags.Client.ITEM_PREFIX}_${client.clientId}"),
                                 onClick = { navController.navigate("client_edit/${client.clientId}") },
                                 trailingContent = {
                                     IconButton(onClick = {

@@ -4,6 +4,14 @@ import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Inject
 import javax.inject.Singleton
 
+data class DebugTraceCorrelation(
+    val runId: String,
+    val sessionId: String = runId,
+    val scenarioId: String = "ui-run",
+    val operationId: String? = null,
+    val exchangeId: String? = null
+)
+
 /**
  * Holds the run ID of the currently active test run for trace attribution.
  *
@@ -12,18 +20,52 @@ import javax.inject.Singleton
  */
 @Singleton
 class DebugTraceRunContext @Inject constructor() {
-    private val currentRunId = AtomicReference<String?>(null)
+    private val currentCorrelation = AtomicReference<DebugTraceCorrelation?>(null)
 
     fun set(runId: String) {
-        currentRunId.set(runId)
+        currentCorrelation.updateAndGet { previous ->
+            DebugTraceCorrelation(
+                runId = runId,
+                sessionId = previous?.sessionId ?: runId,
+                scenarioId = previous?.scenarioId ?: "ui-run"
+            )
+        }
+    }
+
+    fun set(correlation: DebugTraceCorrelation) {
+        currentCorrelation.set(correlation)
     }
 
     /**
      * Clears the context only if it still holds [expectedRunId].
      * Returns true when the context was actually cleared (ownership held), false otherwise.
      */
-    fun clear(expectedRunId: String): Boolean =
-        currentRunId.compareAndSet(expectedRunId, null)
+    fun clear(expectedRunId: String): Boolean {
+        while (true) {
+            val current = currentCorrelation.get() ?: return false
+            if (current.runId != expectedRunId) return false
+            if (currentCorrelation.compareAndSet(current, null)) return true
+        }
+    }
 
-    fun current(): String? = currentRunId.get()
+    fun current(): String? = currentCorrelation.get()?.runId
+
+    fun correlation(): DebugTraceCorrelation? = currentCorrelation.get()
+
+    fun withOperation(operationId: String, exchangeId: String): DebugTraceCorrelation? {
+        while (true) {
+            val current = currentCorrelation.get() ?: return null
+            val updated = current.copy(operationId = operationId, exchangeId = exchangeId)
+            if (currentCorrelation.compareAndSet(current, updated)) return updated
+        }
+    }
+
+    fun clearOperation(expectedExchangeId: String): Boolean {
+        while (true) {
+            val current = currentCorrelation.get() ?: return false
+            if (current.exchangeId != expectedExchangeId) return false
+            val updated = current.copy(operationId = null, exchangeId = null)
+            if (currentCorrelation.compareAndSet(current, updated)) return true
+        }
+    }
 }

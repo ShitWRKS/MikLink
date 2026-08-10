@@ -37,6 +37,12 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeout
 
+data class ReportSaveState(
+    val isSaving: Boolean = false,
+    val isSaved: Boolean = false,
+    val errorMessage: String? = null
+)
+
 @HiltViewModel
 class TestViewModel @Inject constructor(
     @param:ApplicationContext private val context: Context,
@@ -59,6 +65,9 @@ class TestViewModel @Inject constructor(
     private val logBuffer = ExecutionLogBuffer()
     private val _logs = MutableStateFlow<List<String>>(emptyList())
     val logs: StateFlow<List<String>> = _logs.asStateFlow()
+
+    private val _reportSaveState = MutableStateFlow(ReportSaveState())
+    val reportSaveState: StateFlow<ReportSaveState> = _reportSaveState.asStateFlow()
 
     // Tracks the current test coroutine so it can be cancelled if a new test starts
     private var testJob: Job? = null
@@ -135,8 +144,19 @@ class TestViewModel @Inject constructor(
     }
 
     fun saveReportToDb(report: TestReport) {
+        if (_reportSaveState.value.isSaving) return
         viewModelScope.launch {
-            saveTestReportUseCase(report, incrementClientCounter = true)
+            _reportSaveState.value = ReportSaveState(isSaving = true)
+            try {
+                saveTestReportUseCase(report, incrementClientCounter = true)
+                _reportSaveState.value = ReportSaveState(isSaved = true)
+            } catch (exception: CancellationException) {
+                throw exception
+            } catch (_: Exception) {
+                _reportSaveState.value = ReportSaveState(
+                    errorMessage = context.getString(R.string.test_execution_save_error)
+                )
+            }
         }
     }
 
@@ -173,7 +193,7 @@ class TestViewModel @Inject constructor(
         }
 
         if (clientId <= 0 || profileId <= 0) {
-            _uiState.value = UiState.Error("Parametri di navigazione non validi.")
+            _uiState.value = UiState.Error(context.getString(R.string.test_execution_invalid_navigation))
             return null
         }
 
