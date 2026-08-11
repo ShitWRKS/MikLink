@@ -35,6 +35,7 @@ import androidx.compose.ui.res.stringResource
 import com.app.miklink.R
 import com.app.miklink.core.domain.model.preferences.IdNumberingStrategy
 import com.app.miklink.ui.testing.AgentUiTags
+import com.app.miklink.ui.testing.AgentSemanticsConfig
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -147,6 +148,7 @@ fun SettingsScreen(
                     headline = stringResource(R.string.settings_configure_probe),
                     subtitle = stringResource(R.string.settings_configure_probe_desc),
                     leadingIcon = Icons.Default.Router,
+                    modifier = Modifier.testTag(AgentUiTags.Settings.PROBE),
                     onClick = { navController.navigate("probe_config") }
                 )
 
@@ -185,7 +187,7 @@ fun SettingsScreen(
                             viewModel.updateProbePollingInterval((roundedSeconds * 1000).toLong())
                         },
                         valueRange = 2f..30f,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth().testTag(AgentUiTags.Settings.POLLING)
                     )
                 }
 
@@ -220,7 +222,7 @@ fun SettingsScreen(
                         value = glowIntensity,
                         onValueChange = { viewModel.updateDashboardGlowIntensity(it) },
                         valueRange = 0f..1f,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth().testTag(AgentUiTags.Settings.GLOW)
                     )
                 }
             }
@@ -276,6 +278,7 @@ fun SettingsScreen(
                     headline = stringResource(R.string.settings_id_strategy),
                     subtitle = "Incremento continuo o riuso ID",
                     leadingIcon = Icons.Default.Numbers,
+                    modifier = Modifier.testTag(AgentUiTags.Settings.ID_STRATEGY),
                     onClick = { showIdStrategyDialog = true },
                     trailingContent = {
                         Surface(
@@ -300,6 +303,7 @@ fun SettingsScreen(
                     headline = stringResource(R.string.settings_discovery_protocols_title),
                     subtitle = stringResource(R.string.settings_discovery_protocols_desc),
                     leadingIcon = Icons.Default.FilterList,
+                    modifier = Modifier.testTag(AgentUiTags.Settings.DISCOVERY_PROTOCOLS),
                     onClick = { showDiscoveryProtocolsDialog = true },
                     trailingContent = {
                         Surface(
@@ -350,6 +354,7 @@ fun SettingsScreen(
 
     if (showIdStrategyDialog) {
         AlertDialog(
+            modifier = AgentSemanticsConfig.rootModifier(),
             onDismissRequest = { showIdStrategyDialog = false },
             title = { Text(stringResource(R.string.settings_id_strategy_dialog_title)) },
             text = {
@@ -367,6 +372,12 @@ fun SettingsScreen(
                         ) {
                             RadioButton(
                                 selected = (idNumberingStrategy == strategy),
+                                modifier = Modifier.testTag(
+                                    when (strategy) {
+                                        IdNumberingStrategy.CONTINUOUS_INCREMENT -> AgentUiTags.Settings.ID_STRATEGY_CONTINUOUS
+                                        IdNumberingStrategy.FILL_GAPS -> AgentUiTags.Settings.ID_STRATEGY_FILL_GAPS
+                                    }
+                                ),
                                 onClick = {
                                     viewModel.updateIdNumberingStrategy(strategy)
                                     showIdStrategyDialog = false
@@ -411,6 +422,7 @@ fun SettingsScreen(
             "MNDP" to stringResource(R.string.neighbor_protocol_mndp)
         )
         AlertDialog(
+            modifier = AgentSemanticsConfig.rootModifier(),
             onDismissRequest = { showDiscoveryProtocolsDialog = false },
             title = { Text(stringResource(R.string.settings_discovery_protocols_dialog_title)) },
             text = {

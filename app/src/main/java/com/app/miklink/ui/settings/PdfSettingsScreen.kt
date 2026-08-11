@@ -81,7 +81,7 @@ fun PdfSettingsScreen(
                     value = pdfReportTitle,
                     onValueChange = { viewModel.updatePdfReportTitle(it) },
                     label = { Text(stringResource(R.string.pdf_report_title)) },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().testTag(AgentUiTags.Settings.PDF_TITLE),
                     singleLine = true,
                     leadingIcon = { Icon(Icons.Default.PictureAsPdf, null) }
                 )
@@ -126,7 +126,11 @@ fun PdfSettingsScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        Switch(checked = pdfIncludeEmpty, onCheckedChange = { viewModel.updatePdfIncludeEmptyTests(it) })
+                        Switch(
+                            checked = pdfIncludeEmpty,
+                            onCheckedChange = { viewModel.updatePdfIncludeEmptyTests(it) },
+                            modifier = Modifier.testTag(AgentUiTags.Settings.PDF_INCLUDE_EMPTY)
+                        )
                     }
                 }
                 
@@ -158,7 +162,11 @@ fun PdfSettingsScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        Switch(checked = pdfHideEmptyColumns, onCheckedChange = { viewModel.updatePdfHideEmptyColumns(it) })
+                        Switch(
+                            checked = pdfHideEmptyColumns,
+                            onCheckedChange = { viewModel.updatePdfHideEmptyColumns(it) },
+                            modifier = Modifier.testTag(AgentUiTags.Settings.PDF_HIDE_EMPTY_COLUMNS)
+                        )
                     }
                 }
             }
@@ -195,6 +203,7 @@ fun PdfSettingsScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .testTag("${AgentUiTags.Settings.PDF_COLUMN_PREFIX}_${col.name.lowercase()}")
                             .clickable {
                                 val newSet = if (currentColumns.contains(col.name)) {
                                     if (currentColumns.size > 1) currentColumns - col.name else currentColumns

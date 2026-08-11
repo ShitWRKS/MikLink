@@ -18,6 +18,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.stateIn
 
 @HiltViewModel
@@ -74,12 +76,21 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    val pdfReportTitle = userPreferencesRepository.pdfReportTitle
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = ""
-        )
+    private val _pdfReportTitle = MutableStateFlow("")
+    val pdfReportTitle = _pdfReportTitle.asStateFlow()
+    private var pdfTitlePersistJob: Job? = null
+    private var pdfTitleHasPendingWrite = false
+
+    init {
+        viewModelScope.launch {
+            userPreferencesRepository.pdfReportTitle.collect { persistedTitle ->
+                if (!pdfTitleHasPendingWrite || persistedTitle == _pdfReportTitle.value) {
+                    _pdfReportTitle.value = persistedTitle
+                    pdfTitleHasPendingWrite = false
+                }
+            }
+        }
+    }
 
     val pdfHideEmptyColumns = userPreferencesRepository.pdfHideEmptyColumns
         .stateIn(
@@ -89,7 +100,10 @@ class SettingsViewModel @Inject constructor(
         )
 
     fun updatePdfReportTitle(title: String) {
-        viewModelScope.launch {
+        _pdfReportTitle.value = title
+        pdfTitleHasPendingWrite = true
+        pdfTitlePersistJob?.cancel()
+        pdfTitlePersistJob = viewModelScope.launch {
             userPreferencesRepository.setPdfReportTitle(title)
         }
     }
@@ -141,6 +155,8 @@ class SettingsViewModel @Inject constructor(
     }
     
     fun resetPdfPreferences() {
+        pdfTitlePersistJob?.cancel()
+        pdfTitleHasPendingWrite = false
         viewModelScope.launch {
             userPreferencesRepository.resetPdfPreferencesToDefaults()
         }

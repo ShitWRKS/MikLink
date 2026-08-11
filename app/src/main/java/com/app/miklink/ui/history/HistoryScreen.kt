@@ -578,7 +578,9 @@ fun ClientReportsCard(
 ) {
     val semantic = MikLinkThemeTokens.semantic
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("${AgentUiTags.History.CLIENT_GROUP_PREFIX}_${clientData.client?.clientId ?: -1}"),
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Column {
@@ -661,7 +663,12 @@ fun ClientReportsCard(
                     }
 
                     // Expand/collapse button: explicit tint for consistency
-                    IconButton(onClick = onToggleExpand) {
+                    IconButton(
+                        onClick = onToggleExpand,
+                        modifier = Modifier.testTag(
+                            "${AgentUiTags.History.CLIENT_EXPAND_PREFIX}_${clientData.client?.clientId ?: -1}"
+                        )
+                    ) {
                         Icon(
                             if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                             contentDescription = if (isExpanded) stringResource(R.string.collapse) else stringResource(R.string.expand),
@@ -705,6 +712,7 @@ fun ReportListItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .testTag("${AgentUiTags.History.REPORT_ITEM_PREFIX}_${report.reportId}")
             .clickable { onEdit() }
             .padding(horizontal = 12.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,

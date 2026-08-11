@@ -1,39 +1,60 @@
 # Repository-Backed Coverage Inventory
 
-**Baseline**: `fix/production-readiness` at
-`cd629064968db3b633d0a16b6e7e4e63bf209e6d`  
-**Inventory date**: 2026-08-09  
-**Method**: routes, screens, view models, repositories, tests, and runners were read
-from the baseline. README claims were not treated as evidence by themselves.
+**Acceptance revision**: `ae15a069b25995e8cb2c8848cb477375d2712a87`
+**Inventory date**: 2026-08-11
+**Method**: Correct the existing inventory without removing lower-level tests. A
+repository/use-case round trip is integration evidence and cannot be counted as a
+Functional UI acceptance result.
+
+## Coverage levels
+
+1. **Lower-level / integration**: unit, contract, golden, repository, use-case,
+   persistence, generator, or instrumented integration validation.
+2. **Functional UI acceptance**: primary user journey driven and observed through
+   rendered UI on a physical device.
+3. **Live hardware acceptance**: Functional UI journey through the normal product
+   networking path to the explicitly configured MikroTik probe.
+4. **Exploratory availability**: ad-hoc semantic discovery and operation with ADB,
+   hierarchy, dynamically derived element bounds, and targeted evidence.
+
+> **Fixtures may arrange a scenario. They cannot replace through internal APIs the
+> functionality that the scenario claims to test.**
+
+`PASS` in one column never promotes another column.
 
 ## Product Areas and Current Coverage
 
-| ID | User-visible feature group | Repository evidence | Existing automated evidence | Current device/E2E gap | Planned validation path | 2026-08-09 device status | Executed evidence |
-|---|---|---|---|---|---|---|---|
-| FG-01 | Launch, splash, setup guidance, dashboard, client/profile selection | `MainActivity.kt`, `SplashScreen.kt`, `NavGraph.kt`, `DashboardScreen.kt` | `DashboardViewModelTest.kt` | No launch/setup/navigation regression | Probe-independent named UI scenario; exploratory path | PASS | Ad-hoc dashboardâ†’settingsâ†’dashboard; `DashboardScenarioTest` |
-| FG-02 | Probe create/update, connectivity verification, status polling, transport fallback, capability display | `ProbeEditScreen.kt`, `ProbeEditViewModel.kt`, probe repositories and service provider | `ProbeEditViewModelTest.kt`; probe connectivity/status contract tests; transport guard tests | Live test bypasses probe UI and contains fallback configuration | Probe UI scenario; explicit configured-probe live prerequisite; live connectivity evidence | PASS | `ProbeConfigurationScenarioTest`; configured-probe/no-fallback contract; same-lab `legacy-7` and `native-2` sessions reached the saved probe through normal product paths |
-| FG-03 | Client list/add/edit/delete, DHCP/static settings, socket naming, speed server | `ClientListScreen.kt`, `ClientEditScreen.kt`, client repository and network config repository | `SaveClientUseCaseTest.kt`; socket ID tests; `NetworkConfigRepositoryTest.kt`; route tests | No CRUD UI or persistence round trip | Probe-independent CRUD scenario; live network configuration step only through normal execution | PASS | `ClientScenarioTest` with fixture cleanup |
-| FG-04 | Test-profile list/add/edit/delete, enabled steps, targets, counts, gateway policy, thresholds | profile screens/view model, `TestProfile.kt`, `TestThresholds.kt` | `TestProfileViewModelTest.kt`; `SaveTestProfileUseCaseTest.kt`; quality policy tests | No profile UI round trip or field validation | Probe-independent CRUD scenario and semantic assertions | PASS | `ProfileScenarioTest` with fixture cleanup |
-| FG-05 | Test execution: link, cable/TDR, network configuration, neighbors, ping, speed; logs; repeat/save | `TestExecutionScreen.kt`, `TestViewModel.kt`, `RunTestUseCaseImpl.kt`, step implementations | Run/use-case, view-model, step, parsing/golden and contract tests; `LiveProbeE2ETest.kt` | One fixed scenario; weak prerequisite/result distinction; incomplete failure/lifecycle catalog | Maintained app-only and live named scenarios; correlated evidence; rapid-start/lifecycle/recovery cases | PASS (core live); NOT_RUN (speed only) | Same-build/same-lab replacement: link, TDR, network, neighbors and ping PASS; legacy UI workflow PASS; speed precisely NOT_RUN because no speed server is configured |
-| FG-06 | History grouping, search/filter, detail, delete, duplicate, repeat | `HistoryScreen.kt`, `HistoryViewModel.kt`, `ReportDetailScreen.kt`, `ReportDetailViewModel.kt` | Two report-detail Compose tests exercise limited Ping expansion | No full history-to-detail or actions workflow | Probe-independent saved-report/history scenario; targeted exploratory review | PASS | `HistoryReportScenarioTest` |
-| FG-07 | PDF generation, preferences, single/client export, orientation/columns/signatures, retrieval/share | `PdfExportDialog.kt`, `PdfSettingsScreen.kt`, `PdfGeneratorIText.kt`, document writer | No device-level PDF acceptance coverage found | Generated file is not validated end-to-end | Named PDF generation/retrieval scenario; non-empty/signature/basic-open validation | PASS | `PdfScenarioTest` generated and parsed PDF framing |
-| FG-08 | Backup JSON export/import | `BackupSettingsScreen.kt`, backup use cases/repositories, `BackupManagerImpl.kt` | `BackupManagerTest.kt` | No Storage Access Framework UI or round trip on device | Probe-independent device scenario using session-owned data; secrets excluded from artifacts | NOT_RUN | Machine-readable `backup-round-trip` result: `DISPOSABLE_LOCAL_STATE_NOT_AUTHORIZED`; import was not attempted without explicit opt-in |
-| FG-09 | Settings: locale, polling, glow, ID numbering, neighbor protocols | `SettingsScreen.kt`, `SettingsViewModel.kt`, preferences repository | ID numbering/domain tests; string hardcoding and Italian coverage scans | No settings persistence/UI scenario | Probe-independent settings round trip; locale semantic assertions | PASS | `SettingsScenarioTest`, original values restored |
-| FG-10 | Report/test result presentation: typed sections, thresholds, status, raw execution logs | result renderers, `TestDetailsContent.kt`, `ResultCards.kt`, report codec | report codec/use-case and execution tests; limited Ping Compose tests | Link/TDR/network/neighbors/speed visual states not covered | Data-driven device scenarios per result type plus live-result correlation | PASS | `ResultPresentationScenarioTest`; real `legacy-7` UI result plus 66-event trace, 5 exchanges, manifest/hash validation and configured-credential scan |
+| ID | User-visible feature group | Lower-level / integration coverage | Functional UI acceptance | Live hardware acceptance | Exploratory availability | Remaining acceptance path |
+|---|---|---|---|---|---|---|
+| FG-01 | Launch, splash, setup guidance, dashboard, client/profile selection | PASS — `DashboardViewModelTest`, `DashboardScenarioTest` tag/state assertions | PASS — `LaunchNavigationUiTest` in `acceptance-ae15a06-suite-v2` | N/A | PASS — semantic navigation and screenshots available | None for current scope |
+| FG-02 | Probe create/update, connectivity verification, status polling, transport fallback, capability display | PASS — view-model/connectivity/transport contracts and `ProbeConfigurationScenarioTest` | NOT_RUN — real form and Verify action executed; configured probe was unreachable, so success/save/reopen assertions correctly did not run | NOT_RUN — probe hardware unavailable on 2026-08-11; prior same-lab configured-probe path remains PASS | AVAILABLE via debug semantic hierarchy | Rerun `ProbeConfigurationUiTest` with the configured probe reachable |
+| FG-03 | Client list/add/edit/delete, DHCP/static settings, socket naming, speed server | PASS — save/network/socket tests and repository-driven `ClientScenarioTest` | PASS — real UI create, static validation, reopen, edit, delete confirmation, and absence in `acceptance-4faa1eb-client` and final suite | PARTIAL — prior real execution consumed a prepared client | AVAILABLE | None for current app-only scope |
+| FG-04 | Test-profile list/add/edit/delete, enabled steps, targets, counts, gateway policy, thresholds | PASS — view-model/use-case/policy tests and repository-driven `ProfileScenarioTest` | PASS — real UI create, toggle/targets, reopen, edit, delete confirmation, and absence in `acceptance-4faa1eb-profile-v2` and final suite | PARTIAL — prior real execution consumed a prepared profile | AVAILABLE | None for current app-only scope |
+| FG-05 | Test execution: link, cable/TDR, network configuration, neighbors, ping, speed; logs; repeat/save | PASS — use-case/view-model/step/parsing contracts and catalog support | PASS — prior `LiveProbeE2ETest` drove select/start/running/completed/result UI | PASS — prior same-lab link, TDR, network, neighbors and ping; speed remained independently NOT_RUN without a server | AVAILABLE | Current rerun requires probe hardware |
+| FG-06 | History grouping, search/filter, detail, delete, duplicate, repeat | PASS — repository-driven `HistoryReportScenarioTest` and detail Compose tests | PASS — session report search, detail, deletion and absence through UI in `acceptance-ae15a06-suite-v2` | N/A | AVAILABLE | Duplicate/repeat remain lower-level coverage, outside the corrected primary journey |
+| FG-07 | PDF generation, preferences, single/client export, orientation/columns/signatures, retrieval/share | PASS — direct generator/config `PdfScenarioTest` validates PDF framing | PASS — settings persistence/restore, visible export, external-viewer return, retrieval, non-trivial size, `%PDF-` header and `%%EOF` in final suite | N/A | AVAILABLE | None for current export acceptance |
+| FG-08 | Backup JSON export/import | PASS — `BackupManagerTest`; device contract fails closed | **NOT_RUN — `disposableLocalState=true` not authorized; SAF UI round trip not run** | N/A | AVAILABLE for non-destructive screen inspection/export | Execute only on explicitly disposable local state; never retain credential-bearing backup evidence |
+| FG-09 | Settings: locale, polling, glow, ID numbering, neighbor protocols | PASS — domain tests and direct preferences `SettingsScenarioTest` | PASS — language and ID strategy changed independently, checked state observed, persisted after reopen, and restored through UI in `acceptance-4faa1eb-settings` and final suite | N/A | AVAILABLE | None for representative settings scope |
+| FG-10 | Report/test result presentation: typed sections, thresholds, status, raw execution logs | PASS — codec/mapping/use-case and data-driven `ResultPresentationScenarioTest` | PASS — saved result was found and opened through rendered History/detail UI in final suite; produced live sections remain covered by prior accepted live run | PASS — prior live result correlated to 66-event/5-exchange trace | AVAILABLE | Current live rerun requires probe hardware |
 
 ## Cross-Cutting Coverage
 
-| Concern | Existing evidence | Gap | Planned path |
-|---|---|---|---|
-| Secret handling | `LogSanitizer.kt` and tests; debug/release trace split | Key-name redaction does not prove nested/serialized value safety across all artifacts | PASS: recursive/value-aware redaction contracts and device credential-canary scans cover every live artifact type |
-| Release isolation | Release `DebugTraceSinkImpl` is no-op | No release artifact smoke/static acceptance gate | Build/install/launch smoke and package/artifact inspection |
-| Crash/ANR | Host wrappers grep logcat markers | Correctness depends on wrapper parsing and may miss historical exits | PASS (contract): `FailureEvidenceScenarioTest` verifies current-session crash/ANR filtering, timeout, lost-device evidence and cleanup override; destructive real crash injection is not required |
-| Device identity | Wrappers select `ANDROID_SERIAL`/adb | No single artifact manifest ties serial/model/API to build | Session manifest populated before actions |
-| Deterministic state | Live test creates/selects fixtures via repositories | Cleanup and unrelated-data preservation are incomplete | Session-owned IDs/names, `finally` cleanup, explicit disposable reset policy |
-| Exploratory access | None beyond manual adb use | No documented selectors/evidence/result contract | PASS: direct adb recipe, stable debug resource IDs, reachable before/after review and explicitly unreachable locked-device review are schema-valid under `app/build/outputs/agent-tests/ui-review/` |
+| Concern | Existing evidence | Current gap / required path |
+|---|---|---|
+| Secret handling | Recursive/value-aware redaction contracts and credential-canary scans | Continue scanning every retained live artifact; never retain backup payloads |
+| Release isolation | Debug-only semantics, release no-op trace, static scan | Exact signed release black-box smoke remains owner-deferred |
+| Crash/ANR | `FailureEvidenceScenarioTest`, process-exit filtering, bounded timeouts | Real destructive injection is not required; retain targeted logcat/failure image |
+| Device identity | Session manifest binds serial/model/API/build | PASS on serial `6pr8q4nncyhqrcx8`, model `22101316G`, API 34 |
+| Device unlock | `DeviceKeyguard` wakes, detects lock, and bounds manual-unlock wait | PASS on the unlocked acceptance device; locked timeout remains contract-covered |
+| Deterministic state | Session-prefixed fixtures and ID-scoped cleanup | PASS for real UI client/profile/report creation and deletion |
+| Evidence | Manifest/result/trace/hash/hierarchy/screenshot collector | Remove video from all design/docs; capture only critical before/after/final/failure images |
+| Exploratory access | Direct ADB recipe and debug resource IDs | Always locate semantically and derive bounds dynamically; no hard-coded coordinates |
 
 ## Coverage Acceptance Rule
 
-Implementation is complete only when every `FG-*` row has at least one executed and
-accepted planned path, or an owner-approved external/manual classification with a
-reason. Existing lower-level coverage remains complementary and is not deleted.
+An operational feature group is Functional UI PASS only after its primary user
+journey runs through rendered UI on the physical device and produces accepted
+terminal evidence for the exact build. Integration, live hardware, and exploratory
+statuses remain separately visible. Missing required prerequisites are NOT_RUN;
+optional or non-applicable capabilities are SKIP. Existing lower-level tests remain
+complementary and are not deleted.

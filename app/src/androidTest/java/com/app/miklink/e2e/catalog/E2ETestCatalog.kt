@@ -17,10 +17,18 @@ enum class FeatureGroup(val id: String) {
 data class CatalogScenario(
     val id: String,
     val featureGroups: Set<FeatureGroup>,
+    val coverageLevel: CoverageLevel = CoverageLevel.INTEGRATION,
     val requiresLiveProbe: Boolean = false,
     val requiresSpeedServer: Boolean = false,
     val disruptive: Boolean = false
 )
+
+enum class CoverageLevel {
+    INTEGRATION,
+    FUNCTIONAL_UI,
+    LIVE_HARDWARE,
+    EXPLORATORY
+}
 
 data class CatalogOutcome(
     val scenarioId: String,
@@ -52,19 +60,62 @@ object E2ETestCatalog {
         CatalogScenario("settings", setOf(FeatureGroup.SETTINGS)),
         CatalogScenario("result-presentation", setOf(FeatureGroup.RESULT_PRESENTATION)),
         CatalogScenario(
+            "ui-launch-navigation",
+            setOf(FeatureGroup.LAUNCH_DASHBOARD),
+            coverageLevel = CoverageLevel.FUNCTIONAL_UI
+        ),
+        CatalogScenario(
+            "ui-probe-configuration",
+            setOf(FeatureGroup.PROBE_CONFIGURATION),
+            coverageLevel = CoverageLevel.FUNCTIONAL_UI
+        ),
+        CatalogScenario(
+            "ui-client-crud",
+            setOf(FeatureGroup.CLIENTS),
+            coverageLevel = CoverageLevel.FUNCTIONAL_UI
+        ),
+        CatalogScenario(
+            "ui-profile-crud",
+            setOf(FeatureGroup.TEST_PROFILES),
+            coverageLevel = CoverageLevel.FUNCTIONAL_UI
+        ),
+        CatalogScenario(
+            "ui-settings",
+            setOf(FeatureGroup.SETTINGS),
+            coverageLevel = CoverageLevel.FUNCTIONAL_UI
+        ),
+        CatalogScenario(
+            "ui-report-settings",
+            setOf(FeatureGroup.PDF_EXPORT, FeatureGroup.SETTINGS),
+            coverageLevel = CoverageLevel.FUNCTIONAL_UI
+        ),
+        CatalogScenario(
+            "ui-history",
+            setOf(FeatureGroup.HISTORY_REPORTS, FeatureGroup.RESULT_PRESENTATION),
+            coverageLevel = CoverageLevel.FUNCTIONAL_UI
+        ),
+        CatalogScenario(
+            "ui-pdf-export",
+            setOf(FeatureGroup.PDF_EXPORT),
+            coverageLevel = CoverageLevel.FUNCTIONAL_UI
+        ),
+        CatalogScenario(
             "live-probe",
             setOf(FeatureGroup.TEST_EXECUTION, FeatureGroup.RESULT_PRESENTATION),
+            coverageLevel = CoverageLevel.LIVE_HARDWARE,
             requiresLiveProbe = true
         ),
         CatalogScenario(
             "live-speed",
             setOf(FeatureGroup.TEST_EXECUTION),
+            coverageLevel = CoverageLevel.LIVE_HARDWARE,
             requiresLiveProbe = true,
             requiresSpeedServer = true
         ),
         CatalogScenario(
             "connectivity-recovery",
             setOf(FeatureGroup.TEST_EXECUTION),
+            coverageLevel = CoverageLevel.LIVE_HARDWARE,
             requiresLiveProbe = true,
             disruptive = true
         )
@@ -80,6 +131,10 @@ object E2ETestCatalog {
     }
 
     fun appOnly(): List<CatalogScenario> = scenarios.filterNot { it.requiresLiveProbe }
+
+    fun functionalUi(): List<CatalogScenario> = scenarios.filter {
+        it.coverageLevel == CoverageLevel.FUNCTIONAL_UI
+    }
 
     fun find(id: String): CatalogScenario? = scenarios.firstOrNull { it.id == id }
 

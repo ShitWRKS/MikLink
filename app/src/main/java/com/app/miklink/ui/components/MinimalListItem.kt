@@ -31,6 +31,7 @@ fun MinimalListItem(
     subtitle: String,
     icon: ImageVector,
     modifier: Modifier = Modifier,
+    clickableModifier: Modifier = Modifier,
     isSelected: Boolean = false,
     onClick: () -> Unit,
     trailingContent: @Composable (() -> Unit)? = null
@@ -46,7 +47,7 @@ fun MinimalListItem(
             BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Row(
-            modifier = Modifier
+            modifier = clickableModifier
                 .fillMaxWidth()
                 .clickable(onClick = onClick)
                 .padding(Spacing.sm),

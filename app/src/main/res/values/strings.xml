@@ -7,6 +7,10 @@
     <string name="cancel">Cancel</string>
     <string name="save">Save</string>
     <string name="delete">Delete</string>
+    <string name="client_delete_title">Delete client?</string>
+    <string name="client_delete_message">This will permanently delete %1$s.</string>
+    <string name="profile_delete_title">Delete profile?</string>
+    <string name="profile_delete_message">This will permanently delete %1$s.</string>
     <string name="edit">Edit</string>
     <string name="manage">Manage</string>
     <string name="close">Close</string>

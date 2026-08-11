@@ -50,6 +50,8 @@ fun SetupWizardCard(
     onSocketChange: (String) -> Unit,
     clientSelectorTag: String? = null,
     profileSelectorTag: String? = null,
+    manageClientTag: String? = null,
+    manageProfileTag: String? = null,
     onManageClient: (() -> Unit)? = null,
     onManageProfile: (() -> Unit)? = null
 ) {
@@ -80,7 +82,8 @@ fun SetupWizardCard(
                 isComplete = clientReady,
                 onClick = onSelectClient,
                 modifier = modifierForTag(clientSelectorTag),
-                onManage = onManageClient
+                onManage = onManageClient,
+                manageTag = manageClientTag
             )
             WizardStepRow(
                 step = 2,
@@ -90,7 +93,8 @@ fun SetupWizardCard(
                 isComplete = profileReady,
                 onClick = onSelectProfile,
                 modifier = modifierForTag(profileSelectorTag),
-                onManage = onManageProfile
+                onManage = onManageProfile,
+                manageTag = manageProfileTag
             )
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
@@ -133,7 +137,8 @@ private fun WizardStepRow(
     isComplete: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    onManage: (() -> Unit)? = null
+    onManage: (() -> Unit)? = null,
+    manageTag: String? = null
 ) {
     val semantic = MikLinkThemeTokens.semantic
 
@@ -168,7 +173,10 @@ private fun WizardStepRow(
             }
         }
         if (onManage != null) {
-            IconButton(onClick = onManage) {
+            IconButton(
+                onClick = onManage,
+                modifier = modifierForTag(manageTag)
+            ) {
                 Icon(
                     imageVector = Icons.Default.Edit,
                     contentDescription = stringResource(id = R.string.edit),

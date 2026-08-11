@@ -98,6 +98,6 @@ agent-control component, no enhanced debug trace, and no credential exposure.
 
 ## 6. Migration gate
 
-Compare the produced evidence against every row of the parity table in `research.md`.
-Do not delete `run_live_probe_e2e.ps1` or `run_live_probe_e2e.sh` until all rows pass
-on the designated physical device and removal is explicitly accepted.
+Migration parity was accepted on the designated physical device. Use only the
+direct Gradle/ADB/AndroidJUnitRunner commands above; no repository host runner is
+required or supported.

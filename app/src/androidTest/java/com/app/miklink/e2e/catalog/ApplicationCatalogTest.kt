@@ -38,4 +38,13 @@ class ApplicationCatalogTest {
         assertEquals(FeatureGroup.entries.toSet(), accounted)
         assertFalse(E2ETestCatalog.scenarios.any { it.id.isBlank() })
     }
+
+    @Test
+    fun functionalUiCoverageIsDistinctFromIntegrationCoverage() {
+        val functional = E2ETestCatalog.functionalUi()
+        assertTrue(functional.isNotEmpty())
+        assertTrue(functional.all { it.coverageLevel == CoverageLevel.FUNCTIONAL_UI })
+        assertFalse(E2ETestCatalog.find("client-crud")?.coverageLevel == CoverageLevel.FUNCTIONAL_UI)
+        assertTrue(E2ETestCatalog.find("ui-client-crud")?.coverageLevel == CoverageLevel.FUNCTIONAL_UI)
+    }
 }

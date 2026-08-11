@@ -1,18 +1,18 @@
 # Feature Specification: Native Agent-Driven Application Testing
 
-**Feature Branch**: `001-native-agent-testing`  
-**Repository Baseline**: `fix/production-readiness` at `cd629064968db3b633d0a16b6e7e4e63bf209e6d`  
+**Feature Branch**: `001-native-agent-testing-functional-acceptance`  
+**Repository Baseline**: `develop` at `fa2e9d15e542850956e3db92bdadd2b41dbfe9d4`  
 **Created**: 2026-08-09  
-**Status**: Ready for planning  
+**Status**: In implementation  
 **Input**: Give the coding agent direct, native access to MikLink on a compatible
 Android device through the debug build only, for repeatable E2E validation and
 ad-hoc UI/product investigation, including live MikroTik-probe workflows, without
-depending on the PowerShell runner.
+depending on a repository host runner.
 
 ## Problem and Scope
 
 MikLink has a physical-device instrumentation scenario and structured trace, but the
-agent-facing workflow is centered on host wrappers and one predefined live-probe
+agent-facing workflow previously depended on host orchestration and one predefined live-probe
 path. The agent needs a reusable way to operate and inspect the real app, run named
 regressions, exercise live probe behavior through the product, and collect safe,
 correlated evidence.
@@ -24,6 +24,28 @@ the agent mode through a flag, intent, instrumentation argument, or runtime sett
 The initial feature excludes production remote control, a second RouterOS client,
 unbounded probe administration, cloud device-farm operation, pixel-baseline testing,
 and replacement of existing lower-level suites.
+
+## Acceptance Levels and Fidelity Rule
+
+Coverage is reported independently at four levels:
+
+1. **Integration coverage** verifies repositories, use cases, persistence, codecs,
+   generators, and presentation mapping without claiming a user journey.
+2. **Functional UI acceptance** drives the primary user journey through rendered UI
+   on a physical device and observes persistence/results through that same UI.
+3. **Live-hardware acceptance** extends a Functional UI journey through the normal
+   networking stack to the explicitly configured MikroTik probe.
+4. **Agent exploratory validation** permits bounded ad-hoc UI operation and evidence
+   capture without creating a scenario-specific test class.
+
+> **Fixtures may arrange a scenario. They MUST NOT replace through internal APIs the
+> functionality that the scenario claims to test.**
+
+Repository/use-case fixtures may prepare a client and profile for a test-execution
+scenario, and may support cleanup or diagnostic verification. A client/profile CRUD,
+settings, history, report-settings, or PDF-export Functional UI result is accepted
+only when the declared behavior is performed through the normal UI. Existing tests
+that bypass that UI remain valuable integration coverage and are not removed.
 
 ## Clarifications
 
@@ -179,10 +201,43 @@ screenshots, semantic state, actions, and an evidence-linked description.
 3. **Given** a prerequisite is missing, **when** the review ends, **then** the report
    says what was not observed and why.
 
+---
+
+### User Story 6 - Complete functional UI acceptance (Priority: P1)
+
+As a maintainer, I want independently runnable physical-device scenarios that use
+MikLink like a user so CRUD, settings, execution, history, results, and export defects
+cannot be hidden by repository-level round trips.
+
+**Why this priority**: A green integration catalog does not prove that users can
+reach, operate, save, reopen, or remove data from the real screens.
+
+**Independent Test**: Install the debug app and test APK with preserving updates,
+run one Functional UI class through AndroidJUnitRunner, and obtain a terminal result
+and targeted before/after/failure evidence for its actual UI journey.
+
+**Acceptance Scenarios**:
+
+1. **Given** an unlocked compatible device, **when** the app-only Functional UI
+   catalog runs, **then** launch/navigation, client CRUD, profile CRUD, representative
+   settings/report-settings persistence, history/detail actions, result presentation,
+   and PDF export traverse their normal rendered UI.
+2. **Given** session-owned names and records, **when** a CRUD scenario completes,
+   **then** creation, reopening, meaningful update, persistence, and supported deletion
+   are observed through UI, while cleanup remains limited to session-owned records.
+3. **Given** a real completed test result, **when** history and PDF scenarios run,
+   **then** the report is found/opened through UI and export produces a retrievable,
+   non-trivial PDF with valid PDF header and EOF.
+4. **Given** the device is initially locked, **when** preflight runs, **then** it wakes
+   the device, reports that user unlock is required, waits for a bounded interval, and
+   resumes the same operation after unlock; timeout is NOT_RUN/DEVICE_LOCKED.
+
 ### Edge Cases
 
 - The selected device disconnects, the app cannot install/start, or the installed
   build differs from the build under evaluation.
+- The selected device is connected but locked; this is an unlock prerequisite, not
+  an immediate product failure, and credentials/biometrics are never automated.
 - The process is killed, crashes, produces an observable ANR, or the UI changes while
   an exploratory action is being evaluated.
 - Probe configuration is absent; authentication fails; a response is empty, delayed,
@@ -254,15 +309,32 @@ screenshots, semantic state, actions, and an evidence-linked description.
 - **FR-023**: Live validation MUST exercise the production UI/domain/repository/
   networking/export paths, not duplicate them in test code.
 - **FR-024**: The primary workflow MUST use standard Android/Gradle capabilities and
-  MUST NOT require the existing PowerShell runner or an equivalent shell-bound
-  orchestration wrapper.
-- **FR-025**: Existing useful lower-level suites, traces, and both current runners
-  MUST be retained until responsibility-by-responsibility replacement parity passes.
+  MUST NOT require repository shell-bound orchestration.
+- **FR-025**: Existing useful lower-level suites and traces MUST be retained;
+  transitional host orchestration MAY be retired only after responsibility-by-
+  responsibility replacement parity passes and the owner accepts removal.
 - **FR-026**: External black-box release smoke validation MUST prove the agent mode
   cannot be activated and verify representative launch and normal behavior against
   the exact release artifact without relying on embedded test controls.
 - **FR-027**: Screenshot-based UI review MUST be combined with semantic/state
   evidence; pixel-baseline comparison is excluded from v1.
+- **FR-028**: A feature group MUST NOT be reported as Functional UI PASS unless its
+  primary user journey was executed through the rendered UI on a physical device;
+  repository/use-case round trips are integration evidence only.
+- **FR-029**: The app-only Functional UI catalog MUST provide independently runnable
+  UI journeys for launch/navigation, configured-probe open/save/reopen, client CRUD, profile CRUD, representative app
+  settings, report settings, history/detail, result presentation, and PDF export.
+- **FR-030**: Functional UI fixtures MAY arrange unrelated prerequisites and perform
+  ID-scoped cleanup/diagnostics, but MUST NOT perform the behavior under test.
+- **FR-031**: Device preflight MUST wake a connected device when needed, distinguish
+  a locked device, request manual user unlock, wait for a bounded interval, and map an
+  unresolved lock to NOT_RUN/DEVICE_LOCKED without attempting PIN/password/biometric
+  automation.
+- **FR-032**: Functional evidence MUST use targeted before/after/final/failure images,
+  semantic hierarchy snapshots, structured trace, targeted logcat, and generated
+  files when applicable; screen recording/video is prohibited.
+- **FR-033**: PDF Functional UI acceptance MUST follow the visible export action and
+  validate a retrieved file for existence, non-trivial size, PDF header, and EOF.
 
 ### Key Entities
 
@@ -281,7 +353,7 @@ screenshots, semantic state, actions, and an evidence-linked description.
 
 - **SC-001**: On a compatible physical device running the debug build, an agent
   completes launch, navigation, interaction, semantic inspection, assertion, and
-  screenshot without a one-off test class or the PowerShell runner.
+  screenshot without a one-off test class or repository host runner.
 - **SC-002**: 100% of maintained scenarios and sessions end with a machine-readable
   terminal classification and reason; none wait without a declared bound.
 - **SC-003**: 100% of unavailable hardware/external prerequisites in acceptance runs
@@ -301,10 +373,16 @@ screenshots, semantic state, actions, and an evidence-linked description.
 - **SC-010**: Release inspection and external smoke validation find zero active
   agent-control entry points or enhanced diagnostic payloads, and every attempted
   runtime activation path remains unavailable.
-- **SC-011**: Each current runner responsibility has accepted native replacement
-  evidence before either runner is eligible for deletion.
+- **SC-011**: Each transitional host-runner responsibility has accepted native
+  replacement evidence before host orchestration is eligible for deletion.
 - **SC-012**: Every factual UI/UX observation in an agent report is traceable to a
   screenshot or machine-readable state captured in that session.
+- **SC-013**: Every applicable operational feature group has at least one accepted
+  Functional UI path, while integration-only evidence is never counted as that PASS.
+- **SC-014**: A connected initially locked device either resumes the same requested
+  run after manual unlock or terminates as NOT_RUN/DEVICE_LOCKED within the bound.
+- **SC-015**: Accepted Functional UI sessions contain no screen recording and no
+  screenshots outside critical before/after/final/failure evidence points.
 
 ## Assumptions and Dependencies
 
@@ -313,8 +391,8 @@ screenshots, semantic state, actions, and an evidence-linked description.
 - A compatible physical Android device is available when device acceptance is run.
 - Live scenarios require the phone to reach the explicitly configured MikroTik probe
   while the host retains device control.
-- The existing PowerShell and Bash runners are transitional and are not removed by
-  this specification-only work.
+- Native parity and owner acceptance authorize retirement of the transitional host
+  runners; standard Android/Gradle tooling is the sole supported workflow.
 - Native Android/Gradle tooling is preferred over custom host orchestration.
 - Agent sessions target the debug build only. Release validation is external and
   black-box; it never enables the agent mode inside the production app.

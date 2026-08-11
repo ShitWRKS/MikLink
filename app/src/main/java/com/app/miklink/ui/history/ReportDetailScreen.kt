@@ -72,6 +72,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.app.miklink.R
 import com.app.miklink.ui.testing.AgentUiTags
+import com.app.miklink.ui.testing.AgentSemanticsConfig
 import com.app.miklink.core.domain.model.TestReport
 import com.app.miklink.core.domain.model.report.ReportData
 import com.app.miklink.core.domain.test.model.TestSectionId
@@ -295,6 +296,7 @@ fun ReportDetailScreen(
             title = stringResource(id = R.string.report_detail_delete_title),
             message = stringResource(id = R.string.report_detail_delete_body),
             confirmLabel = stringResource(id = R.string.report_detail_delete_confirm),
+            confirmTag = AgentUiTags.Report.DELETE_CONFIRM,
             onDismiss = { showDeleteDialog = false },
             onConfirm = {
                 showDeleteDialog = false
@@ -596,7 +598,7 @@ private fun ActionsCard(
             ) {
                 OutlinedButton(
                     onClick = onDelete,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f).testTag(AgentUiTags.Report.DELETE)
                 ) {
                     Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(8.dp))
@@ -604,7 +606,7 @@ private fun ActionsCard(
                 }
                 Button(
                     onClick = onRepeat,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f).testTag(AgentUiTags.Report.REPEAT)
                 ) {
                     Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(8.dp))
@@ -620,15 +622,20 @@ private fun ConfirmDialog(
     title: String,
     message: String,
     confirmLabel: String,
+    confirmTag: String? = null,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit
 ) {
     AlertDialog(
+        modifier = AgentSemanticsConfig.rootModifier(),
         onDismissRequest = onDismiss,
         title = { Text(title, fontWeight = FontWeight.Bold) },
         text = { Text(message) },
         confirmButton = {
-            Button(onClick = onConfirm) {
+            Button(
+                onClick = onConfirm,
+                modifier = confirmTag?.let { Modifier.testTag(it) } ?: Modifier
+            ) {
                 Text(confirmLabel)
             }
         },

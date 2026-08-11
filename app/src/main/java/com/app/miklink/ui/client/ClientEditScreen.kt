@@ -30,6 +30,7 @@ import com.app.miklink.core.domain.model.NetworkMode
 import com.app.miklink.core.domain.policy.socketid.SocketIdLite
 import com.app.miklink.R
 import com.app.miklink.ui.testing.AgentUiTags
+import com.app.miklink.utils.NetworkValidator
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,7 +64,12 @@ fun ClientEditScreen(
     val socketSuffix by viewModel.socketSuffix.collectAsStateWithLifecycle()
     val socketSeparator by viewModel.socketSeparator.collectAsStateWithLifecycle()
     val socketNumberPadding by viewModel.socketNumberPadding.collectAsStateWithLifecycle()
-    val isSaveEnabled = companyName.isNotBlank()
+    val isSaveEnabled = companyName.isNotBlank() && (
+        networkMode != NetworkMode.STATIC || (
+            NetworkValidator.isValidIpv4Cidr(staticCidr) &&
+                NetworkValidator.isValidIpv4WithoutCidr(staticGateway)
+        )
+    )
 
     // Speed Test configuration
     val speedTestServerAddress by viewModel.speedTestServerAddress.collectAsStateWithLifecycle()
@@ -165,7 +171,7 @@ fun ClientEditScreen(
                 onValueChange = { viewModel.location.value = it },
                 labelResId = R.string.client_edit_location_label,
                 placeholderResId = R.string.client_edit_location_placeholder,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth().testTag(AgentUiTags.Client.LOCATION)
             )
             
             LabeledTextField(
@@ -173,7 +179,7 @@ fun ClientEditScreen(
                 onValueChange = { viewModel.notes.value = it },
                 labelResId = R.string.report_detail_edit_notes,
                 placeholderResId = R.string.client_edit_notes_placeholder,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().testTag(AgentUiTags.Client.NOTES),
                 singleLine = false,
                 minLines = 2,
                 maxLines = 4
@@ -206,7 +212,7 @@ fun ClientEditScreen(
                         onClick = { viewModel.networkMode.value = NetworkMode.DHCP },
                         icon = Icons.Default.Wifi,
                         labelResId = R.string.detail_value_dhcp,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f).testTag(AgentUiTags.Client.NETWORK_DHCP)
                     )
 
                     NetworkModeButton(
@@ -214,7 +220,7 @@ fun ClientEditScreen(
                         onClick = { viewModel.networkMode.value = NetworkMode.STATIC },
                         icon = Icons.Default.Settings,
                         labelResId = R.string.detail_value_static,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f).testTag(AgentUiTags.Client.NETWORK_STATIC)
                     )
                 }
 
@@ -232,7 +238,7 @@ fun ClientEditScreen(
                             staticCidrInvalid -> R.string.client_edit_static_cidr_invalid
                             else -> R.string.client_edit_static_ip_support
                         },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().testTag(AgentUiTags.Client.STATIC_CIDR),
                         isError = staticCidrInvalid
                     )
                     
@@ -246,7 +252,7 @@ fun ClientEditScreen(
                             staticGatewayInvalid -> R.string.client_edit_static_gateway_invalid
                             else -> null
                         },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().testTag(AgentUiTags.Client.STATIC_GATEWAY),
                         isError = staticGatewayInvalid
                     )
                 }

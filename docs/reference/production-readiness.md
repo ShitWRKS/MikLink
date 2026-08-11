@@ -46,6 +46,5 @@ I test con sonda richiedono una configurazione esplicita già presente nell'app;
 assenza/autenticazione/capacità/speed server producono `NOT_RUN` o `SKIP` mirati.
 Backup con sostituzione dati e interruzione Wi‑Fi restano esclusi senza i rispettivi
 opt-in; la Wi‑Fi richiede anche controllo host USB/ADB trattenuto e ripristino
-verificato. I runner PowerShell e Bash correnti restano versionati finché la tabella
-di parity non è interamente `PASS` e il proprietario non ne autorizza la rimozione in
-una modifica separata.
+verificato. La parity nativa è accettata: il workflow supportato usa direttamente
+Gradle, ADB e AndroidJUnitRunner, senza runner host di compatibilità.
