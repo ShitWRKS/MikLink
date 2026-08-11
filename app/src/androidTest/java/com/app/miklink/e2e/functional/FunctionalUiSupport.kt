@@ -185,7 +185,8 @@ class FunctionalUiSupport(private val scenarioRule: ScenarioRule) {
     }
 
     fun scrollToTop() {
-        val scrollable = device.findObject(By.scrollable(true)) ?: return
+        val scrollable = device.wait(Until.findObject(By.scrollable(true)), DEFAULT_WAIT_MS)
+            ?: throw AssertionError("Scrollable content did not become available")
         repeat(MAX_SCROLL_TO_EDGE_ATTEMPTS) {
             val moved = runCatching { scrollable.scroll(Direction.UP, 0.9f) }.getOrDefault(false)
             device.waitForIdle()

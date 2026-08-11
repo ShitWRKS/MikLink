@@ -45,6 +45,7 @@ class ProfileCrudUiTest {
             }
         }
         clickResource("${AgentUiTags.Profile.ITEM_PREFIX}_$profileId", scroll = true)
+        requireResource(AgentUiTags.Profile.EDIT)
         scrollToTop()
         check(requireResource(AgentUiTags.Profile.DESCRIPTION).text == "Primary profile")
         check(requireResource(AgentUiTags.Profile.RUN_PING, scroll = true).isChecked)
@@ -57,6 +58,7 @@ class ProfileCrudUiTest {
         clickResource(AgentUiTags.Profile.SAVE)
         requireResource(AgentUiTags.Profile.LIST)
         clickResource("${AgentUiTags.Profile.ITEM_PREFIX}_$profileId", scroll = true)
+        requireResource(AgentUiTags.Profile.EDIT)
         scrollToTop()
         check(requireResource(AgentUiTags.Profile.DESCRIPTION, scroll = true).text == "Updated profile") {
             "Edited profile description did not persist through UI"
