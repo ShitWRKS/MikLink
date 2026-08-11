@@ -24,13 +24,9 @@
 }
 -keep class com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory { *; }
 
-# iText7 PDF
--keep class com.itextpdf.** { *; }
--dontwarn com.itextpdf.**
--dontwarn org.bouncycastle.**
-
-# SLF4J (used by iText7)
--dontwarn org.slf4j.**
+# iText's connector optionally loads the non-Android Bouncy Castle adapter.
+# MikLink does not use cryptographic PDF operations; Android PDF generation is device-tested.
+-dontwarn com.itextpdf.bouncycastle.BouncyCastleFactory
 
 # Keep BuildConfig for runtime checks
 -keep class com.app.miklink.BuildConfig { *; }

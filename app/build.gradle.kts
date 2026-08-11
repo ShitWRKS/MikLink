@@ -93,9 +93,6 @@ android {
 
     kotlin {
         jvmToolchain(17)
-        compilerOptions {
-            freeCompilerArgs.add("-Xannotation-default-target=param-property")
-        }
     }
 
     testOptions {
@@ -111,15 +108,6 @@ android {
 room {
     // Output Room schemas for inspection / migration tests
     schemaDirectory("$projectDir/schemas")
-}
-
-// KGP 2.3.21 emits Kotlin 2.4 metadata, but Hilt 2.59.2's javac aggregation step
-// (hiltJavaCompile) bundles kotlin-metadata-jvm 2.2.20 which only reads up to 2.3.0.
-// Force a metadata reader aligned with KGP so the Hilt javac step can parse Kotlin 2.4 metadata.
-configurations.configureEach {
-    resolutionStrategy {
-        force("org.jetbrains.kotlin:kotlin-metadata-jvm:2.3.21")
-    }
 }
 
 dependencies {
@@ -165,7 +153,7 @@ dependencies {
     implementation(libs.datastore.preferences)
 
     // PDF
-    implementation(libs.itext7.core)
+    implementation(libs.itext.core.android)
 
     // Images
     implementation(libs.coil.compose)

@@ -1,5 +1,5 @@
 /*
- * Purpose: Generate PDF reports using iText 7 with domain report data decoded from persisted JSON.
+ * Purpose: Generate PDF reports using iText Core Android with domain report data decoded from persisted JSON.
  * Inputs: Test reports, client metadata, and export configuration.
  * Outputs: PDF files written to the cache directory.
  * Notes: Report parsing uses ReportResultsCodec directly; DTO parsing remains in the data layer.
@@ -23,6 +23,7 @@ import com.itextpdf.kernel.font.PdfFontFactory
 import com.itextpdf.kernel.geom.PageSize
 import com.itextpdf.kernel.pdf.PdfDocument
 import com.itextpdf.kernel.pdf.PdfWriter
+import com.itextpdf.kernel.pdf.event.PdfDocumentEvent
 import com.itextpdf.layout.Document
 import com.itextpdf.layout.borders.SolidBorder
 import com.itextpdf.layout.element.Cell
@@ -42,7 +43,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * PDF Generator using iText 7 for professional PDF generation with advanced table handling.
+ * PDF Generator using iText Core Android for professional PDF generation with advanced table handling.
  */
 @Singleton
 class PdfGeneratorIText @Inject constructor(
@@ -85,7 +86,7 @@ class PdfGeneratorIText @Inject constructor(
 
             // Add Header/Footer Event Handler (Page Numbers)
             pdf.addEventHandler(
-                com.itextpdf.kernel.events.PdfDocumentEvent.END_PAGE,
+                PdfDocumentEvent.END_PAGE,
                 com.app.miklink.data.pdf.PdfDocumentHelper.PageNumberEventHandler()
             )
 

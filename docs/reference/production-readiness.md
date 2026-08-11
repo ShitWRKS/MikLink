@@ -1,7 +1,7 @@
 # Production readiness
 
 - `./gradlew check` è il quality gate canonico: include `:app:check`, lint, test e controlli repository.
-- Il Gradle Wrapper 9.5.0 è versionato; non è rigenerato dalla CI.
+- Il Gradle Wrapper 9.6.1 è versionato; non è rigenerato dalla CI.
 - Room usa migrazioni non distruttive 1→2 e 2→3, testate rispetto agli schema esportati.
 - Un report resta nella schermata finché il salvataggio non riesce; in caso di errore si può riprovare.
 - Se Layer 1 fallisce, le sezioni dipendenti ancora non concluse sono marcate `SKIP` con motivo `LAYER1_FAILED`.

@@ -2,24 +2,24 @@
 
 ## Requisiti
 
-- Android Gradle Plugin (AGP): **9.3.0**
-- Gradle wrapper: **9.5.0**
+- Android Gradle Plugin (AGP): **9.3.1**
+- Gradle wrapper: **9.6.1**
 - JDK: **17**
-- Kotlin/KGP: **2.3.21**
-- KSP: **2.3.9**
-- Compose compiler plugin: **2.3.21**
+- Kotlin/KGP: **2.4.10**
+- KSP: **2.3.10**
+- Compose compiler plugin: **2.4.10**
 - Compile SDK: **37**
 - Min SDK: **30**
 - Target SDK: **36**
 
 Version catalog: `gradle/libs.versions.toml`.
 
-## Dipendenze principali (baseline ADR-0013)
+## Dipendenze principali (baseline corrente)
 
-- Compose BOM: **2026.06.00**
-- Hilt: **2.59.2** (Dagger) + AndroidX Hilt **1.4.0**
+- Compose BOM: **2026.06.01**
+- Hilt: **2.60.1** (Dagger) + AndroidX Hilt **1.4.0**
 - Room: **2.8.4** (plugin Room centralizzato nel catalog)
-- Retrofit: **3.0.0** + OkHttp **4.12.0**
+- Retrofit: **3.0.0** + OkHttp **5.4.0**
 - Moshi: **1.15.2** + Moshi codegen **1.15.2** (KSP)
 - Coroutines: **1.11.0**
 - Core KTX: **1.19.0**
@@ -31,11 +31,11 @@ Version catalog: `gradle/libs.versions.toml`.
 - Coil: **3.5.0** (`coil-compose` + `coil-gif`)
 - AndroidX Test JUnit: **1.3.0**
 - Espresso: **3.7.0**
-- MockK: **1.14.9**
-- Robolectric: **4.15**
-- iText: **7.2.6** (PDF)
+- MockK: **1.14.11**
+- Robolectric: **4.16.1**
+- iText Core Android: **9.7.1** (`com.itextpdf.android:itext-core-android`)
 
-Vietato: Kotlin 2.4, OkHttp 5, Room 3, versioni pre-release, repository snapshot.
+Vietato: versioni pre-release, version range/dinamici e repository snapshot.
 `com.google.android.material:material` rimosso (non usato dal codice).
 
 ## Annotation processing (KSP/KAPT)
@@ -65,7 +65,7 @@ Vietato: Kotlin 2.4, OkHttp 5, Room 3, versioni pre-release, repository snapshot
 ./gradlew test
 
 # quality gate (inclusi scan stringhe)
-./gradlew test
+./gradlew check
 
 # build debug
 ./gradlew assembleDebug
@@ -99,7 +99,7 @@ buildTypes {
 Le regole ProGuard sono definite in `app/proguard-rules.pro`:
 - **Moshi DTOs**: tutti i DTO usano `@JsonClass(generateAdapter = true)` per compatibilità R8
 - **Retrofit/OkHttp**: regole standard per reflection e platform detection
-- **iText7**: keep rules per generazione PDF
+- **iText Core Android**: nessuna keep rule globale; un `-dontwarn` puntuale copre la factory Bouncy Castle non-Android opzionale non usata dal percorso PDF MikLink
 
 ### Logging
 
