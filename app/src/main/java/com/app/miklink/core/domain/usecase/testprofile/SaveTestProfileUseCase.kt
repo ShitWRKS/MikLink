@@ -9,6 +9,7 @@ package com.app.miklink.core.domain.usecase.testprofile
 import com.app.miklink.core.data.repository.test.TestProfileRepository
 import com.app.miklink.core.domain.model.TestProfile
 import com.app.miklink.utils.NetworkValidator
+import com.app.miklink.core.domain.validation.TestThresholdsValidator
 import javax.inject.Inject
 
 interface SaveTestProfileUseCase {
@@ -41,6 +42,8 @@ class SaveTestProfileUseCaseImpl @Inject constructor(
         if (!hasAtLeastOneTestEnabled) {
             throw IllegalArgumentException("At least one test must be enabled")
         }
+
+        TestThresholdsValidator.validate(profile.thresholds)
 
         if (!profile.runPing) return
 

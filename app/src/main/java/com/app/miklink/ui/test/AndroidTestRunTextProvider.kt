@@ -108,4 +108,57 @@ class AndroidTestRunTextProvider @Inject constructor(
 
     override fun resultError(error: String): String =
         context.getString(R.string.log_result_error, error)
+
+    override fun unknownError() = context.getString(R.string.test_execution_unknown_error)
+
+    override fun progressCompletedLabel() = context.getString(R.string.test_progress_completed_label)
+    override fun progressCompletedMessage() = context.getString(R.string.test_progress_completed_message)
+    override fun progressLinkLabel() = context.getString(R.string.test_progress_link_label)
+    override fun progressLinkMessage() = context.getString(R.string.test_progress_link_message)
+    override fun progressTdrLabel() = context.getString(R.string.test_progress_tdr_label)
+    override fun progressTdrMessage() = context.getString(R.string.test_progress_tdr_message)
+    override fun progressNetworkLabel() = context.getString(R.string.test_progress_network_label)
+    override fun progressNetworkMessage() = context.getString(R.string.test_progress_network_message)
+    override fun progressNeighborsLabel() = context.getString(R.string.test_progress_neighbors_label)
+    override fun progressNeighborsMessage() = context.getString(R.string.test_progress_neighbors_message)
+    override fun progressPingLabel() = context.getString(R.string.test_progress_ping_label)
+    override fun progressPingMessage() = context.getString(R.string.test_progress_ping_message)
+    override fun progressSpeedLabel() = context.getString(R.string.test_progress_speed_label)
+    override fun progressSpeedMessage() = context.getString(R.string.test_progress_speed_message)
+
+    override fun qualityLinkInactive() = context.getString(R.string.quality_link_inactive)
+    override fun qualityLinkThresholdMissing() = context.getString(R.string.quality_link_threshold_missing)
+    override fun qualityLinkThresholdInvalid(raw: String) = context.getString(R.string.quality_link_threshold_invalid, raw)
+    override fun qualityLinkSpeedMissing() = context.getString(R.string.quality_link_speed_missing)
+    override fun qualityLinkSpeedInvalid(raw: String) = context.getString(R.string.quality_link_speed_invalid, raw)
+    override fun qualityLinkBelowThreshold(actual: String, threshold: String) =
+        context.getString(R.string.quality_link_below_threshold, actual, threshold)
+    override fun qualityTdrCritical(status: String) = context.getString(R.string.quality_tdr_critical, status)
+    override fun qualityPingNoResults() = context.getString(R.string.quality_ping_no_results)
+    override fun qualityGatewayUnresolved() = context.getString(R.string.quality_gateway_unresolved)
+    override fun qualityMetricMissing(label: String) = context.getString(R.string.quality_metric_missing, label)
+    override fun qualityMetricInvalid(label: String, raw: String) =
+        context.getString(R.string.quality_metric_invalid, label, raw)
+    override fun qualityPingLossLabel(target: String) = context.getString(R.string.quality_ping_loss_label, target)
+    override fun qualityPingAverageRttLabel(target: String) =
+        context.getString(R.string.quality_ping_avg_rtt_label, target)
+    override fun qualityPingMaximumRttLabel(target: String) =
+        context.getString(R.string.quality_ping_max_rtt_label, target)
+    override fun qualityPingLossAbove(target: String, actual: String, threshold: String) =
+        context.getString(R.string.quality_ping_loss_above, target, actual, threshold)
+    override fun qualityPingAverageRttAbove(target: String, actual: String, threshold: String) =
+        context.getString(R.string.quality_ping_avg_rtt_above, target, actual, threshold)
+    override fun qualityPingMaximumRttAbove(target: String, actual: String, threshold: String) =
+        context.getString(R.string.quality_ping_max_rtt_above, target, actual, threshold)
+    override fun qualityPingError(target: String, error: String) =
+        context.getString(R.string.quality_ping_error, target, error)
+    override fun qualitySpeedPingLabel() = context.getString(R.string.quality_speed_ping_label)
+    override fun qualitySpeedJitterLabel() = context.getString(R.string.quality_speed_jitter_label)
+    override fun qualitySpeedLossLabel() = context.getString(R.string.quality_speed_loss_label)
+    override fun qualityDownloadLabel() = context.getString(R.string.quality_download_label)
+    override fun qualityUploadLabel() = context.getString(R.string.quality_upload_label)
+    override fun qualityMetricAboveThreshold(label: String, actual: String, unit: String, threshold: String) =
+        context.getString(R.string.quality_metric_above_threshold, label, actual, unit, threshold)
+    override fun qualityMetricBelowThreshold(label: String, actual: String, unit: String, threshold: String) =
+        context.getString(R.string.quality_metric_below_threshold, label, actual, unit, threshold)
 }

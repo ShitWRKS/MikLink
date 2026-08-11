@@ -619,6 +619,7 @@ fun ClientReportsCard(
                                         modifier = Modifier.size(14.dp),
                                         tint = semantic.onSuccessContainer
                                     )
+                                    // i18n-ignore: the badge contains only a locale-neutral integer.
                                     Text(
                                         "${clientData.passedTests}",
                                         color = semantic.onSuccessContainer,
@@ -641,6 +642,7 @@ fun ClientReportsCard(
                                         modifier = Modifier.size(14.dp),
                                         tint = semantic.onFailureContainer
                                     )
+                                    // i18n-ignore: the badge contains only a locale-neutral integer.
                                     Text(
                                         "${clientData.failedTests}",
                                         color = semantic.onFailureContainer,

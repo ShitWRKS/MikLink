@@ -26,6 +26,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.compose.ui.res.stringResource
 import com.app.miklink.R
+import com.app.miklink.ui.common.asString
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import com.app.miklink.ui.theme.MikLinkThemeTokens
 import com.app.miklink.ui.testing.AgentUiTags
@@ -170,7 +171,7 @@ fun ProbeEditScreen(
                 }
                 is VerificationState.Error -> {
                     Text(
-                        state.message,
+                        state.message.asString(),
                         modifier = Modifier.testTag(AgentUiTags.Probe.VERIFY_ERROR),
                         color = semantic.failure
                     )

@@ -137,6 +137,7 @@ fun ReportDetailScreen(
     val socketName by stateProvider.socketName.collectAsStateWithLifecycle()
     val notes by stateProvider.notes.collectAsStateWithLifecycle()
     val clientName by stateProvider.clientName.collectAsStateWithLifecycle()
+    val displayClientName = clientName.ifBlank { stringResource(R.string.report_detail_unknown_client) }
     val exportingSingleMessage = stringResource(id = R.string.history_exporting_single)
     val pdfGeneratedMessage = stringResource(id = R.string.history_pdf_generated)
     val noPdfViewerMessage = stringResource(id = R.string.history_no_pdf_viewer)
@@ -176,7 +177,11 @@ fun ReportDetailScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "$clientName - ${report?.socketName ?: "..."}"
+                        text = stringResource(
+                            R.string.report_detail_topbar_title,
+                            displayClientName,
+                            report?.socketName ?: "…"
+                        )
                     )
                 },
                 navigationIcon = {
@@ -250,7 +255,7 @@ fun ReportDetailScreen(
 
     if (showExportDialog && report != null) {
         PdfExportDialog(
-            clientName = clientName.ifBlank { "Report" },
+            clientName = displayClientName,
             globalIncludeEmpty = pdfIncludeEmptyTests,
             globalColumns = pdfSelectedColumns,
             globalReportTitle = pdfReportTitle,

@@ -186,6 +186,7 @@ fun PdfSettingsScreen(
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold
                     )
+                    // i18n-ignore: compact selected/total numeric counter.
                     Text(
                         text = "${currentColumns.size}/${ExportColumn.values().size}",
                         style = MaterialTheme.typography.labelMedium,

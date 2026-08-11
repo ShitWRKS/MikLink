@@ -20,6 +20,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import com.app.miklink.core.domain.model.TestThresholds
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class TestProfileViewModelTest {
@@ -89,6 +90,60 @@ class TestProfileViewModelTest {
         assertFalse(viewModel.isSaved.value)
     }
 
+    @Test
+    fun `blank threshold is valid and saves its default`() = runTest {
+        val fakeUseCase = FakeSaveTestProfileUseCase()
+        val viewModel = createValidViewModel(fakeUseCase)
+        viewModel.pingLocalMaxLoss.value = ""
+
+        assertTrue(viewModel.isValidForSave())
+        viewModel.saveProfile()
+        advanceUntilIdle()
+
+        assertEquals(TestThresholds.defaults().pingLocal.maxLossPercent, fakeUseCase.lastProfile?.thresholds?.pingLocal?.maxLossPercent)
+    }
+
+    @Test
+    fun `non numeric negative and non finite thresholds are invalid`() {
+        val viewModel = createValidViewModel()
+
+        listOf("not-a-number", "-1", "NaN", "Infinity").forEach { invalid ->
+            viewModel.speedMaxPing.value = invalid
+            assertFalse("Expected $invalid to be invalid", viewModel.isValidForSave())
+        }
+    }
+
+    @Test
+    fun `loss accepts boundaries and rejects values outside percentage range`() {
+        val viewModel = createValidViewModel()
+
+        listOf("0", "100", "12.5").forEach { valid ->
+            viewModel.speedMaxLoss.value = valid
+            assertTrue("Expected $valid to be valid", viewModel.isValidForSave())
+        }
+        listOf("-0.1", "100.1").forEach { invalid ->
+            viewModel.speedMaxLoss.value = invalid
+            assertFalse("Expected $invalid to be invalid", viewModel.isValidForSave())
+        }
+    }
+
+    @Test
+    fun `custom link rate must match the policy format`() {
+        val viewModel = createValidViewModel()
+
+        viewModel.linkMinRate.value = "fast"
+        assertFalse(viewModel.isValidForSave())
+
+        viewModel.linkMinRate.value = "2.5G"
+        assertTrue(viewModel.isValidForSave())
+    }
+
+    private fun createValidViewModel(saveUseCase: SaveTestProfileUseCase = FakeSaveTestProfileUseCase()): TestProfileViewModel =
+        createViewModel(saveUseCase = saveUseCase).also {
+            it.profileName.value = "Profile"
+            it.runLinkStatus.value = true
+        }
+
     private fun createViewModel(
         repository: TestProfileRepository = FakeTestProfileRepository(),
         saveUseCase: SaveTestProfileUseCase = FakeSaveTestProfileUseCase()
@@ -114,9 +169,11 @@ class TestProfileViewModelTest {
 
     private class FakeSaveTestProfileUseCase : SaveTestProfileUseCase {
         var calls = 0
+        var lastProfile: TestProfile? = null
 
         override suspend fun invoke(profile: TestProfile): Long {
             calls += 1
+            lastProfile = profile
             return 1L
         }
     }

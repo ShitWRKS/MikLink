@@ -20,6 +20,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.app.miklink.R
+import com.app.miklink.ui.common.asString
 import com.app.miklink.ui.testing.AgentUiTags
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -29,6 +30,7 @@ fun BackupSettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val status by viewModel.backupStatus.collectAsStateWithLifecycle()
+    val resolvedStatus = status?.asString()
 
     val createLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri: Uri? ->
         uri?.let { viewModel.saveExportToUri(it) }
@@ -75,9 +77,9 @@ fun BackupSettingsScreen(
                 Text(stringResource(R.string.backup_import))
             }
 
-            if (status.isNotBlank()) {
+            if (!resolvedStatus.isNullOrBlank()) {
                 Text(
-                    text = status,
+                    text = resolvedStatus,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

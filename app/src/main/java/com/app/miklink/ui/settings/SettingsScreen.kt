@@ -173,6 +173,7 @@ fun SettingsScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
+                        // i18n-ignore: compact numeric value with the SI seconds symbol.
                         Text(
                             text = "${seconds.toInt()}s",
                             style = MaterialTheme.typography.labelLarge,
@@ -211,6 +212,7 @@ fun SettingsScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
+                        // i18n-ignore: compact numeric percentage display.
                         Text(
                             text = "${(glowIntensity * 100).toInt()}%",
                             style = MaterialTheme.typography.labelLarge,
@@ -276,7 +278,7 @@ fun SettingsScreen(
             ) {
                 SettingsCard(
                     headline = stringResource(R.string.settings_id_strategy),
-                    subtitle = "Incremento continuo o riuso ID",
+                    subtitle = stringResource(R.string.settings_id_strategy_desc),
                     leadingIcon = Icons.Default.Numbers,
                     modifier = Modifier.testTag(AgentUiTags.Settings.ID_STRATEGY),
                     onClick = { showIdStrategyDialog = true },

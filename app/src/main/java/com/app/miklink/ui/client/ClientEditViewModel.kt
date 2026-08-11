@@ -10,17 +10,18 @@ import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.app.miklink.BuildConfig
+import com.app.miklink.R
 import com.app.miklink.core.data.repository.client.ClientRepository
 import com.app.miklink.core.domain.model.Client
 import com.app.miklink.core.domain.model.NetworkMode
 import com.app.miklink.core.domain.usecase.client.SaveClientUseCase
 import com.app.miklink.ui.common.BaseEditViewModel
+import com.app.miklink.ui.common.UiText
 import com.app.miklink.utils.NetworkValidator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 
 @HiltViewModel
@@ -54,23 +55,11 @@ class ClientEditViewModel @Inject constructor(
     val speedTestServerAddress = MutableStateFlow("")
     val speedTestServerUser = MutableStateFlow("")
     val speedTestServerPassword = MutableStateFlow("")
-    private val _errorMessage = MutableStateFlow<String?>(null)
+    private val _errorMessage = MutableStateFlow<UiText?>(null)
     val errorMessage = _errorMessage.asStateFlow()
 
-    init {
-        if (isEditing) {
-            // Load synchronously in init so tests that create an editing view model
-            // observe form fields populated immediately.
-            runBlocking { loadEntity(entityId) }
-        } else {
-            loadIfEditing()
-        }
-    }
+    init { loadIfEditing() }
     // BaseEditViewModel provides `entityId`, `isEditing`, `isSaved` and helpers
-
-    // NOTE: only one init is needed — the synchronous load in edit mode or
-    // asynchronous load via loadIfEditing (above). A duplicate init caused
-    // loadEntity to run twice which led to duplicated DAO calls in tests.
 
     override suspend fun loadEntity(id: Long) {
         try {
@@ -96,7 +85,7 @@ class ClientEditViewModel @Inject constructor(
                 speedTestServerPassword.value = client.speedTestServerPassword ?: ""
             }
         } catch (e: Exception) {
-            _errorMessage.value = e.message ?: "Error loading client"
+            _errorMessage.value = UiText.Resource(R.string.client_edit_load_error)
             if (BuildConfig.DEBUG) Log.e("ClientEditViewModel", "loadEntity error", e)
         }
     }
@@ -142,12 +131,12 @@ class ClientEditViewModel @Inject constructor(
     fun saveClient() {
         // Basic validation - company name is required
         if (companyName.value.isBlank()) return
-        staticCidrErrorMessage()?.let {
-            _errorMessage.value = it
+        staticCidrErrorResource()?.let {
+            _errorMessage.value = UiText.Resource(it)
             return
         }
-        staticGatewayErrorMessage()?.let {
-            _errorMessage.value = it
+        staticGatewayErrorResource()?.let {
+            _errorMessage.value = UiText.Resource(it)
             return
         }
 
@@ -178,7 +167,7 @@ class ClientEditViewModel @Inject constructor(
                 saveClientUseCase(client)
                 markSaved()
             } catch (e: Exception) {
-                _errorMessage.value = e.message ?: "Error saving client"
+                _errorMessage.value = UiText.Resource(R.string.client_edit_save_error)
                 if (BuildConfig.DEBUG) Log.e("ClientEditViewModel", "saveClient error", e)
             }
         }
@@ -198,27 +187,27 @@ class ClientEditViewModel @Inject constructor(
     // Validation helper for UI/tests – not part of BaseEditViewModel contract
     fun isValidForSave(): Boolean =
         companyName.value.isNotBlank() &&
-            staticCidrErrorMessage() == null &&
-            staticGatewayErrorMessage() == null
+            staticCidrErrorResource() == null &&
+            staticGatewayErrorResource() == null
 
-    fun isStaticCidrInvalid(): Boolean = staticCidrErrorMessage() != null
+    fun isStaticCidrInvalid(): Boolean = staticCidrErrorResource() != null
 
-    fun isStaticGatewayInvalid(): Boolean = staticGatewayErrorMessage() != null
+    fun isStaticGatewayInvalid(): Boolean = staticGatewayErrorResource() != null
 
-    private fun staticCidrErrorMessage(): String? {
+    private fun staticCidrErrorResource(): Int? {
         if (networkMode.value != NetworkMode.STATIC) return null
         return when {
-            staticCidr.value.isBlank() -> "Static CIDR is required"
-            !NetworkValidator.isValidIpv4Cidr(staticCidr.value) -> "Invalid static CIDR"
+            staticCidr.value.isBlank() -> R.string.client_edit_static_cidr_required
+            !NetworkValidator.isValidIpv4Cidr(staticCidr.value) -> R.string.client_edit_static_cidr_invalid
             else -> null
         }
     }
 
-    private fun staticGatewayErrorMessage(): String? {
+    private fun staticGatewayErrorResource(): Int? {
         if (networkMode.value != NetworkMode.STATIC) return null
         return when {
-            staticGateway.value.isBlank() -> "Static gateway is required"
-            !NetworkValidator.isValidIpv4WithoutCidr(staticGateway.value) -> "Invalid static gateway"
+            staticGateway.value.isBlank() -> R.string.client_edit_static_gateway_required
+            !NetworkValidator.isValidIpv4WithoutCidr(staticGateway.value) -> R.string.client_edit_static_gateway_invalid
             else -> null
         }
     }

@@ -693,7 +693,7 @@ private fun ErrorState(
 
 @Composable
 private fun sectionTitle(section: TestSectionSnapshot): String =
-    section.title ?: when (section.id) {
+    when (section.id) {
         TestSectionId.NETWORK -> stringResource(id = R.string.section_network)
         TestSectionId.LINK -> stringResource(id = R.string.section_link)
         TestSectionId.TDR -> stringResource(id = R.string.section_tdr)
@@ -798,9 +798,9 @@ private fun PreviewExecutionRunning() {
         RunningContent(
             snapshot = TestRunSnapshot(
                 sections = listOf(
-                    TestSectionSnapshot(TestSectionId.NETWORK, TestSectionStatus.PASS, title = "Network"),
-                    TestSectionSnapshot(TestSectionId.NEIGHBORS, TestSectionStatus.PASS, title = "LLDP/CDP"),
-                    TestSectionSnapshot(TestSectionId.LINK, TestSectionStatus.RUNNING, title = "Link")
+                    TestSectionSnapshot(TestSectionId.NETWORK, TestSectionStatus.PASS),
+                    TestSectionSnapshot(TestSectionId.NEIGHBORS, TestSectionStatus.PASS),
+                    TestSectionSnapshot(TestSectionId.LINK, TestSectionStatus.RUNNING)
                 ),
                 percent = 35
             ),
@@ -831,12 +831,11 @@ private fun PreviewExecutionCompleted() {
             ),
             snapshot = TestRunSnapshot(
                 sections = listOf(
-                    TestSectionSnapshot(TestSectionId.NETWORK, TestSectionStatus.PASS, title = "Network"),
-                    TestSectionSnapshot(TestSectionId.LINK, TestSectionStatus.PASS, title = "Link"),
+                    TestSectionSnapshot(TestSectionId.NETWORK, TestSectionStatus.PASS),
+                    TestSectionSnapshot(TestSectionId.LINK, TestSectionStatus.PASS),
                     TestSectionSnapshot(
                         id = TestSectionId.PING,
                         status = TestSectionStatus.PASS,
-                        title = "Ping",
                         payload = com.app.miklink.core.domain.test.model.TestSectionPayload.Ping(
                             samples = listOf(
                                 com.app.miklink.core.domain.model.report.PingSample(
@@ -887,8 +886,8 @@ private fun PreviewExecutionCompletedDark() {
             ),
             snapshot = TestRunSnapshot(
                 sections = listOf(
-                    TestSectionSnapshot(TestSectionId.NETWORK, TestSectionStatus.PASS, title = "Network"),
-                    TestSectionSnapshot(TestSectionId.LINK, TestSectionStatus.FAIL, title = "Link", warning = "Cable down")
+                    TestSectionSnapshot(TestSectionId.NETWORK, TestSectionStatus.PASS),
+                    TestSectionSnapshot(TestSectionId.LINK, TestSectionStatus.FAIL, warning = "Cable down")
                 ),
                 percent = 100
             ),

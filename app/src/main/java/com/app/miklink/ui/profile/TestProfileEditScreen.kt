@@ -21,6 +21,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.app.miklink.R
+import com.app.miklink.core.domain.validation.StrictLinkRateParser
 import com.app.miklink.ui.theme.MikLinkThemeTokens
 import com.app.miklink.ui.testing.AgentUiTags
 import com.app.miklink.utils.NetworkValidator
@@ -345,7 +346,8 @@ fun TestProfileEditScreen(
                         value = linkMinRate,
                         options = linkRateOptions,
                         onSelect = { viewModel.linkMinRate.value = it },
-                        onCustomValue = { viewModel.linkMinRate.value = it }
+                        onCustomValue = { viewModel.linkMinRate.value = it },
+                        isError = viewModel.isLinkMinRateInvalid()
                     )
 
                     HorizontalDivider()
@@ -353,20 +355,23 @@ fun TestProfileEditScreen(
                     // Ping locale
                     Text(stringResource(R.string.profile_edit_ping_local_section_title), style = MaterialTheme.typography.labelLarge)
                     ThresholdRow(
-                        leftLabel = "Loss",
+                        leftLabel = stringResource(R.string.profile_edit_threshold_loss),
                         leftUnit = "%",
                         leftValue = pingLocalMaxLoss,
                         onLeftChange = { viewModel.pingLocalMaxLoss.value = it },
-                        rightLabel = "Avg RTT",
+                        leftIsError = viewModel.isPercentageThresholdInvalid(pingLocalMaxLoss),
+                        rightLabel = stringResource(R.string.profile_edit_threshold_avg_rtt),
                         rightUnit = "ms",
                         rightValue = pingLocalMaxAvgRtt,
-                        onRightChange = { viewModel.pingLocalMaxAvgRtt.value = it }
+                        onRightChange = { viewModel.pingLocalMaxAvgRtt.value = it },
+                        rightIsError = viewModel.isNonNegativeThresholdInvalid(pingLocalMaxAvgRtt)
                     )
                     ThresholdRow(
-                        leftLabel = "Max RTT",
+                        leftLabel = stringResource(R.string.profile_edit_threshold_max_rtt),
                         leftUnit = "ms",
                         leftValue = pingLocalMaxRtt,
                         onLeftChange = { viewModel.pingLocalMaxRtt.value = it },
+                        leftIsError = viewModel.isNonNegativeThresholdInvalid(pingLocalMaxRtt),
                         rightLabel = "",
                         rightUnit = "",
                         rightValue = "",
@@ -379,20 +384,23 @@ fun TestProfileEditScreen(
                     // Ping esterno
                     Text(stringResource(R.string.profile_edit_ping_external_section_title), style = MaterialTheme.typography.labelLarge)
                     ThresholdRow(
-                        leftLabel = "Loss",
+                        leftLabel = stringResource(R.string.profile_edit_threshold_loss),
                         leftUnit = "%",
                         leftValue = pingExternalMaxLoss,
                         onLeftChange = { viewModel.pingExternalMaxLoss.value = it },
-                        rightLabel = "Avg RTT",
+                        leftIsError = viewModel.isPercentageThresholdInvalid(pingExternalMaxLoss),
+                        rightLabel = stringResource(R.string.profile_edit_threshold_avg_rtt),
                         rightUnit = "ms",
                         rightValue = pingExternalMaxAvgRtt,
-                        onRightChange = { viewModel.pingExternalMaxAvgRtt.value = it }
+                        onRightChange = { viewModel.pingExternalMaxAvgRtt.value = it },
+                        rightIsError = viewModel.isNonNegativeThresholdInvalid(pingExternalMaxAvgRtt)
                     )
                     ThresholdRow(
-                        leftLabel = "Max RTT",
+                        leftLabel = stringResource(R.string.profile_edit_threshold_max_rtt),
                         leftUnit = "ms",
                         leftValue = pingExternalMaxRtt,
                         onLeftChange = { viewModel.pingExternalMaxRtt.value = it },
+                        leftIsError = viewModel.isNonNegativeThresholdInvalid(pingExternalMaxRtt),
                         rightLabel = "",
                         rightUnit = "",
                         rightValue = "",
@@ -412,30 +420,35 @@ fun TestProfileEditScreen(
                     // Speed test
                     Text(stringResource(R.string.profile_edit_speed_section_title), style = MaterialTheme.typography.labelLarge)
                     ThresholdRow(
-                        leftLabel = "Ping",
+                        leftLabel = stringResource(R.string.profile_edit_threshold_ping),
                         leftUnit = "ms",
                         leftValue = speedMaxPing,
                         onLeftChange = { viewModel.speedMaxPing.value = it },
-                        rightLabel = "Jitter",
+                        leftIsError = viewModel.isNonNegativeThresholdInvalid(speedMaxPing),
+                        rightLabel = stringResource(R.string.profile_edit_threshold_jitter),
                         rightUnit = "ms",
                         rightValue = speedMaxJitter,
-                        onRightChange = { viewModel.speedMaxJitter.value = it }
+                        onRightChange = { viewModel.speedMaxJitter.value = it },
+                        rightIsError = viewModel.isNonNegativeThresholdInvalid(speedMaxJitter)
                     )
                     ThresholdRow(
-                        leftLabel = "Loss",
+                        leftLabel = stringResource(R.string.profile_edit_threshold_loss),
                         leftUnit = "%",
                         leftValue = speedMaxLoss,
                         onLeftChange = { viewModel.speedMaxLoss.value = it },
-                        rightLabel = "Down",
+                        leftIsError = viewModel.isPercentageThresholdInvalid(speedMaxLoss),
+                        rightLabel = stringResource(R.string.profile_edit_threshold_download),
                         rightUnit = "Mbps",
                         rightValue = speedMinDownload,
-                        onRightChange = { viewModel.speedMinDownload.value = it }
+                        onRightChange = { viewModel.speedMinDownload.value = it },
+                        rightIsError = viewModel.isNonNegativeThresholdInvalid(speedMinDownload)
                     )
                     ThresholdRow(
-                        leftLabel = "Up",
+                        leftLabel = stringResource(R.string.profile_edit_threshold_upload),
                         leftUnit = "Mbps",
                         leftValue = speedMinUpload,
                         onLeftChange = { viewModel.speedMinUpload.value = it },
+                        leftIsError = viewModel.isNonNegativeThresholdInvalid(speedMinUpload),
                         rightLabel = "",
                         rightUnit = "",
                         rightValue = "",
@@ -600,6 +613,8 @@ private fun ThresholdRow(
     rightUnit: String,
     rightValue: String,
     onRightChange: (String) -> Unit,
+    leftIsError: Boolean = false,
+    rightIsError: Boolean = false,
     rightEnabled: Boolean = true
 ) {
     Row(
@@ -613,7 +628,9 @@ private fun ThresholdRow(
             value = leftValue,
             onValueChange = onLeftChange,
             modifier = Modifier.weight(1f),
-            enabled = true
+            enabled = true,
+            isError = leftIsError,
+            isPercentage = leftUnit == "%"
         )
 
         if (rightLabel.isNotBlank()) {
@@ -623,7 +640,9 @@ private fun ThresholdRow(
                 value = rightValue,
                 onValueChange = onRightChange,
                 modifier = Modifier.weight(1f),
-                enabled = rightEnabled
+                enabled = rightEnabled,
+                isError = rightIsError,
+                isPercentage = rightUnit == "%"
             )
         } else {
             Spacer(modifier = Modifier.weight(1f))
@@ -638,7 +657,9 @@ private fun UnitField(
     value: String,
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    isError: Boolean = false,
+    isPercentage: Boolean = false
 ) {
     OutlinedTextField(
         value = value,
@@ -647,6 +668,17 @@ private fun UnitField(
         modifier = modifier,
         singleLine = true,
         enabled = enabled,
+        isError = isError,
+        supportingText = if (isError) {
+            {
+                Text(
+                    stringResource(
+                        if (isPercentage) R.string.profile_edit_threshold_invalid_percentage
+                        else R.string.profile_edit_threshold_invalid_number
+                    )
+                )
+            }
+        } else null,
         suffix = {
             if (unit.isNotBlank()) Text(unit)
         }
@@ -672,7 +704,8 @@ private fun LinkRatePicker(
     value: String,
     options: List<String>,
     onSelect: (String) -> Unit,
-    onCustomValue: (String) -> Unit
+    onCustomValue: (String) -> Unit,
+    isError: Boolean
 ) {
     var expanded by rememberSaveable { mutableStateOf(false) }
     var showCustomDialog by rememberSaveable { mutableStateOf(false) }
@@ -686,6 +719,10 @@ private fun LinkRatePicker(
             label = { Text(label) },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
+            isError = isError,
+            supportingText = if (isError) {
+                { Text(stringResource(R.string.profile_edit_threshold_invalid_link_rate)) }
+            } else null,
             trailingIcon = {
                 IconButton(onClick = { expanded = true }) {
                     Icon(Icons.Default.ArrowDropDown, contentDescription = null)
@@ -728,7 +765,8 @@ private fun LinkRatePicker(
                     onClick = {
                         onCustomValue(customValue)
                         showCustomDialog = false
-                    }
+                    },
+                    enabled = StrictLinkRateParser.isValidOptional(customValue)
                 ) { Text(stringResource(R.string.save)) }
             },
             dismissButton = {
@@ -741,7 +779,11 @@ private fun LinkRatePicker(
                     onValueChange = { customValue = it },
                     singleLine = true,
                     label = { Text(label) },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    isError = !StrictLinkRateParser.isValidOptional(customValue),
+                    supportingText = if (!StrictLinkRateParser.isValidOptional(customValue)) {
+                        { Text(stringResource(R.string.profile_edit_threshold_invalid_link_rate)) }
+                    } else null
                 )
             }
         )

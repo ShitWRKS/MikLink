@@ -16,6 +16,8 @@ import com.app.miklink.core.domain.test.model.CableTestSummary
 import com.app.miklink.core.domain.test.model.PingMeasurement
 import com.app.miklink.core.domain.test.model.PingTargetOutcome
 import com.app.miklink.core.domain.test.model.TestSectionStatus
+import com.app.miklink.core.domain.test.TestRunTextProvider
+import com.app.miklink.core.domain.validation.StrictLinkRateParser
 
 data class SectionEvaluation(
     val status: TestSectionStatus,
@@ -23,6 +25,7 @@ data class SectionEvaluation(
 )
 
 class TestQualityPolicy(
+    private val textProvider: TestRunTextProvider,
     private val defaultThresholds: TestThresholds = TestThresholds.defaults(),
     private val thresholdEvaluationObserver: ((testName: String, fields: Map<String, Any?>) -> Unit)? = null
 ) {
@@ -47,19 +50,19 @@ class TestQualityPolicy(
             "linkMinRateMbps" to requiredRate?.validValueOrNull()
         )
         if (status.isNullOrBlank() || status == "down" || status == "unknown") {
-            val decision = SectionEvaluation(TestSectionStatus.FAIL, "Link inattivo o sconosciuto")
+            val decision = SectionEvaluation(TestSectionStatus.FAIL, textProvider.qualityLinkInactive())
             notifyThresholdEvaluation("link", input, thresholdFields, decision)
             return decision
         }
         if (requiredRate != null) {
             val warning = when (requiredRate) {
-                MetricValue.Missing -> "Soglia link mancante"
-                is MetricValue.Invalid -> "Soglia link non valida: ${requiredRate.raw}"
+                MetricValue.Missing -> textProvider.qualityLinkThresholdMissing()
+                is MetricValue.Invalid -> textProvider.qualityLinkThresholdInvalid(requiredRate.raw)
                 is MetricValue.Valid -> when (currentRate) {
-                    MetricValue.Missing -> "Velocita link mancante"
-                    is MetricValue.Invalid -> "Velocita link non valida: ${currentRate.raw}"
+                    MetricValue.Missing -> textProvider.qualityLinkSpeedMissing()
+                    is MetricValue.Invalid -> textProvider.qualityLinkSpeedInvalid(currentRate.raw)
                     is MetricValue.Valid -> if (currentRate.value < requiredRate.value) {
-                        "Velocita link ${linkStatus.rate ?: "-"} sotto soglia $minRate"
+                        textProvider.qualityLinkBelowThreshold(linkStatus.rate ?: "-", minRate ?: "-")
                     } else {
                         null
                     }
@@ -93,7 +96,7 @@ class TestQualityPolicy(
             failStatuses.contains(value.lowercase())
         }
         val decision = if (failing != null) {
-            SectionEvaluation(TestSectionStatus.FAIL, "TDR rileva stato critico: $failing")
+            SectionEvaluation(TestSectionStatus.FAIL, textProvider.qualityTdrCritical(failing))
         } else {
             SectionEvaluation(TestSectionStatus.PASS)
         }
@@ -114,37 +117,49 @@ class TestQualityPolicy(
         val failReasons = mutableListOf<String>()
 
         if (outcomes.isEmpty()) {
-            failReasons += "Nessun risultato ping disponibile"
+            failReasons += textProvider.qualityPingNoResults()
         }
 
         outcomes.forEach { outcome ->
             val targetLabel = outcome.resolved ?: outcome.target
             val isGateway = outcome.target.equals("DHCP_GATEWAY", ignoreCase = true)
             if (isGateway && outcome.resolved == null && thresholds.gatewayPolicy == GatewayUnresolvedPolicy.FAIL) {
-                failReasons += "Gateway DHCP non risolvibile"
+                failReasons += textProvider.qualityGatewayUnresolved()
                 return@forEach
             }
             val targetThreshold = if (isLocalTarget(targetLabel)) thresholds.pingLocal else thresholds.pingExternal
             val loss = parsePingLoss(outcome)
-            compareRequiredMetric(loss, "Ping $targetLabel loss", failReasons) { value ->
+            compareRequiredMetric(loss, textProvider.qualityPingLossLabel(targetLabel), failReasons) { value ->
                 if (value > targetThreshold.maxLossPercent) {
-                    "Ping $targetLabel loss ${formatNumber(value)}% sopra soglia ${targetThreshold.maxLossPercent}%"
+                    textProvider.qualityPingLossAbove(
+                        targetLabel,
+                        formatNumber(value),
+                        formatNumber(targetThreshold.maxLossPercent)
+                    )
                 } else null
             }
             val avgRtt = aggregateRtt(outcome.results) { it.avgRtt }
-            compareRequiredMetric(avgRtt, "Ping $targetLabel RTT medio", failReasons) { value ->
+            compareRequiredMetric(avgRtt, textProvider.qualityPingAverageRttLabel(targetLabel), failReasons) { value ->
                 if (value > targetThreshold.maxAvgRttMs) {
-                    "Ping $targetLabel avg ${formatNumber(value)}ms sopra soglia ${targetThreshold.maxAvgRttMs}ms"
+                    textProvider.qualityPingAverageRttAbove(
+                        targetLabel,
+                        formatNumber(value),
+                        formatNumber(targetThreshold.maxAvgRttMs)
+                    )
                 } else null
             }
             val maxRtt = maxRtt(outcome.results)
-            compareRequiredMetric(maxRtt, "Ping $targetLabel RTT massimo", failReasons) { value ->
+            compareRequiredMetric(maxRtt, textProvider.qualityPingMaximumRttLabel(targetLabel), failReasons) { value ->
                 if (value > targetThreshold.maxRttMs) {
-                    "Ping $targetLabel max ${formatNumber(value)}ms sopra soglia ${targetThreshold.maxRttMs}ms"
+                    textProvider.qualityPingMaximumRttAbove(
+                        targetLabel,
+                        formatNumber(value),
+                        formatNumber(targetThreshold.maxRttMs)
+                    )
                 } else null
             }
             if (outcome.error != null && outcome.results.isEmpty()) {
-                failReasons += "Ping $targetLabel errore: ${outcome.error}"
+                failReasons += textProvider.qualityPingError(targetLabel, outcome.error)
             }
         }
 
@@ -173,20 +188,40 @@ class TestQualityPolicy(
         val thresholds = profile.thresholds ?: defaultThresholds
         val failReasons = mutableListOf<String>()
 
-        compareRequiredMetric(parseDuration(speed.ping), "SpeedTest ping", failReasons) { value ->
-            if (value > thresholds.speed.maxPingMs) "SpeedTest ping ${formatNumber(value)}ms sopra soglia ${thresholds.speed.maxPingMs}ms" else null
+        compareRequiredMetric(parseDuration(speed.ping), textProvider.qualitySpeedPingLabel(), failReasons) { value ->
+            if (value > thresholds.speed.maxPingMs) {
+                textProvider.qualityMetricAboveThreshold(
+                    textProvider.qualitySpeedPingLabel(), formatNumber(value), " ms", formatNumber(thresholds.speed.maxPingMs)
+                )
+            } else null
         }
-        compareRequiredMetric(parseDuration(speed.jitter), "SpeedTest jitter", failReasons) { value ->
-            if (value > thresholds.speed.maxJitterMs) "SpeedTest jitter ${formatNumber(value)}ms sopra soglia ${thresholds.speed.maxJitterMs}ms" else null
+        compareRequiredMetric(parseDuration(speed.jitter), textProvider.qualitySpeedJitterLabel(), failReasons) { value ->
+            if (value > thresholds.speed.maxJitterMs) {
+                textProvider.qualityMetricAboveThreshold(
+                    textProvider.qualitySpeedJitterLabel(), formatNumber(value), " ms", formatNumber(thresholds.speed.maxJitterMs)
+                )
+            } else null
         }
-        compareRequiredMetric(parsePercent(speed.loss), "SpeedTest loss", failReasons) { value ->
-            if (value > thresholds.speed.maxLossPercent) "SpeedTest loss ${formatNumber(value)}% sopra soglia ${thresholds.speed.maxLossPercent}%" else null
+        compareRequiredMetric(parsePercent(speed.loss), textProvider.qualitySpeedLossLabel(), failReasons) { value ->
+            if (value > thresholds.speed.maxLossPercent) {
+                textProvider.qualityMetricAboveThreshold(
+                    textProvider.qualitySpeedLossLabel(), formatNumber(value), "%", formatNumber(thresholds.speed.maxLossPercent)
+                )
+            } else null
         }
-        compareRequiredMetric(parseBandwidth(speed.tcpDownload), "Download", failReasons) { value ->
-            if (value < thresholds.speed.minDownloadMbps) "Download ${formatNumber(value)}Mbps sotto soglia ${thresholds.speed.minDownloadMbps}Mbps" else null
+        compareRequiredMetric(parseBandwidth(speed.tcpDownload), textProvider.qualityDownloadLabel(), failReasons) { value ->
+            if (value < thresholds.speed.minDownloadMbps) {
+                textProvider.qualityMetricBelowThreshold(
+                    textProvider.qualityDownloadLabel(), formatNumber(value), " Mbps", formatNumber(thresholds.speed.minDownloadMbps)
+                )
+            } else null
         }
-        compareRequiredMetric(parseBandwidth(speed.tcpUpload), "Upload", failReasons) { value ->
-            if (value < thresholds.speed.minUploadMbps) "Upload ${formatNumber(value)}Mbps sotto soglia ${thresholds.speed.minUploadMbps}Mbps" else null
+        compareRequiredMetric(parseBandwidth(speed.tcpUpload), textProvider.qualityUploadLabel(), failReasons) { value ->
+            if (value < thresholds.speed.minUploadMbps) {
+                textProvider.qualityMetricBelowThreshold(
+                    textProvider.qualityUploadLabel(), formatNumber(value), " Mbps", formatNumber(thresholds.speed.minUploadMbps)
+                )
+            } else null
         }
 
         val decision = if (failReasons.isNotEmpty()) {
@@ -257,9 +292,8 @@ class TestQualityPolicy(
 
     private fun parseRateMbps(raw: String?): MetricValue {
         if (raw.isNullOrBlank()) return MetricValue.Missing
-        val match = RATE_PATTERN.matchEntire(raw.trim()) ?: return MetricValue.Invalid(raw)
-        val value = match.groupValues[1].toDoubleOrNull() ?: return MetricValue.Invalid(raw)
-        return MetricValue.Valid(if (match.groupValues[2].startsWith("g", true)) value * 1000 else value)
+        val value = StrictLinkRateParser.parseMbps(raw) ?: return MetricValue.Invalid(raw)
+        return MetricValue.Valid(value)
     }
 
     private fun parseScalar(raw: String?, pattern: Regex): MetricValue {
@@ -309,8 +343,8 @@ class TestQualityPolicy(
         compare: (Double) -> String?
     ) {
         when (metric) {
-            MetricValue.Missing -> failures += "$label mancante"
-            is MetricValue.Invalid -> failures += "$label non valido: ${metric.raw}"
+            MetricValue.Missing -> failures += textProvider.qualityMetricMissing(label)
+            is MetricValue.Invalid -> failures += textProvider.qualityMetricInvalid(label, metric.raw)
             is MetricValue.Valid -> compare(metric.value)?.let { failures += it }
         }
     }
@@ -329,4 +363,3 @@ private sealed interface MetricValue {
 private val PERCENT_PATTERN = Regex("""^(\d+(?:\.\d+)?)\s*(%)?$""", RegexOption.IGNORE_CASE)
 private val BANDWIDTH_PATTERN = Regex("""^(\d+(?:\.\d+)?)\s*(mbps)?$""", RegexOption.IGNORE_CASE)
 private val DURATION_PATTERN = Regex("""^(\d+(?:\.\d+)?)\s*(ms|us|s)?$""", RegexOption.IGNORE_CASE)
-private val RATE_PATTERN = Regex("""^(\d+(?:\.\d+)?)\s*(g|gbps|gbit/s|m|mbps|mbit/s)?$""", RegexOption.IGNORE_CASE)

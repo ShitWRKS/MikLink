@@ -124,6 +124,20 @@ private class RunInvocation(val plan: TestPlan) {
     }
 }
 
+private class RecordingSaveTestReportUseCase(
+    private val failures: MutableList<Throwable> = mutableListOf()
+) : SaveTestReportUseCase {
+    var calls: Int = 0
+    val incrementFlags = mutableListOf<Boolean>()
+
+    override suspend fun invoke(report: TestReport, incrementClientCounter: Boolean): Long {
+        calls += 1
+        incrementFlags += incrementClientCounter
+        if (failures.isNotEmpty()) throw failures.removeAt(0)
+        return calls.toLong()
+    }
+}
+
 // ---------------------------------------------------------------------------
 // TestViewModelTest
 // ---------------------------------------------------------------------------
@@ -158,6 +172,7 @@ class TestViewModelTest {
 
     private fun createViewModel(
         useCase: RunTestUseCase,
+        saveUseCase: SaveTestReportUseCase = reportRepository,
         savedStateHandle: SavedStateHandle = SavedStateHandle(
             mapOf("clientId" to 1L, "profileId" to 1L, "socketName" to "A1")
         )
@@ -165,7 +180,7 @@ class TestViewModelTest {
         val mockContext = mockk<Context>(relaxed = true) {
             every { getString(any(), any<Int>()) } returns "Test timeout"
         }
-        return TestViewModel(mockContext, savedStateHandle, useCase, reportRepository)
+        return TestViewModel(mockContext, savedStateHandle, useCase, saveUseCase)
     }
 
     // Shared fixtures
@@ -187,6 +202,17 @@ class TestViewModelTest {
     private companion object {
         const val TEST_TIMEOUT_MS = 90_000L
     }
+
+    private val report = TestReport(
+        clientId = 1L,
+        timestamp = 1L,
+        socketName = "A1",
+        notes = null,
+        probeName = null,
+        profileName = null,
+        overallStatus = "PASS",
+        resultsJson = "{}"
+    )
 
     // =======================================================================
     // Existing tests
@@ -529,7 +555,7 @@ class TestViewModelTest {
         val savedStateHandle = SavedStateHandle(
             mapOf("clientId" to 1L, "profileId" to 1L, "socketName" to "A1")
         )
-        val viewModel = createViewModel(useCase, savedStateHandle)
+        val viewModel = createViewModel(useCase, savedStateHandle = savedStateHandle)
 
         // Start run A and emit a snapshot + log.
         viewModel.startTest()
@@ -722,5 +748,53 @@ class TestViewModelTest {
 
         inv.allowFinallyToComplete.complete(Unit)
         runCurrent()
+    }
+    @Test
+    fun `report save is synchronous single flight and successful result cannot be inserted twice`() = runViewModelTest {
+        val saveUseCase = RecordingSaveTestReportUseCase()
+        val viewModel = createViewModel(ControllableRunTestUseCase(), saveUseCase)
+
+        viewModel.saveReportToDb(report)
+        assertTrue(viewModel.reportSaveState.value.isSaving)
+        viewModel.saveReportToDb(report)
+        runCurrent()
+
+        assertEquals(1, saveUseCase.calls)
+        assertEquals(listOf(true), saveUseCase.incrementFlags)
+        assertTrue(viewModel.reportSaveState.value.isSaved)
+
+        viewModel.saveReportToDb(report)
+        runCurrent()
+        assertEquals(1, saveUseCase.calls)
+    }
+
+    @Test
+    fun `report save releases single flight after application error`() = runViewModelTest {
+        val saveUseCase = RecordingSaveTestReportUseCase(mutableListOf(IllegalStateException("failed")))
+        val viewModel = createViewModel(ControllableRunTestUseCase(), saveUseCase)
+
+        viewModel.saveReportToDb(report)
+        runCurrent()
+        assertFalse(viewModel.reportSaveState.value.isSaving)
+        assertFalse(viewModel.reportSaveState.value.isSaved)
+
+        viewModel.saveReportToDb(report)
+        runCurrent()
+        assertEquals(2, saveUseCase.calls)
+        assertTrue(viewModel.reportSaveState.value.isSaved)
+    }
+
+    @Test
+    fun `report save cancellation releases single flight`() = runViewModelTest {
+        val saveUseCase = RecordingSaveTestReportUseCase(mutableListOf(CancellationException("cancelled")))
+        val viewModel = createViewModel(ControllableRunTestUseCase(), saveUseCase)
+
+        viewModel.saveReportToDb(report)
+        runCurrent()
+        viewModel.saveReportToDb(report)
+        runCurrent()
+
+        assertEquals(2, saveUseCase.calls)
+        assertTrue(viewModel.reportSaveState.value.isSaved)
     }
 }

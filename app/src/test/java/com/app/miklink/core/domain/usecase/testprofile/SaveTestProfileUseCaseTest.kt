@@ -7,6 +7,7 @@ package com.app.miklink.core.domain.usecase.testprofile
 
 import com.app.miklink.core.data.repository.test.TestProfileRepository
 import com.app.miklink.core.domain.model.TestProfile
+import com.app.miklink.core.domain.model.TestThresholds
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.runBlocking
@@ -164,6 +165,60 @@ class SaveTestProfileUseCaseTest {
         assertEquals(99L, id)
     }
 
+    @Test
+    fun `percentage thresholds outside boundaries do not reach repository`() = runBlocking {
+        listOf(-0.1, 100.1).forEach { invalid ->
+            val repository = FakeTestProfileRepository()
+            val useCase = SaveTestProfileUseCaseImpl(repository)
+            val thresholds = TestThresholds.defaults().copy(
+                pingLocal = TestThresholds.defaults().pingLocal.copy(maxLossPercent = invalid)
+            )
+
+            assertValidationFailsWithoutSaving(useCase, repository, profile(thresholds = thresholds))
+        }
+    }
+
+    @Test
+    fun `negative and non finite numeric thresholds do not reach repository`() = runBlocking {
+        listOf(-1.0, Double.NaN, Double.POSITIVE_INFINITY).forEach { invalid ->
+            val repository = FakeTestProfileRepository()
+            val useCase = SaveTestProfileUseCaseImpl(repository)
+            val thresholds = TestThresholds.defaults().copy(
+                speed = TestThresholds.defaults().speed.copy(minDownloadMbps = invalid)
+            )
+
+            assertValidationFailsWithoutSaving(useCase, repository, profile(thresholds = thresholds))
+        }
+    }
+
+    @Test
+    fun `invalid link rate does not reach repository`() = runBlocking {
+        val repository = FakeTestProfileRepository()
+        val useCase = SaveTestProfileUseCaseImpl(repository)
+
+        assertValidationFailsWithoutSaving(
+            useCase,
+            repository,
+            profile(thresholds = TestThresholds.defaults().copy(linkMinRate = "not-a-rate"))
+        )
+    }
+
+    @Test
+    fun `percentage boundaries and valid custom link rate save`() = runBlocking {
+        val repository = FakeTestProfileRepository()
+        val useCase = SaveTestProfileUseCaseImpl(repository)
+        val defaults = TestThresholds.defaults()
+        val thresholds = defaults.copy(
+            linkMinRate = "2.5G",
+            pingLocal = defaults.pingLocal.copy(maxLossPercent = 0.0),
+            pingExternal = defaults.pingExternal.copy(maxLossPercent = 100.0)
+        )
+
+        useCase(profile(thresholds = thresholds))
+
+        assertEquals(1, repository.insertCalls)
+    }
+
     private class FakeTestProfileRepository : TestProfileRepository {
         var insertCalls = 0
         var updateCalls = 0
@@ -210,7 +265,8 @@ class SaveTestProfileUseCaseTest {
         pingTarget2: String? = null,
         pingTarget3: String? = null,
         pingCount: Int = 4,
-        runSpeedTest: Boolean = false
+        runSpeedTest: Boolean = false,
+        thresholds: TestThresholds = TestThresholds.defaults()
     ) = TestProfile(
         profileId = profileId,
         profileName = profileName,
@@ -224,6 +280,6 @@ class SaveTestProfileUseCaseTest {
         pingTarget3 = pingTarget3,
         pingCount = pingCount,
         runSpeedTest = runSpeedTest,
-        thresholds = com.app.miklink.core.domain.model.TestThresholds.defaults()
+        thresholds = thresholds
     )
 }

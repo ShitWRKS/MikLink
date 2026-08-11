@@ -88,6 +88,48 @@ private class FakeTestRunTextProvider : TestRunTextProvider {
     override fun speedFail(error: String) = "Speed fail: $error"
     override fun speedSkip(reason: String) = "Speed skip: $reason"
     override fun resultError(error: String) = "Error: $error"
+    override fun unknownError() = "Unknown error"
+    override fun progressCompletedLabel() = "Completed"
+    override fun progressCompletedMessage() = "Test completed"
+    override fun progressLinkLabel() = "Link status"
+    override fun progressLinkMessage() = "Checking link"
+    override fun progressTdrLabel() = "TDR"
+    override fun progressTdrMessage() = "Testing cable"
+    override fun progressNetworkLabel() = "Network"
+    override fun progressNetworkMessage() = "Configuring network"
+    override fun progressNeighborsLabel() = "LLDP/CDP"
+    override fun progressNeighborsMessage() = "Discovering devices"
+    override fun progressPingLabel() = "Ping"
+    override fun progressPingMessage() = "Testing ping"
+    override fun progressSpeedLabel() = "Speed test"
+    override fun progressSpeedMessage() = "Testing speed"
+    override fun qualityLinkInactive() = "Link inactive"
+    override fun qualityLinkThresholdMissing() = "Link threshold missing"
+    override fun qualityLinkThresholdInvalid(raw: String) = "Invalid link threshold: $raw"
+    override fun qualityLinkSpeedMissing() = "Link speed missing"
+    override fun qualityLinkSpeedInvalid(raw: String) = "Invalid link speed: $raw"
+    override fun qualityLinkBelowThreshold(actual: String, threshold: String) = "$actual below $threshold"
+    override fun qualityTdrCritical(status: String) = "Critical TDR: $status"
+    override fun qualityPingNoResults() = "No ping results"
+    override fun qualityGatewayUnresolved() = "Gateway unresolved"
+    override fun qualityMetricMissing(label: String) = "$label missing"
+    override fun qualityMetricInvalid(label: String, raw: String) = "$label invalid: $raw"
+    override fun qualityPingLossLabel(target: String) = "Ping $target loss"
+    override fun qualityPingAverageRttLabel(target: String) = "Ping $target average RTT"
+    override fun qualityPingMaximumRttLabel(target: String) = "Ping $target maximum RTT"
+    override fun qualityPingLossAbove(target: String, actual: String, threshold: String) = "$target $actual above $threshold"
+    override fun qualityPingAverageRttAbove(target: String, actual: String, threshold: String) = "$target $actual above $threshold"
+    override fun qualityPingMaximumRttAbove(target: String, actual: String, threshold: String) = "$target $actual above $threshold"
+    override fun qualityPingError(target: String, error: String) = "$target error: $error"
+    override fun qualitySpeedPingLabel() = "Speed ping"
+    override fun qualitySpeedJitterLabel() = "Speed jitter"
+    override fun qualitySpeedLossLabel() = "Speed loss"
+    override fun qualityDownloadLabel() = "Download"
+    override fun qualityUploadLabel() = "Upload"
+    override fun qualityMetricAboveThreshold(label: String, actual: String, unit: String, threshold: String) =
+        "$label $actual$unit above $threshold$unit"
+    override fun qualityMetricBelowThreshold(label: String, actual: String, unit: String, threshold: String) =
+        "$label $actual$unit below $threshold$unit"
 }
 
 private class RecordingDebugTraceSink(
@@ -941,6 +983,8 @@ class RunTestUseCaseImplTest {
         speedTestStep: SpeedTestStep = this.speedTestStep
     ) {
         stubRepositories()
+        val capturedReport = slot<ReportData>()
+        every { reportResultsCodec.encode(capture(capturedReport)) } returns Result.success("""{"test":"valid"}""")
         val useCase = buildUseCase(
             linkStatusStep = linkStatusStep,
             cableTestStep = cableTestStep,
@@ -1001,10 +1045,14 @@ class RunTestUseCaseImplTest {
             }
         }
 
-        // Report contains termination info
-        val json = outcome.rawResultsJson
-        // The raw JSON depends on the mocked codec; just verify outcome fields
-        assertEquals(TestRunTermination.PROBE_UNAVAILABLE, outcome.termination)
+        val termination = capturedReport.captured.extra["termination"]
+        assertNotNull("Termination diagnostics must be persisted", termination)
+        assertTrue(termination!!.contains("termination=PROBE_UNAVAILABLE"))
+        val expectedPersistedSection = if (currentSectionId == TestSectionId.NEIGHBORS) "LLDP" else stepId
+        assertTrue(
+            "Termination diagnostics must use the canonical persisted section name",
+            termination.contains("currentSection=$expectedPersistedSection")
+        )
     }
 
     // === Test E: Previous results preserved ===

@@ -77,7 +77,7 @@ fun SetupWizardCard(
             WizardStepRow(
                 step = 1,
                 title = stringResource(id = R.string.dashboard_section_client),
-                value = clientName ?: stringResource(id = R.string.dashboard_select_client),
+                value = clientName ?: stringResource(id = R.string.dashboard_select),
                 subtitle = clientSubtitle,
                 isComplete = clientReady,
                 onClick = onSelectClient,
@@ -88,7 +88,7 @@ fun SetupWizardCard(
             WizardStepRow(
                 step = 2,
                 title = stringResource(id = R.string.dashboard_section_profile),
-                value = profileName ?: stringResource(id = R.string.dashboard_select_profile),
+                value = profileName ?: stringResource(id = R.string.dashboard_select),
                 subtitle = profileSubtitle,
                 isComplete = profileReady,
                 onClick = onSelectProfile,

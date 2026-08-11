@@ -71,7 +71,7 @@ class RunTestUseCaseImpl @Inject constructor(
     private val debugTraceRunContext: DebugTraceRunContext = DebugTraceRunContext()
 ) : RunTestUseCase {
     private val logSanitizer = LogSanitizer()
-    private val qualityPolicy = TestQualityPolicy { testName, fields ->
+    private val qualityPolicy = TestQualityPolicy(textProvider) { testName, fields ->
         val correlation = debugTraceRunContext.correlation() ?: return@TestQualityPolicy
         debugTraceSink.correlatedEvent(
             correlation = correlation,
@@ -209,7 +209,6 @@ class RunTestUseCaseImpl @Inject constructor(
         fun recordStep(
             id: TestSectionId,
             status: TestSectionStatus,
-            title: String,
             payload: TestSectionPayload = TestSectionPayload.None,
             warning: String? = null,
             rawData: Map<String, Any?>? = null,
@@ -220,8 +219,7 @@ class RunTestUseCaseImpl @Inject constructor(
                 id = id,
                 status = status,
                 payload = payload,
-                warning = warning,
-                title = title
+                warning = warning
             )
             reportData.addExtraStep(
                 name = id.toLegacyName(),
@@ -233,7 +231,6 @@ class RunTestUseCaseImpl @Inject constructor(
                 event = "normalized_result",
                 fields = mapOf(
                     "test" to id.toLegacyName(),
-                    "title" to title,
                     "status" to status.name,
                     "warning" to warning,
                     "rawData" to rawData,
@@ -262,7 +259,12 @@ class RunTestUseCaseImpl @Inject constructor(
         suspend fun finishTest() {
             val json = buildReportData(plan, reportData)
 
-            emitProgress(TestProgressKey.COMPLETED, 100, "Completato", "Test completato")
+            emitProgress(
+                TestProgressKey.COMPLETED,
+                100,
+                textProvider.progressCompletedLabel(),
+                textProvider.progressCompletedMessage()
+            )
 
             val finalSnapshot = TestRunSnapshot(
                 sections = typedSectionsSnapshot(typedSections),
@@ -338,6 +340,7 @@ class RunTestUseCaseImpl @Inject constructor(
                 status = "PROBE_UNAVAILABLE",
                 rawData = mapOf(
                     "termination" to "PROBE_UNAVAILABLE",
+                    "currentSection" to currentSection.toLegacyName(),
                     "terminalErrorType" to "ProbeUnavailable",
                     "terminalErrorMessage" to (error.message.take(200))
                 ),
@@ -367,13 +370,12 @@ class RunTestUseCaseImpl @Inject constructor(
             if (profile.runLinkStatus) {
                 // Cooperative cancellation checkpoint: allows coroutine to be cancelled before long step
                 coroutineContext.ensureActive()
-                emitProgress(TestProgressKey.LINK, 10, "Link Status", "Verifica stato link...")
+                emitProgress(TestProgressKey.LINK, 10, textProvider.progressLinkLabel(), textProvider.progressLinkMessage())
 
                 updateTypedSection(
                     typedSections = typedSections,
                     id = TestSectionId.LINK,
-                    status = TestSectionStatus.RUNNING,
-                    title = "Link"
+                    status = TestSectionStatus.RUNNING
                 )
                 emitSnapshot()
                 emitLog(textProvider.linkChecking())
@@ -386,7 +388,7 @@ class RunTestUseCaseImpl @Inject constructor(
                         val cableDisconnected = isCableDisconnected(linkStatus.status)
                         val resolvedStatus = if (cableDisconnected) TestSectionStatus.FAIL else evaluation.status
                         val resolvedWarning = if (cableDisconnected) {
-                            evaluation.warning ?: "Link inattivo o sconosciuto"
+                            evaluation.warning ?: textProvider.qualityLinkInactive()
                         } else {
                             evaluation.warning
                         }
@@ -396,7 +398,6 @@ class RunTestUseCaseImpl @Inject constructor(
                         }
                         recordStep(
                             id = TestSectionId.LINK,
-                            title = "Link",
                             status = resolvedStatus,
                             rawData = linkRaw(linkStatus),
                             payload = TestSectionPayload.Link(linkStatus),
@@ -415,19 +416,17 @@ class RunTestUseCaseImpl @Inject constructor(
                         val errorMessage = linkResult.error.message
                         recordStep(
                             id = TestSectionId.LINK,
-                            title = "Link",
                             status = TestSectionStatus.FAIL,
                             warning = errorMessage,
                             rawData = mapOf("error" to errorMessage),
                             error = errorMessage
                         )
                         emitSnapshot()
-                        emitLog(textProvider.linkFail(errorMessage ?: "unknown error"))
+                        emitLog(textProvider.linkFail(errorMessage ?: textProvider.unknownError()))
                     }
                     is StepResult.Skipped -> {
                         recordStep(
                             id = TestSectionId.LINK,
-                            title = "Link",
                             status = TestSectionStatus.SKIP,
                             warning = linkResult.reason,
                             rawData = mapOf("reason" to linkResult.reason)
@@ -444,13 +443,12 @@ class RunTestUseCaseImpl @Inject constructor(
             if (profile.runTdr && probe.shouldAttemptTdr) {
                 // Cooperative cancellation checkpoint
                 coroutineContext.ensureActive()
-                emitProgress(TestProgressKey.TDR, 30, "TDR", "Test cavo in corso...")
+                emitProgress(TestProgressKey.TDR, 30, textProvider.progressTdrLabel(), textProvider.progressTdrMessage())
 
                 updateTypedSection(
                     typedSections = typedSections,
                     id = TestSectionId.TDR,
-                    status = TestSectionStatus.RUNNING,
-                    title = "TDR"
+                    status = TestSectionStatus.RUNNING
                 )
                 emitSnapshot()
                 emitLog(textProvider.tdrStarting(probe.testInterface))
@@ -466,7 +464,6 @@ class RunTestUseCaseImpl @Inject constructor(
                         }
                         recordStep(
                             id = TestSectionId.TDR,
-                            title = "TDR",
                             status = evaluation.status,
                             rawData = tdrRaw(cableTest),
                             payload = TestSectionPayload.Tdr(cableTest.entries),
@@ -491,7 +488,6 @@ class RunTestUseCaseImpl @Inject constructor(
                         val message = tdrResult.error.message
                         recordStep(
                             id = TestSectionId.TDR,
-                            title = "TDR",
                             status = status,
                             warning = if (unsupportedOnUnknown) TestSkipReason.HARDWARE_UNSUPPORTED else message,
                             rawData = mapOf("error" to message),
@@ -499,12 +495,11 @@ class RunTestUseCaseImpl @Inject constructor(
                         )
                         emitSnapshot()
                         val statusLabel = if (unsupportedOnUnknown) "SKIP" else "FAIL"
-                        emitLog(textProvider.tdrFail(statusLabel, message ?: "unknown error"))
+                        emitLog(textProvider.tdrFail(statusLabel, message ?: textProvider.unknownError()))
                     }
                     is StepResult.Skipped -> {
                         recordStep(
                             id = TestSectionId.TDR,
-                            title = "TDR",
                             status = TestSectionStatus.SKIP,
                             warning = tdrResult.reason,
                             rawData = mapOf("reason" to tdrResult.reason)
@@ -516,7 +511,6 @@ class RunTestUseCaseImpl @Inject constructor(
             } else if (profile.runTdr && !probe.shouldAttemptTdr) {
                 recordStep(
                     id = TestSectionId.TDR,
-                    title = "TDR",
                     status = TestSectionStatus.SKIP,
                     warning = TestSkipReason.HARDWARE_UNSUPPORTED,
                     rawData = mapOf("reason" to TestSkipReason.HARDWARE_UNSUPPORTED)
@@ -538,13 +532,17 @@ class RunTestUseCaseImpl @Inject constructor(
             // 3) Network Config
             // Cooperative cancellation checkpoint
             coroutineContext.ensureActive()
-            emitProgress(TestProgressKey.NETWORK_CONFIG, 50, "Network Config", "Configurazione rete in corso...")
+            emitProgress(
+                TestProgressKey.NETWORK_CONFIG,
+                50,
+                textProvider.progressNetworkLabel(),
+                textProvider.progressNetworkMessage()
+            )
 
             updateTypedSection(
                 typedSections = typedSections,
                 id = TestSectionId.NETWORK,
-                status = TestSectionStatus.RUNNING,
-                title = "Network"
+                status = TestSectionStatus.RUNNING
             )
             emitSnapshot()
             emitLog(textProvider.networkStarting(probe.testInterface))
@@ -562,7 +560,6 @@ class RunTestUseCaseImpl @Inject constructor(
                     recordStep(
                         id = TestSectionId.NETWORK,
                         status = TestSectionStatus.PASS,
-                        title = "Network",
                         rawData = networkRaw(feedback),
                         payload = TestSectionPayload.Network(
                             mode = feedback.mode,
@@ -584,19 +581,17 @@ class RunTestUseCaseImpl @Inject constructor(
                     val errorMessage = networkResult.error.message
                     recordStep(
                         id = TestSectionId.NETWORK,
-                        title = "Network",
                         status = TestSectionStatus.FAIL,
                         warning = errorMessage,
                         rawData = mapOf("error" to errorMessage),
                         error = errorMessage
                     )
                     emitSnapshot()
-                    emitLog(textProvider.networkFail(errorMessage ?: "unknown error"))
+                    emitLog(textProvider.networkFail(errorMessage ?: textProvider.unknownError()))
                 }
                 is StepResult.Skipped -> {
                     recordStep(
                         id = TestSectionId.NETWORK,
-                        title = "Network",
                         status = TestSectionStatus.SKIP,
                         warning = networkResult.reason,
                         rawData = mapOf("reason" to networkResult.reason)
@@ -610,13 +605,17 @@ class RunTestUseCaseImpl @Inject constructor(
             if (profile.runLldp) {
                 // Cooperative cancellation checkpoint
                 coroutineContext.ensureActive()
-                emitProgress(TestProgressKey.NEIGHBORS, 60, "LLDP", "Discovery neighbor...")
+                emitProgress(
+                    TestProgressKey.NEIGHBORS,
+                    60,
+                    textProvider.progressNeighborsLabel(),
+                    textProvider.progressNeighborsMessage()
+                )
 
                 updateTypedSection(
                     typedSections = typedSections,
                     id = TestSectionId.NEIGHBORS,
-                    status = TestSectionStatus.RUNNING,
-                    title = "LLDP/CDP"
+                    status = TestSectionStatus.RUNNING
                 )
                 emitSnapshot()
                 emitLog(textProvider.lldpStarting())
@@ -627,7 +626,6 @@ class RunTestUseCaseImpl @Inject constructor(
                         reportData.neighbors += neighbors
                         recordStep(
                             id = TestSectionId.NEIGHBORS,
-                            title = "LLDP/CDP",
                             status = TestSectionStatus.INFO,
                             rawData = lldpRaw(neighbors),
                             payload = TestSectionPayload.Neighbors(neighbors)
@@ -644,19 +642,17 @@ class RunTestUseCaseImpl @Inject constructor(
                         val message = lldpResult.error.message
                         recordStep(
                             id = TestSectionId.NEIGHBORS,
-                            title = "LLDP/CDP",
                             status = TestSectionStatus.FAIL,
-                            warning = message ?: "Unknown error",
+                            warning = message ?: textProvider.unknownError(),
                             rawData = mapOf("error" to message),
                             error = message
                         )
                         emitSnapshot()
-                        emitLog(textProvider.lldpInfo(message ?: "unknown error"))
+                        emitLog(textProvider.lldpInfo(message ?: textProvider.unknownError()))
                     }
                     is StepResult.Skipped -> {
                         recordStep(
                             id = TestSectionId.NEIGHBORS,
-                            title = "LLDP/CDP",
                             status = TestSectionStatus.SKIP,
                             warning = lldpResult.reason,
                             rawData = mapOf("reason" to lldpResult.reason)
@@ -673,13 +669,12 @@ class RunTestUseCaseImpl @Inject constructor(
             if (profile.runPing) {
                 // Cooperative cancellation checkpoint
                 coroutineContext.ensureActive()
-                emitProgress(TestProgressKey.PING, 70, "Ping", "Test ping in corso...")
+                emitProgress(TestProgressKey.PING, 70, textProvider.progressPingLabel(), textProvider.progressPingMessage())
 
                 updateTypedSection(
                     typedSections = typedSections,
                     id = TestSectionId.PING,
-                    status = TestSectionStatus.RUNNING,
-                    title = "Ping"
+                    status = TestSectionStatus.RUNNING
                 )
                 emitSnapshot()
                 emitLog(textProvider.pingStarting())
@@ -695,7 +690,6 @@ class RunTestUseCaseImpl @Inject constructor(
                         }
                         recordStep(
                             id = TestSectionId.PING,
-                            title = "Ping",
                             status = evaluation.status,
                             rawData = pingRaw(outcomes),
                             payload = TestSectionPayload.Ping(samples),
@@ -713,19 +707,17 @@ class RunTestUseCaseImpl @Inject constructor(
                         val error = pingResult.error.message
                         recordStep(
                             id = TestSectionId.PING,
-                            title = "Ping",
                             status = TestSectionStatus.FAIL,
                             warning = error,
                             rawData = mapOf("error" to error),
                             error = error
                         )
                         emitSnapshot()
-                        emitLog(textProvider.pingFail(error ?: "unknown error"))
+                        emitLog(textProvider.pingFail(error ?: textProvider.unknownError()))
                     }
                     is StepResult.Skipped -> {
                         recordStep(
                             id = TestSectionId.PING,
-                            title = "Ping",
                             status = TestSectionStatus.SKIP,
                             warning = pingResult.reason,
                             rawData = mapOf("reason" to pingResult.reason)
@@ -737,7 +729,6 @@ class RunTestUseCaseImpl @Inject constructor(
             } else {
                 recordStep(
                     id = TestSectionId.PING,
-                    title = "Ping",
                     status = TestSectionStatus.SKIP,
                     warning = TestSkipReason.PROFILE_DISABLED,
                     rawData = mapOf("reason" to TestSkipReason.PROFILE_DISABLED)
@@ -750,13 +741,12 @@ class RunTestUseCaseImpl @Inject constructor(
             if (profile.runSpeedTest) {
                 // Cooperative cancellation checkpoint
                 coroutineContext.ensureActive()
-                emitProgress(TestProgressKey.SPEED, 90, "Speed Test", "Speed test in corso...")
+                emitProgress(TestProgressKey.SPEED, 90, textProvider.progressSpeedLabel(), textProvider.progressSpeedMessage())
 
                 updateTypedSection(
                     typedSections = typedSections,
                     id = TestSectionId.SPEED,
-                    status = TestSectionStatus.RUNNING,
-                    title = "Speed Test"
+                    status = TestSectionStatus.RUNNING
                 )
                 emitSnapshot()
                 emitLog(textProvider.speedStarting())
@@ -771,7 +761,6 @@ class RunTestUseCaseImpl @Inject constructor(
                         }
                         recordStep(
                             id = TestSectionId.SPEED,
-                            title = "Speed Test",
                             status = evaluation.status,
                             rawData = speedRaw(speed, client.speedTestServerAddress),
                             payload = TestSectionPayload.Speed(speed),
@@ -789,19 +778,17 @@ class RunTestUseCaseImpl @Inject constructor(
                         val message = speedResult.error.message
                         recordStep(
                             id = TestSectionId.SPEED,
-                            title = "Speed Test",
                             status = TestSectionStatus.FAIL,
                             warning = message,
                             rawData = mapOf("error" to message),
                             error = message
                         )
                         emitSnapshot()
-                        emitLog(textProvider.speedFail(message ?: "unknown error"))
+                        emitLog(textProvider.speedFail(message ?: textProvider.unknownError()))
                     }
                     is StepResult.Skipped -> {
                         recordStep(
                             id = TestSectionId.SPEED,
-                            title = "Speed Test",
                             status = TestSectionStatus.SKIP,
                             warning = speedResult.reason,
                             rawData = mapOf("reason" to speedResult.reason)
@@ -824,17 +811,17 @@ class RunTestUseCaseImpl @Inject constructor(
             primaryFailure = e
             val error = when (e) {
                 is TestExecutionException -> e.error
-                else -> TestError.Unexpected(e.message ?: "Unknown error", e)
+                else -> TestError.Unexpected(e.message ?: textProvider.unknownError(), e)
             }
             traceEvent(
                 event = "technical_error",
                 fields = mapOf(
                     "test" to "RUN",
-                    "message" to (e.message ?: "Unknown error"),
+                    "message" to (e.message ?: textProvider.unknownError()),
                     "type" to e::class.java.simpleName
                 )
             )
-            emitLog(textProvider.resultError(e.message ?: "unknown error"))
+            emitLog(textProvider.resultError(e.message ?: textProvider.unknownError()))
             emit(TestEvent.Failed(error))
         } finally {
             try {
@@ -1159,37 +1146,34 @@ private fun TestSectionId.toLegacyName(): String = when (this) {
 private fun buildInitialTypedSections(profile: TestProfile, probe: ProbeConfig): MutableList<TestSectionSnapshot> {
     val sections = mutableListOf<TestSectionSnapshot>()
     if (profile.runLinkStatus) {
-        sections += TestSectionSnapshot(id = TestSectionId.LINK, status = TestSectionStatus.PENDING, title = "Link")
+        sections += TestSectionSnapshot(id = TestSectionId.LINK, status = TestSectionStatus.PENDING)
     }
     if (profile.runTdr && probe.shouldAttemptTdr) {
-        sections += TestSectionSnapshot(id = TestSectionId.TDR, status = TestSectionStatus.PENDING, title = "TDR")
+        sections += TestSectionSnapshot(id = TestSectionId.TDR, status = TestSectionStatus.PENDING)
     } else if (profile.runTdr && !probe.shouldAttemptTdr) {
         sections += TestSectionSnapshot(
             id = TestSectionId.TDR,
             status = TestSectionStatus.SKIP,
-            title = "TDR",
             warning = TestSkipReason.HARDWARE_UNSUPPORTED
         )
     }
     sections += TestSectionSnapshot(
         id = TestSectionId.NETWORK,
-        status = TestSectionStatus.PENDING,
-        title = "Network"
+        status = TestSectionStatus.PENDING
     )
     if (profile.runLldp) {
-        sections += TestSectionSnapshot(id = TestSectionId.NEIGHBORS, status = TestSectionStatus.PENDING, title = "LLDP/CDP")
+        sections += TestSectionSnapshot(id = TestSectionId.NEIGHBORS, status = TestSectionStatus.PENDING)
     }
     sections += when {
-        profile.runPing -> TestSectionSnapshot(id = TestSectionId.PING, status = TestSectionStatus.PENDING, title = "Ping")
+        profile.runPing -> TestSectionSnapshot(id = TestSectionId.PING, status = TestSectionStatus.PENDING)
         else -> TestSectionSnapshot(
             id = TestSectionId.PING,
             status = TestSectionStatus.SKIP,
-            title = "Ping",
             warning = TestSkipReason.PROFILE_DISABLED
         )
     }
     if (profile.runSpeedTest) {
-        sections += TestSectionSnapshot(id = TestSectionId.SPEED, status = TestSectionStatus.PENDING, title = "Speed Test")
+        sections += TestSectionSnapshot(id = TestSectionId.SPEED, status = TestSectionStatus.PENDING)
     }
     return sections
 }
@@ -1199,8 +1183,7 @@ private fun updateTypedSection(
     id: TestSectionId,
     status: TestSectionStatus,
     payload: TestSectionPayload = TestSectionPayload.None,
-    warning: String? = null,
-    title: String? = null
+    warning: String? = null
 ) {
     // Preserve existing payload unless a real payload is provided.
     val index = typedSections.indexOfFirst { it.id == id }
@@ -1214,7 +1197,6 @@ private fun updateTypedSection(
         id = id,
         status = status,
         payload = resolvedPayload,
-        title = title ?: existing?.title,
         warning = warning ?: existing?.warning
     )
     if (index >= 0) {

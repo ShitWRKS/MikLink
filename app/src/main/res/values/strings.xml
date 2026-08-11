@@ -71,6 +71,7 @@
     <string name="dashboard_cta_ready">All set. Run the test.</string>
     <string name="dashboard_cta_hint">Select client, profile, and socket to enable the test.</string>
     <string name="dashboard_section_client">Client</string>
+    <string name="dashboard_select">Select</string>
     <string name="dashboard_select_client">Select Client</string>
     <string name="dashboard_click_to_select">Click to select</string>
     <string name="dashboard_search_client">Search client...</string>
@@ -141,6 +142,7 @@
     <string name="reset_pdf_confirm_message">This will restore all PDF report settings to their default values. Continue?</string>
     <string name="settings_id_numbering">ID Numbering</string>
     <string name="settings_id_strategy">Numbering Strategy</string>
+    <string name="settings_id_strategy_desc">Continuous increment or ID reuse</string>
     <string name="settings_category_info">Information</string>
     <string name="settings_version">Version</string>
     <string name="settings_build">Build</string>
@@ -193,6 +195,7 @@
     <string name="report_detail_ping_title">Ping Test</string>
     <string name="report_detail_tdr_title">Cable Test (TDR)</string>
     <string name="report_detail_edit_title">Edit Details</string>
+    <string name="report_detail_topbar_title" translatable="false">%1$s — %2$s</string>
     <string name="report_detail_edit_socket">Socket Name</string>
     <string name="report_detail_edit_notes">Notes</string>
     <string name="report_detail_edit_save">Save Changes</string>
@@ -353,6 +356,48 @@
     <string name="log_result_error">[Result] Unexpected error: %1$s</string>
     <string name="test_timeout_error">Test interrupted: maximum time (%1$ds) exceeded</string>
     <string name="test_execution_save_error">Unable to save the report. Please try again.</string>
+    <string name="test_execution_unknown_error">An unknown error occurred.</string>
+    <string name="test_progress_completed_label">Completed</string>
+    <string name="test_progress_completed_message">Test completed</string>
+    <string name="test_progress_link_label">Link status</string>
+    <string name="test_progress_link_message">Checking link status…</string>
+    <string name="test_progress_tdr_label">TDR</string>
+    <string name="test_progress_tdr_message">Cable test in progress…</string>
+    <string name="test_progress_network_label">Network configuration</string>
+    <string name="test_progress_network_message">Configuring network…</string>
+    <string name="test_progress_neighbors_label">LLDP/CDP</string>
+    <string name="test_progress_neighbors_message">Discovering network devices…</string>
+    <string name="test_progress_ping_label">Ping</string>
+    <string name="test_progress_ping_message">Ping test in progress…</string>
+    <string name="test_progress_speed_label">Speed test</string>
+    <string name="test_progress_speed_message">Speed test in progress…</string>
+
+    <!-- Quality policy messages. Technical values are supplied as placeholders. -->
+    <string name="quality_link_inactive">Link is inactive or unknown</string>
+    <string name="quality_link_threshold_missing">Link threshold is missing</string>
+    <string name="quality_link_threshold_invalid">Invalid link threshold: %1$s</string>
+    <string name="quality_link_speed_missing">Link speed is missing</string>
+    <string name="quality_link_speed_invalid">Invalid link speed: %1$s</string>
+    <string name="quality_link_below_threshold">Link speed %1$s is below the %2$s threshold</string>
+    <string name="quality_tdr_critical">TDR detected a critical status: %1$s</string>
+    <string name="quality_ping_no_results">No ping results available</string>
+    <string name="quality_gateway_unresolved">Unable to resolve the DHCP gateway</string>
+    <string name="quality_metric_missing">%1$s is missing</string>
+    <string name="quality_metric_invalid">Invalid %1$s: %2$s</string>
+    <string name="quality_ping_loss_label">Ping %1$s loss</string>
+    <string name="quality_ping_avg_rtt_label">Ping %1$s average RTT</string>
+    <string name="quality_ping_max_rtt_label">Ping %1$s maximum RTT</string>
+    <string name="quality_ping_loss_above">Ping %1$s loss %2$s%% is above the %3$s%% threshold</string>
+    <string name="quality_ping_avg_rtt_above">Ping %1$s average RTT %2$s ms is above the %3$s ms threshold</string>
+    <string name="quality_ping_max_rtt_above">Ping %1$s maximum RTT %2$s ms is above the %3$s ms threshold</string>
+    <string name="quality_ping_error">Ping %1$s error: %2$s</string>
+    <string name="quality_speed_ping_label">Speed test ping</string>
+    <string name="quality_speed_jitter_label">Speed test jitter</string>
+    <string name="quality_speed_loss_label">Speed test loss</string>
+    <string name="quality_download_label">Download</string>
+    <string name="quality_upload_label">Upload</string>
+    <string name="quality_metric_above_threshold">%1$s %2$s%3$s is above the %4$s%3$s threshold</string>
+    <string name="quality_metric_below_threshold">%1$s %2$s%3$s is below the %4$s%3$s threshold</string>
     
     <!-- Detail formatter labels -->
     <string name="detail_label_mode">Mode</string>
@@ -429,6 +474,9 @@
     <string name="client_edit_title_edit">Edit Client</string>
     <string name="client_edit_title_new">New Client</string>
     <string name="client_edit_save">Save Client</string>
+    <string name="client_edit_load_error">Unable to load the client.</string>
+    <string name="client_edit_save_error">Unable to save the client.</string>
+    <string name="client_edit_section_info">Client information</string>
     <string name="client_edit_company_label">Company Name *</string>
     <string name="client_edit_location_label">Location</string>
     <string name="client_edit_location_placeholder">e.g., HQ, Rome Branch</string>
@@ -466,6 +514,12 @@
 
     <!-- Client List -->
     <string name="client_list_new_client">NEW CLIENT</string>
+    <string name="client_list_load_error">Unable to load clients.</string>
+    <string name="client_list_no_location">No location specified</string>
+    <plurals name="client_list_count">
+        <item quantity="one">%1$d client</item>
+        <item quantity="other">%1$d clients</item>
+    </plurals>
 
     <!-- History -->
     <string name="history_tip_icon">💡</string>
@@ -521,10 +575,27 @@
     <string name="profile_edit_ping_external_section_title">External ping</string>
     <string name="profile_edit_gateway_policy_label">Fail if unresolved</string>
     <string name="profile_edit_speed_section_title">Speed Test</string>
+    <string name="profile_edit_threshold_loss">Loss</string>
+    <string name="profile_edit_threshold_avg_rtt">Avg RTT</string>
+    <string name="profile_edit_threshold_max_rtt">Max RTT</string>
+    <string name="profile_edit_threshold_ping">Ping</string>
+    <string name="profile_edit_threshold_jitter">Jitter</string>
+    <string name="profile_edit_threshold_download">Down</string>
+    <string name="profile_edit_threshold_upload">Up</string>
+    <string name="profile_edit_threshold_invalid_number">Enter a finite number greater than or equal to 0.</string>
+    <string name="profile_edit_threshold_invalid_percentage">Enter a percentage from 0 to 100.</string>
+    <string name="profile_edit_threshold_invalid_link_rate">Enter a valid link rate, such as 100M or 1G.</string>
 
     <!-- Test Profile List -->
     <string name="profile_list_new_profile">NEW PROFILE</string>
-    <string name="profile_list_create_profile">CREATE PROFILE</string>
+    <plurals name="profile_list_count">
+        <item quantity="one">%1$d profile</item>
+        <item quantity="other">%1$d profiles</item>
+    </plurals>
+    <plurals name="profile_list_active_tests">
+        <item quantity="one">%1$d active test</item>
+        <item quantity="other">%1$d active tests</item>
+    </plurals>
 
     <!-- Settings -->
     <string name="settings_language_en">English 🇬🇧</string>
@@ -554,6 +625,13 @@
     <string name="profile_list_empty_body">Create your first test profile to configure the tests to run.</string>
     <string name="splash_featured_by">Featured by</string>
     <string name="splash_shitworks_name">SHITWORKS</string>
-    <string name="splash_shitworks_tagline">Built by Shitworks</string>
+    <string name="splash_shitworks_tagline" translatable="false">"'cause shit always work"</string>
     <string name="test_execution_invalid_navigation">Invalid navigation parameters.</string>
+    <string name="probe_edit_details_changed">Probe details changed. Please verify again.</string>
+    <string name="report_detail_unknown_client">Unknown client</string>
+    <string name="backup_restore_success">Configuration restored successfully.</string>
+    <string name="backup_restore_error">Unable to restore the configuration.</string>
+    <string name="backup_empty_file_error">The selected file is empty.</string>
+    <string name="backup_save_success">Backup saved successfully.</string>
+    <string name="backup_save_error">Unable to save the backup.</string>
 </resources>

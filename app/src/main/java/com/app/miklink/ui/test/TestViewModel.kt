@@ -74,6 +74,7 @@ class TestViewModel @Inject constructor(
 
     // Mutex serializes the start-replace sequence so two concurrent starts never interleave
     private val startMutex = Mutex()
+    private val saveMutex = Mutex()
 
     // Monotonic generation counter: only the current generation may touch UI state
     private var runGeneration: Long = 0L
@@ -144,9 +145,10 @@ class TestViewModel @Inject constructor(
     }
 
     fun saveReportToDb(report: TestReport) {
-        if (_reportSaveState.value.isSaving) return
+        if (_reportSaveState.value.isSaved) return
+        if (!saveMutex.tryLock()) return
+        _reportSaveState.value = ReportSaveState(isSaving = true)
         viewModelScope.launch {
-            _reportSaveState.value = ReportSaveState(isSaving = true)
             try {
                 saveTestReportUseCase(report, incrementClientCounter = true)
                 _reportSaveState.value = ReportSaveState(isSaved = true)
@@ -156,6 +158,8 @@ class TestViewModel @Inject constructor(
                 _reportSaveState.value = ReportSaveState(
                     errorMessage = context.getString(R.string.test_execution_save_error)
                 )
+            } finally {
+                saveMutex.unlock()
             }
         }
     }
@@ -172,7 +176,7 @@ class TestViewModel @Inject constructor(
 
     private fun handleFailure(generation: Long, message: String?) {
         if (!isCurrentRun(generation)) return
-        val errorMessage = message ?: "Errore sconosciuto"
+        val errorMessage = message ?: context.getString(R.string.test_execution_unknown_error)
         _uiState.value = UiState.Error(errorMessage)
     }
 

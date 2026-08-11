@@ -29,6 +29,7 @@ import androidx.navigation.NavController
 import com.app.miklink.core.domain.model.NetworkMode
 import com.app.miklink.core.domain.policy.socketid.SocketIdLite
 import com.app.miklink.R
+import com.app.miklink.ui.common.asString
 import com.app.miklink.ui.testing.AgentUiTags
 import com.app.miklink.utils.NetworkValidator
 
@@ -40,12 +41,13 @@ fun ClientEditScreen(
 ) {
     val isSaved by viewModel.isSaved.collectAsStateWithLifecycle()
     val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
+    val resolvedErrorMessage = errorMessage?.asString()
     val snackbarHostState = remember { SnackbarHostState() }
     if (isSaved) {
         LaunchedEffect(Unit) { navController.popBackStack() }
     }
-    LaunchedEffect(errorMessage) {
-        errorMessage?.let { message ->
+    LaunchedEffect(resolvedErrorMessage) {
+        resolvedErrorMessage?.let { message ->
             snackbarHostState.showSnackbar(message)
             viewModel.consumeError()
         }
@@ -155,7 +157,7 @@ fun ClientEditScreen(
             // === CLIENT INFO (Always Visible) ===
             SectionHeader(
                 icon = Icons.Default.Business,
-                title = "Client Info"
+                title = stringResource(R.string.client_edit_section_info)
             )
             
             LabeledTextField(

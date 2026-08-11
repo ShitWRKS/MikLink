@@ -258,6 +258,7 @@ fun PdfExportDialog(
                                                 style = MaterialTheme.typography.labelMedium,
                                                 color = MaterialTheme.colorScheme.primary
                                             )
+                                            // i18n-ignore: compact selected/total numeric counter.
                                             Text(
                                                 "${localColumns.size}/${ExportColumn.values().size}",
                                                 style = MaterialTheme.typography.bodySmall,

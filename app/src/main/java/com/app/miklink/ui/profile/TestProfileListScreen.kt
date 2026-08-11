@@ -4,16 +4,15 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.PlaylistAddCheck
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -25,10 +24,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -37,6 +36,7 @@ import com.app.miklink.core.domain.model.TestProfile
 import com.app.miklink.R
 import com.app.miklink.ui.testing.AgentUiTags
 import com.app.miklink.ui.testing.AgentSemanticsConfig
+import com.app.miklink.ui.components.ListEmptyState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,7 +63,11 @@ fun TestProfileListScreen(
                         Column {
                             Text(stringResource(id = com.app.miklink.R.string.profile_list_title), fontWeight = FontWeight.Bold)
                             Text(
-                                "${profiles.size} ${if (profiles.size == 1) "profilo" else "profili"}",
+                                pluralStringResource(
+                                    R.plurals.profile_list_count,
+                                    profiles.size,
+                                    profiles.size
+                                ),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -99,57 +103,12 @@ fun TestProfileListScreen(
                     .padding(paddingValues),
                 contentAlignment = Alignment.Center
             ) {
-                Card(
-                    modifier = Modifier.padding(24.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    ),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(32.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(80.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primaryContainer),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.PlaylistAddCheck,
-                                contentDescription = null,
-                                modifier = Modifier.size(40.dp),
-                                tint = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        }
-                        Spacer(Modifier.height(24.dp))
-                        Text(
-                            text = stringResource(R.string.profile_list_empty_title),
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            text = stringResource(R.string.profile_list_empty_body),
-                            style = MaterialTheme.typography.bodyMedium,
-                            textAlign = TextAlign.Center,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(Modifier.height(24.dp))
-                        Button(
-                            onClick = { navController.navigate("profile_edit/-1") },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary
-                            )
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = null)
-                            Spacer(Modifier.width(8.dp))
-                            Text(stringResource(R.string.profile_list_create_profile))
-                        }
-                    }
-                }
+                ListEmptyState(
+                    icon = Icons.Default.Checklist,
+                    title = stringResource(R.string.profile_list_empty_title),
+                    body = stringResource(R.string.profile_list_empty_body),
+                    modifier = Modifier.padding(32.dp)
+                )
             }
         } else {
             LazyColumn(
@@ -318,7 +277,11 @@ fun TestProfileCard(
                         )
                         Spacer(Modifier.width(4.dp))
                         Text(
-                            text = "$activeTests test ${if (activeTests == 1) "attivo" else "attivi"}",
+                            text = pluralStringResource(
+                                R.plurals.profile_list_active_tests,
+                                activeTests,
+                                activeTests
+                            ),
                             style = MaterialTheme.typography.labelSmall
                         )
                     }

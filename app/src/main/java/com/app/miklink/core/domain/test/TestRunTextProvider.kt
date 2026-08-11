@@ -39,4 +39,45 @@ interface TestRunTextProvider {
     fun speedFail(error: String): String
     fun speedSkip(reason: String): String
     fun resultError(error: String): String
+    fun unknownError(): String
+    fun progressCompletedLabel(): String
+    fun progressCompletedMessage(): String
+    fun progressLinkLabel(): String
+    fun progressLinkMessage(): String
+    fun progressTdrLabel(): String
+    fun progressTdrMessage(): String
+    fun progressNetworkLabel(): String
+    fun progressNetworkMessage(): String
+    fun progressNeighborsLabel(): String
+    fun progressNeighborsMessage(): String
+    fun progressPingLabel(): String
+    fun progressPingMessage(): String
+    fun progressSpeedLabel(): String
+    fun progressSpeedMessage(): String
+
+    fun qualityLinkInactive(): String
+    fun qualityLinkThresholdMissing(): String
+    fun qualityLinkThresholdInvalid(raw: String): String
+    fun qualityLinkSpeedMissing(): String
+    fun qualityLinkSpeedInvalid(raw: String): String
+    fun qualityLinkBelowThreshold(actual: String, threshold: String): String
+    fun qualityTdrCritical(status: String): String
+    fun qualityPingNoResults(): String
+    fun qualityGatewayUnresolved(): String
+    fun qualityMetricMissing(label: String): String
+    fun qualityMetricInvalid(label: String, raw: String): String
+    fun qualityPingLossLabel(target: String): String
+    fun qualityPingAverageRttLabel(target: String): String
+    fun qualityPingMaximumRttLabel(target: String): String
+    fun qualityPingLossAbove(target: String, actual: String, threshold: String): String
+    fun qualityPingAverageRttAbove(target: String, actual: String, threshold: String): String
+    fun qualityPingMaximumRttAbove(target: String, actual: String, threshold: String): String
+    fun qualityPingError(target: String, error: String): String
+    fun qualitySpeedPingLabel(): String
+    fun qualitySpeedJitterLabel(): String
+    fun qualitySpeedLossLabel(): String
+    fun qualityDownloadLabel(): String
+    fun qualityUploadLabel(): String
+    fun qualityMetricAboveThreshold(label: String, actual: String, unit: String, threshold: String): String
+    fun qualityMetricBelowThreshold(label: String, actual: String, unit: String, threshold: String): String
 }

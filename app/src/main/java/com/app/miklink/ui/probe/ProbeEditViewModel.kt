@@ -8,6 +8,7 @@ package com.app.miklink.ui.probe
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
+import com.app.miklink.R
 import com.app.miklink.core.data.repository.ProbeCheckResult
 import com.app.miklink.core.data.repository.probe.ProbeConnectivityRepository
 import com.app.miklink.core.data.repository.probe.ProbeRepository
@@ -15,6 +16,7 @@ import com.app.miklink.core.domain.model.ProbeConfig
 import com.app.miklink.core.domain.model.TdrCapability
 import com.app.miklink.core.domain.model.TdrCapabilityClassifier
 import com.app.miklink.ui.common.BaseEditViewModel
+import com.app.miklink.ui.common.UiText
 import com.app.miklink.utils.Compatibility
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -99,7 +101,9 @@ class ProbeEditViewModel @Inject constructor(
                 .collect { currentConfig ->
                     if (!suppressVerificationReset && _verificationState.value is VerificationState.Success) {
                         if (lastVerifiedConnection != null && lastVerifiedConnection != currentConfig) {
-                            _verificationState.value = VerificationState.Error("Probe details changed. Please verify again.")
+                            _verificationState.value = VerificationState.Error(
+                                UiText.Resource(R.string.probe_edit_details_changed)
+                            )
                         }
                     }
                 }
@@ -148,7 +152,7 @@ class ProbeEditViewModel @Inject constructor(
                 is ProbeCheckResult.Error -> {
                     _isOnline.value = false
                     lastVerifiedConnection = null
-                    _verificationState.value = VerificationState.Error(result.message)
+                    _verificationState.value = VerificationState.Error(UiText.Dynamic(result.message))
                 }
             }
             suppressVerificationReset = false
@@ -182,5 +186,5 @@ sealed class VerificationState {
         val didFallbackToHttp: Boolean,
         val warning: String?
     ) : VerificationState()
-    data class Error(val message: String) : VerificationState()
+    data class Error(val message: UiText) : VerificationState()
 }

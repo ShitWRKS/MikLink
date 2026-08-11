@@ -11,9 +11,10 @@ import com.app.miklink.core.domain.test.model.PingTargetOutcome
 import com.app.miklink.core.domain.test.model.TestSectionStatus
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import io.mockk.mockk
 
 class TestQualityPolicyTest {
-    private val policy = TestQualityPolicy()
+    private val policy = TestQualityPolicy(mockk(relaxed = true))
 
     @Test
     fun `link rate null blank or invalid fails when threshold active`() {

@@ -23,7 +23,7 @@
 
     <string name="settings_category_general">Generale</string>
     <string name="settings_language">Lingua</string>
-    <string name="settings_language_desc">Cambia lingua app</string>
+    <string name="settings_language_desc">Cambia la lingua dell’app</string>
 
     <string name="collapse">Comprimi</string>
     <string name="expand">Espandi</string>
@@ -55,7 +55,7 @@
     <!-- Status Messages (Repository) -->
     <string name="status_dhcp_configured">DHCP configurato e attivo</string>
     <string name="status_dhcp_lease_active">Lease DHCP acquisita</string>
-    <string name="status_dhcp_not_bound">DHCP non bound (verificare server DHCP)</string>
+    <string name="status_dhcp_not_bound">DHCP non assegnato (verifica il server DHCP)</string>
     <string name="status_static_configured">Indirizzo statico configurato</string>
     <string name="status_lease_active">Lease attiva</string>
     <string name="status_static_detected">Statico rilevato</string>
@@ -71,17 +71,18 @@
     <string name="dashboard_cta_ready">Tutto pronto. Avvia il test.</string>
     <string name="dashboard_cta_hint">Seleziona cliente, profilo e presa per abilitare il test.</string>
     <string name="dashboard_section_client">Cliente</string>
-    <string name="dashboard_select_client">Seleziona Cliente</string>
+    <string name="dashboard_select">Seleziona</string>
+    <string name="dashboard_select_client">Seleziona cliente</string>
     <string name="dashboard_click_to_select">Clicca per selezionare</string>
     <string name="dashboard_search_client">Cerca cliente...</string>
     <string name="dashboard_no_clients_found">Nessun cliente trovato</string>
     <string name="dashboard_section_profile">Profilo</string>
-    <string name="dashboard_select_profile">Seleziona Profilo</string>
+    <string name="dashboard_select_profile">Seleziona profilo</string>
     <string name="dashboard_no_profiles">Nessun profilo configurato</string>
     <string name="dashboard_section_socket">Socket ID</string>
     <string name="dashboard_socket_label">ID Presa</string>
     <string name="dashboard_socket_placeholder">Es. Ufficio 1, Sala Riunioni</string>
-    <string name="dashboard_setup_title">Procedura guidata</string>
+    <string name="dashboard_setup_title">Procedura Guidata</string>
     <string name="dashboard_step_required">Obbligatorio</string>
     <string name="dashboard_profile_tests_title">Test del profilo</string>
     <string name="dashboard_probe_title">Stato sonda</string>
@@ -100,26 +101,26 @@
     <!-- Settings -->
     <string name="settings_title">Impostazioni</string>
     <string name="settings_category_probe">Sonda MikroTik</string>
-    <string name="settings_configure_probe">Configura Sonda</string>
+    <string name="settings_configure_probe">Configura sonda</string>
     <string name="settings_configure_probe_desc">Gestisci la sonda di test</string>
-    <string name="settings_polling_interval">Intervallo Aggiornamento Sonda</string>
+    <string name="settings_polling_interval">Intervallo di aggiornamento della sonda</string>
     <string name="settings_polling_impact">Impatto su traffico rete e batteria</string>
-    <string name="settings_glow_intensity">Intensità Effetto Glow</string>
-    <string name="settings_glow_visibility">Visibilità sfondo colorato Dashboard</string>
-    <string name="settings_category_data">Gestione Dati</string>
-    <string name="settings_manage_profiles">Gestisci Profili</string>
+    <string name="settings_glow_intensity">Intensità dell’effetto luminoso</string>
+    <string name="settings_glow_visibility">Visibilità dello sfondo colorato della dashboard</string>
+    <string name="settings_category_data">Gestione dati</string>
+    <string name="settings_manage_profiles">Gestisci profili</string>
     <string name="settings_manage_profiles_desc">Aggiungi o rimuovi profili di test</string>
-    <string name="settings_manage_clients">Gestisci Clienti</string>
+    <string name="settings_manage_clients">Gestisci clienti</string>
     <string name="settings_manage_clients_desc">Gestisci anagrafica clienti</string>
-    <string name="settings_backup">Backup e Ripristino</string>
+    <string name="settings_backup">Backup e ripristino</string>
     <string name="settings_backup_desc">Esporta o ripristina la configurazione</string>
     <string name="backup_export">Esporta backup</string>
     <string name="backup_import">Ripristina da file</string>
     <string name="backup_status">Stato backup</string>
     <!-- Theme selection removed: app uses automatic system theme only (no UI settings) -->
     <string name="settings_category_pdf">Report PDF</string>
-    <string name="settings_pdf_preferences">Preferenze Rapporto PDF</string>
-    <string name="settings_pdf_preferences_desc">Personalizza titoli e opzioni di default</string>
+    <string name="settings_pdf_preferences">Preferenze report PDF</string>
+    <string name="settings_pdf_preferences_desc">Personalizza titoli e opzioni predefinite</string>
     <string name="pdf_settings_general_section_title">IMPOSTAZIONI GENERALI</string>
     <string name="pdf_settings_content_section_title">CONTENUTO &amp; DATI</string>
     <string name="pdf_settings_columns_section_title">COLONNE DA STAMPARE</string>
@@ -127,19 +128,20 @@
     <string name="pdf_col_date">Data/Ora</string>
     <string name="pdf_col_status">Stato</string>
     <string name="pdf_col_link_speed">Velocità Link</string>
-    <string name="pdf_col_neighbor">Vicino</string>
+    <string name="pdf_col_neighbor">Dispositivo rilevato</string>
     <string name="pdf_col_ping">Ping</string>
     <string name="pdf_col_tdr">TDR</string>
     <string name="pdf_col_speed_test">Speed Test</string>
-    <string name="pdf_settings_columns_section_description">Seleziona le colonne da includere di default.</string>
-    <string name="pdf_settings_include_empty_title">Includi Test Vuoti</string>
+    <string name="pdf_settings_columns_section_description">Seleziona le colonne da includere per impostazione predefinita.</string>
+    <string name="pdf_settings_include_empty_title">Includi test vuoti</string>
     <string name="pdf_settings_include_empty_description">Mostra anche test falliti o senza dati</string>
-    <string name="pdf_settings_hide_empty_columns_title">Nascondi Colonne Vuote</string>
-    <string name="pdf_settings_hide_empty_columns_description">Non stampare colonne senza dati (override)</string>
-    <string name="reset_to_defaults">Ripristina Default</string>
+    <string name="pdf_settings_hide_empty_columns_title">Nascondi colonne vuote</string>
+    <string name="pdf_settings_hide_empty_columns_description">Non stampare le colonne senza dati (sostituisce la preferenza)</string>
+    <string name="reset_to_defaults">Ripristina valori predefiniti</string>
     <string name="reset_pdf_confirm_message">Verranno ripristinati tutti i valori predefiniti delle impostazioni PDF. Continuare?</string>
     <string name="settings_id_numbering">Numerazione ID</string>
-    <string name="settings_id_strategy">Strategia Numerazione</string>
+    <string name="settings_id_strategy">Strategia di numerazione</string>
+    <string name="settings_id_strategy_desc">Incremento continuo o riutilizzo degli ID</string>
     <string name="settings_category_info">Informazioni</string>
     <string name="settings_version">Versione</string>
     <string name="settings_build">Build</string>
@@ -147,19 +149,19 @@
     <string name="settings_developer">Shitworks</string>
 
     <!-- History -->
-    <string name="history_title">Storico Test</string>
+    <string name="history_title">Cronologia test</string>
     <string name="history_search_placeholder">Cerca per presa, cliente...</string>
     <string name="history_filter_all">Tutti</string>
     <string name="history_filter_pass">Solo PASS</string>
     <string name="history_filter_fail">Solo FAIL</string>
-    <string name="history_no_reports">Nessun Report di Test</string>
-    <string name="history_start_test_hint">Start a test to see results here</string>
+    <string name="history_no_reports">Nessun report di test</string>
+    <string name="history_start_test_hint">Avvia un test per visualizzare qui i risultati</string>
     <string name="history_tips_title">Suggerimenti</string>
     <string name="history_tip_1">Vai alla Dashboard per avviare un nuovo test</string>
     <string name="history_tip_2">I report vengono salvati automaticamente</string>
     <string name="history_tip_3">Puoi esportarli in PDF per condividerli</string>
     <string name="history_btn_dashboard">Vai alla Dashboard</string>
-    <string name="history_delete_title">Elimina Report?</string>
+    <string name="history_delete_title">Eliminare il report?</string>
     <string name="history_delete_message">Questa azione non può essere annullata. Il report verrà eliminato permanentemente.</string>
     
     <string name="history_repeat_title">Ripetere il test?</string>
@@ -167,14 +169,14 @@
     <string name="history_repeat_socket">Presa: %1$s</string>
     <string name="history_repeat_action_q">Cosa vuoi fare?</string>
     <string name="history_repeat_replace_desc">Sostituisci: elimina il test precedente e crea uno nuovo</string>
-    <string name="history_repeat_new_desc">Nuovo Test: mantieni entrambi i test</string>
+    <string name="history_repeat_new_desc">Nuovo test: mantieni entrambi i test</string>
     <string name="history_repeat_warning">Assicurati di riposizionarti sulla stessa presa e verificare la connessione del cavo.</string>
     <string name="history_btn_replace">Sostituisci</string>
-    <string name="history_btn_new_test">Nuovo Test</string>
+    <string name="history_btn_new_test">Nuovo test</string>
     <string name="history_repeat_error">Impossibile ripetere il test: profilo o sonda non trovati</string>
 
-    <string name="history_exporting_client">Generazione PDF Client...</string>
-    <string name="history_exporting_single">Generazione PDF Singolo...</string>
+    <string name="history_exporting_client">Generazione del PDF del cliente…</string>
+    <string name="history_exporting_single">Generazione del singolo PDF…</string>
     <string name="history_export_success">PDF esportato con successo!</string>
     <string name="history_no_pdf_app">Nessuna app PDF trovata per visualizzare il file</string>
     <string name="history_no_pdf_viewer">Nessun visualizzatore PDF trovato</string>
@@ -186,8 +188,8 @@
     <string name="history_export_all">Esporta tutti</string>
     <string name="history_export_pdf">Esporta PDF</string>
     <string name="history_repeat_test">Ripeti test</string>
-    <string name="unknown_client">Cliente Sconosciuto</string>
-    <string name="unnamed_socket">Presa Senza Nome</string>
+    <string name="unknown_client">Cliente sconosciuto</string>
+    <string name="unnamed_socket">Presa senza nome</string>
 
     <!-- Log di esecuzione: sanitizzati, buffer limitato in memoria, nessuna persistenza (pre-prod). Esposti tramite `test_toggle_show_logs`/`test_toggle_hide_logs`. I log grezzi non sono mostrati. -->
     <string name="test_toggle_show_logs">Mostra log</string>
@@ -204,16 +206,16 @@
     <string name="report_detail_edit_save">Salva modifiche</string>
     <string name="report_detail_actions_title">Azioni</string>
     <string name="report_detail_actions_delete">Elimina</string>
-    <string name="report_detail_actions_repeat">Ripeti Test</string>
+    <string name="report_detail_actions_repeat">Ripeti test</string>
     <string name="report_detail_delete_title">Eliminare il report?</string>
     <string name="report_detail_delete_body">Questa azione rimuoverà definitivamente il report.</string>
     <string name="report_detail_delete_confirm">Elimina</string>
     <string name="report_detail_repeat_title">Ripetere il test?</string>
     <string name="report_detail_repeat_body">Ripetendo il test verranno persi i dati attuali.</string>
     <string name="report_detail_repeat_confirm">Ripeti</string>
-    <string name="report_detail_repeat_error">Impossibile avviare il test: profilo o client mancanti.</string>
-    <string name="report_detail_stat_ping_avg">Ping Medio</string>
-    <string name="report_detail_stat_loss">Loss</string>
+    <string name="report_detail_repeat_error">Impossibile avviare il test: profilo o cliente mancanti.</string>
+    <string name="report_detail_stat_ping_avg">Ping medio</string>
+    <string name="report_detail_stat_loss">Perdita</string>
     <string name="report_detail_stat_speed">Velocità</string>
     <string name="test_execution_title_running">Test in corso</string>
     <string name="test_execution_title_success">Test completato</string>
@@ -351,9 +353,51 @@
     <string name="log_result_error">[Result] Errore imprevisto: %1$s</string>
     <string name="test_timeout_error">Test interrotto: tempo massimo (%1$ds) superato</string>
     <string name="test_execution_save_error">Impossibile salvare il report. Riprova.</string>
+    <string name="test_execution_unknown_error">Si è verificato un errore sconosciuto.</string>
+    <string name="test_progress_completed_label">Completato</string>
+    <string name="test_progress_completed_message">Test completato</string>
+    <string name="test_progress_link_label">Stato link</string>
+    <string name="test_progress_link_message">Verifica dello stato link…</string>
+    <string name="test_progress_tdr_label">TDR</string>
+    <string name="test_progress_tdr_message">Test del cavo in corso…</string>
+    <string name="test_progress_network_label">Configurazione di rete</string>
+    <string name="test_progress_network_message">Configurazione della rete…</string>
+    <string name="test_progress_neighbors_label">LLDP/CDP</string>
+    <string name="test_progress_neighbors_message">Ricerca dei dispositivi di rete…</string>
+    <string name="test_progress_ping_label">Ping</string>
+    <string name="test_progress_ping_message">Test ping in corso…</string>
+    <string name="test_progress_speed_label">Test di velocità</string>
+    <string name="test_progress_speed_message">Test di velocità in corso…</string>
+
+    <!-- Messaggi della policy qualità. I valori tecnici sono forniti tramite placeholder. -->
+    <string name="quality_link_inactive">Link inattivo o sconosciuto</string>
+    <string name="quality_link_threshold_missing">Soglia link mancante</string>
+    <string name="quality_link_threshold_invalid">Soglia link non valida: %1$s</string>
+    <string name="quality_link_speed_missing">Velocità link mancante</string>
+    <string name="quality_link_speed_invalid">Velocità link non valida: %1$s</string>
+    <string name="quality_link_below_threshold">Velocità link %1$s inferiore alla soglia %2$s</string>
+    <string name="quality_tdr_critical">TDR ha rilevato uno stato critico: %1$s</string>
+    <string name="quality_ping_no_results">Nessun risultato ping disponibile</string>
+    <string name="quality_gateway_unresolved">Impossibile risolvere il gateway DHCP</string>
+    <string name="quality_metric_missing">%1$s mancante</string>
+    <string name="quality_metric_invalid">%1$s non valido: %2$s</string>
+    <string name="quality_ping_loss_label">Perdita ping %1$s</string>
+    <string name="quality_ping_avg_rtt_label">RTT medio ping %1$s</string>
+    <string name="quality_ping_max_rtt_label">RTT massimo ping %1$s</string>
+    <string name="quality_ping_loss_above">Perdita ping %1$s del %2$s%% superiore alla soglia del %3$s%%</string>
+    <string name="quality_ping_avg_rtt_above">RTT medio ping %1$s di %2$s ms superiore alla soglia di %3$s ms</string>
+    <string name="quality_ping_max_rtt_above">RTT massimo ping %1$s di %2$s ms superiore alla soglia di %3$s ms</string>
+    <string name="quality_ping_error">Errore ping %1$s: %2$s</string>
+    <string name="quality_speed_ping_label">Ping del test di velocità</string>
+    <string name="quality_speed_jitter_label">Jitter del test di velocità</string>
+    <string name="quality_speed_loss_label">Perdita del test di velocità</string>
+    <string name="quality_download_label">Download</string>
+    <string name="quality_upload_label">Upload</string>
+    <string name="quality_metric_above_threshold">%1$s %2$s%3$s superiore alla soglia di %4$s%3$s</string>
+    <string name="quality_metric_below_threshold">%1$s %2$s%3$s inferiore alla soglia di %4$s%3$s</string>
 
     <!-- Detail formatter labels -->
-    <string name="detail_label_mode">Modalita</string>
+    <string name="detail_label_mode">Modalità</string>
     <string name="detail_label_interface">Interfaccia</string>
     <string name="detail_label_address">Indirizzo</string>
     <string name="detail_label_gateway">Gateway</string>
@@ -362,22 +406,22 @@
     <string name="detail_label_error">Errore</string>
     <string name="detail_label_reason">Motivo</string>
     <string name="detail_label_status">Stato</string>
-    <string name="detail_label_speed">Velocita</string>
+    <string name="detail_label_speed">Velocità</string>
     <string name="link_status_connected">Connesso</string>
     <string name="link_status_disconnected">Disconnesso</string>
     <string name="link_status_unknown">Sconosciuto</string>
     <string name="link_status_na">N/A</string>
-    <string name="detail_label_neighbors">Vicini</string>
-    <string name="detail_label_identity">Identita</string>
+    <string name="detail_label_neighbors">Dispositivi rilevati</string>
+    <string name="detail_label_identity">Identità</string>
     <string name="detail_label_protocol">Protocollo</string>
     <string name="detail_label_targets">Target</string>
     <string name="detail_label_target_number">Target %1$s</string>
     <string name="detail_label_target_generic">Target</string>
-    <string name="detail_label_packet_loss">Packet Loss</string>
-    <string name="detail_label_min_rtt">Min RTT</string>
-    <string name="detail_label_avg_rtt">Avg RTT</string>
-    <string name="detail_label_max_rtt">Max RTT</string>
-    <string name="test_details_ping_loss_chip">LOSS %1$s</string>
+    <string name="detail_label_packet_loss">Perdita pacchetti</string>
+    <string name="detail_label_min_rtt">RTT minimo</string>
+    <string name="detail_label_avg_rtt">RTT medio</string>
+    <string name="detail_label_max_rtt">RTT massimo</string>
+    <string name="test_details_ping_loss_chip">PERDITA %1$s</string>
     <string name="test_details_ping_gateway_target">DHCP_GATEWAY → %1$s</string>
     <string name="test_details_ping_sent">Pacchetti inviati</string>
     <string name="test_details_ping_samples_header">Dettaglio ping individuali:</string>
@@ -403,13 +447,13 @@
     <string name="test_details_tdr_status_label">Stato</string>
     <string name="test_details_tdr_distance_label">Distanza</string>
     <string name="test_details_tdr_pair_label">Coppia</string>
-    <string name="test_details_neighbors_empty">Nessun neighbor rilevato</string>
+    <string name="test_details_neighbors_empty">Nessun dispositivo di rete rilevato</string>
     <string name="test_details_ping_empty">Nessun ping disponibile</string>
-    <string name="test_details_speed_empty">Nessun speed test disponibile</string>
-    <string name="test_details_speed_tcp_download">TCP Download</string>
-    <string name="test_details_speed_tcp_upload">TCP Upload</string>
-    <string name="test_details_speed_udp_download">UDP Download</string>
-    <string name="test_details_speed_udp_upload">UDP Upload</string>
+    <string name="test_details_speed_empty">Nessun test di velocità disponibile</string>
+    <string name="test_details_speed_tcp_download">Download TCP</string>
+    <string name="test_details_speed_tcp_upload">Upload TCP</string>
+    <string name="test_details_speed_udp_download">Download UDP</string>
+    <string name="test_details_speed_udp_upload">Upload UDP</string>
     <string name="test_details_speed_ping">Ping</string>
     <string name="test_details_speed_jitter">Jitter</string>
     <string name="test_details_speed_loss">Perdita</string>
@@ -419,122 +463,148 @@
     <string name="hide_password">Nascondi password</string>
 
     <!-- Common UI -->
-    <string name="common_search">Search</string>
-    <string name="common_filter">Filter</string>
-    <string name="common_clear">Clear</string>
+    <string name="common_search">Cerca</string>
+    <string name="common_filter">Filtra</string>
+    <string name="common_clear">Cancella</string>
 
     <!-- Client Edit -->
-    <string name="client_edit_title_edit">Edit Client</string>
-    <string name="client_edit_title_new">New Client</string>
-    <string name="client_edit_save">Save Client</string>
-    <string name="client_edit_company_label">Company Name *</string>
-    <string name="client_edit_location_label">Location</string>
+    <string name="client_edit_title_edit">Modifica cliente</string>
+    <string name="client_edit_title_new">Nuovo cliente</string>
+    <string name="client_edit_save">Salva cliente</string>
+    <string name="client_edit_load_error">Impossibile caricare il cliente.</string>
+    <string name="client_edit_save_error">Impossibile salvare il cliente.</string>
+    <string name="client_edit_section_info">Informazioni cliente</string>
+    <string name="client_edit_company_label">Ragione sociale *</string>
+    <string name="client_edit_location_label">Sede</string>
     <string name="client_edit_location_placeholder">e.g., Sede, Filiale Roma</string>
-    <string name="client_edit_notes_placeholder">Additional information...</string>
-    <string name="client_edit_section_network">Network</string>
-    <string name="client_edit_not_configured">Not configured</string>
-    <string name="client_edit_network_preview_static">Static: %1$s</string>
-    <string name="client_edit_static_ip_label">Static IP (CIDR)</string>
+    <string name="client_edit_notes_placeholder">Informazioni aggiuntive…</string>
+    <string name="client_edit_section_network">Rete</string>
+    <string name="client_edit_not_configured">Non configurato</string>
+    <string name="client_edit_network_preview_static">Statico: %1$s</string>
+    <string name="client_edit_static_ip_label">IP statico (CIDR)</string>
     <string name="client_edit_static_ip_placeholder">es. 192.168.1.20/24</string>
     <string name="client_edit_static_ip_support">Formato: IP/Subnet</string>
     <string name="client_edit_gateway_placeholder">es. 192.168.1.1</string>
-    <string name="client_edit_min_link_rate">Min Link Rate</string>
-    <string name="client_edit_prefix_label">Prefix</string>
+    <string name="client_edit_min_link_rate">Velocità link minima</string>
+    <string name="client_edit_prefix_label">Prefisso</string>
     <string name="client_edit_prefix_placeholder">SW, NET, PR</string>
-    <string name="client_edit_separator_label">Separator</string>
+    <string name="client_edit_separator_label">Separatore</string>
     <string name="client_edit_separator_placeholder">-</string>
-    <string name="client_edit_separator_support">Character between parts</string>
-    <string name="client_edit_padding_label">Number Padding</string>
-    <string name="client_edit_suffix_label">Suffix</string>
+    <string name="client_edit_separator_support">Carattere tra le parti</string>
+    <string name="client_edit_padding_label">Cifre del numero</string>
+    <string name="client_edit_suffix_label">Suffisso</string>
     <string name="client_edit_suffix_placeholder">A, B, -1</string>
-    <string name="client_edit_section_socket">Socket Configuration</string>
-    <string name="client_edit_section_speed">Speed Test</string>
-    <string name="client_edit_server_address_label">Server Address</string>
+    <string name="client_edit_section_socket">Configurazione presa</string>
+    <string name="client_edit_section_speed">Test di velocità</string>
+    <string name="client_edit_server_address_label">Indirizzo server</string>
     <string name="client_edit_server_address_placeholder">192.168.1.1</string>
-    <string name="client_edit_server_address_support">IP or hostname of MikroTik server</string>
-    <string name="client_edit_username_label">Username</string>
+    <string name="client_edit_server_address_support">IP o nome host del server MikroTik</string>
+    <string name="client_edit_username_label">Nome utente</string>
     <string name="client_edit_username_placeholder">admin</string>
-    <string name="client_edit_username_support">Optional (default: admin)</string>
+    <string name="client_edit_username_support">Facoltativo (predefinito: admin)</string>
     <string name="client_edit_password_label">Password</string>
-    <string name="client_edit_password_support">Optional</string>
+    <string name="client_edit_password_support">Facoltativa</string>
 
     <!-- Client List -->
     <string name="client_list_new_client">NUOVO CLIENTE</string>
+    <string name="client_list_load_error">Impossibile caricare i clienti.</string>
+    <string name="client_list_no_location">Nessuna sede specificata</string>
+    <plurals name="client_list_count">
+        <item quantity="one">%1$d cliente</item>
+        <item quantity="other">%1$d clienti</item>
+    </plurals>
 
     <!-- History -->
     <string name="history_tip_icon">💡</string>
     <string name="history_tip_bullet">•  </string>
-    <string name="history_total_tests">%1$d tests</string>
+    <string name="history_total_tests">%1$d test</string>
 
     <!-- Components -->
-    <string name="list_item_selected">Selected</string>
+    <string name="list_item_selected">Selezionato</string>
 
     <!-- Probe Edit -->
-    <string name="probe_edit_ip_label">IP Address</string>
-    <string name="probe_edit_https_title">Use HTTPS (SSL)</string>
-    <string name="probe_edit_https_description">Ignores certificate errors</string>
-    <string name="probe_edit_board_label">Board: %1$s</string>
-    <string name="probe_edit_board_unknown">Unknown</string>
-    <string name="probe_edit_test_interface_label">Test Interface</string>
-    <string name="probe_edit_test_interface_manual">Test Interface (Manual)</string>
-    <string name="probe_edit_verify_button">Verify Probe</string>
+    <string name="probe_edit_ip_label">Indirizzo IP</string>
+    <string name="probe_edit_https_title">Usa HTTPS (SSL)</string>
+    <string name="probe_edit_https_description">Ignora gli errori del certificato</string>
+    <string name="probe_edit_board_label">Scheda: %1$s</string>
+    <string name="probe_edit_board_unknown">Sconosciuta</string>
+    <string name="probe_edit_test_interface_label">Interfaccia di test</string>
+    <string name="probe_edit_test_interface_manual">Interfaccia di test (manuale)</string>
+    <string name="probe_edit_verify_button">Verifica sonda</string>
 
     <!-- Test Profile Edit -->
-    <string name="profile_edit_name_label">Profile Name</string>
-    <string name="profile_edit_description_label">Description</string>
-    <string name="profile_edit_run_tdr_title">Run TDR (Cable-Test)</string>
-    <string name="profile_edit_run_tdr_support">Requires compatible probe</string>
-    <string name="profile_edit_run_link_title">Run Link Status Test</string>
-    <string name="profile_edit_run_lldp_title">Run LLDP/CDP Neighbor Test</string>
-    <string name="profile_edit_run_ping_title">Run Ping Test</string>
-    <string name="profile_edit_run_speed_title">Run Speed Test</string>
+    <string name="profile_edit_name_label">Nome profilo</string>
+    <string name="profile_edit_description_label">Descrizione</string>
+    <string name="profile_edit_run_tdr_title">Esegui TDR (test cavo)</string>
+    <string name="profile_edit_run_tdr_support">Richiede una sonda compatibile</string>
+    <string name="profile_edit_run_link_title">Esegui test dello stato link</string>
+    <string name="profile_edit_run_lldp_title">Esegui rilevamento LLDP/CDP</string>
+    <string name="profile_edit_run_ping_title">Esegui test ping</string>
+    <string name="profile_edit_run_speed_title">Esegui test di velocità</string>
     <string name="profile_edit_run_speed_support">Richiede configurazione server nel client</string>
-    <string name="profile_edit_ping_header">Ping Configuration</string>
-    <string name="profile_edit_ping_header_description">Configure ping targets (max 3)</string>
-    <string name="profile_edit_quick_fill">Quick Fill</string>
+    <string name="profile_edit_ping_header">Configurazione ping</string>
+    <string name="profile_edit_ping_header_description">Configura i target ping (massimo 3)</string>
+    <string name="profile_edit_quick_fill">Compilazione rapida</string>
     <string name="profile_edit_quick_fill_gateway">Gateway</string>
     <string name="profile_edit_quick_fill_google">Google</string>
     <string name="profile_edit_quick_fill_cloudflare">Cloudflare</string>
-    <string name="profile_edit_custom_targets">Custom Targets</string>
+    <string name="profile_edit_custom_targets">Target personalizzati</string>
     <string name="profile_edit_target_label">Target %1$d</string>
-    <string name="profile_edit_target_placeholder">IP, hostname, or DHCP_GATEWAY</string>
-    <string name="profile_edit_invalid_target_full">Invalid IP/hostname. No http://, https://, or www.</string>
-    <string name="profile_edit_invalid_target_short">Invalid IP/hostname</string>
-    <string name="profile_edit_remove_target">Remove Target %1$d</string>
-    <string name="profile_edit_add_target">Add Target %1$d</string>
-    <string name="profile_edit_ping_count_label">Ping Count (1-20)</string>
+    <string name="profile_edit_target_placeholder">IP, nome host o DHCP_GATEWAY</string>
+    <string name="profile_edit_invalid_target_full">IP o nome host non valido. Non usare http://, https:// o www.</string>
+    <string name="profile_edit_invalid_target_short">IP o nome host non valido</string>
+    <string name="profile_edit_remove_target">Rimuovi target %1$d</string>
+    <string name="profile_edit_add_target">Aggiungi target %1$d</string>
+    <string name="profile_edit_ping_count_label">Numero di ping (1-20)</string>
     <string name="profile_edit_ping_count_support">Numero di ping per ogni target (default: 4)</string>
-    <string name="profile_edit_thresholds_title">Soglie qualita test</string>
+    <string name="profile_edit_thresholds_title">Soglie di qualità del test</string>
     <string name="profile_edit_thresholds_description">Configura i criteri di pass/fail per ogni sezione. I valori vuoti usano le predefinite.</string>
     <string name="profile_edit_link_section_title">Link</string>
-    <string name="profile_edit_link_min_rate_label">Velocita minima (es. 1G, 100M)</string>
+    <string name="profile_edit_link_min_rate_label">Velocità minima (es. 1G, 100M)</string>
     <string name="profile_edit_ping_local_section_title">Ping locale (gateway/rete interna)</string>
     <string name="profile_edit_ping_external_section_title">Ping esterno</string>
-    <string name="profile_edit_gateway_policy_label">Fail se non risolto</string>
-    <string name="profile_edit_speed_section_title">Speed Test</string>
+    <string name="profile_edit_gateway_policy_label">Considera fallito se non risolto</string>
+    <string name="profile_edit_speed_section_title">Test di velocità</string>
+    <string name="profile_edit_threshold_loss">Perdita</string>
+    <string name="profile_edit_threshold_avg_rtt">RTT medio</string>
+    <string name="profile_edit_threshold_max_rtt">RTT massimo</string>
+    <string name="profile_edit_threshold_ping">Ping</string>
+    <string name="profile_edit_threshold_jitter">Jitter</string>
+    <string name="profile_edit_threshold_download">Download</string>
+    <string name="profile_edit_threshold_upload">Upload</string>
+    <string name="profile_edit_threshold_invalid_number">Inserisci un numero finito maggiore o uguale a 0.</string>
+    <string name="profile_edit_threshold_invalid_percentage">Inserisci una percentuale da 0 a 100.</string>
+    <string name="profile_edit_threshold_invalid_link_rate">Inserisci una velocità link valida, ad esempio 100M o 1G.</string>
 
     <!-- Test Profile List -->
     <string name="profile_list_new_profile">NUOVO PROFILO</string>
-    <string name="profile_list_create_profile">CREA PROFILO</string>
+    <plurals name="profile_list_count">
+        <item quantity="one">%1$d profilo</item>
+        <item quantity="other">%1$d profili</item>
+    </plurals>
+    <plurals name="profile_list_active_tests">
+        <item quantity="one">%1$d test attivo</item>
+        <item quantity="other">%1$d test attivi</item>
+    </plurals>
 
     <!-- Settings -->
     <string name="settings_language_en">English 🇬🇧</string>
     <string name="settings_language_it">Italiano 🇮🇹</string>
-    <string name="settings_id_strategy_dialog_title">Strategia Numerazione ID</string>
+    <string name="settings_id_strategy_dialog_title">Strategia di numerazione ID</string>
 
     <!-- Discovery Protocols -->
-    <string name="settings_discovery_protocols_section">Protocolli di Discovery</string>
-    <string name="settings_discovery_protocols_title">Filtro Protocolli</string>
-    <string name="settings_discovery_protocols_desc">Seleziona i protocolli da includere nella scoperta dei neighbor</string>
-    <string name="settings_discovery_protocols_dialog_title">Protocolli di Discovery</string>
+    <string name="settings_discovery_protocols_section">Protocolli di rilevamento</string>
+    <string name="settings_discovery_protocols_title">Filtro protocolli</string>
+    <string name="settings_discovery_protocols_desc">Seleziona i protocolli da includere nel rilevamento dei dispositivi di rete</string>
+    <string name="settings_discovery_protocols_dialog_title">Protocolli di rilevamento</string>
     <string name="settings_discovery_protocols_all">Tutti</string>
     <string name="neighbor_protocol_cdp">CDP (Cisco)</string>
     <string name="neighbor_protocol_lldp">LLDP (IEEE 802.1AB)</string>
     <string name="neighbor_protocol_mndp">MNDP (MikroTik)</string>
 
     <!-- Splash -->
-    <string name="splash_logo_description">MikLink Logo</string>
-    <string name="splash_shitworks_logo_description">Shitworks Logo</string>
+    <string name="splash_logo_description">Logo MikLink</string>
+    <string name="splash_shitworks_logo_description">Logo Shitworks</string>
     <string name="client_edit_static_cidr_required">Il CIDR statico è obbligatorio</string>
     <string name="client_edit_static_cidr_invalid">CIDR statico non valido</string>
     <string name="client_edit_static_gateway_required">Il gateway statico è obbligatorio</string>
@@ -551,6 +621,12 @@
     <string name="profile_list_empty_body">Crea il tuo primo profilo per configurare i test da eseguire.</string>
     <string name="splash_featured_by">Presentato da</string>
     <string name="splash_shitworks_name">SHITWORKS</string>
-    <string name="splash_shitworks_tagline">perché la merda funziona sempre</string>
     <string name="test_execution_invalid_navigation">Parametri di navigazione non validi.</string>
+    <string name="probe_edit_details_changed">I dati della sonda sono cambiati. Ripeti la verifica.</string>
+    <string name="report_detail_unknown_client">Cliente sconosciuto</string>
+    <string name="backup_restore_success">Configurazione ripristinata.</string>
+    <string name="backup_restore_error">Impossibile ripristinare la configurazione.</string>
+    <string name="backup_empty_file_error">Il file selezionato è vuoto.</string>
+    <string name="backup_save_success">Backup salvato.</string>
+    <string name="backup_save_error">Impossibile salvare il backup.</string>
 </resources>
