@@ -42,7 +42,20 @@ object AgentUiTags {
         const val RUN_NEIGHBORS = "profile_run_neighbors"
         const val RUN_PING = "profile_run_ping"
         const val RUN_SPEED = "profile_run_speed"
-        const val PING_CONFIG = "profile_ping_config"
+        const val TAB_GENERAL = "profile_tab_general"
+        const val TAB_LINK = "profile_tab_link"
+        const val TAB_PING = "profile_tab_ping"
+        const val TAB_SPEED = "profile_tab_speed"
+        const val LINK_MIN_RATE = "profile_link_min_rate"
+        const val LINK_MIN_RATE_SLIDER = "profile_link_min_rate_slider"
+        const val PING_LOCAL_MAX_AVG_RTT = "profile_ping_local_max_avg_rtt"
+        const val PING_LOCAL_MAX_AVG_RTT_SLIDER = "profile_ping_local_max_avg_rtt_slider"
+        const val PING_LOCAL_MAX_RTT_SLIDER = "profile_ping_local_max_rtt_slider"
+        const val PING_EXTERNAL_MAX_AVG_RTT_SLIDER = "profile_ping_external_max_avg_rtt_slider"
+        const val PING_EXTERNAL_MAX_RTT_SLIDER = "profile_ping_external_max_rtt_slider"
+        const val SPEED_MIN_DOWNLOAD = "profile_speed_min_download"
+        const val SPEED_MIN_DOWNLOAD_SLIDER = "profile_speed_min_download_slider"
+        const val SPEED_MIN_UPLOAD_SLIDER = "profile_speed_min_upload_slider"
         const val PING_TARGET_1 = "profile_ping_target_1"
         const val PING_COUNT = "profile_ping_count"
         const val SAVE = "profile_save_button"
@@ -105,7 +118,14 @@ object AgentUiTags {
         Client.STATIC_GATEWAY, Client.SAVE, Client.DELETE_PREFIX, Client.DELETE_CONFIRM,
         Profile.LIST, Profile.ADD, Profile.EDIT, Profile.NAME, Profile.DESCRIPTION,
         Profile.RUN_TDR, Profile.RUN_LINK, Profile.RUN_NEIGHBORS, Profile.RUN_PING,
-        Profile.RUN_SPEED, Profile.PING_CONFIG, Profile.PING_TARGET_1, Profile.PING_COUNT,
+        Profile.RUN_SPEED, Profile.TAB_GENERAL, Profile.TAB_LINK,
+        Profile.TAB_PING, Profile.TAB_SPEED, Profile.LINK_MIN_RATE,
+        Profile.LINK_MIN_RATE_SLIDER, Profile.PING_LOCAL_MAX_AVG_RTT,
+        Profile.PING_LOCAL_MAX_AVG_RTT_SLIDER, Profile.PING_LOCAL_MAX_RTT_SLIDER,
+        Profile.PING_EXTERNAL_MAX_AVG_RTT_SLIDER, Profile.PING_EXTERNAL_MAX_RTT_SLIDER,
+        Profile.SPEED_MIN_DOWNLOAD, Profile.SPEED_MIN_DOWNLOAD_SLIDER,
+        Profile.SPEED_MIN_UPLOAD_SLIDER,
+        Profile.PING_TARGET_1, Profile.PING_COUNT,
         Profile.SAVE, Profile.DELETE_PREFIX, Profile.DELETE_CONFIRM,
         History.SCREEN, History.SEARCH, Report.SCREEN, Report.EXPORT_PDF, Report.PDF_DIALOG,
         Report.PDF_OPTIONS,

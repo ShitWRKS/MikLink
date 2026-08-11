@@ -1,32 +1,43 @@
 package com.app.miklink.ui.profile
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
+import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.*
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.animation.animateContentSize
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.app.miklink.R
-import com.app.miklink.core.domain.validation.StrictLinkRateParser
-import com.app.miklink.ui.theme.MikLinkThemeTokens
 import com.app.miklink.ui.testing.AgentUiTags
-import com.app.miklink.utils.NetworkValidator
-
-private const val DHCP_GATEWAY_TOKEN = "DHCP_GATEWAY"
+import com.app.miklink.ui.theme.MikLinkThemeTokens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,7 +46,6 @@ fun TestProfileEditScreen(
     viewModel: TestProfileViewModel = hiltViewModel()
 ) {
     val semantic = MikLinkThemeTokens.semantic
-
     val isSaved by viewModel.isSaved.collectAsStateWithLifecycle()
     LaunchedEffect(isSaved) {
         if (isSaved) navController.popBackStack()
@@ -43,39 +53,31 @@ fun TestProfileEditScreen(
 
     val profileName by viewModel.profileName.collectAsStateWithLifecycle()
     val profileDescription by viewModel.profileDescription.collectAsStateWithLifecycle()
-
     val runTdr by viewModel.runTdr.collectAsStateWithLifecycle()
     val runLinkStatus by viewModel.runLinkStatus.collectAsStateWithLifecycle()
     val runLldp by viewModel.runLldp.collectAsStateWithLifecycle()
     val runPing by viewModel.runPing.collectAsStateWithLifecycle()
     val runSpeedTest by viewModel.runSpeedTest.collectAsStateWithLifecycle()
-
     val pingTarget1 by viewModel.pingTarget1.collectAsStateWithLifecycle()
     val pingTarget2 by viewModel.pingTarget2.collectAsStateWithLifecycle()
     val pingTarget3 by viewModel.pingTarget3.collectAsStateWithLifecycle()
     val pingCount by viewModel.pingCount.collectAsStateWithLifecycle()
     val availableSlots by viewModel.availableSlots.collectAsStateWithLifecycle()
-
     val linkMinRate by viewModel.linkMinRate.collectAsStateWithLifecycle()
-
     val pingLocalMaxLoss by viewModel.pingLocalMaxLoss.collectAsStateWithLifecycle()
     val pingLocalMaxAvgRtt by viewModel.pingLocalMaxAvgRtt.collectAsStateWithLifecycle()
     val pingLocalMaxRtt by viewModel.pingLocalMaxRtt.collectAsStateWithLifecycle()
-
     val pingExternalMaxLoss by viewModel.pingExternalMaxLoss.collectAsStateWithLifecycle()
     val pingExternalMaxAvgRtt by viewModel.pingExternalMaxAvgRtt.collectAsStateWithLifecycle()
     val pingExternalMaxRtt by viewModel.pingExternalMaxRtt.collectAsStateWithLifecycle()
     val gatewayPolicyFail by viewModel.gatewayPolicyFail.collectAsStateWithLifecycle()
-
     val speedMaxPing by viewModel.speedMaxPing.collectAsStateWithLifecycle()
     val speedMaxJitter by viewModel.speedMaxJitter.collectAsStateWithLifecycle()
     val speedMaxLoss by viewModel.speedMaxLoss.collectAsStateWithLifecycle()
     val speedMinDownload by viewModel.speedMinDownload.collectAsStateWithLifecycle()
     val speedMinUpload by viewModel.speedMinUpload.collectAsStateWithLifecycle()
 
-    var pingConfigExpanded by rememberSaveable { mutableStateOf(false) }
-    var thresholdsExpanded by rememberSaveable { mutableStateOf(true) } // default: come prima (aperto)
-
+    var selectedTab by rememberSaveable { mutableIntStateOf(GENERAL_TAB) }
     var showTarget2 by rememberSaveable { mutableStateOf(pingTarget2.isNotBlank()) }
     var showTarget3 by rememberSaveable { mutableStateOf(pingTarget3.isNotBlank()) }
 
@@ -85,707 +87,192 @@ fun TestProfileEditScreen(
     }
 
     val showGatewayPolicy = remember(pingTarget1, pingTarget2, pingTarget3) {
-        listOf(pingTarget1, pingTarget2, pingTarget3).any { it.equals(DHCP_GATEWAY_TOKEN, ignoreCase = true) }
+        listOf(pingTarget1, pingTarget2, pingTarget3).any {
+            it.equals(DHCP_GATEWAY_TOKEN, ignoreCase = true)
+        }
     }
-
-    val linkRateOptions = remember {
-        listOf("10M", "100M", "1G", "2.5G", "5G", "10G", "25G", "40G", "50G", "100G")
-    }
-
+    val tabLabels = listOf(
+        stringResource(R.string.profile_edit_tab_general),
+        stringResource(R.string.profile_edit_tab_link),
+        stringResource(R.string.profile_edit_tab_ping),
+        stringResource(R.string.profile_edit_tab_speed)
+    )
+    val tabTags = listOf(
+        AgentUiTags.Profile.TAB_GENERAL,
+        AgentUiTags.Profile.TAB_LINK,
+        AgentUiTags.Profile.TAB_PING,
+        AgentUiTags.Profile.TAB_SPEED
+    )
     val titleRes = if (viewModel.isEditing) R.string.title_edit_profile else R.string.title_add_profile
+    val hasEnabledTest = viewModel.hasAtLeastOneTestEnabled()
 
     Scaffold(
         modifier = Modifier.testTag(AgentUiTags.Profile.EDIT),
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(titleRes)) },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back)
+            Column {
+                TopAppBar(
+                    title = { Text(stringResource(titleRes)) },
+                    navigationIcon = {
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.back)
+                            )
+                        }
+                    }
+                )
+                PrimaryTabRow(selectedTabIndex = selectedTab) {
+                    tabLabels.forEachIndexed { index, label ->
+                        Tab(
+                            selected = selectedTab == index,
+                            onClick = { selectedTab = index },
+                            modifier = Modifier.testTag(tabTags[index]),
+                            text = {
+                                Text(
+                                    text = label,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
                         )
                     }
                 }
-            )
+            }
         },
         bottomBar = {
-            Button(
-                onClick = viewModel::saveProfile,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-                    .navigationBarsPadding()
-                    .testTag(AgentUiTags.Profile.SAVE),
-                enabled = viewModel.isValidForSave()
-            ) {
-                Text(stringResource(R.string.save))
+            Surface(shadowElevation = 4.dp) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .navigationBarsPadding()
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    if (!hasEnabledTest) {
+                        Text(
+                            text = stringResource(R.string.profile_edit_error_no_test_enabled),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = semantic.failure,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                    }
+                    Button(
+                        onClick = viewModel::saveProfile,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag(AgentUiTags.Profile.SAVE),
+                        enabled = viewModel.isValidForSave()
+                    ) {
+                        Text(stringResource(R.string.save))
+                    }
+                }
             }
         }
     ) { padding ->
-        LazyColumn(
+        Box(
             modifier = Modifier
+                .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 16.dp),
-            contentPadding = PaddingValues(bottom = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            item {
-                OutlinedTextField(
-                    value = profileName,
-                    onValueChange = { viewModel.profileName.value = it },
-                    label = { Text(stringResource(R.string.profile_edit_name_label)) },
-                    modifier = Modifier.fillMaxWidth().testTag(AgentUiTags.Profile.NAME),
-                    singleLine = true,
-                    isError = profileName.isBlank()
+            when (selectedTab) {
+                GENERAL_TAB -> TestProfileGeneralTab(
+                    profileName = profileName,
+                    onProfileNameChange = { viewModel.profileName.value = it },
+                    profileDescription = profileDescription,
+                    onProfileDescriptionChange = { viewModel.profileDescription.value = it }
                 )
-                OutlinedTextField(
-                    value = profileDescription,
-                    onValueChange = { viewModel.profileDescription.value = it },
-                    label = { Text(stringResource(R.string.profile_edit_description_label)) },
-                    modifier = Modifier.fillMaxWidth().testTag(AgentUiTags.Profile.DESCRIPTION)
+
+                LINK_TAB -> TestProfileLinkTab(
+                    runLinkStatus = runLinkStatus,
+                    onRunLinkStatusChange = { viewModel.runLinkStatus.value = it },
+                    runTdr = runTdr,
+                    onRunTdrChange = { viewModel.runTdr.value = it },
+                    runLldp = runLldp,
+                    onRunLldpChange = { viewModel.runLldp.value = it },
+                    linkMinRate = linkMinRate,
+                    effectiveLinkMinRate = viewModel.effectiveLinkMinRateForPreview(),
+                    onLinkMinRateChange = { viewModel.linkMinRate.value = it },
+                    linkMinRateIsError = viewModel.isLinkMinRateInvalid()
                 )
-            }
 
-            item { HorizontalDivider() }
-
-            item {
-                SwitchListItem(
-                    checked = runTdr,
-                    onCheckedChange = { viewModel.runTdr.value = it },
-                    headlineText = stringResource(R.string.profile_edit_run_tdr_title),
-                    supportingText = stringResource(R.string.profile_edit_run_tdr_support),
-                    modifier = Modifier.testTag(AgentUiTags.Profile.RUN_TDR)
+                PING_TAB -> TestProfilePingTab(
+                    runPing = runPing,
+                    onRunPingChange = { viewModel.runPing.value = it },
+                    pingTarget1 = pingTarget1,
+                    onPingTarget1Change = { viewModel.pingTarget1.value = it },
+                    pingTarget1IsError = viewModel.isPingTargetInvalid(pingTarget1),
+                    pingTarget2 = pingTarget2,
+                    onPingTarget2Change = { viewModel.pingTarget2.value = it },
+                    pingTarget2IsError = viewModel.isPingTargetInvalid(pingTarget2),
+                    pingTarget3 = pingTarget3,
+                    onPingTarget3Change = { viewModel.pingTarget3.value = it },
+                    pingTarget3IsError = viewModel.isPingTargetInvalid(pingTarget3),
+                    showTarget2 = showTarget2,
+                    onShowTarget2Change = { showTarget2 = it },
+                    showTarget3 = showTarget3,
+                    onShowTarget3Change = { showTarget3 = it },
+                    availableSlots = availableSlots,
+                    onQuickFill = viewModel::fillLastAvailableTarget,
+                    pingCount = pingCount,
+                    onPingCountChange = { viewModel.pingCount.value = it },
+                    pingCountIsError = viewModel.isPingCountInvalid(),
+                    showGatewayPolicy = showGatewayPolicy,
+                    gatewayPolicyFail = gatewayPolicyFail,
+                    onGatewayPolicyFailChange = { viewModel.gatewayPolicyFail.value = it },
+                    pingLocalMaxLoss = pingLocalMaxLoss,
+                    onPingLocalMaxLossChange = { viewModel.pingLocalMaxLoss.value = it },
+                    pingLocalMaxLossIsError = viewModel.isPercentageThresholdInvalid(pingLocalMaxLoss),
+                    pingLocalMaxAvgRtt = pingLocalMaxAvgRtt,
+                    onPingLocalMaxAvgRttChange = { viewModel.pingLocalMaxAvgRtt.value = it },
+                    pingLocalMaxAvgRttIsError = viewModel.isNonNegativeThresholdInvalid(pingLocalMaxAvgRtt),
+                    pingLocalMaxRtt = pingLocalMaxRtt,
+                    onPingLocalMaxRttChange = { viewModel.pingLocalMaxRtt.value = it },
+                    pingLocalMaxRttIsError = viewModel.isNonNegativeThresholdInvalid(pingLocalMaxRtt),
+                    pingExternalMaxLoss = pingExternalMaxLoss,
+                    onPingExternalMaxLossChange = { viewModel.pingExternalMaxLoss.value = it },
+                    pingExternalMaxLossIsError = viewModel.isPercentageThresholdInvalid(pingExternalMaxLoss),
+                    pingExternalMaxAvgRtt = pingExternalMaxAvgRtt,
+                    onPingExternalMaxAvgRttChange = { viewModel.pingExternalMaxAvgRtt.value = it },
+                    pingExternalMaxAvgRttIsError = viewModel.isNonNegativeThresholdInvalid(pingExternalMaxAvgRtt),
+                    pingExternalMaxRtt = pingExternalMaxRtt,
+                    onPingExternalMaxRttChange = { viewModel.pingExternalMaxRtt.value = it },
+                    pingExternalMaxRttIsError = viewModel.isNonNegativeThresholdInvalid(pingExternalMaxRtt),
+                    effectiveLocalMaxAvgRtt = viewModel.effectivePingLocalMaxAvgRttForPreview(),
+                    effectiveLocalMaxRtt = viewModel.effectivePingLocalMaxRttForPreview(),
+                    effectiveExternalMaxAvgRtt = viewModel.effectivePingExternalMaxAvgRttForPreview(),
+                    effectiveExternalMaxRtt = viewModel.effectivePingExternalMaxRttForPreview(),
+                    failureColor = semantic.failure
                 )
-                SwitchListItem(
-                    checked = runLinkStatus,
-                    onCheckedChange = { viewModel.runLinkStatus.value = it },
-                    headlineText = stringResource(R.string.profile_edit_run_link_title),
-                    modifier = Modifier.testTag(AgentUiTags.Profile.RUN_LINK)
+
+                SPEED_TAB -> TestProfileSpeedTab(
+                    runSpeedTest = runSpeedTest,
+                    onRunSpeedTestChange = { viewModel.runSpeedTest.value = it },
+                    speedMaxPing = speedMaxPing,
+                    onSpeedMaxPingChange = { viewModel.speedMaxPing.value = it },
+                    speedMaxPingIsError = viewModel.isNonNegativeThresholdInvalid(speedMaxPing),
+                    speedMaxJitter = speedMaxJitter,
+                    onSpeedMaxJitterChange = { viewModel.speedMaxJitter.value = it },
+                    speedMaxJitterIsError = viewModel.isNonNegativeThresholdInvalid(speedMaxJitter),
+                    speedMaxLoss = speedMaxLoss,
+                    onSpeedMaxLossChange = { viewModel.speedMaxLoss.value = it },
+                    speedMaxLossIsError = viewModel.isPercentageThresholdInvalid(speedMaxLoss),
+                    speedMinDownload = speedMinDownload,
+                    onSpeedMinDownloadChange = { viewModel.speedMinDownload.value = it },
+                    speedMinDownloadIsError = viewModel.isSpeedThroughputInvalid(speedMinDownload),
+                    speedMinUpload = speedMinUpload,
+                    onSpeedMinUploadChange = { viewModel.speedMinUpload.value = it },
+                    speedMinUploadIsError = viewModel.isSpeedThroughputInvalid(speedMinUpload),
+                    effectiveMaxPing = viewModel.effectiveSpeedMaxPingForPreview(),
+                    effectiveMaxJitter = viewModel.effectiveSpeedMaxJitterForPreview(),
+                    effectiveMaxLoss = viewModel.effectiveSpeedMaxLossForPreview(),
+                    effectiveMinDownload = viewModel.effectiveSpeedMinDownloadForPreview(),
+                    effectiveMinUpload = viewModel.effectiveSpeedMinUploadForPreview()
                 )
-                SwitchListItem(
-                    checked = runLldp,
-                    onCheckedChange = { viewModel.runLldp.value = it },
-                    headlineText = stringResource(R.string.profile_edit_run_lldp_title),
-                    modifier = Modifier.testTag(AgentUiTags.Profile.RUN_NEIGHBORS)
-                )
-                SwitchListItem(
-                    checked = runPing,
-                    onCheckedChange = { viewModel.runPing.value = it },
-                    headlineText = stringResource(R.string.profile_edit_run_ping_title),
-                    modifier = Modifier.testTag(AgentUiTags.Profile.RUN_PING)
-                )
-                SwitchListItem(
-                    checked = runSpeedTest,
-                    onCheckedChange = { viewModel.runSpeedTest.value = it },
-                    headlineText = stringResource(R.string.profile_edit_run_speed_title),
-                    supportingText = stringResource(R.string.profile_edit_run_speed_support),
-                    modifier = Modifier.testTag(AgentUiTags.Profile.RUN_SPEED)
-                )
-                if (!viewModel.hasAtLeastOneTestEnabled()) {
-                    Text(
-                        text = stringResource(R.string.profile_edit_error_no_test_enabled),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = semantic.failure,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                    )
-                }
-            }
-
-            if (runPing) {
-                item {
-                    CollapsibleCard(
-                        title = stringResource(R.string.profile_edit_ping_header),
-                        subtitle = stringResource(R.string.profile_edit_ping_header_description),
-                        expanded = pingConfigExpanded,
-                        onExpandedChange = { pingConfigExpanded = it },
-                        modifier = Modifier.testTag(AgentUiTags.Profile.PING_CONFIG)
-                    ) {
-                        Text(
-                            stringResource(R.string.profile_edit_quick_fill),
-                            style = MaterialTheme.typography.labelLarge
-                        )
-
-                        val allSlotsFilled = availableSlots == 0
-                        val quickBtnPadding = PaddingValues(vertical = 8.dp, horizontal = 4.dp)
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            QuickFillButton(
-                                icon = Icons.Default.Router,
-                                label = stringResource(R.string.profile_edit_quick_fill_gateway),
-                                enabled = !allSlotsFilled,
-                                contentPadding = quickBtnPadding,
-                                modifier = Modifier.weight(1f),
-                                onClick = { viewModel.fillLastAvailableTarget(DHCP_GATEWAY_TOKEN) }
-                            )
-                            QuickFillButton(
-                                icon = Icons.Default.Cloud,
-                                label = stringResource(R.string.profile_edit_quick_fill_google),
-                                enabled = !allSlotsFilled,
-                                contentPadding = quickBtnPadding,
-                                modifier = Modifier.weight(1f),
-                                onClick = { viewModel.fillLastAvailableTarget("8.8.8.8") }
-                            )
-                            QuickFillButton(
-                                icon = Icons.Default.Storage,
-                                label = stringResource(R.string.profile_edit_quick_fill_cloudflare),
-                                enabled = !allSlotsFilled,
-                                contentPadding = quickBtnPadding,
-                                modifier = Modifier.weight(1f),
-                                onClick = { viewModel.fillLastAvailableTarget("1.1.1.1") }
-                            )
-                        }
-
-                        HorizontalDivider()
-
-                        Text(
-                            stringResource(R.string.profile_edit_custom_targets),
-                            style = MaterialTheme.typography.labelLarge
-                        )
-
-                        PingTargetField(
-                            index = 1,
-                            value = pingTarget1,
-                            onValueChange = { viewModel.pingTarget1.value = it },
-                            invalidText = stringResource(R.string.profile_edit_invalid_target_full),
-                            failureColor = semantic.failure,
-                            modifier = Modifier.fillMaxWidth().testTag(AgentUiTags.Profile.PING_TARGET_1)
-                        )
-
-                        if (showTarget2) {
-                            OptionalPingTargetRow(
-                                index = 2,
-                                value = pingTarget2,
-                                onValueChange = { viewModel.pingTarget2.value = it },
-                                invalidText = stringResource(R.string.profile_edit_invalid_target_short),
-                                failureColor = semantic.failure,
-                                onRemove = {
-                                    viewModel.pingTarget2.value = ""
-                                    showTarget2 = false
-                                }
-                            )
-                        }
-
-                        if (showTarget3) {
-                            OptionalPingTargetRow(
-                                index = 3,
-                                value = pingTarget3,
-                                onValueChange = { viewModel.pingTarget3.value = it },
-                                invalidText = stringResource(R.string.profile_edit_invalid_target_short),
-                                failureColor = semantic.failure,
-                                onRemove = {
-                                    viewModel.pingTarget3.value = ""
-                                    showTarget3 = false
-                                }
-                            )
-                        }
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            if (!showTarget2) {
-                                OutlinedButton(
-                                    onClick = { showTarget2 = true },
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                                    Spacer(Modifier.width(4.dp))
-                                    Text(stringResource(R.string.profile_edit_add_target, 2))
-                                }
-                            }
-                            if (!showTarget3 && showTarget2) {
-                                OutlinedButton(
-                                    onClick = { showTarget3 = true },
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                                    Spacer(Modifier.width(4.dp))
-                                    Text(stringResource(R.string.profile_edit_add_target, 3))
-                                }
-                            }
-                        }
-
-                        HorizontalDivider()
-
-                        OutlinedTextField(
-                            value = pingCount,
-                            onValueChange = { viewModel.pingCount.value = it },
-                            label = { Text(stringResource(R.string.profile_edit_ping_count_label)) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .testTag(AgentUiTags.Profile.PING_COUNT),
-                            singleLine = true,
-                            supportingText = {
-                                if (viewModel.isPingCountInvalid()) {
-                                    Text(stringResource(R.string.profile_edit_ping_count_invalid), color = semantic.failure)
-                                } else {
-                                    Text(stringResource(R.string.profile_edit_ping_count_support))
-                                }
-                            },
-                            isError = viewModel.isPingCountInvalid()
-                        )
-                    }
-                }
-            }
-
-            item {
-                CollapsibleCard(
-                    title = stringResource(R.string.profile_edit_thresholds_title),
-                    subtitle = stringResource(R.string.profile_edit_thresholds_description),
-                    expanded = thresholdsExpanded,
-                    onExpandedChange = { thresholdsExpanded = it }
-                ) {
-                    // Link
-                    Text(stringResource(R.string.profile_edit_link_section_title), style = MaterialTheme.typography.labelLarge)
-                    LinkRatePicker(
-                        label = stringResource(R.string.profile_edit_link_min_rate_label),
-                        value = linkMinRate,
-                        options = linkRateOptions,
-                        onSelect = { viewModel.linkMinRate.value = it },
-                        onCustomValue = { viewModel.linkMinRate.value = it },
-                        isError = viewModel.isLinkMinRateInvalid()
-                    )
-
-                    HorizontalDivider()
-
-                    // Ping locale
-                    Text(stringResource(R.string.profile_edit_ping_local_section_title), style = MaterialTheme.typography.labelLarge)
-                    ThresholdRow(
-                        leftLabel = stringResource(R.string.profile_edit_threshold_loss),
-                        leftUnit = "%",
-                        leftValue = pingLocalMaxLoss,
-                        onLeftChange = { viewModel.pingLocalMaxLoss.value = it },
-                        leftIsError = viewModel.isPercentageThresholdInvalid(pingLocalMaxLoss),
-                        rightLabel = stringResource(R.string.profile_edit_threshold_avg_rtt),
-                        rightUnit = "ms",
-                        rightValue = pingLocalMaxAvgRtt,
-                        onRightChange = { viewModel.pingLocalMaxAvgRtt.value = it },
-                        rightIsError = viewModel.isNonNegativeThresholdInvalid(pingLocalMaxAvgRtt)
-                    )
-                    ThresholdRow(
-                        leftLabel = stringResource(R.string.profile_edit_threshold_max_rtt),
-                        leftUnit = "ms",
-                        leftValue = pingLocalMaxRtt,
-                        onLeftChange = { viewModel.pingLocalMaxRtt.value = it },
-                        leftIsError = viewModel.isNonNegativeThresholdInvalid(pingLocalMaxRtt),
-                        rightLabel = "",
-                        rightUnit = "",
-                        rightValue = "",
-                        onRightChange = {},
-                        rightEnabled = false
-                    )
-
-                    HorizontalDivider()
-
-                    // Ping esterno
-                    Text(stringResource(R.string.profile_edit_ping_external_section_title), style = MaterialTheme.typography.labelLarge)
-                    ThresholdRow(
-                        leftLabel = stringResource(R.string.profile_edit_threshold_loss),
-                        leftUnit = "%",
-                        leftValue = pingExternalMaxLoss,
-                        onLeftChange = { viewModel.pingExternalMaxLoss.value = it },
-                        leftIsError = viewModel.isPercentageThresholdInvalid(pingExternalMaxLoss),
-                        rightLabel = stringResource(R.string.profile_edit_threshold_avg_rtt),
-                        rightUnit = "ms",
-                        rightValue = pingExternalMaxAvgRtt,
-                        onRightChange = { viewModel.pingExternalMaxAvgRtt.value = it },
-                        rightIsError = viewModel.isNonNegativeThresholdInvalid(pingExternalMaxAvgRtt)
-                    )
-                    ThresholdRow(
-                        leftLabel = stringResource(R.string.profile_edit_threshold_max_rtt),
-                        leftUnit = "ms",
-                        leftValue = pingExternalMaxRtt,
-                        onLeftChange = { viewModel.pingExternalMaxRtt.value = it },
-                        leftIsError = viewModel.isNonNegativeThresholdInvalid(pingExternalMaxRtt),
-                        rightLabel = "",
-                        rightUnit = "",
-                        rightValue = "",
-                        onRightChange = {},
-                        rightEnabled = false
-                    )
-
-                    if (showGatewayPolicy) {
-                        GatewayPolicyItem(
-                            checked = gatewayPolicyFail,
-                            onCheckedChange = { viewModel.gatewayPolicyFail.value = it }
-                        )
-                    }
-
-                    HorizontalDivider()
-
-                    // Speed test
-                    Text(stringResource(R.string.profile_edit_speed_section_title), style = MaterialTheme.typography.labelLarge)
-                    ThresholdRow(
-                        leftLabel = stringResource(R.string.profile_edit_threshold_ping),
-                        leftUnit = "ms",
-                        leftValue = speedMaxPing,
-                        onLeftChange = { viewModel.speedMaxPing.value = it },
-                        leftIsError = viewModel.isNonNegativeThresholdInvalid(speedMaxPing),
-                        rightLabel = stringResource(R.string.profile_edit_threshold_jitter),
-                        rightUnit = "ms",
-                        rightValue = speedMaxJitter,
-                        onRightChange = { viewModel.speedMaxJitter.value = it },
-                        rightIsError = viewModel.isNonNegativeThresholdInvalid(speedMaxJitter)
-                    )
-                    ThresholdRow(
-                        leftLabel = stringResource(R.string.profile_edit_threshold_loss),
-                        leftUnit = "%",
-                        leftValue = speedMaxLoss,
-                        onLeftChange = { viewModel.speedMaxLoss.value = it },
-                        leftIsError = viewModel.isPercentageThresholdInvalid(speedMaxLoss),
-                        rightLabel = stringResource(R.string.profile_edit_threshold_download),
-                        rightUnit = "Mbps",
-                        rightValue = speedMinDownload,
-                        onRightChange = { viewModel.speedMinDownload.value = it },
-                        rightIsError = viewModel.isNonNegativeThresholdInvalid(speedMinDownload)
-                    )
-                    ThresholdRow(
-                        leftLabel = stringResource(R.string.profile_edit_threshold_upload),
-                        leftUnit = "Mbps",
-                        leftValue = speedMinUpload,
-                        onLeftChange = { viewModel.speedMinUpload.value = it },
-                        leftIsError = viewModel.isNonNegativeThresholdInvalid(speedMinUpload),
-                        rightLabel = "",
-                        rightUnit = "",
-                        rightValue = "",
-                        onRightChange = {},
-                        rightEnabled = false
-                    )
-                }
             }
         }
     }
 }
 
-@Composable
-private fun CollapsibleCard(
-    title: String,
-    subtitle: String,
-    expanded: Boolean,
-    onExpandedChange: (Boolean) -> Unit,
-    modifier: Modifier = Modifier,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .animateContentSize(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-    ) {
-        ListItem(
-            headlineContent = { Text(title, style = MaterialTheme.typography.titleMedium) },
-            supportingContent = { Text(subtitle, style = MaterialTheme.typography.bodySmall) },
-            trailingContent = {
-                IconButton(
-                    onClick = { onExpandedChange(!expanded) },
-                    modifier = modifier
-                ) {
-                    Icon(
-                        imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                        contentDescription = null
-                    )
-                }
-            },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        if (expanded) {
-            Column(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                content = content
-            )
-        }
-    }
-}
-
-@Composable
-private fun SwitchListItem(
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-    headlineText: String,
-    supportingText: String? = null,
-    modifier: Modifier = Modifier
-) {
-    ListItem(
-        headlineContent = { Text(headlineText) },
-        supportingContent = supportingText?.let { { Text(it) } },
-        trailingContent = {
-            Switch(
-                checked = checked,
-                onCheckedChange = onCheckedChange,
-                modifier = modifier
-            )
-        },
-        modifier = Modifier.fillMaxWidth()
-    )
-}
-
-@Composable
-private fun QuickFillButton(
-    icon: ImageVector,
-    label: String,
-    enabled: Boolean,
-    contentPadding: PaddingValues,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
-) {
-    ElevatedButton(
-        onClick = onClick,
-        enabled = enabled,
-        modifier = modifier,
-        contentPadding = contentPadding
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp))
-            Text(label, style = MaterialTheme.typography.labelSmall)
-        }
-    }
-}
-
-@Composable
-private fun PingTargetField(
-    index: Int,
-    value: String,
-    onValueChange: (String) -> Unit,
-    invalidText: String,
-    failureColor: Color,
-    modifier: Modifier = Modifier
-) {
-    val isInvalid = value.isNotBlank() && !NetworkValidator.isValidTarget(value)
-
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        label = { Text(stringResource(R.string.profile_edit_target_label, index)) },
-        placeholder = { Text(stringResource(R.string.profile_edit_target_placeholder)) },
-        modifier = modifier,
-        singleLine = true,
-        isError = isInvalid,
-        supportingText = {
-            if (isInvalid) Text(invalidText, color = failureColor)
-        }
-    )
-}
-
-@Composable
-private fun OptionalPingTargetRow(
-    index: Int,
-    value: String,
-    onValueChange: (String) -> Unit,
-    invalidText: String,
-    failureColor: Color,
-    onRemove: () -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.Top
-    ) {
-        PingTargetField(
-            index = index,
-            value = value,
-            onValueChange = onValueChange,
-            invalidText = invalidText,
-            failureColor = failureColor,
-            modifier = Modifier.weight(1f)
-        )
-        IconButton(
-            onClick = onRemove,
-            modifier = Modifier.padding(top = 8.dp)
-        ) {
-            Icon(Icons.Default.Remove, contentDescription = stringResource(R.string.profile_edit_remove_target, index))
-        }
-    }
-}
-
-@Composable
-private fun ThresholdRow(
-    leftLabel: String,
-    leftUnit: String,
-    leftValue: String,
-    onLeftChange: (String) -> Unit,
-    rightLabel: String,
-    rightUnit: String,
-    rightValue: String,
-    onRightChange: (String) -> Unit,
-    leftIsError: Boolean = false,
-    rightIsError: Boolean = false,
-    rightEnabled: Boolean = true
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        UnitField(
-            label = leftLabel,
-            unit = leftUnit,
-            value = leftValue,
-            onValueChange = onLeftChange,
-            modifier = Modifier.weight(1f),
-            enabled = true,
-            isError = leftIsError,
-            isPercentage = leftUnit == "%"
-        )
-
-        if (rightLabel.isNotBlank()) {
-            UnitField(
-                label = rightLabel,
-                unit = rightUnit,
-                value = rightValue,
-                onValueChange = onRightChange,
-                modifier = Modifier.weight(1f),
-                enabled = rightEnabled,
-                isError = rightIsError,
-                isPercentage = rightUnit == "%"
-            )
-        } else {
-            Spacer(modifier = Modifier.weight(1f))
-        }
-    }
-}
-
-@Composable
-private fun UnitField(
-    label: String,
-    unit: String,
-    value: String,
-    onValueChange: (String) -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-    isError: Boolean = false,
-    isPercentage: Boolean = false
-) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        label = { Text(label) },
-        modifier = modifier,
-        singleLine = true,
-        enabled = enabled,
-        isError = isError,
-        supportingText = if (isError) {
-            {
-                Text(
-                    stringResource(
-                        if (isPercentage) R.string.profile_edit_threshold_invalid_percentage
-                        else R.string.profile_edit_threshold_invalid_number
-                    )
-                )
-            }
-        } else null,
-        suffix = {
-            if (unit.isNotBlank()) Text(unit)
-        }
-    )
-}
-
-@Composable
-private fun GatewayPolicyItem(
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
-) {
-    ListItem(
-        headlineContent = { Text(stringResource(R.string.profile_edit_gateway_dhcp)) },
-        supportingContent = { Text(stringResource(R.string.profile_edit_gateway_policy_label)) }, // "Fail se non risolto"
-        trailingContent = { Switch(checked = checked, onCheckedChange = onCheckedChange) },
-        modifier = Modifier.fillMaxWidth()
-    )
-}
-
-@Composable
-private fun LinkRatePicker(
-    label: String,
-    value: String,
-    options: List<String>,
-    onSelect: (String) -> Unit,
-    onCustomValue: (String) -> Unit,
-    isError: Boolean
-) {
-    var expanded by rememberSaveable { mutableStateOf(false) }
-    var showCustomDialog by rememberSaveable { mutableStateOf(false) }
-    var customValue by rememberSaveable(value) { mutableStateOf(value) }
-
-    Box(modifier = Modifier.fillMaxWidth()) {
-        OutlinedTextField(
-            value = value,
-            onValueChange = {},
-            readOnly = true,
-            label = { Text(label) },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            isError = isError,
-            supportingText = if (isError) {
-                { Text(stringResource(R.string.profile_edit_threshold_invalid_link_rate)) }
-            } else null,
-            trailingIcon = {
-                IconButton(onClick = { expanded = true }) {
-                    Icon(Icons.Default.ArrowDropDown, contentDescription = null)
-                }
-            }
-        )
-
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
-            options.forEach { opt ->
-                DropdownMenuItem(
-                    text = { Text(opt) },
-                    onClick = {
-                        onSelect(opt)
-                        expanded = false
-                    }
-                )
-            }
-
-            HorizontalDivider()
-
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.profile_edit_custom)) },
-                onClick = {
-                    expanded = false
-                    customValue = value
-                    showCustomDialog = true
-                }
-            )
-        }
-    }
-
-    if (showCustomDialog) {
-        AlertDialog(
-            onDismissRequest = { showCustomDialog = false },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        onCustomValue(customValue)
-                        showCustomDialog = false
-                    },
-                    enabled = StrictLinkRateParser.isValidOptional(customValue)
-                ) { Text(stringResource(R.string.save)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showCustomDialog = false }) { Text(stringResource(android.R.string.cancel)) }
-            },
-            title = { Text(label) },
-            text = {
-                OutlinedTextField(
-                    value = customValue,
-                    onValueChange = { customValue = it },
-                    singleLine = true,
-                    label = { Text(label) },
-                    modifier = Modifier.fillMaxWidth(),
-                    isError = !StrictLinkRateParser.isValidOptional(customValue),
-                    supportingText = if (!StrictLinkRateParser.isValidOptional(customValue)) {
-                        { Text(stringResource(R.string.profile_edit_threshold_invalid_link_rate)) }
-                    } else null
-                )
-            }
-        )
-    }
-}
+private const val GENERAL_TAB = 0
+private const val LINK_TAB = 1
+private const val PING_TAB = 2
+private const val SPEED_TAB = 3

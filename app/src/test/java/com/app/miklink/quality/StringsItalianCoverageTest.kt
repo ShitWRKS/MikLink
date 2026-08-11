@@ -23,8 +23,10 @@ class StringsItalianCoverageTest {
         "client_edit_separator_placeholder", "client_edit_suffix_placeholder", "client_edit_server_address_placeholder",
         "client_edit_username_placeholder", "client_edit_password_label", "history_tip_icon", "history_tip_bullet",
         "profile_edit_quick_fill_gateway", "profile_edit_quick_fill_google", "profile_edit_quick_fill_cloudflare",
-        "profile_edit_target_label", "profile_edit_link_section_title", "profile_edit_threshold_ping",
-        "profile_edit_threshold_jitter", "settings_language_en", "neighbor_protocol_cdp", "neighbor_protocol_lldp",
+        "profile_edit_target_label", "profile_edit_threshold_ping",
+        "profile_edit_threshold_jitter", "profile_edit_tab_link", "profile_edit_tab_ping",
+        "profile_edit_tab_speed", "profile_edit_tdr_section_title", "profile_edit_link_scale_range",
+        "profile_edit_metric_value", "settings_language_en", "neighbor_protocol_cdp", "neighbor_protocol_lldp",
         "neighbor_protocol_mndp", "splash_shitworks_name"
     )
 

@@ -82,10 +82,10 @@
     <string name="dashboard_section_socket">Socket ID</string>
     <string name="dashboard_socket_label">Socket ID</string>
     <string name="dashboard_socket_placeholder">E.g. Office 1, Meeting Room</string>
-    <string name="dashboard_setup_title">Setup wizard</string>
+    <string name="dashboard_setup_title">Setup Wizard</string>
     <string name="dashboard_step_required">Required</string>
-    <string name="dashboard_profile_tests_title">Profile tests</string>
-    <string name="dashboard_probe_title">Probe status</string>
+    <string name="dashboard_profile_tests_title">Profile Tests</string>
+    <string name="dashboard_probe_title">Probe Status</string>
     <string name="dashboard_probe_missing">No probe configured yet</string>
     <string name="dashboard_probe_status_label">Status</string>
     <string name="dashboard_probe_online">Online</string>
@@ -215,7 +215,7 @@
     <string name="test_toggle_show_logs">Show logs</string>
     <string name="test_toggle_hide_logs">Hide logs</string>
     <string name="test_logs_empty">No logs</string>
-    <string name="test_logs_title">Execution logs</string>
+    <string name="test_logs_title">Execution Logs</string>
     <string name="report_detail_network_title">Network Information</string>
     <string name="report_detail_tests_title">Test Results</string>
 
@@ -233,7 +233,7 @@
     <string name="test_execution_repeat_title">Repeat test?</string>
     <string name="test_execution_repeat_body">Repeating will discard the current run. Proceed?</string>
     <string name="test_execution_action_repeat">Repeat</string>
-    <string name="test_execution_summary_title">Test summary</string>
+    <string name="test_execution_summary_title">Test Summary</string>
     <string name="test_execution_summary_body">All sections are rendered with the unified typed contract (live and history).</string>
     <string name="test_execution_hero_running_subtitle">Live checks are running. Stay on this screen.</string>
     <string name="test_execution_hero_pass_subtitle">All sections completed. Review details below.</string>
@@ -541,6 +541,10 @@
     <string name="probe_edit_verify_button">Verify Probe</string>
 
     <!-- Test Profile Edit -->
+    <string name="profile_edit_tab_general">General</string>
+    <string name="profile_edit_tab_link">Link</string>
+    <string name="profile_edit_tab_ping">Ping</string>
+    <string name="profile_edit_tab_speed">Speed test</string>
     <string name="profile_edit_name_label">Profile Name</string>
     <string name="profile_edit_description_label">Description</string>
     <string name="profile_edit_run_tdr_title">Run TDR (Cable-Test)</string>
@@ -550,13 +554,32 @@
     <string name="profile_edit_run_ping_title">Run Ping Test</string>
     <string name="profile_edit_run_speed_title">Run Speed Test</string>
     <string name="profile_edit_run_speed_support">Requires server configuration on the client</string>
+    <string name="profile_edit_link_status_section_title">Link Status</string>
+    <string name="profile_edit_tdr_section_title">TDR</string>
+    <string name="profile_edit_lldp_section_title">LLDP / Neighbor Discovery</string>
+    <string name="profile_edit_threshold_preview_title">Threshold Preview</string>
+    <string name="profile_edit_preview_illustrative">Illustrative values only — not test results.</string>
+    <string name="profile_edit_preview_unavailable">Preview unavailable for the current invalid value.</string>
+    <string name="profile_edit_link_pass_rule">PASS when negotiated speed ≥ %1$s</string>
+    <string name="profile_edit_link_effective_rate">Effective minimum: %1$s</string>
+    <string name="profile_edit_link_custom_outside_scale">The custom value is outside the preset scale and remains unchanged.</string>
+    <string name="profile_edit_link_scale_range">%1$s — %2$s</string>
+    <string name="profile_edit_ping_thresholds_support">Packet loss is evaluated separately from the RTT preview.</string>
+    <string name="profile_edit_preview_max_avg_rtt">Maximum average RTT: %1$s ms</string>
+    <string name="profile_edit_preview_max_rtt">Maximum RTT: %1$s ms</string>
+    <string name="profile_edit_speed_throughput_preview_title">Minimum Throughput Comparison</string>
+    <string name="profile_edit_download_minimum">Minimum download</string>
+    <string name="profile_edit_upload_minimum">Minimum upload</string>
+    <string name="profile_edit_speed_slider_range">Slider range: 0 Mbps — 100G</string>
+    <string name="profile_edit_speed_quality_limits_title">Separate Quality Limits</string>
+    <string name="profile_edit_metric_value">%1$s: %2$s %3$s</string>
     <string name="profile_edit_ping_header">Ping Configuration</string>
     <string name="profile_edit_ping_header_description">Configure ping targets (max 3)</string>
-    <string name="profile_edit_quick_fill">Quick Fill</string>
+    <string name="profile_edit_quick_fill_title">Quick Fill</string>
     <string name="profile_edit_quick_fill_gateway">Gateway</string>
     <string name="profile_edit_quick_fill_google">Google</string>
     <string name="profile_edit_quick_fill_cloudflare">Cloudflare</string>
-    <string name="profile_edit_custom_targets">Custom Targets</string>
+    <string name="profile_edit_custom_targets_title">Custom Targets</string>
     <string name="profile_edit_target_label">Target %1$d</string>
     <string name="profile_edit_target_placeholder">IP, hostname, or DHCP_GATEWAY</string>
     <string name="profile_edit_invalid_target_full">Invalid IP/hostname. No http://, https://, or www.</string>
@@ -567,12 +590,9 @@
     <string name="profile_edit_ping_count_support">Ping count per target (default: 4)</string>
     <string name="profile_edit_ping_count_invalid">Enter a value between 1 and 20.</string>
     <string name="profile_edit_error_no_test_enabled">Enable at least one test.</string>
-    <string name="profile_edit_thresholds_title">Test Quality Thresholds</string>
-    <string name="profile_edit_thresholds_description">Configure pass/fail criteria for each section. Empty values use defaults.</string>
-    <string name="profile_edit_link_section_title">Link</string>
     <string name="profile_edit_link_min_rate_label">Minimum speed (e.g. 1G, 100M)</string>
-    <string name="profile_edit_ping_local_section_title">Local ping (gateway/internal network)</string>
-    <string name="profile_edit_ping_external_section_title">External ping</string>
+    <string name="profile_edit_ping_local_section_title">Local Ping (Gateway/Internal Network)</string>
+    <string name="profile_edit_ping_external_section_title">External Ping</string>
     <string name="profile_edit_gateway_policy_label">Fail if unresolved</string>
     <string name="profile_edit_speed_section_title">Speed Test</string>
     <string name="profile_edit_threshold_loss">Loss</string>
@@ -580,9 +600,8 @@
     <string name="profile_edit_threshold_max_rtt">Max RTT</string>
     <string name="profile_edit_threshold_ping">Ping</string>
     <string name="profile_edit_threshold_jitter">Jitter</string>
-    <string name="profile_edit_threshold_download">Down</string>
-    <string name="profile_edit_threshold_upload">Up</string>
     <string name="profile_edit_threshold_invalid_number">Enter a finite number greater than or equal to 0.</string>
+    <string name="profile_edit_threshold_invalid_throughput">Enter a value from 0 to 100,000 Mbps (100G).</string>
     <string name="profile_edit_threshold_invalid_percentage">Enter a percentage from 0 to 100.</string>
     <string name="profile_edit_threshold_invalid_link_rate">Enter a valid link rate, such as 100M or 1G.</string>
 
@@ -616,12 +635,12 @@
     <string name="splash_logo_description">MikLink Logo</string>
     <string name="splash_shitworks_logo_description">Shitworks Logo</string>
     <string name="client_edit_preview">Preview</string>
-    <string name="client_list_empty_title">No clients</string>
+    <string name="client_list_empty_title">No Clients</string>
     <string name="client_list_empty_body">Add your first client to get started.</string>
     <string name="client_list_empty_search">No results found for "%1$s"</string>
     <string name="profile_edit_gateway_dhcp">DHCP gateway</string>
     <string name="profile_edit_custom">Custom…</string>
-    <string name="profile_list_empty_title">No test profiles</string>
+    <string name="profile_list_empty_title">No Test Profiles</string>
     <string name="profile_list_empty_body">Create your first test profile to configure the tests to run.</string>
     <string name="splash_featured_by">Featured by</string>
     <string name="splash_shitworks_name">SHITWORKS</string>

@@ -128,6 +128,21 @@ class TestProfileViewModelTest {
     }
 
     @Test
+    fun `speed throughput accepts 100G boundary and rejects larger values`() {
+        val viewModel = createValidViewModel()
+
+        listOf("0", "99999.99", "100000").forEach { valid ->
+            viewModel.speedMinDownload.value = valid
+            viewModel.speedMinUpload.value = valid
+            assertTrue("Expected $valid Mbps to be valid", viewModel.isValidForSave())
+        }
+        listOf("100000.01", "100001").forEach { invalid ->
+            viewModel.speedMinDownload.value = invalid
+            assertFalse("Expected $invalid Mbps to be invalid", viewModel.isValidForSave())
+        }
+    }
+
+    @Test
     fun `custom link rate must match the policy format`() {
         val viewModel = createValidViewModel()
 
@@ -136,6 +151,34 @@ class TestProfileViewModelTest {
 
         viewModel.linkMinRate.value = "2.5G"
         assertTrue(viewModel.isValidForSave())
+    }
+
+    @Test
+    fun `preview helpers use owned defaults for blank fields without mutating input`() {
+        val viewModel = createValidViewModel()
+        viewModel.pingLocalMaxAvgRtt.value = ""
+        viewModel.speedMinDownload.value = ""
+
+        assertEquals(
+            TestThresholds.defaults().pingLocal.maxAvgRttMs,
+            viewModel.effectivePingLocalMaxAvgRttForPreview()
+        )
+        assertEquals(
+            TestThresholds.defaults().speed.minDownloadMbps,
+            viewModel.effectiveSpeedMinDownloadForPreview()
+        )
+        assertEquals("", viewModel.pingLocalMaxAvgRtt.value)
+        assertEquals("", viewModel.speedMinDownload.value)
+    }
+
+    @Test
+    fun `preview helpers omit invalid values instead of inventing fallbacks`() {
+        val viewModel = createValidViewModel()
+        viewModel.pingExternalMaxRtt.value = "invalid"
+        viewModel.speedMaxLoss.value = "101"
+
+        assertEquals(null, viewModel.effectivePingExternalMaxRttForPreview())
+        assertEquals(null, viewModel.effectiveSpeedMaxLossForPreview())
     }
 
     private fun createValidViewModel(saveUseCase: SaveTestProfileUseCase = FakeSaveTestProfileUseCase()): TestProfileViewModel =

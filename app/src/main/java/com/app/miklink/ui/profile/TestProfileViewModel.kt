@@ -174,8 +174,41 @@ class TestProfileViewModel @Inject constructor(
     fun isNonNegativeThresholdInvalid(value: String): Boolean =
         !TestThresholdsValidator.isValidNonNegativeInput(value)
 
+    fun isSpeedThroughputInvalid(value: String): Boolean =
+        !TestThresholdsValidator.isValidSpeedThroughputInput(value)
+
     fun isLinkMinRateInvalid(): Boolean =
         !StrictLinkRateParser.isValidOptional(linkMinRate.value)
+
+    fun effectiveLinkMinRateForPreview(): String? =
+        linkMinRate.value.ifBlank { defaultThresholds.linkMinRate }
+
+    fun effectivePingLocalMaxAvgRttForPreview(): Double? =
+        effectiveNonNegativeForPreview(pingLocalMaxAvgRtt.value, defaultThresholds.pingLocal.maxAvgRttMs)
+
+    fun effectivePingLocalMaxRttForPreview(): Double? =
+        effectiveNonNegativeForPreview(pingLocalMaxRtt.value, defaultThresholds.pingLocal.maxRttMs)
+
+    fun effectivePingExternalMaxAvgRttForPreview(): Double? =
+        effectiveNonNegativeForPreview(pingExternalMaxAvgRtt.value, defaultThresholds.pingExternal.maxAvgRttMs)
+
+    fun effectivePingExternalMaxRttForPreview(): Double? =
+        effectiveNonNegativeForPreview(pingExternalMaxRtt.value, defaultThresholds.pingExternal.maxRttMs)
+
+    fun effectiveSpeedMaxPingForPreview(): Double? =
+        effectiveNonNegativeForPreview(speedMaxPing.value, defaultThresholds.speed.maxPingMs)
+
+    fun effectiveSpeedMaxJitterForPreview(): Double? =
+        effectiveNonNegativeForPreview(speedMaxJitter.value, defaultThresholds.speed.maxJitterMs)
+
+    fun effectiveSpeedMaxLossForPreview(): Double? =
+        effectivePercentageForPreview(speedMaxLoss.value, defaultThresholds.speed.maxLossPercent)
+
+    fun effectiveSpeedMinDownloadForPreview(): Double? =
+        effectiveSpeedThroughputForPreview(speedMinDownload.value, defaultThresholds.speed.minDownloadMbps)
+
+    fun effectiveSpeedMinUploadForPreview(): Double? =
+        effectiveSpeedThroughputForPreview(speedMinUpload.value, defaultThresholds.speed.minUploadMbps)
 
     private fun areThresholdsValid(): Boolean =
         !isLinkMinRateInvalid() &&
@@ -186,11 +219,32 @@ class TestProfileViewModel @Inject constructor(
                 pingLocalMaxRtt.value,
                 pingExternalMaxAvgRtt.value,
                 pingExternalMaxRtt.value,
-                speedMaxPing.value,
-                speedMaxJitter.value,
-                speedMinDownload.value,
-                speedMinUpload.value
-            ).none(::isNonNegativeThresholdInvalid)
+                  speedMaxPing.value,
+                  speedMaxJitter.value
+              ).none(::isNonNegativeThresholdInvalid) &&
+              listOf(speedMinDownload.value, speedMinUpload.value)
+                  .none(::isSpeedThroughputInvalid)
+
+    private fun effectiveNonNegativeForPreview(value: String, default: Double): Double? =
+        when {
+            value.isBlank() -> default
+            TestThresholdsValidator.isValidNonNegativeInput(value) -> value.toDoubleOrNull()
+            else -> null
+        }
+
+    private fun effectivePercentageForPreview(value: String, default: Double): Double? =
+        when {
+            value.isBlank() -> default
+            TestThresholdsValidator.isValidPercentageInput(value) -> value.toDoubleOrNull()
+            else -> null
+        }
+
+    private fun effectiveSpeedThroughputForPreview(value: String, default: Double): Double? =
+        when {
+            value.isBlank() -> default
+            TestThresholdsValidator.isValidSpeedThroughputInput(value) -> value.toDoubleOrNull()
+            else -> null
+        }
 
     private fun buildThresholds(): TestThresholds {
         fun String.parseOrDefault(default: Double): Double =

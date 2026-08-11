@@ -83,8 +83,10 @@ adb -s $serial shell am instrument -w -r `
 
 Le classi indipendenti coprono avvio/navigazione, CRUD cliente, CRUD profilo,
 impostazioni, impostazioni report, storico/dettaglio ed export PDF. I record hanno
-nomi E2E univoci. Poiché l'attuale UI non espone Delete per Clienti o Profili, la
-rimozione finale è cleanup ID-scoped e non viene dichiarata copertura UI di Delete.
+nomi E2E univoci. `ClientCrudUiTest` e `ProfileCrudUiTest` eseguono realmente Delete
+dalla UI e verificano che il record non sia più visibile. Il cleanup ID-scoped della
+sessione resta una rete di sicurezza per i record creati dal test in caso di arresto
+anticipato, non un sostituto della copertura UI.
 
 Per rieseguire una correzione, invocare prima la singola classe e poi la suite. Ogni
 esecuzione deve usare un nuovo `sessionId` per legare risultato, build e device.
