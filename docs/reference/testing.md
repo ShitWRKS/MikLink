@@ -107,9 +107,8 @@ request, response/error, parsing, normalization, decisione e risultato visibile.
 Speed è `NOT_RUN` senza server configurato. Capability opzionali non applicabili
 sono `SKIP`; non esistono PASS fittizi.
 
-I runner legacy PowerShell/Bash restano soltanto come fallback di parity finché il
-recovery rehearsal non è accettato. Non sono il workflow principale e non vanno
-riscritti in un altro linguaggio.
+La parity del workflow nativo è stata accettata e i runner host legacy sono stati
+rimossi. Gradle, ADB e AndroidJUnitRunner costituiscono l'unico workflow supportato.
 
 ## Risultati e artefatti
 

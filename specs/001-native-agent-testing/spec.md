@@ -7,12 +7,12 @@
 **Input**: Give the coding agent direct, native access to MikLink on a compatible
 Android device through the debug build only, for repeatable E2E validation and
 ad-hoc UI/product investigation, including live MikroTik-probe workflows, without
-depending on the PowerShell runner.
+depending on a repository host runner.
 
 ## Problem and Scope
 
 MikLink has a physical-device instrumentation scenario and structured trace, but the
-agent-facing workflow is centered on host wrappers and one predefined live-probe
+agent-facing workflow previously depended on host orchestration and one predefined live-probe
 path. The agent needs a reusable way to operate and inspect the real app, run named
 regressions, exercise live probe behavior through the product, and collect safe,
 correlated evidence.
@@ -309,10 +309,10 @@ and targeted before/after/failure evidence for its actual UI journey.
 - **FR-023**: Live validation MUST exercise the production UI/domain/repository/
   networking/export paths, not duplicate them in test code.
 - **FR-024**: The primary workflow MUST use standard Android/Gradle capabilities and
-  MUST NOT require the existing PowerShell runner or an equivalent shell-bound
-  orchestration wrapper.
-- **FR-025**: Existing useful lower-level suites, traces, and both current runners
-  MUST be retained until responsibility-by-responsibility replacement parity passes.
+  MUST NOT require repository shell-bound orchestration.
+- **FR-025**: Existing useful lower-level suites and traces MUST be retained;
+  transitional host orchestration MAY be retired only after responsibility-by-
+  responsibility replacement parity passes and the owner accepts removal.
 - **FR-026**: External black-box release smoke validation MUST prove the agent mode
   cannot be activated and verify representative launch and normal behavior against
   the exact release artifact without relying on embedded test controls.
@@ -353,7 +353,7 @@ and targeted before/after/failure evidence for its actual UI journey.
 
 - **SC-001**: On a compatible physical device running the debug build, an agent
   completes launch, navigation, interaction, semantic inspection, assertion, and
-  screenshot without a one-off test class or the PowerShell runner.
+  screenshot without a one-off test class or repository host runner.
 - **SC-002**: 100% of maintained scenarios and sessions end with a machine-readable
   terminal classification and reason; none wait without a declared bound.
 - **SC-003**: 100% of unavailable hardware/external prerequisites in acceptance runs
@@ -373,8 +373,8 @@ and targeted before/after/failure evidence for its actual UI journey.
 - **SC-010**: Release inspection and external smoke validation find zero active
   agent-control entry points or enhanced diagnostic payloads, and every attempted
   runtime activation path remains unavailable.
-- **SC-011**: Each current runner responsibility has accepted native replacement
-  evidence before either runner is eligible for deletion.
+- **SC-011**: Each transitional host-runner responsibility has accepted native
+  replacement evidence before host orchestration is eligible for deletion.
 - **SC-012**: Every factual UI/UX observation in an agent report is traceable to a
   screenshot or machine-readable state captured in that session.
 - **SC-013**: Every applicable operational feature group has at least one accepted
@@ -391,8 +391,8 @@ and targeted before/after/failure evidence for its actual UI journey.
 - A compatible physical Android device is available when device acceptance is run.
 - Live scenarios require the phone to reach the explicitly configured MikroTik probe
   while the host retains device control.
-- The existing PowerShell and Bash runners are transitional and are not removed by
-  this specification-only work.
+- Native parity and owner acceptance authorize retirement of the transitional host
+  runners; standard Android/Gradle tooling is the sole supported workflow.
 - Native Android/Gradle tooling is preferred over custom host orchestration.
 - Agent sessions target the debug build only. Release validation is external and
   black-box; it never enables the agent mode inside the production app.

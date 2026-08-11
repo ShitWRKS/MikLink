@@ -1,6 +1,6 @@
 # Implementation Plan: Native Agent-Driven Application Testing
 
-**Branch**: `001-native-agent-testing-functional-acceptance` | **Date**: 2026-08-10 | **Spec**: [spec.md](spec.md)  
+**Branch**: `001-native-agent-testing-functional-acceptance` | **Date**: 2026-08-11 | **Spec**: [spec.md](spec.md)
 **Input**: Feature specification from `/specs/001-native-agent-testing/spec.md`
 
 ## Summary
@@ -11,7 +11,7 @@ on-device catalog using AndroidJUnitRunner, Compose tests, and stable UI Automat
 2.4. Reuse
 the normal MikLink UI/domain/repository/network/export paths, strengthen the existing
 debug trace into a versioned secret-safe evidence stream, isolate session-created
-fixtures, and retain current wrappers until native parity is accepted.
+fixtures, and retire the transitional host runners after native parity acceptance.
 
 The completion increment keeps existing repository/use-case scenarios as instrumented
 integration tests and adds a separate physical-device Functional UI catalog. A
@@ -50,7 +50,7 @@ physical-device catalog, one exploratory contract, three versioned evidence sche
 | II. Production-Path Fidelity | PASS | Named tests drive normal UI/use cases/repositories; fixtures arrange state only; no RouterOS backchannel |
 | III. Secret-Safe, Correlated Evidence | PASS | Versioned schemas, source-time recursive redaction, operation/exchange correlations, acceptance scans |
 | IV. Deterministic Native Validation | PASS | Explicit serial/prerequisites/outcomes/bounds; session-owned data; supported adb/Gradle/AndroidX mechanisms |
-| V. Preservation Until Verified Parity | PASS | Responsibility map in `research.md`; both wrappers retained until acceptance evidence |
+| V. Preservation Until Verified Parity | PASS | Responsibility map in `research.md`; legacy runners retired only after accepted parity and owner authorization |
 
 The 2026-08-10 Functional UI increment rechecked the gates: production paths remain
 authoritative; integration tests are preserved; no new flavor, protocol, RouterOS
@@ -107,8 +107,6 @@ app/
 
 gradle/libs.versions.toml                   # pin UI Automator 2.4.0
 docs/reference/testing.md                   # direct native workflows/outcomes
-tools/agent/run_live_probe_e2e.ps1          # retained until parity acceptance
-tools/agent/run_live_probe_e2e.sh           # retained until parity acceptance
 ```
 
 **Structure Decision**: Keep one app module and use existing Android source-set
@@ -126,7 +124,7 @@ All technical unknowns are resolved in [research.md](research.md). Key decisions
 4. session-owned records replace implicit resets;
 5. one versioned manifest/result/trace contract replaces wrapper parsing;
 6. live prerequisites are explicit, secret-free, and fail closed;
-7. wrapper removal waits for responsibility-level parity.
+7. host-runner retirement occurs only after responsibility-level parity and owner acceptance.
 
 ## Phase 1: Design Outcome
 
@@ -202,9 +200,8 @@ All technical unknowns are resolved in [research.md](research.md). Key decisions
 - Inspect/build/install/launch the signed release artifact externally and verify no
   debug trace, agent policy, exported control component, runtime flag, intent,
   instrumentation argument, or setting can activate agent mode.
-- Keep PowerShell and Bash runners during implementation. A later, explicit deletion
-  task may run only after parity evidence and owner acceptance; it is not part of
-  specification import.
+- Retire transitional host runners only after parity evidence and explicit owner
+  acceptance; this gate was satisfied by the final acceptance correction.
 
 ## Verification Strategy
 
@@ -218,8 +215,7 @@ All technical unknowns are resolved in [research.md](research.md). Key decisions
 5. Wi-Fi disruption is tested once with opt-in and once without to prove fail-closed
    behavior and recovery.
 6. Release smoke and static inspection verify isolation.
-7. Current wrappers are run for comparison, not deleted, until the parity matrix is
-   fully accepted.
+7. The direct native workflow remains the sole supported path after parity acceptance.
 8. Functional UI results are reported separately from integration and live-hardware
    results; an integration PASS cannot promote a Functional UI row.
 

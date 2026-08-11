@@ -124,7 +124,7 @@ trace chain against `trace-event.schema.json`.
 - [X] T047 [US3] Run the replacement and current live workflows on the same configured lab and record parity evidence in `specs/001-native-agent-testing/runner-parity.md`
 
 **Checkpoint**: US3 provides one accepted real-operation trace with zero secret
-findings; current runners are still present.
+findings; retirement remained gated on the later parity decision.
 
 ---
 
@@ -171,13 +171,13 @@ validate screenshots, hierarchy, actions, and observation claims.
 ## Phase 8: Release, Parity, and Final Verification
 
 - [X] T057 [P] Add debug/release source-set, manifest, and forbidden-control scans proving no release activation flag, intent, instrumentation argument, exported component, or setting in `app/src/test/java/com/app/miklink/quality/ReleaseIsolationScanTest.kt`
-- [X] T058 [P] Update native commands, outcome semantics, prerequisites, artifacts, and safety policy in `docs/reference/testing.md` and `docs/production-readiness.md`
+- [X] T058 [P] Update native commands, outcome semantics, prerequisites, artifacts, and safety policy in `docs/reference/testing.md` and `docs/reference/production-readiness.md`
 - [X] T059 Run `testDebugUnitTest`, lint, and all existing quality/golden/contract suites and record results in `specs/001-native-agent-testing/verification.md`
 - [X] T060 Run the complete applicable physical-device catalog and validate every artifact against `specs/001-native-agent-testing/contracts/`
 - [ ] T061 Build/inspect/install the exact signed release artifact, externally attempt every forbidden activation path, run black-box smoke navigation, and record absence of control/trace exposure in `specs/001-native-agent-testing/verification.md`
-- [ ] T062 Complete every responsibility row in `specs/001-native-agent-testing/runner-parity.md`, including a recovery rehearsal while both runners remain available
-- [ ] T063 Reconcile 100% of `FG-*`, `FR-*`, and `SC-*` coverage and final results in `specs/001-native-agent-testing/coverage-inventory.md` and `verification.md`
-- [X] T064 Confirm `tools/agent/run_live_probe_e2e.ps1` and `tools/agent/run_live_probe_e2e.sh` are unchanged/present; schedule deletion only as a separate owner-accepted follow-up after T062
+- [X] T062 Complete every responsibility row in `specs/001-native-agent-testing/runner-parity.md`; owner accepted contract-level recovery and excluded destructive disruption rehearsal as a retirement blocker
+- [X] T063 Reconcile 100% of `FG-*`, `FR-*`, and `SC-*` coverage and final results in `specs/001-native-agent-testing/coverage-inventory.md` and `verification.md`
+- [X] T064 Confirm transitional runners at the parity checkpoint; superseded by owner-accepted retirement after T062
 
 ---
 
@@ -199,10 +199,24 @@ user journeys that operate and verify the real UI without a new host platform.
 - [X] T074 [P] [US6] Add UI history search/detail/action and completed-result presentation acceptance in `app/src/androidTest/java/com/app/miklink/e2e/functional/HistoryUiTest.kt`
 - [X] T075 [US6] Register Functional UI scenario IDs and suite selection without relabeling integration scenarios in `app/src/androidTest/java/com/app/miklink/e2e/catalog/E2ETestCatalog.kt` and `FunctionalAcceptanceSuite.kt`
 - [X] T076 [US6] Extend the existing live-probe UI flow to verify Completed, visible result sections, save, history persistence, detail, and session-owned delete through the normal UI
-- [X] T077 [US6] Update `docs/reference/testing.md` with direct Gradle/ADB build-install-unlock-targeted/full-rerun and artifact retrieval workflow; explicitly prohibit coordinates/video and keep legacy runners pending parity
+- [X] T077 [US6] Update `docs/reference/testing.md` with direct Gradle/ADB build-install-unlock-targeted/full-rerun and artifact retrieval workflow; explicitly prohibit coordinates/video and retire legacy runners only after parity acceptance
 - [X] T078 [US6] Run local/unit/contract/lint and compile the Functional UI test APK; correct product defects rather than weakening assertions
-- [ ] T079 [US6] Run targeted Functional UI scenarios and then the complete applicable suite on the unlocked physical device; record separate outcomes and evidence in `coverage-inventory.md` and `verification.md`
-- [ ] T080 [US6] Run Spec Kit analyze after the modified spec/plan/tasks are stable and reconcile all material findings before final acceptance
+- [X] T079 [US6] Run targeted Functional UI scenarios and then the complete applicable suite on the unlocked physical device; record separate outcomes and evidence in `coverage-inventory.md` and `verification.md`
+- [X] T080 [US6] Run Spec Kit analyze after the modified spec/plan/tasks are stable and reconcile all material findings before final acceptance
+
+---
+
+## Phase 10: Final Functional Acceptance Corrections
+
+- [X] T082 Add real Client delete confirmation semantics and verify deletion/absence through the rendered UI
+- [X] T083 Add real Profile delete confirmation semantics and verify deletion/absence through the rendered UI
+- [X] T084 Drive Probe Verify through UI and preserve precise NOT_RUN classification when hardware is unavailable
+- [X] T085 Make Settings language/ID strategy independently observable and verify change, reopen, persistence, and UI restoration
+- [X] T086 Record structured Functional UI actions/assertions through `ScenarioRule.recordStep`
+- [X] T087 Run four targeted scenarios, the complete Functional Acceptance suite, live selection, artifact integrity, and configured-credential scans on the physical device
+- [X] T088 Retire the parity-complete PowerShell and Bash host runners without adding replacement wrappers
+- [X] T089 Reconcile coverage, parity, verification, workflow documentation, and residual gaps
+- [X] T090 Run final Spec Kit Analyze and reconcile all material findings
 
 ---
 
@@ -215,8 +229,8 @@ user journeys that operate and verify the real UI without a new host platform.
 - US4 depends on the US3 live path for the probe-loss case, while its rapid/lifecycle
   tests can be authored earlier.
 - US5 depends on US1 but not on live hardware.
-- Final verification depends on all selected stories; wrapper deletion is explicitly
-  not authorized by this task list.
+- Final verification depends on all selected stories; host-runner retirement is
+  authorized by completed parity and Phase 10 owner acceptance.
 
 ## Requirement Traceability
 
@@ -233,7 +247,7 @@ user journeys that operate and verify the real UI without a new host platform.
 | FR-019–FR-020 | T011, T040, T044–T045 |
 | FR-021 | T035, T048–T053 |
 | FR-022–FR-023 | T013, T019, T021, T042–T045, T057, T061 |
-| FR-024–FR-025 | T026–T027, T047, T058, T062, T064 |
+| FR-024–FR-025 | T026–T027, T047, T058, T062, T064, T088 |
 | FR-026–FR-027 | T010, T055–T057, T061 |
 
 | FR-028-FR-030 | T065-T076 |
@@ -247,14 +261,14 @@ user journeys that operate and verify the real UI without a new host platform.
 | SC-002–SC-003 | T037–T038, T060 |
 | SC-004–SC-005 | T039–T046 |
 | SC-006 | T050–T053 |
-| SC-007–SC-009 | T038, T060, T063 |
+| SC-007–SC-009 | T038, T060, T063, T079, T087 |
 | SC-010 | T057, T061 |
-| SC-011 | T047, T062, T064 |
+| SC-011 | T047, T062, T064, T088 |
 | SC-012 | T054–T056 |
 
-| SC-013 | T065-T076, T079 |
-| SC-014 | T067, T077, T079 |
-| SC-015 | T068, T077, T079 |
+| SC-013 | T065-T076, T079, T082-T087 |
+| SC-014 | T067, T077, T079, T087 |
+| SC-015 | T068, T077, T079, T086-T087 |
 
 ## Parallel Opportunities
 

@@ -13,10 +13,10 @@
   is no-op. `MikroTikTestRepositoryRemote` already emits operation-level data, and
   `RunTestUseCaseImpl` emits normalization/decision events. Correlation and redaction
   need strengthening rather than a second tracing stack.
-- `tools/agent/run_live_probe_e2e.ps1` and `.sh` discover/select devices, invoke
-  Gradle, pass scenario arguments, inspect logcat, pull trace, validate required
-  events, classify results, and arrange host artifacts. The Bash script is a second
-  host wrapper and is included in the parity inventory.
+- The former host runners discovered/selected devices, invoked Gradle, passed
+  scenario arguments, inspected logcat, pulled trace, validated required events,
+  classified results, and arranged host artifacts. These responsibilities define
+  the parity inventory now implemented by standard Android tooling.
 - Current Compose tags are concentrated in dashboard and test execution. Client,
   profile, probe, history, settings, backup, and PDF flows need stable semantic
   handles for deterministic automation.
@@ -159,8 +159,9 @@ backchannel and expands the security/safety scope.
 | Classify PASS/FAIL/NOT_RUN | JUnit mapping plus `scenario-result.json` |
 | Arrange host artifacts | Gradle/Android Studio test outputs and manifest-indexed files |
 
-Both wrappers remain until every row has accepted evidence on the supported physical
-device. This specification-only change removes neither wrapper.
+Every required responsibility has accepted evidence on the supported physical
+device. After explicit owner acceptance, the host runners were retired and the
+native Gradle/ADB/AndroidJUnitRunner workflow became authoritative.
 
 ## Primary Sources
 

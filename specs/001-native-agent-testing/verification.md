@@ -1,5 +1,40 @@
 # Verification — Native Agent Testing
 
+## Final functional acceptance correction — 2026-08-11
+
+**Implementation revisions**: `4faa1eb5830405785dc09eb3cf5a7c55268f7ffe`,
+`ae15a069b25995e8cb2c8848cb477375d2712a87`
+**Device**: `6pr8q4nncyhqrcx8`, model `22101316G`, API 34
+**Device policy**: preserving installs (`adb install -r -t`), no data reset, no
+Wi-Fi disruption. Screen timeout and USB stay-awake were temporarily enabled for
+the runs and restored afterward (`screen_off_timeout=60000`, stay-awake disabled).
+
+| Verification | Result |
+|---|---|
+| `ClientCrudUiTest` — `acceptance-4faa1eb-client` | PASS / `ASSERTIONS_PASSED`; real create, invalid-static validation, reopen/edit, delete confirmation and list absence; 4/4 artifacts valid |
+| `ProfileCrudUiTest` — `acceptance-4faa1eb-profile-v2` | PASS / `ASSERTIONS_PASSED`; real create/toggle/targets, reopen/edit, delete confirmation and list absence; 4/4 artifacts valid |
+| `SettingsUiTest` — `acceptance-4faa1eb-settings` | PASS / `ASSERTIONS_PASSED`; language and ID strategy changed independently, checked, reopened, persisted and restored through UI; 4/4 artifacts valid |
+| `ProbeConfigurationUiTest` — `acceptance-4faa1eb-probe` | NOT_RUN / `PROBE_UNREACHABLE_TIMEOUT`; form and real Verify action reached without hard-coded credentials; success/save/reopen correctly not claimed; 2/2 artifacts valid |
+| `FunctionalAcceptanceSuite` — `acceptance-ae15a06-suite-v2` | PASS — AndroidJUnitRunner `OK (8 tests)`; 7 PASS plus Probe-only `PROBE_UNREACHABLE` NOT_RUN; exact source revision `ae15a069b25995e8cb2c8848cb477375d2712a87`; 31/31 artifacts valid |
+| `LiveProbeE2ETest` — `acceptance-ae15a06-live-v2` | NOT_RUN / `missing_live_probe_or_configuration`; AndroidJUnitRunner `OK (1 test)`; 1/1 artifact valid; no live operation or new trace started |
+| Local build and quality gates | PASS — `:app:assembleDebug`, `:app:assembleDebugAndroidTest`, `:app:testDebugUnitTest`, `:app:lint` |
+| Accepted-artifact integrity | PASS — all 46 files listed by the six accepted manifests exist and match recorded size and SHA-256 |
+| Accepted-artifact configured-credential scan | PASS — focused `ArtifactSecretScanTest` read configured values internally without logging them and found no occurrence in the six accepted sessions |
+| Live trace continuity | NOT_RUN for a new trace because no probe hardware was available; prior accepted same-lab evidence remains 66 schema-valid events and 5 correlated exchanges |
+| Host-runner retirement | PASS — responsibility parity and owner acceptance recorded; PowerShell and Bash runners removed with no replacement wrapper |
+
+Two product defects were corrected during acceptance: Client Save could remain
+enabled for invalid static network input, and Settings PDF-title persistence could
+lose/reorder rapid writes. Semantic targeting, dialog discovery, instrumentation
+lifecycle, scrolling, structured step evidence, and PDF synchronization corrections
+are acceptance-harness/UI observability fixes rather than additional product claims.
+
+Final Spec Kit Analyze is PASS: 33 functional requirements and 15 success criteria
+are present and task-traced, all 90 task IDs are unique, both checklists are complete
+(44/44 total), and no unresolved critical, high, or medium consistency finding
+remains. The owner-deferred signed-release smoke and external hardware prerequisites
+remain explicit acceptance gaps rather than specification contradictions.
+
 ## Functional UI completion increment — 2026-08-10
 
 **Baseline**: `develop` at `fa2e9d15e542850956e3db92bdadd2b41dbfe9d4`  
@@ -40,7 +75,7 @@ required before any new Functional UI row can become PASS.
 | `:app:assembleDebug`, `:app:assembleDebugAndroidTest` | PASS |
 | `:app:assembleRelease` | PASS — minified unsigned release assembled |
 | `ScenarioRuleRedactionTest` / support package | PASS — persisted failure canary removed; copied artifacts indexed; support regressions pass on device |
-| `MikroTikTraceContractTest` | PASS — correlated request/response/error contract and transitional `mikrotik_raw_response` alias required by both unchanged legacy runners |
+| `MikroTikTraceContractTest` | PASS — correlated request/response/error contract and transitional `mikrotik_raw_response` alias retained for evidence compatibility |
 | Evidence boundary contracts | PASS — 6 focused evidence/trace tests and 23/23 support-package tests; invalid terminal claims, unknown variants/events, unfinalized sessions, unsafe paths, destructive release policy and release NDJSON are rejected before persistence |
 | Accepted manifest revalidation | PASS — all 6 retained final session manifests satisfy the strengthened identity/finalization/path/digest invariants |
 | Accepted scenario-result revalidation | PASS — all 55 retained terminal results satisfy strengthened identity, path, prerequisite, step, cleanup and outcome invariants |
@@ -143,19 +178,28 @@ is recorded only as supporting evidence, never as a substitute.
 | FR-021 | PARTIAL — rapid start, targeted lifecycle, PDF/report and live probe PASS; opted-in probe-loss disruption NOT_RUN |
 | FR-022 | PASS static/build inspection; external exact signed-release smoke remains part of FR-026 |
 | FR-023 | PASS — real UI and independently selectable live cases exercised production paths on the configured probe |
-| FR-024–FR-025 | PASS — standard Gradle/Android workflow; both legacy runners retained unchanged |
+| FR-024–FR-025 | PASS — standard Gradle/ADB/AndroidJUnitRunner workflow; parity accepted and transitional host runners retired without replacement |
 | FR-026 | DEFERRED — owner requested no further signed-release work |
 | FR-027 | PASS — screenshots paired with semantic state and before/after correlation |
+| FR-028 | PASS — only rendered physical-device UI runs are reported as Functional UI PASS |
+| FR-029 | PASS — each required app-only journey is independently runnable; the current Probe journey terminates precisely as hardware-dependent NOT_RUN |
+| FR-030 | PASS — fixtures arrange unrelated prerequisites while Client/Profile/Settings/History/PDF claimed actions occur through UI |
+| FR-031 | PASS — wake/lock/manual-unlock bounds and DEVICE_LOCKED mapping are maintained; final device was unlocked |
+| FR-032 | PASS — targeted screenshots, hierarchy, structured steps, logcat and generated-file evidence; no video |
+| FR-033 | PASS — visible PDF export produced a retrieved non-trivial file with valid header and EOF |
 | SC-001–SC-003 | PASS |
 | SC-004 | PASS — five real correlated RouterOS exchanges through applicable decision/UI stages |
 | SC-005 | PASS — configured credentials absent from accepted trace and canary scans |
 | SC-006 | NOT_RUN — no independent Wi-Fi disruption authority |
 | SC-007 | PASS for applicable native catalog after redeployment |
-| SC-008 | PARTIAL — all feature groups accounted and real live path accepted; FG-08 still lacks destructive import opt-in |
+| SC-008 | PARTIAL — all feature groups accounted and corrected UI journeys accepted; FG-08 still lacks destructive import opt-in and FG-02 awaits reachable hardware |
 | SC-009 | PASS — probe-independent catalog does not depend on a probe |
 | SC-010 | PARTIAL — static/unsigned artifact inspection PASS; exact signed black-box smoke owner-deferred |
-| SC-011 | PARTIAL — same-lab live parity PASS; recovery parity requires separate disruption authorization |
+| SC-011 | PASS — every retired-runner responsibility has accepted native evidence or owner-accepted fail-closed/restoration contract evidence |
 | SC-012 | PASS — reachable/unreachable UI facts are evidence-linked |
+| SC-013 | PASS for every currently applicable operational group; FG-02 and FG-08 remain explicit prerequisite-dependent NOT_RUN rather than false PASS |
+| SC-014 | PASS — bounded wake/lock/unlock behavior is contract-covered and the accepted physical suite ran unlocked |
+| SC-015 | PASS — accepted Functional UI sessions contain no video and every manifest-listed artifact passed size/digest validation |
 
 ## Outstanding acceptance inputs
 
@@ -167,3 +211,5 @@ is recorded only as supporting evidence, never as a substitute.
    for the recovery rehearsal.
 4. T061 remains intentionally open but owner-deferred; do not request or pursue a
    release signing environment unless that direction changes.
+5. A reachable configured probe is required to convert the current Probe Verify and
+   Live NOT_RUN outcomes into a new success/save/reopen run and a new correlated trace.
