@@ -72,6 +72,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.app.miklink.R
 import com.app.miklink.ui.testing.AgentUiTags
+import com.app.miklink.ui.testing.AgentSemanticsConfig
 import com.app.miklink.core.domain.model.TestReport
 import com.app.miklink.core.domain.model.report.ReportData
 import com.app.miklink.core.domain.test.model.TestSectionId
@@ -626,6 +627,7 @@ private fun ConfirmDialog(
     onConfirm: () -> Unit
 ) {
     AlertDialog(
+        modifier = AgentSemanticsConfig.rootModifier(),
         onDismissRequest = onDismiss,
         title = { Text(title, fontWeight = FontWeight.Bold) },
         text = { Text(message) },

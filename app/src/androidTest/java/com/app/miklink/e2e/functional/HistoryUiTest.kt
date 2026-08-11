@@ -13,6 +13,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.regex.Pattern
 
 @RunWith(AndroidJUnit4::class)
 class HistoryUiTest {
@@ -33,7 +34,7 @@ class HistoryUiTest {
             clickResource("${AgentUiTags.History.CLIENT_EXPAND_PREFIX}_${fixtures.client.clientId}")
             clickResource("${AgentUiTags.History.REPORT_ITEM_PREFIX}_${fixtures.report.reportId}")
             requireResource(AgentUiTags.Report.SCREEN)
-            requireText(requireNotNull(fixtures.report.socketName))
+            requireText(Pattern.compile(".*${Pattern.quote(requireNotNull(fixtures.report.socketName))}.*"))
 
             clickResource(AgentUiTags.Report.DELETE, scroll = true)
             clickResource(AgentUiTags.Report.DELETE_CONFIRM)

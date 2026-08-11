@@ -35,6 +35,7 @@ import androidx.compose.ui.res.stringResource
 import com.app.miklink.R
 import com.app.miklink.core.domain.model.preferences.IdNumberingStrategy
 import com.app.miklink.ui.testing.AgentUiTags
+import com.app.miklink.ui.testing.AgentSemanticsConfig
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -353,6 +354,7 @@ fun SettingsScreen(
 
     if (showIdStrategyDialog) {
         AlertDialog(
+            modifier = AgentSemanticsConfig.rootModifier(),
             onDismissRequest = { showIdStrategyDialog = false },
             title = { Text(stringResource(R.string.settings_id_strategy_dialog_title)) },
             text = {
@@ -370,6 +372,12 @@ fun SettingsScreen(
                         ) {
                             RadioButton(
                                 selected = (idNumberingStrategy == strategy),
+                                modifier = Modifier.testTag(
+                                    when (strategy) {
+                                        IdNumberingStrategy.CONTINUOUS_INCREMENT -> AgentUiTags.Settings.ID_STRATEGY_CONTINUOUS
+                                        IdNumberingStrategy.FILL_GAPS -> AgentUiTags.Settings.ID_STRATEGY_FILL_GAPS
+                                    }
+                                ),
                                 onClick = {
                                     viewModel.updateIdNumberingStrategy(strategy)
                                     showIdStrategyDialog = false
@@ -414,6 +422,7 @@ fun SettingsScreen(
             "MNDP" to stringResource(R.string.neighbor_protocol_mndp)
         )
         AlertDialog(
+            modifier = AgentSemanticsConfig.rootModifier(),
             onDismissRequest = { showDiscoveryProtocolsDialog = false },
             title = { Text(stringResource(R.string.settings_discovery_protocols_dialog_title)) },
             text = {

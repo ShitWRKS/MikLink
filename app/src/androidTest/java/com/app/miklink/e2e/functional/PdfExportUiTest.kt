@@ -37,16 +37,13 @@ class PdfExportUiTest {
             clickResource(AgentUiTags.Report.EXPORT_PDF)
             requireResource(AgentUiTags.Report.PDF_DIALOG)
             clickResource(AgentUiTags.Report.PDF_OPTIONS)
-            replaceText(AgentUiTags.Report.PDF_TITLE, "E2E Functional PDF", scroll = true)
+            replaceText(AgentUiTags.Report.PDF_TITLE, "E2E Functional PDF ${System.nanoTime()}", scroll = true)
             clickResource(AgentUiTags.Report.PDF_ORIENTATION_LANDSCAPE, scroll = true)
             clickResource(AgentUiTags.Report.PDF_CONFIRM)
 
             val pdf = newestPdfNotIn(before)
             registerPdf(pdf)
-            if (!device.hasObject(androidx.test.uiautomator.By.res(AgentUiTags.Report.SCREEN))) {
-                device.pressBack()
-            }
-            requireResource(AgentUiTags.Report.SCREEN)
+            pressBackToResource(AgentUiTags.Report.SCREEN)
         }
     }
 

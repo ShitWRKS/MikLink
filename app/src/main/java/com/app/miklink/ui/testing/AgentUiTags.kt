@@ -8,6 +8,8 @@ object AgentUiTags {
         const val USERNAME = "probe_username_input"
         const val PASSWORD = "probe_password_input"
         const val VERIFY = "probe_verify_button"
+        const val VERIFY_SUCCESS = "probe_verify_success"
+        const val VERIFY_ERROR = "probe_verify_error"
         const val SAVE = "probe_save_button"
     }
 
@@ -24,6 +26,8 @@ object AgentUiTags {
         const val STATIC_CIDR = "client_static_cidr_input"
         const val STATIC_GATEWAY = "client_static_gateway_input"
         const val SAVE = "client_save_button"
+        const val DELETE_PREFIX = "client_delete_button"
+        const val DELETE_CONFIRM = "client_delete_confirm"
         const val ITEM_PREFIX = "client_item"
     }
 
@@ -42,6 +46,8 @@ object AgentUiTags {
         const val PING_TARGET_1 = "profile_ping_target_1"
         const val PING_COUNT = "profile_ping_count"
         const val SAVE = "profile_save_button"
+        const val DELETE_PREFIX = "profile_delete_button"
+        const val DELETE_CONFIRM = "profile_delete_confirm"
         const val ITEM_PREFIX = "profile_item"
     }
 
@@ -79,6 +85,8 @@ object AgentUiTags {
         const val POLLING = "settings_polling_slider"
         const val GLOW = "settings_glow_slider"
         const val ID_STRATEGY = "settings_id_strategy"
+        const val ID_STRATEGY_CONTINUOUS = "settings_id_strategy_continuous"
+        const val ID_STRATEGY_FILL_GAPS = "settings_id_strategy_fill_gaps"
         const val DISCOVERY_PROTOCOLS = "settings_discovery_protocols"
         const val PDF_TITLE = "pdf_settings_title_input"
         const val PDF_INCLUDE_EMPTY = "pdf_settings_include_empty"
@@ -90,19 +98,22 @@ object AgentUiTags {
     }
 
     val stableTags: Set<String> = setOf(
-        Probe.SCREEN, Probe.ADDRESS, Probe.USERNAME, Probe.PASSWORD, Probe.VERIFY, Probe.SAVE,
+        Probe.SCREEN, Probe.ADDRESS, Probe.USERNAME, Probe.PASSWORD, Probe.VERIFY,
+        Probe.VERIFY_SUCCESS, Probe.VERIFY_ERROR, Probe.SAVE,
         Client.LIST, Client.SEARCH, Client.ADD, Client.EDIT, Client.NAME, Client.LOCATION,
         Client.NOTES, Client.NETWORK_DHCP, Client.NETWORK_STATIC, Client.STATIC_CIDR,
-        Client.STATIC_GATEWAY, Client.SAVE,
+        Client.STATIC_GATEWAY, Client.SAVE, Client.DELETE_PREFIX, Client.DELETE_CONFIRM,
         Profile.LIST, Profile.ADD, Profile.EDIT, Profile.NAME, Profile.DESCRIPTION,
         Profile.RUN_TDR, Profile.RUN_LINK, Profile.RUN_NEIGHBORS, Profile.RUN_PING,
-        Profile.RUN_SPEED, Profile.PING_CONFIG, Profile.PING_TARGET_1, Profile.PING_COUNT, Profile.SAVE,
+        Profile.RUN_SPEED, Profile.PING_CONFIG, Profile.PING_TARGET_1, Profile.PING_COUNT,
+        Profile.SAVE, Profile.DELETE_PREFIX, Profile.DELETE_CONFIRM,
         History.SCREEN, History.SEARCH, Report.SCREEN, Report.EXPORT_PDF, Report.PDF_DIALOG,
         Report.PDF_OPTIONS,
         Report.PDF_CONFIRM, Report.DELETE, Report.REPEAT, Report.DELETE_CONFIRM,
         Report.PDF_TITLE, Report.PDF_ORIENTATION_PORTRAIT, Report.PDF_ORIENTATION_LANDSCAPE,
         Report.PDF_SIGNATURES, Report.PDF_INCLUDE_EMPTY, Report.PDF_HIDE_EMPTY_COLUMNS,
         Settings.SCREEN, Settings.PROBE, Settings.POLLING, Settings.GLOW, Settings.ID_STRATEGY,
+        Settings.ID_STRATEGY_CONTINUOUS, Settings.ID_STRATEGY_FILL_GAPS,
         Settings.DISCOVERY_PROTOCOLS, Settings.PDF, Settings.BACKUP, Settings.PDF_SCREEN,
         Settings.PDF_TITLE, Settings.PDF_INCLUDE_EMPTY, Settings.PDF_HIDE_EMPTY_COLUMNS,
         Settings.BACKUP_SCREEN, Settings.BACKUP_EXPORT, Settings.BACKUP_IMPORT

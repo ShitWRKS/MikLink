@@ -283,7 +283,7 @@ fun TestProfileEditScreen(
                         }
 
                         Row(
-                            modifier = Modifier.fillMaxWidth().testTag(AgentUiTags.Profile.PING_COUNT),
+                            modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             if (!showTarget2) {
@@ -314,7 +314,9 @@ fun TestProfileEditScreen(
                             value = pingCount,
                             onValueChange = { viewModel.pingCount.value = it },
                             label = { Text(stringResource(R.string.profile_edit_ping_count_label)) },
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag(AgentUiTags.Profile.PING_COUNT),
                             singleLine = true,
                             supportingText = {
                                 if (viewModel.isPingCountInvalid()) {

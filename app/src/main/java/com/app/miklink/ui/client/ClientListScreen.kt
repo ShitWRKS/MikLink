@@ -29,7 +29,9 @@ import androidx.navigation.NavController
 import com.app.miklink.ui.components.MinimalListItem
 import com.app.miklink.ui.components.ModernSearchBar
 import com.app.miklink.R
+import com.app.miklink.core.domain.model.Client
 import com.app.miklink.ui.testing.AgentUiTags
+import com.app.miklink.ui.testing.AgentSemanticsConfig
 import kotlinx.coroutines.launch
 
 // Removed legacy WebView-based printing imports
@@ -45,6 +47,7 @@ fun ClientListScreen(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
+    var clientPendingDeletion by remember { mutableStateOf<Client?>(null) }
     LaunchedEffect(errorMessage) {
         errorMessage?.let { message ->
             snackbarHostState.showSnackbar(message)
@@ -119,7 +122,8 @@ fun ClientListScreen(
             ModernSearchBar(
                 query = searchQuery,
                 onQueryChange = { searchQuery = it },
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp).testTag(AgentUiTags.Client.SEARCH),
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                inputModifier = Modifier.testTag(AgentUiTags.Client.SEARCH),
                 placeholder = stringResource(R.string.dashboard_search_client)
             )
 
@@ -193,9 +197,10 @@ fun ClientListScreen(
                                 title = client.companyName,
                                 subtitle = client.location ?: "No location specified",
                                 icon = Icons.Default.Business,
-                                modifier = Modifier.testTag("${AgentUiTags.Client.ITEM_PREFIX}_${client.clientId}"),
+                                clickableModifier = Modifier.testTag("${AgentUiTags.Client.ITEM_PREFIX}_${client.clientId}"),
                                 onClick = { navController.navigate("client_edit/${client.clientId}") },
                                 trailingContent = {
+                                    Row {
                                     IconButton(onClick = {
                                         coroutineScope.launch {
                                             try {
@@ -247,6 +252,13 @@ fun ClientListScreen(
                                             }
                                         }
                                     }) { Icon(Icons.Default.PictureAsPdf, contentDescription = stringResource(R.string.history_export_pdf)) }
+                                    IconButton(
+                                        onClick = { clientPendingDeletion = client },
+                                        modifier = Modifier.testTag("${AgentUiTags.Client.DELETE_PREFIX}_${client.clientId}")
+                                    ) {
+                                        Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.delete))
+                                    }
+                                    }
                                 }
                             )
                         }
@@ -254,5 +266,28 @@ fun ClientListScreen(
                 }
             }
         }
+    }
+
+    clientPendingDeletion?.let { client ->
+        AlertDialog(
+            modifier = AgentSemanticsConfig.rootModifier(),
+            onDismissRequest = { clientPendingDeletion = null },
+            title = { Text(stringResource(R.string.client_delete_title)) },
+            text = { Text(stringResource(R.string.client_delete_message, client.companyName)) },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        clientPendingDeletion = null
+                        viewModel.deleteClient(client)
+                    },
+                    modifier = Modifier.testTag(AgentUiTags.Client.DELETE_CONFIRM)
+                ) { Text(stringResource(R.string.delete)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { clientPendingDeletion = null }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
     }
 }

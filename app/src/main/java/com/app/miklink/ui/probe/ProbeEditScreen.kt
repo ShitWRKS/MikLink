@@ -126,7 +126,11 @@ fun ProbeEditScreen(
                 }
                 is VerificationState.Success -> {
                     val boardName = state.boardName ?: stringResource(R.string.probe_edit_board_unknown)
-                    Text(stringResource(R.string.probe_edit_board_label, boardName), style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        stringResource(R.string.probe_edit_board_label, boardName),
+                        modifier = Modifier.testTag(AgentUiTags.Probe.VERIFY_SUCCESS),
+                        style = MaterialTheme.typography.bodyLarge
+                    )
                     state.warning?.let { warning ->
                         Text(
                             text = warning,
@@ -161,9 +165,15 @@ fun ProbeEditScreen(
                             }
                         }
                     }
+                    Spacer(Modifier.height(8.dp))
+                    VerifyProbeButton(onClick = viewModel::onVerifyClicked)
                 }
                 is VerificationState.Error -> {
-                    Text(state.message, color = semantic.failure)
+                    Text(
+                        state.message,
+                        modifier = Modifier.testTag(AgentUiTags.Probe.VERIFY_ERROR),
+                        color = semantic.failure
+                    )
                     Spacer(Modifier.height(8.dp))
                     VerifyProbeButton(onClick = viewModel::onVerifyClicked)
                     OutlinedTextField(value = testInterface, onValueChange = { viewModel.testInterface.value = it }, label = { Text(stringResource(R.string.probe_edit_test_interface_manual)) }, modifier = Modifier.fillMaxWidth(), singleLine = true)

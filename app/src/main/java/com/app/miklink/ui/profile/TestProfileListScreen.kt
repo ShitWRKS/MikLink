@@ -18,6 +18,9 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
@@ -33,6 +36,7 @@ import androidx.navigation.NavController
 import com.app.miklink.core.domain.model.TestProfile
 import com.app.miklink.R
 import com.app.miklink.ui.testing.AgentUiTags
+import com.app.miklink.ui.testing.AgentSemanticsConfig
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,6 +45,7 @@ fun TestProfileListScreen(
     viewModel: TestProfileViewModel = hiltViewModel()
 ) {
     val profiles by viewModel.profiles.collectAsStateWithLifecycle()
+    var profilePendingDeletion by remember { mutableStateOf<TestProfile?>(null) }
 
     Scaffold(
         modifier = Modifier.testTag(AgentUiTags.Profile.LIST),
@@ -161,13 +166,36 @@ fun TestProfileListScreen(
                     ) {
                         TestProfileCard(
                             profile = profile,
-                            modifier = Modifier.testTag("${AgentUiTags.Profile.ITEM_PREFIX}_${profile.profileId}"),
-                            onClick = { navController.navigate("profile_edit/${profile.profileId}") }
+                            onClick = { navController.navigate("profile_edit/${profile.profileId}") },
+                            onDelete = { profilePendingDeletion = profile }
                         )
                     }
                 }
             }
         }
+    }
+
+    profilePendingDeletion?.let { profile ->
+        AlertDialog(
+            modifier = AgentSemanticsConfig.rootModifier(),
+            onDismissRequest = { profilePendingDeletion = null },
+            title = { Text(stringResource(R.string.profile_delete_title)) },
+            text = { Text(stringResource(R.string.profile_delete_message, profile.profileName)) },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        profilePendingDeletion = null
+                        viewModel.deleteProfile(profile)
+                    },
+                    modifier = Modifier.testTag(AgentUiTags.Profile.DELETE_CONFIRM)
+                ) { Text(stringResource(R.string.delete)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { profilePendingDeletion = null }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
     }
 }
 
@@ -175,7 +203,8 @@ fun TestProfileListScreen(
 fun TestProfileCard(
     profile: TestProfile,
     modifier: Modifier = Modifier,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onDelete: () -> Unit
 ) {
     // Conta i test attivi
     val activeTests = listOf(
@@ -198,6 +227,7 @@ fun TestProfileCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .testTag("${AgentUiTags.Profile.ITEM_PREFIX}_${profile.profileId}")
                 .clickable(onClick = onClick)
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -297,11 +327,16 @@ fun TestProfileCard(
 
             Spacer(Modifier.width(8.dp))
 
-            Icon(
-                Icons.Default.ChevronRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            IconButton(
+                onClick = onDelete,
+                modifier = Modifier.testTag("${AgentUiTags.Profile.DELETE_PREFIX}_${profile.profileId}")
+            ) {
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = stringResource(R.string.delete),
+                    tint = MaterialTheme.colorScheme.error
+                )
+            }
         }
     }
 }

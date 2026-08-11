@@ -30,6 +30,7 @@ import com.app.miklink.core.domain.model.NetworkMode
 import com.app.miklink.core.domain.policy.socketid.SocketIdLite
 import com.app.miklink.R
 import com.app.miklink.ui.testing.AgentUiTags
+import com.app.miklink.utils.NetworkValidator
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,7 +64,12 @@ fun ClientEditScreen(
     val socketSuffix by viewModel.socketSuffix.collectAsStateWithLifecycle()
     val socketSeparator by viewModel.socketSeparator.collectAsStateWithLifecycle()
     val socketNumberPadding by viewModel.socketNumberPadding.collectAsStateWithLifecycle()
-    val isSaveEnabled = companyName.isNotBlank()
+    val isSaveEnabled = companyName.isNotBlank() && (
+        networkMode != NetworkMode.STATIC || (
+            NetworkValidator.isValidIpv4Cidr(staticCidr) &&
+                NetworkValidator.isValidIpv4WithoutCidr(staticGateway)
+        )
+    )
 
     // Speed Test configuration
     val speedTestServerAddress by viewModel.speedTestServerAddress.collectAsStateWithLifecycle()

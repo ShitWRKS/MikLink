@@ -23,6 +23,7 @@ import com.app.miklink.core.data.pdf.PdfExportConfig
 import com.app.miklink.core.data.pdf.PdfPageOrientation
 import androidx.compose.ui.res.stringResource
 import com.app.miklink.R
+import com.app.miklink.ui.testing.AgentSemanticsConfig
 import com.app.miklink.ui.testing.AgentUiTags
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -56,7 +57,7 @@ fun PdfExportDialog(
     var isColumnsExpanded by remember { mutableStateOf(false) }
 
     AlertDialog(
-        modifier = Modifier.testTag(AgentUiTags.Report.PDF_DIALOG),
+        modifier = AgentSemanticsConfig.rootModifier().testTag(AgentUiTags.Report.PDF_DIALOG),
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.pdf_export_title)) },
         text = {

@@ -1,7 +1,6 @@
 package com.app.miklink.e2e.functional
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.app.miklink.core.domain.model.preferences.IdNumberingStrategy
 import com.app.miklink.e2e.catalog.appOnlyDependencies
 import com.app.miklink.e2e.support.CleanupResult
 import com.app.miklink.e2e.support.CleanupStatus
@@ -14,12 +13,21 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class SettingsUiTest {
-    private var originalStrategy: IdNumberingStrategy? = null
+    private var originalStrategyTag: String? = null
+    private var restoredThroughUi = false
 
     @get:Rule val scenarioRule = ScenarioRule.catalog(
         scenarioId = "ui-settings",
         cleanup = {
-            originalStrategy?.let { appOnlyDependencies().userPreferencesRepository().setIdNumberingStrategy(it) }
+            val original = originalStrategyTag
+            if (original != null && !restoredThroughUi) {
+                val strategy = if (original == AgentUiTags.Settings.ID_STRATEGY_CONTINUOUS) {
+                    com.app.miklink.core.domain.model.preferences.IdNumberingStrategy.CONTINUOUS_INCREMENT
+                } else {
+                    com.app.miklink.core.domain.model.preferences.IdNumberingStrategy.FILL_GAPS
+                }
+                appOnlyDependencies().userPreferencesRepository().setIdNumberingStrategy(strategy)
+            }
             CleanupResult(CleanupStatus.PASS)
         }
     )
@@ -29,36 +37,36 @@ class SettingsUiTest {
         clickResource(DashboardTags.SETTINGS_BUTTON)
         requireResource(AgentUiTags.Settings.SCREEN)
 
-        originalStrategy = when {
-            device.hasObject(androidx.test.uiautomator.By.text("Continuo")) ->
-                IdNumberingStrategy.CONTINUOUS_INCREMENT
-            device.hasObject(androidx.test.uiautomator.By.text("Riempi Buchi")) ->
-                IdNumberingStrategy.FILL_GAPS
-            else -> throw AssertionError("Initial numbering strategy is not visible")
-        }
-        val replacement = if (originalStrategy == IdNumberingStrategy.CONTINUOUS_INCREMENT) {
-            "Riempi Buchi"
-        } else {
-            "Incremento Continuo"
-        }
-        val replacementSummary = if (replacement == "Riempi Buchi") "Riempi Buchi" else "Continuo"
-        val originalChoice = if (originalStrategy == IdNumberingStrategy.CONTINUOUS_INCREMENT) {
-            "Incremento Continuo"
-        } else {
-            "Riempi Buchi"
-        }
-        val originalSummary = if (originalStrategy == IdNumberingStrategy.CONTINUOUS_INCREMENT) "Continuo" else "Riempi Buchi"
-
         clickResource(AgentUiTags.Settings.ID_STRATEGY, scroll = true)
-        clickText(replacement)
+        val continuous = requireResource(AgentUiTags.Settings.ID_STRATEGY_CONTINUOUS)
+        val fillGaps = requireResource(AgentUiTags.Settings.ID_STRATEGY_FILL_GAPS)
+        check(continuous.isChecked.xor(fillGaps.isChecked)) { "Exactly one numbering strategy must be selected" }
+        originalStrategyTag = if (continuous.isChecked) {
+            AgentUiTags.Settings.ID_STRATEGY_CONTINUOUS
+        } else {
+            AgentUiTags.Settings.ID_STRATEGY_FILL_GAPS
+        }
+        val replacementTag = if (originalStrategyTag == AgentUiTags.Settings.ID_STRATEGY_CONTINUOUS) {
+            AgentUiTags.Settings.ID_STRATEGY_FILL_GAPS
+        } else {
+            AgentUiTags.Settings.ID_STRATEGY_CONTINUOUS
+        }
+
+        clickResource(replacementTag)
         pressBackToDashboard()
         clickResource(DashboardTags.SETTINGS_BUTTON)
-        requireText(replacementSummary)
-
+        requireResource(AgentUiTags.Settings.SCREEN)
         clickResource(AgentUiTags.Settings.ID_STRATEGY, scroll = true)
-        clickText(originalChoice)
+        check(requireResource(replacementTag).isChecked) { "Replacement numbering strategy did not persist" }
+
+        clickResource(requireNotNull(originalStrategyTag))
         pressBackToDashboard()
         clickResource(DashboardTags.SETTINGS_BUTTON)
-        requireText(originalSummary)
+        requireResource(AgentUiTags.Settings.SCREEN)
+        clickResource(AgentUiTags.Settings.ID_STRATEGY, scroll = true)
+        check(requireResource(requireNotNull(originalStrategyTag)).isChecked) {
+            "Original numbering strategy was not restored through UI"
+        }
+        restoredThroughUi = true
     }
 }
