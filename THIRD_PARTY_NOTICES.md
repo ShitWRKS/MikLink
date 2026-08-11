@@ -1,5 +1,14 @@
 # Third-party notices
 
+## Manrope
+
+Manrope is distributed under the SIL Open Font License, Version 1.1.
+
+Source:
+https://github.com/google/fonts/tree/main/ofl/manrope
+
+Copyright 2018 The Manrope Project Authors (https://github.com/sharanda/manrope)
+
 ## JetBrains Mono
 
 JetBrains Mono is distributed under the SIL Open Font License, Version 1.1.
@@ -7,9 +16,9 @@ JetBrains Mono is distributed under the SIL Open Font License, Version 1.1.
 Source:
 https://github.com/JetBrains/JetBrainsMono
 
-License:
-
 Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono)
+
+## License
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:

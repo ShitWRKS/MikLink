@@ -10,9 +10,11 @@ Scopo: documentare font, semantic status colors e soft glow della UI MikLink, in
 - Light neutrali: `#F4F6F8/#FFFFFF/#E4E9F0`, outline `#CBD3DE`, textHigh `#0E0E10`.
 
 ## Font
-- Base UI: **Manrope** (Regular/Medium/SemiBold) in `app/src/main/res/font/manrope_*.ttf`, referenziati in `app/src/main/java/com/app/miklink/ui/theme/Type.kt` e applicati come `MaterialTheme.typography`.
-- Monospace tecnico: **JetBrains Mono** (Regular/Medium) in `app/src/main/res/font/jetbrains_mono_*.ttf`, esposti in `Type.kt` via `JetBrainsMono`, `MonoBody`, `MonoLabel`. Usare per log (sanitized), valori tecnici, ping samples (es. `RawLogsPane`, `PingSectionRenderer`).
-- Licenze: Manrope (SIL OFL 1.1) e JetBrains Mono (Apache 2.0). Binari da repo ufficiali; mantenere i file sotto `res/font` e documentare se si aggiungono pesi.
+- Base UI: **Manrope** variable (pesi consumati: Regular 400, Medium 500, SemiBold 600, Bold 700) in `app/src/main/res/font/manrope_variable.ttf`. `UiFontFamily` imposta esplicitamente l'asse `wght` per ogni peso e alimenta l'intera scala `MaterialTheme.typography`: titoli, sezioni, body, label, azioni, form, dialog e navigazione restano proporzionali.
+- Monospace tecnico: **JetBrains Mono** (Regular/Medium) in `app/src/main/res/font/jetbrains_mono_*.ttf`. `TechnicalFontFamily` è usata soltanto dagli stili semantici `MonoBody` e `MonoLabel`, per log/output raw e campioni diagnostici nei quali il monospace migliora scansione e allineamento (per esempio `RawLogsPane` e `PingSectionRenderer`). Valori di controllo compatti come intervalli e percentuali nelle impostazioni restano normale testo UI.
+- Regola anti-regressione: non assegnare `TechnicalFontFamily`/JetBrains Mono alla normale scala `MaterialTheme.typography` e non aggiungere override `fontFamily` nelle schermate. Un nuovo uso monospace deve rappresentare un dato tecnico e consumare `MonoBody` o `MonoLabel`.
+- Font e licenze: Manrope proviene dalla [distribuzione Google Fonts](https://github.com/google/fonts/tree/main/ofl/manrope); JetBrains Mono dal [repository ufficiale JetBrains](https://github.com/JetBrains/JetBrainsMono). Entrambi sono redistribuiti sotto SIL Open Font License 1.1; copyright e testo della licenza sono in `THIRD_PARTY_NOTICES.md`.
+- Valutazione JetBrains Sans (2026-08-11): le [linee guida ufficiali JetBrains](https://www.jetbrains.com/company/brand/) ne attestano il nome, ma non espongono un pacchetto font Android/TTF né una licenza specifica che autorizzi il bundling e la redistribuzione. I [termini ufficiali del sito](https://www.jetbrains.com/legal/docs/company/useterms/) non concedono la redistribuzione dei contenuti del sito. Non essendo dimostrabile la redistribuibilità da una fonte ufficiale JetBrains, JetBrains Sans non è inclusa e non va estratta o convertita dagli asset web.
 
 ## Execution logs
 - Execution logs are displayed using JetBrains Mono for readability.
@@ -40,7 +42,7 @@ Scopo: documentare font, semantic status colors e soft glow della UI MikLink, in
   - `rg "Color\\.Red|Color\\.Green|0xFF4CAF50|0xFFF44336|0xFF2E7D32"`
   - `rg "errorContainer" app/src/main/java/com/app/miklink/ui` (non deve servire per FAIL test)
   - `rg "FontStyle\\.Italic"` (non usare corsivo)
-  - `rg "FontFamily\\.Monospace|monospace"` (solo in `Type.kt` helpers)
+  - `rg "JetBrainsMono|FontFamily\\.(Monospace|Mono)|fontFamily\\s*=|MonoBody|MonoLabel" app/src/main/java/com/app/miklink/ui` (solo configurazione centrale e helper tecnici motivati)
   - `rg "#015EA4|#012D4E|#4FA2DB|violet|purple|cyan"` (evitare reintroduzione blu/violet)
 - Verifica manuale light/dark:
   - PASS/FAIL/RUNNING con palette v1 + glow soft.

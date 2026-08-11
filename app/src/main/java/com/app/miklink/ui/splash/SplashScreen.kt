@@ -30,7 +30,6 @@ import com.app.miklink.R
 import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import com.app.miklink.ui.theme.JetBrainsMono
 import coil3.ImageLoader
 import coil3.gif.AnimatedImageDecoder
 import coil3.gif.GifDecoder
@@ -148,7 +147,6 @@ fun SplashScreen(navController: NavController) {
                 text = stringResource(R.string.splash_featured_by),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
-                fontFamily = JetBrainsMono,
                 letterSpacing = 2.sp
             )
 
@@ -177,10 +175,9 @@ fun SplashScreen(navController: NavController) {
                 androidx.compose.material3.Text(
                 text = stringResource(R.string.splash_shitworks_name),
                     style = MaterialTheme.typography.titleLarge,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.Black,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.primary,
-                    letterSpacing = 1.sp,
-                    fontFamily = JetBrainsMono
+                    letterSpacing = 1.sp
                 )
             }
 
