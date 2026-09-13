@@ -21,7 +21,7 @@ class ReportDetailScreenLocalTest {
     val composeRule = createAndroidComposeRule<androidx.activity.ComponentActivity>()
 
     private class FakeProvider : ReportDetailScreenStateProvider {
-        private val _report = MutableStateFlow(
+        private val _report = MutableStateFlow<TestReport?>(
             TestReport(
                 reportId = 42L,
                 clientId = null,

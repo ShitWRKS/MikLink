@@ -11,8 +11,10 @@ import com.app.miklink.core.domain.test.model.CableTestSummary
 import com.app.miklink.core.domain.test.model.StepResult
 import com.app.miklink.core.domain.test.model.TestError
 import com.app.miklink.core.domain.test.model.TestExecutionContext
+import com.app.miklink.core.domain.test.model.TestExecutionException
 import com.app.miklink.core.domain.test.step.CableTestStep
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 
 /**
  * Implementazione di CableTestStep.
@@ -29,15 +31,12 @@ class CableTestStepImpl @Inject constructor(
                 once = true
             )
             StepResult.Success(cableTestSummary)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: TestExecutionException) {
+            StepResult.Failed(e.error)
         } catch (e: Exception) {
-            // Distinguere tra errori hardware vs errori temporanei
-            val isUnsupported = e.message?.contains("non supportato", ignoreCase = true) == true
-                    || e.message?.contains("unsupported", ignoreCase = true) == true
-            if (isUnsupported) {
-                StepResult.Failed(TestError.Unsupported(e.message ?: "TDR not supported"))
-            } else {
-                StepResult.Failed(TestError.NetworkError(e.message ?: "Cable test failed"))
-            }
+            StepResult.Failed(TestError.Unexpected(e.message ?: "Cable test failed", e))
         }
     }
 }

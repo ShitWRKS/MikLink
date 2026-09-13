@@ -28,6 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -47,6 +48,10 @@ fun SetupWizardCard(
     onSelectClient: () -> Unit,
     onSelectProfile: () -> Unit,
     onSocketChange: (String) -> Unit,
+    clientSelectorTag: String? = null,
+    profileSelectorTag: String? = null,
+    manageClientTag: String? = null,
+    manageProfileTag: String? = null,
     onManageClient: (() -> Unit)? = null,
     onManageProfile: (() -> Unit)? = null
 ) {
@@ -72,20 +77,24 @@ fun SetupWizardCard(
             WizardStepRow(
                 step = 1,
                 title = stringResource(id = R.string.dashboard_section_client),
-                value = clientName ?: stringResource(id = R.string.dashboard_select_client),
+                value = clientName ?: stringResource(id = R.string.dashboard_select),
                 subtitle = clientSubtitle,
                 isComplete = clientReady,
                 onClick = onSelectClient,
-                onManage = onManageClient
+                modifier = modifierForTag(clientSelectorTag),
+                onManage = onManageClient,
+                manageTag = manageClientTag
             )
             WizardStepRow(
                 step = 2,
                 title = stringResource(id = R.string.dashboard_section_profile),
-                value = profileName ?: stringResource(id = R.string.dashboard_select_profile),
+                value = profileName ?: stringResource(id = R.string.dashboard_select),
                 subtitle = profileSubtitle,
                 isComplete = profileReady,
                 onClick = onSelectProfile,
-                onManage = onManageProfile
+                modifier = modifierForTag(profileSelectorTag),
+                onManage = onManageProfile,
+                manageTag = manageProfileTag
             )
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
@@ -115,6 +124,10 @@ fun SetupWizardCard(
     }
 }
 
+private fun modifierForTag(tag: String?): Modifier {
+    return if (tag.isNullOrBlank()) Modifier else Modifier.testTag(tag)
+}
+
 @Composable
 private fun WizardStepRow(
     step: Int,
@@ -124,7 +137,8 @@ private fun WizardStepRow(
     isComplete: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    onManage: (() -> Unit)? = null
+    onManage: (() -> Unit)? = null,
+    manageTag: String? = null
 ) {
     val semantic = MikLinkThemeTokens.semantic
 
@@ -159,7 +173,10 @@ private fun WizardStepRow(
             }
         }
         if (onManage != null) {
-            IconButton(onClick = onManage) {
+            IconButton(
+                onClick = onManage,
+                modifier = modifierForTag(manageTag)
+            ) {
                 Icon(
                     imageVector = Icons.Default.Edit,
                     contentDescription = stringResource(id = R.string.edit),

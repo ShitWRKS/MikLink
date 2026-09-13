@@ -25,3 +25,23 @@ L'incremento del contatore socket avveniva solo sui report `PASS`, causando sugg
 - Dopo un salvataggio `PASS` o `FAIL`, il suggerimento socket viene avanzato senza dover riaprire la schermata o riselezionare il cliente.
 - La policy di incremento resta centralizzata nel use case; repository Room rimangono CRUD.
 - Documentazione e test devono considerare l'incremento sempre-on-save come comportamento di default.
+## Aggiornamento (atomicità report + contatore — ADR-0013)
+
+L'incremento del contatore e l'inserimento del report devono essere **atomici** (stessa transazione
+Room tramite `TransactionRunner`). Vedi `reference/database.md` e `core/domain/usecase/report/SaveTestReportUseCase.kt`.
+
+- In `SaveTestReportUseCase`:
+  - se `incrementClientCounter = true`: inserimento report + incremento nella stessa transazione;
+  - se `incrementClientCounter = false`: salva soltanto il report (nessun incremento);
+  - se `clientId` è `null`: preserva il comportamento previsto per report orfani;
+  - se è richiesto l'incremento e il client non esiste: **fallisci e rollback** (non read-copy-update).
+- La query atomica di incremento è equivalente a:
+
+  ```sql
+  UPDATE clients
+  SET nextIdNumber = nextIdNumber + 1
+  WHERE clientId = :clientId
+  ```
+
+  e restituisce il numero di righe aggiornate (0 ⇒ client inesistente ⇒ rollback).
+- Il rollback è affidato alla transazione; non esiste ripristino manuale post-failure.

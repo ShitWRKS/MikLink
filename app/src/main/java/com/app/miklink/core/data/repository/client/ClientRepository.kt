@@ -12,5 +12,11 @@ interface ClientRepository {
     suspend fun insertClient(client: Client): Long
     suspend fun updateClient(client: Client)
     suspend fun deleteClient(client: Client)
+
+    /**
+     * Atomically increments the Socket-ID counter (ADR-0010/ADR-0013).
+     * Returns the number of rows updated: 0 means the client does not exist.
+     */
+    suspend fun incrementNextIdNumber(clientId: Long): Int
 }
 

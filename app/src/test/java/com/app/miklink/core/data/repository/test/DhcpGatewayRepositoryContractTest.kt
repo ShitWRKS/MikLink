@@ -7,10 +7,13 @@
 package com.app.miklink.core.data.repository.test
 
 import com.app.miklink.core.domain.model.ProbeConfig
+import com.app.miklink.core.domain.model.TdrCapability
 import com.app.miklink.data.remote.mikrotik.dto.DhcpClientStatus
 import com.app.miklink.data.remote.mikrotik.service.MikroTikApiService
 import com.app.miklink.data.remote.mikrotik.service.MikroTikCallExecutor
 import com.app.miklink.data.remote.mikrotik.service.MikroTikServiceProvider
+import com.app.miklink.data.remote.mikrotik.service.RouterOsResponseDecoder
+import com.squareup.moshi.Moshi
 import com.app.miklink.data.repository.mikrotik.MikroTikDhcpGatewayRepository
 import io.mockk.every
 import io.mockk.coEvery
@@ -20,6 +23,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Assert.*
 import org.junit.Test
+import retrofit2.Response
 
 /**
  * Contract test per DhcpGatewayRepository.
@@ -29,8 +33,9 @@ class DhcpGatewayRepositoryContractTest {
 
     private val mockServiceProvider = mockk<MikroTikServiceProvider>()
     private val mockApiService = mockk<MikroTikApiService>()
+    private val mockDecoder = RouterOsResponseDecoder(Moshi.Builder().build())
     private val callExecutor = MikroTikCallExecutor(mockServiceProvider)
-    private val repository: DhcpGatewayRepository = MikroTikDhcpGatewayRepository(callExecutor)
+    private val repository: DhcpGatewayRepository = MikroTikDhcpGatewayRepository(callExecutor, mockDecoder)
 
     private val testProbe = ProbeConfig(
         ipAddress = "192.168.1.1",
@@ -39,7 +44,7 @@ class DhcpGatewayRepositoryContractTest {
         testInterface = "ether1",
         isOnline = false,
         modelName = null,
-        tdrSupported = false,
+        tdrCapability = TdrCapability.UNKNOWN,
         isHttps = false
     )
 
@@ -61,7 +66,7 @@ class DhcpGatewayRepositoryContractTest {
             dns = "8.8.8.8"
         )
         coEvery { mockServiceProvider.build(testProbe) } returns mockApiService
-        coEvery { mockApiService.getDhcpClientStatus("ether1") } returns listOf(dhcpStatus)
+        coEvery { mockApiService.getDhcpClientStatus("ether1") } returns Response.success(listOf(dhcpStatus))
 
         // When
         val result = repository.getGatewayForInterface(testProbe, "ether1")
@@ -82,7 +87,7 @@ class DhcpGatewayRepositoryContractTest {
             dns = "8.8.8.8"
         )
         coEvery { mockServiceProvider.build(testProbe) } returns mockApiService
-        coEvery { mockApiService.getDhcpClientStatus("ether1") } returns listOf(dhcpStatus)
+        coEvery { mockApiService.getDhcpClientStatus("ether1") } returns Response.success(listOf(dhcpStatus))
 
         // When
         val result = repository.getGatewayForInterface(testProbe, "ether1")
@@ -95,7 +100,7 @@ class DhcpGatewayRepositoryContractTest {
     fun `getGatewayForInterface returns null when no DHCP client exists`() = runBlocking {
         // Given: Nessun client DHCP
         coEvery { mockServiceProvider.build(testProbe) } returns mockApiService
-        coEvery { mockApiService.getDhcpClientStatus("ether1") } returns emptyList()
+        coEvery { mockApiService.getDhcpClientStatus("ether1") } returns Response.success(emptyList())
 
         // When
         val result = repository.getGatewayForInterface(testProbe, "ether1")

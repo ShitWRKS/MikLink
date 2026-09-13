@@ -39,6 +39,7 @@ fun ModernSearchBar(
     query: String,
     onQueryChange: (String) -> Unit,
     modifier: Modifier = Modifier,
+    inputModifier: Modifier = Modifier,
     onFilterClick: (() -> Unit)? = null,
     placeholder: String = "Search"
 ) {
@@ -64,7 +65,7 @@ fun ModernSearchBar(
             BasicTextField(
                 value = query,
                 onValueChange = onQueryChange,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = inputModifier.fillMaxWidth(),
                 textStyle = TextStyle(
                     color = MaterialTheme.colorScheme.onSurface,
                     fontSize = MaterialTheme.typography.bodyMedium.fontSize

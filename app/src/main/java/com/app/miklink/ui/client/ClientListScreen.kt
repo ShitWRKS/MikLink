@@ -3,12 +3,9 @@ package com.app.miklink.ui.client
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -17,17 +14,22 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.app.miklink.ui.components.MinimalListItem
 import com.app.miklink.ui.components.ModernSearchBar
+import com.app.miklink.ui.components.ListEmptyState
+import androidx.compose.ui.res.pluralStringResource
 import com.app.miklink.R
+import com.app.miklink.core.domain.model.Client
+import com.app.miklink.ui.common.asString
+import com.app.miklink.ui.testing.AgentUiTags
+import com.app.miklink.ui.testing.AgentSemanticsConfig
 import kotlinx.coroutines.launch
 
 // Removed legacy WebView-based printing imports
@@ -40,11 +42,13 @@ fun ClientListScreen(
 ) {
     val clients by viewModel.clients.collectAsStateWithLifecycle()
     val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
+    val resolvedErrorMessage = errorMessage?.asString()
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
-    LaunchedEffect(errorMessage) {
-        errorMessage?.let { message ->
+    var clientPendingDeletion by remember { mutableStateOf<Client?>(null) }
+    LaunchedEffect(resolvedErrorMessage) {
+        resolvedErrorMessage?.let { message ->
             snackbarHostState.showSnackbar(message)
             viewModel.consumeError()
         }
@@ -63,6 +67,7 @@ fun ClientListScreen(
     // PDF generation is now handled by PdfGenerator (iText). The old HTML/WebView pipeline was removed
 
     Scaffold(
+        modifier = Modifier.testTag(AgentUiTags.Client.LIST),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
@@ -78,7 +83,11 @@ fun ClientListScreen(
                         Column {
                             Text(stringResource(id = com.app.miklink.R.string.client_list_title), fontWeight = FontWeight.Bold)
                             Text(
-                                "${filteredClients.size} ${if (filteredClients.size == 1) "client" else "clients"}",
+                                pluralStringResource(
+                                    R.plurals.client_list_count,
+                                    filteredClients.size,
+                                    filteredClients.size
+                                ),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -99,6 +108,7 @@ fun ClientListScreen(
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 onClick = { navController.navigate("client_add") },
+                modifier = Modifier.testTag(AgentUiTags.Client.ADD),
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
                 text = { Text(stringResource(R.string.client_list_new_client)) },
                 containerColor = MaterialTheme.colorScheme.primary,
@@ -116,6 +126,7 @@ fun ClientListScreen(
                 query = searchQuery,
                 onQueryChange = { searchQuery = it },
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                inputModifier = Modifier.testTag(AgentUiTags.Client.SEARCH),
                 placeholder = stringResource(R.string.dashboard_search_client)
             )
 
@@ -127,37 +138,11 @@ fun ClientListScreen(
                         .padding(32.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(80.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.surfaceVariant),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                Icons.Default.BusinessCenter,
-                                contentDescription = null,
-                                modifier = Modifier.size(40.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Spacer(Modifier.height(24.dp))
-                        Text(
-                            text = "No clients",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            text = "Add your first client to get started.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            textAlign = TextAlign.Center,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    ListEmptyState(
+                        icon = Icons.Default.BusinessCenter,
+                        title = stringResource(R.string.client_list_empty_title),
+                        body = stringResource(R.string.client_list_empty_body)
+                    )
                 }
             } else if (filteredClients.isEmpty()) {
                 // Empty search results
@@ -168,7 +153,7 @@ fun ClientListScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "No results found for \"$searchQuery\"",
+                        text = stringResource(R.string.client_list_empty_search, searchQuery),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -187,10 +172,12 @@ fun ClientListScreen(
                         ) {
                             MinimalListItem(
                                 title = client.companyName,
-                                subtitle = client.location ?: "No location specified",
+                                subtitle = client.location ?: stringResource(R.string.client_list_no_location),
                                 icon = Icons.Default.Business,
+                                clickableModifier = Modifier.testTag("${AgentUiTags.Client.ITEM_PREFIX}_${client.clientId}"),
                                 onClick = { navController.navigate("client_edit/${client.clientId}") },
                                 trailingContent = {
+                                    Row {
                                     IconButton(onClick = {
                                         coroutineScope.launch {
                                             try {
@@ -242,6 +229,13 @@ fun ClientListScreen(
                                             }
                                         }
                                     }) { Icon(Icons.Default.PictureAsPdf, contentDescription = stringResource(R.string.history_export_pdf)) }
+                                    IconButton(
+                                        onClick = { clientPendingDeletion = client },
+                                        modifier = Modifier.testTag("${AgentUiTags.Client.DELETE_PREFIX}_${client.clientId}")
+                                    ) {
+                                        Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.delete))
+                                    }
+                                    }
                                 }
                             )
                         }
@@ -249,5 +243,28 @@ fun ClientListScreen(
                 }
             }
         }
+    }
+
+    clientPendingDeletion?.let { client ->
+        AlertDialog(
+            modifier = AgentSemanticsConfig.rootModifier(),
+            onDismissRequest = { clientPendingDeletion = null },
+            title = { Text(stringResource(R.string.client_delete_title)) },
+            text = { Text(stringResource(R.string.client_delete_message, client.companyName)) },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        clientPendingDeletion = null
+                        viewModel.deleteClient(client)
+                    },
+                    modifier = Modifier.testTag(AgentUiTags.Client.DELETE_CONFIRM)
+                ) { Text(stringResource(R.string.delete)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { clientPendingDeletion = null }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
     }
 }

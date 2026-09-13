@@ -21,6 +21,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -33,6 +34,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.res.stringResource
 import com.app.miklink.R
 import com.app.miklink.core.domain.model.preferences.IdNumberingStrategy
+import com.app.miklink.ui.testing.AgentUiTags
+import com.app.miklink.ui.testing.AgentSemanticsConfig
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -54,6 +57,7 @@ fun SettingsScreen(
     }
 
     Scaffold(
+        modifier = Modifier.testTag(AgentUiTags.Settings.SCREEN),
         topBar = {
             TopAppBar(
                 title = {
@@ -144,6 +148,7 @@ fun SettingsScreen(
                     headline = stringResource(R.string.settings_configure_probe),
                     subtitle = stringResource(R.string.settings_configure_probe_desc),
                     leadingIcon = Icons.Default.Router,
+                    modifier = Modifier.testTag(AgentUiTags.Settings.PROBE),
                     onClick = { navController.navigate("probe_config") }
                 )
 
@@ -168,6 +173,7 @@ fun SettingsScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
+                        // i18n-ignore: compact numeric value with the SI seconds symbol.
                         Text(
                             text = "${seconds.toInt()}s",
                             style = MaterialTheme.typography.labelLarge,
@@ -182,7 +188,7 @@ fun SettingsScreen(
                             viewModel.updateProbePollingInterval((roundedSeconds * 1000).toLong())
                         },
                         valueRange = 2f..30f,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth().testTag(AgentUiTags.Settings.POLLING)
                     )
                 }
 
@@ -206,6 +212,7 @@ fun SettingsScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
+                        // i18n-ignore: compact numeric percentage display.
                         Text(
                             text = "${(glowIntensity * 100).toInt()}%",
                             style = MaterialTheme.typography.labelLarge,
@@ -217,7 +224,7 @@ fun SettingsScreen(
                         value = glowIntensity,
                         onValueChange = { viewModel.updateDashboardGlowIntensity(it) },
                         valueRange = 0f..1f,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth().testTag(AgentUiTags.Settings.GLOW)
                     )
                 }
             }
@@ -245,6 +252,7 @@ fun SettingsScreen(
                     headline = stringResource(R.string.settings_backup),
                     subtitle = stringResource(R.string.settings_backup_desc),
                     leadingIcon = Icons.Default.CloudUpload,
+                    modifier = Modifier.testTag(AgentUiTags.Settings.BACKUP),
                     onClick = { navController.navigate("backup_settings") }
                 )
             }
@@ -258,6 +266,7 @@ fun SettingsScreen(
                     headline = stringResource(R.string.settings_pdf_preferences),
                     subtitle = stringResource(R.string.settings_pdf_preferences_desc),
                     leadingIcon = Icons.Default.SettingsApplications,
+                    modifier = Modifier.testTag(AgentUiTags.Settings.PDF),
                     onClick = { navController.navigate("pdf_settings") }
                 )
             }
@@ -269,8 +278,9 @@ fun SettingsScreen(
             ) {
                 SettingsCard(
                     headline = stringResource(R.string.settings_id_strategy),
-                    subtitle = "Incremento continuo o riuso ID",
+                    subtitle = stringResource(R.string.settings_id_strategy_desc),
                     leadingIcon = Icons.Default.Numbers,
+                    modifier = Modifier.testTag(AgentUiTags.Settings.ID_STRATEGY),
                     onClick = { showIdStrategyDialog = true },
                     trailingContent = {
                         Surface(
@@ -295,6 +305,7 @@ fun SettingsScreen(
                     headline = stringResource(R.string.settings_discovery_protocols_title),
                     subtitle = stringResource(R.string.settings_discovery_protocols_desc),
                     leadingIcon = Icons.Default.FilterList,
+                    modifier = Modifier.testTag(AgentUiTags.Settings.DISCOVERY_PROTOCOLS),
                     onClick = { showDiscoveryProtocolsDialog = true },
                     trailingContent = {
                         Surface(
@@ -345,6 +356,7 @@ fun SettingsScreen(
 
     if (showIdStrategyDialog) {
         AlertDialog(
+            modifier = AgentSemanticsConfig.rootModifier(),
             onDismissRequest = { showIdStrategyDialog = false },
             title = { Text(stringResource(R.string.settings_id_strategy_dialog_title)) },
             text = {
@@ -362,6 +374,12 @@ fun SettingsScreen(
                         ) {
                             RadioButton(
                                 selected = (idNumberingStrategy == strategy),
+                                modifier = Modifier.testTag(
+                                    when (strategy) {
+                                        IdNumberingStrategy.CONTINUOUS_INCREMENT -> AgentUiTags.Settings.ID_STRATEGY_CONTINUOUS
+                                        IdNumberingStrategy.FILL_GAPS -> AgentUiTags.Settings.ID_STRATEGY_FILL_GAPS
+                                    }
+                                ),
                                 onClick = {
                                     viewModel.updateIdNumberingStrategy(strategy)
                                     showIdStrategyDialog = false
@@ -406,6 +424,7 @@ fun SettingsScreen(
             "MNDP" to stringResource(R.string.neighbor_protocol_mndp)
         )
         AlertDialog(
+            modifier = AgentSemanticsConfig.rootModifier(),
             onDismissRequest = { showDiscoveryProtocolsDialog = false },
             title = { Text(stringResource(R.string.settings_discovery_protocols_dialog_title)) },
             text = {
@@ -491,11 +510,12 @@ private fun SettingsCard(
     headline: String,
     subtitle: String,
     leadingIcon: ImageVector,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit,
     trailingContent: (@Composable () -> Unit)? = null
 ) {
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),

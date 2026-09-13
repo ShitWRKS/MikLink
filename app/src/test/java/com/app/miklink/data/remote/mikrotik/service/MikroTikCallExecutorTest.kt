@@ -7,9 +7,11 @@
 package com.app.miklink.data.remote.mikrotik.service
 
 import com.app.miklink.core.domain.model.ProbeConfig
+import com.app.miklink.core.domain.model.TdrCapability
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -32,7 +34,7 @@ class MikroTikCallExecutorTest {
         isHttps = true,
         isOnline = false,
         modelName = null,
-        tdrSupported = false
+        tdrCapability = TdrCapability.UNKNOWN
     )
 
     @Test
@@ -99,6 +101,63 @@ class MikroTikCallExecutorTest {
         assertTrue(failure.failures[0].throwable is SSLHandshakeException)
         assertEquals("http", failure.failures[1].scheme)
         assertEquals("http down", failure.failures[1].throwable.message)
+    }
+
+    @Test
+    fun `executeWithOutcome rethrows cancellation instead of mapping it as call failure`() = runTest {
+        mockLogs()
+        every { serviceProvider.build(match { !it.isHttps }) } returns httpApi
+        val probe = httpsProbe.copy(isHttps = false)
+
+        val result = runCatching {
+            executor.executeWithOutcome(probe) {
+                throw CancellationException("job cancelled")
+            }
+        }
+
+        assertTrue(result.exceptionOrNull() is CancellationException)
+    }
+
+    // === classify tests for TestExecutionException ===
+
+    @Test
+    fun `classify preserves TestError from TestExecutionException`() {
+        val testErrors = listOf(
+            com.app.miklink.core.domain.test.model.TestError.ProbeUnavailable("probe gone"),
+            com.app.miklink.core.domain.test.model.TestError.Authentication("auth failed"),
+            com.app.miklink.core.domain.test.model.TestError.Timeout("timed out"),
+            com.app.miklink.core.domain.test.model.TestError.InvalidResponse("bad response"),
+            com.app.miklink.core.domain.test.model.TestError.Unexpected("unexpected"),
+            com.app.miklink.core.domain.test.model.TestError.RouterOsError("router err", code = 500)
+        )
+
+        for (expected in testErrors) {
+            val exception = com.app.miklink.core.domain.test.model.TestExecutionException(expected)
+            val classified = executor.classify(exception)
+            assertEquals(
+                "Expected ${expected::class.simpleName} for ${expected.message}",
+                expected::class, classified::class
+            )
+            assertEquals(expected.message, classified.message)
+        }
+    }
+
+    @Test
+    fun `classify maps ConnectException to ProbeUnavailable`() {
+        val classified = executor.classify(java.net.ConnectException("refused"))
+        assertTrue("Expected ProbeUnavailable but got ${classified::class.simpleName}",
+            classified is com.app.miklink.core.domain.test.model.TestError.ProbeUnavailable)
+    }
+
+    @Test
+    fun `classify maps SocketTimeoutException to Timeout`() {
+        val classified = executor.classify(java.net.SocketTimeoutException("timeout"))
+        assertTrue(classified is com.app.miklink.core.domain.test.model.TestError.Timeout)
+    }
+
+    @Test(expected = CancellationException::class)
+    fun `classify rethrows CancellationException`() {
+        executor.classify(CancellationException("cancelled"))
     }
 
     private fun mockLogs() {

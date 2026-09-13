@@ -25,6 +25,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -47,6 +48,7 @@ import androidx.compose.foundation.clickable
 
 import androidx.compose.ui.res.stringResource
 import com.app.miklink.R
+import com.app.miklink.ui.testing.AgentUiTags
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -101,6 +103,7 @@ fun HistoryScreen(
     }
 
     Scaffold(
+        modifier = Modifier.testTag(AgentUiTags.History.SCREEN),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             Column {
@@ -125,7 +128,8 @@ fun HistoryScreen(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .testTag(AgentUiTags.History.SEARCH),
                     placeholder = { Text(stringResource(R.string.history_search_placeholder)) },
                     leadingIcon = {
                         Icon(Icons.Default.Search, contentDescription = stringResource(R.string.common_search))
@@ -574,7 +578,9 @@ fun ClientReportsCard(
 ) {
     val semantic = MikLinkThemeTokens.semantic
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("${AgentUiTags.History.CLIENT_GROUP_PREFIX}_${clientData.client?.clientId ?: -1}"),
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Column {
@@ -613,6 +619,7 @@ fun ClientReportsCard(
                                         modifier = Modifier.size(14.dp),
                                         tint = semantic.onSuccessContainer
                                     )
+                                    // i18n-ignore: the badge contains only a locale-neutral integer.
                                     Text(
                                         "${clientData.passedTests}",
                                         color = semantic.onSuccessContainer,
@@ -635,6 +642,7 @@ fun ClientReportsCard(
                                         modifier = Modifier.size(14.dp),
                                         tint = semantic.onFailureContainer
                                     )
+                                    // i18n-ignore: the badge contains only a locale-neutral integer.
                                     Text(
                                         "${clientData.failedTests}",
                                         color = semantic.onFailureContainer,
@@ -657,7 +665,12 @@ fun ClientReportsCard(
                     }
 
                     // Expand/collapse button: explicit tint for consistency
-                    IconButton(onClick = onToggleExpand) {
+                    IconButton(
+                        onClick = onToggleExpand,
+                        modifier = Modifier.testTag(
+                            "${AgentUiTags.History.CLIENT_EXPAND_PREFIX}_${clientData.client?.clientId ?: -1}"
+                        )
+                    ) {
                         Icon(
                             if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                             contentDescription = if (isExpanded) stringResource(R.string.collapse) else stringResource(R.string.expand),
@@ -701,6 +714,7 @@ fun ReportListItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .testTag("${AgentUiTags.History.REPORT_ITEM_PREFIX}_${report.reportId}")
             .clickable { onEdit() }
             .padding(horizontal = 12.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,

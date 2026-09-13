@@ -47,8 +47,7 @@ class ReportDataToSnapshotMapper {
         return TestSectionSnapshot(
             id = TestSectionId.NETWORK,
             status = status,
-            payload = payload,
-            title = "Network"
+            payload = payload
         )
     }
 
@@ -58,8 +57,7 @@ class ReportDataToSnapshotMapper {
         return TestSectionSnapshot(
             id = TestSectionId.LINK,
             status = status,
-            payload = payload,
-            title = "Link"
+            payload = payload
         )
     }
 
@@ -73,8 +71,7 @@ class ReportDataToSnapshotMapper {
         return TestSectionSnapshot(
             id = TestSectionId.TDR,
             status = status,
-            payload = payload,
-            title = "TDR"
+            payload = payload
         )
     }
 
@@ -88,8 +85,7 @@ class ReportDataToSnapshotMapper {
         return TestSectionSnapshot(
             id = TestSectionId.NEIGHBORS,
             status = status,
-            payload = payload,
-            title = "LLDP/CDP"
+            payload = payload
         )
     }
 
@@ -103,8 +99,7 @@ class ReportDataToSnapshotMapper {
         return TestSectionSnapshot(
             id = TestSectionId.PING,
             status = status,
-            payload = payload,
-            title = "Ping"
+            payload = payload
         )
     }
 
@@ -114,8 +109,7 @@ class ReportDataToSnapshotMapper {
         return TestSectionSnapshot(
             id = TestSectionId.SPEED,
             status = status,
-            payload = payload,
-            title = "Speed Test"
+            payload = payload
         )
     }
 }

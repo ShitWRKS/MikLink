@@ -14,6 +14,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.draw.scale
@@ -22,6 +23,8 @@ import com.app.miklink.core.data.pdf.PdfExportConfig
 import com.app.miklink.core.data.pdf.PdfPageOrientation
 import androidx.compose.ui.res.stringResource
 import com.app.miklink.R
+import com.app.miklink.ui.testing.AgentSemanticsConfig
+import com.app.miklink.ui.testing.AgentUiTags
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,6 +57,7 @@ fun PdfExportDialog(
     var isColumnsExpanded by remember { mutableStateOf(false) }
 
     AlertDialog(
+        modifier = AgentSemanticsConfig.rootModifier().testTag(AgentUiTags.Report.PDF_DIALOG),
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.pdf_export_title)) },
         text = {
@@ -72,7 +76,10 @@ fun PdfExportDialog(
                 
                 // Collapsible Override Section
                 Card(
-                     modifier = Modifier.fillMaxWidth().clickable { isExpanded = !isExpanded },
+                     modifier = Modifier
+                         .fillMaxWidth()
+                         .testTag(AgentUiTags.Report.PDF_OPTIONS)
+                         .clickable { isExpanded = !isExpanded },
                      colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
@@ -106,7 +113,7 @@ fun PdfExportDialog(
                                     value = reportTitle,
                                     onValueChange = { reportTitle = it },
                                     label = { Text(stringResource(R.string.pdf_report_title)) },
-                                    modifier = Modifier.fillMaxWidth(),
+                                    modifier = Modifier.fillMaxWidth().testTag(AgentUiTags.Report.PDF_TITLE),
                                     singleLine = true
                                 )
                                 
@@ -118,13 +125,15 @@ fun PdfExportDialog(
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         RadioButton(
                                             selected = selectedOrientation == PdfPageOrientation.PORTRAIT,
-                                            onClick = { selectedOrientation = PdfPageOrientation.PORTRAIT }
+                                            onClick = { selectedOrientation = PdfPageOrientation.PORTRAIT },
+                                            modifier = Modifier.testTag(AgentUiTags.Report.PDF_ORIENTATION_PORTRAIT)
                                         )
                                         Text(stringResource(R.string.pdf_orientation_portrait), style = MaterialTheme.typography.bodyMedium)
                                         Spacer(Modifier.width(16.dp))
                                         RadioButton(
                                             selected = selectedOrientation == PdfPageOrientation.LANDSCAPE,
-                                            onClick = { selectedOrientation = PdfPageOrientation.LANDSCAPE }
+                                            onClick = { selectedOrientation = PdfPageOrientation.LANDSCAPE },
+                                            modifier = Modifier.testTag(AgentUiTags.Report.PDF_ORIENTATION_LANDSCAPE)
                                         )
                                         Text(stringResource(R.string.pdf_orientation_landscape), style = MaterialTheme.typography.bodyMedium)
                                     }
@@ -139,7 +148,7 @@ fun PdfExportDialog(
                                         Switch(
                                             checked = showSignatures,
                                             onCheckedChange = { showSignatures = it },
-                                            modifier = Modifier.scale(0.8f)
+                                            modifier = Modifier.scale(0.8f).testTag(AgentUiTags.Report.PDF_SIGNATURES)
                                         )
                                     }
                                     
@@ -179,6 +188,7 @@ fun PdfExportDialog(
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
+                                            .testTag(AgentUiTags.Report.PDF_INCLUDE_EMPTY)
                                             .clickable { localIncludeEmpty = !localIncludeEmpty },
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
@@ -207,6 +217,7 @@ fun PdfExportDialog(
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
+                                            .testTag(AgentUiTags.Report.PDF_HIDE_EMPTY_COLUMNS)
                                             .clickable { localHideEmptyColumns = !localHideEmptyColumns },
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
@@ -247,6 +258,7 @@ fun PdfExportDialog(
                                                 style = MaterialTheme.typography.labelMedium,
                                                 color = MaterialTheme.colorScheme.primary
                                             )
+                                            // i18n-ignore: compact selected/total numeric counter.
                                             Text(
                                                 "${localColumns.size}/${ExportColumn.values().size}",
                                                 style = MaterialTheme.typography.bodySmall,
@@ -306,6 +318,7 @@ fun PdfExportDialog(
         confirmButton = {
             val defaultTitle = stringResource(R.string.pdf_default_title)
             Button(
+                modifier = Modifier.testTag(AgentUiTags.Report.PDF_CONFIRM),
                 onClick = {
                     val orderedColumns = ExportColumn.values().filter { localColumns.contains(it.name) }
                     

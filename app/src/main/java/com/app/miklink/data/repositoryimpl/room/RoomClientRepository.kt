@@ -33,4 +33,8 @@ class RoomClientRepository @Inject constructor(
     override suspend fun deleteClient(client: Client) {
         clientDao.delete(client.toEntity())
     }
+
+    override suspend fun incrementNextIdNumber(clientId: Long): Int {
+        return clientDao.incrementNextIdNumber(clientId)
+    }
 }

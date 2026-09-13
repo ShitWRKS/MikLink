@@ -71,6 +71,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.app.miklink.R
+import com.app.miklink.ui.testing.AgentUiTags
+import com.app.miklink.ui.testing.AgentSemanticsConfig
 import com.app.miklink.core.domain.model.TestReport
 import com.app.miklink.core.domain.model.report.ReportData
 import com.app.miklink.core.domain.test.model.TestSectionId
@@ -135,6 +137,7 @@ fun ReportDetailScreen(
     val socketName by stateProvider.socketName.collectAsStateWithLifecycle()
     val notes by stateProvider.notes.collectAsStateWithLifecycle()
     val clientName by stateProvider.clientName.collectAsStateWithLifecycle()
+    val displayClientName = clientName.ifBlank { stringResource(R.string.report_detail_unknown_client) }
     val exportingSingleMessage = stringResource(id = R.string.history_exporting_single)
     val pdfGeneratedMessage = stringResource(id = R.string.history_pdf_generated)
     val noPdfViewerMessage = stringResource(id = R.string.history_no_pdf_viewer)
@@ -168,12 +171,17 @@ fun ReportDetailScreen(
     }
 
     Scaffold(
+        modifier = Modifier.testTag(AgentUiTags.Report.SCREEN),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        text = "$clientName - ${report?.socketName ?: "..."}"
+                        text = stringResource(
+                            R.string.report_detail_topbar_title,
+                            displayClientName,
+                            report?.socketName ?: "…"
+                        )
                     )
                 },
                 navigationIcon = {
@@ -182,7 +190,10 @@ fun ReportDetailScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { showExportDialog = true }) {
+                    IconButton(
+                        onClick = { showExportDialog = true },
+                        modifier = Modifier.testTag(AgentUiTags.Report.EXPORT_PDF)
+                    ) {
                         Icon(Icons.Filled.PictureAsPdf, contentDescription = null)
                     }
                 },
@@ -244,7 +255,7 @@ fun ReportDetailScreen(
 
     if (showExportDialog && report != null) {
         PdfExportDialog(
-            clientName = clientName.ifBlank { "Report" },
+            clientName = displayClientName,
             globalIncludeEmpty = pdfIncludeEmptyTests,
             globalColumns = pdfSelectedColumns,
             globalReportTitle = pdfReportTitle,
@@ -290,6 +301,7 @@ fun ReportDetailScreen(
             title = stringResource(id = R.string.report_detail_delete_title),
             message = stringResource(id = R.string.report_detail_delete_body),
             confirmLabel = stringResource(id = R.string.report_detail_delete_confirm),
+            confirmTag = AgentUiTags.Report.DELETE_CONFIRM,
             onDismiss = { showDeleteDialog = false },
             onConfirm = {
                 showDeleteDialog = false
@@ -591,7 +603,7 @@ private fun ActionsCard(
             ) {
                 OutlinedButton(
                     onClick = onDelete,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f).testTag(AgentUiTags.Report.DELETE)
                 ) {
                     Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(8.dp))
@@ -599,7 +611,7 @@ private fun ActionsCard(
                 }
                 Button(
                     onClick = onRepeat,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f).testTag(AgentUiTags.Report.REPEAT)
                 ) {
                     Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(8.dp))
@@ -615,15 +627,20 @@ private fun ConfirmDialog(
     title: String,
     message: String,
     confirmLabel: String,
+    confirmTag: String? = null,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit
 ) {
     AlertDialog(
+        modifier = AgentSemanticsConfig.rootModifier(),
         onDismissRequest = onDismiss,
         title = { Text(title, fontWeight = FontWeight.Bold) },
         text = { Text(message) },
         confirmButton = {
-            Button(onClick = onConfirm) {
+            Button(
+                onClick = onConfirm,
+                modifier = confirmTag?.let { Modifier.testTag(it) } ?: Modifier
+            ) {
                 Text(confirmLabel)
             }
         },

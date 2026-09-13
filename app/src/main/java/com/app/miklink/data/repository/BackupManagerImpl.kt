@@ -4,6 +4,7 @@ import com.app.miklink.core.data.repository.probe.ProbeRepository
 import com.app.miklink.core.data.repository.test.TestProfileRepository
 import com.app.miklink.core.data.repository.client.ClientRepository
 import com.app.miklink.core.data.repository.report.ReportRepository
+import com.app.miklink.di.AppMoshi
 import com.squareup.moshi.Moshi
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
@@ -15,8 +16,8 @@ class BackupManagerImpl @Inject constructor(
     private val testProfileRepository: TestProfileRepository,
     private val clientRepository: ClientRepository,
     private val reportRepository: ReportRepository,
-    private val moshi: Moshi,
-    private val txRunner: com.app.miklink.data.repository.TransactionRunner
+    @AppMoshi private val moshi: Moshi,
+    private val txRunner: com.app.miklink.core.data.transaction.TransactionRunner
 ) : BackupManager {
 
     override suspend fun exportConfigToJson(): String {
@@ -24,10 +25,21 @@ class BackupManagerImpl @Inject constructor(
         val profiles = testProfileRepository.observeAllProfiles().first()
         val clients = clientRepository.observeAllClients().first()
         val reports = reportRepository.observeAllReports().first()
-        fun clientKeyFor(client: com.app.miklink.core.domain.model.Client): String {
+
+        // v2: opaque per-file unique reference for each client (no DB id, no UUID in DB).
+        // Two clients with the same name+location get distinct refs via an ordinal suffix.
+        fun baseKeyFor(client: com.app.miklink.core.domain.model.Client): String {
             val name = client.companyName.trim().lowercase().replace("\\s+".toRegex(), "_")
             val loc = (client.location ?: "").trim().lowercase().replace("\\s+".toRegex(), "_")
             return "$name|$loc"
+        }
+        val refCounts = mutableMapOf<String, Int>()
+        val clientIdToRef = LinkedHashMap<Long, String>()
+        clients.forEach { client ->
+            val base = baseKeyFor(client)
+            val ordinal = (refCounts[base] ?: 0) + 1
+            refCounts[base] = ordinal
+            clientIdToRef[client.clientId] = if (ordinal == 1) base else "$base#$ordinal"
         }
 
         val backupClients = clients.map { client ->
@@ -48,13 +60,10 @@ class BackupManagerImpl @Inject constructor(
                 nextIdNumber = client.nextIdNumber,
                 speedTestServerAddress = client.speedTestServerAddress,
                 speedTestServerUser = client.speedTestServerUser,
-                speedTestServerPassword = client.speedTestServerPassword
-            ,
-            clientKey = clientKeyFor(client)
+                speedTestServerPassword = client.speedTestServerPassword,
+                clientRef = clientIdToRef.getValue(client.clientId)
             )
         }
-        // Map existing clientId -> clientKey for reports
-        val clientIdToKey = clients.associateBy({ it.clientId }, { clientKeyFor(it) })
 
         val backupReports = reports.map { report ->
             com.app.miklink.data.repository.BackupReport(
@@ -66,10 +75,11 @@ class BackupManagerImpl @Inject constructor(
                 overallStatus = report.overallStatus,
                 resultFormatVersion = report.resultFormatVersion,
                 resultsJson = report.resultsJson,
-                clientKey = report.clientId?.let { clientIdToKey[it] }
+                clientRef = report.clientId?.let { clientIdToRef[it] }
             )
         }
         val backupData = com.app.miklink.data.repository.BackupData(
+            version = 2,
             probe = probe,
             clients = backupClients,
             profiles = profiles,
@@ -82,55 +92,83 @@ class BackupManagerImpl @Inject constructor(
     override suspend fun importConfigFromJson(json: String): Result<Unit> {
         val adapter = moshi.adapter(BackupData::class.java)
         val backupData = try { adapter.fromJson(json) } catch (e: Exception) { null }
-        if (backupData == null) return Result.failure(Exception("JSON malformato"))
-        // Delegate to a method that imports the domain backup data atomically
+            ?: return Result.failure(BackupImportException("JSON malformato"))
         return importBackupData(backupData)
     }
 
     override suspend fun importBackupData(backupData: BackupData): Result<Unit> {
-        // Basic validation
+        // Version gate: only v1 and v2 are importable; anything else is rejected (ADR-0013).
+        if (backupData.version != 1 && backupData.version != 2) {
+            return Result.failure(BackupImportException("Versione backup non supportata: ${backupData.version}"))
+        }
+
+        // Basic structural validation
         if (backupData.probe != null) {
             if (backupData.probe.ipAddress.isBlank() || backupData.probe.username.isBlank()) {
-                return Result.failure(Exception("Dati sonda incompleti"))
+                return Result.failure(BackupImportException("Dati sonda incompleti"))
             }
         }
         if (backupData.profiles.any { it.profileName.isBlank() }) {
-            return Result.failure(Exception("Dati profilo incompleti"))
+            return Result.failure(BackupImportException("Dati profilo incompleti"))
         }
         if (backupData.clients.any { it.companyName.isBlank() }) {
-            return Result.failure(Exception("Dati client incompleti"))
+            return Result.failure(BackupImportException("Dati client incompleti"))
         }
         if (backupData.reports.any { it.resultsJson.isBlank() }) {
-            return Result.failure(Exception("Dati report incompleti"))
+            return Result.failure(BackupImportException("Dati report incompleti"))
         }
 
-        // Pre-export backup (so we can restore if needed)
-        val currentBackupJson = exportConfigToJson()
+        // Resolve the per-version reference for each client and validate referential integrity.
+        // v2 uses clientRef; v1 uses legacy clientKey.
+        val refFor: (BackupClient) -> String? = if (backupData.version == 2) {
+            { it.clientRef.ifBlank { null } }
+        } else {
+            { it.clientKey?.ifBlank { null } }
+        }
+        val reportRefFor: (BackupReport) -> String? = if (backupData.version == 2) {
+            { it.clientRef?.ifBlank { null } }
+        } else {
+            { it.clientKey?.ifBlank { null } }
+        }
 
-        // Run import inside transaction
+        val refs = backupData.clients.mapNotNull(refFor)
+        // Duplicate client reference => collision => reject.
+        if (refs.size != refs.toSet().size) {
+            return Result.failure(
+                BackupImportException(
+                    if (backupData.version == 2) "clientRef duplicati nel backup" else "clientKey duplicati nel backup v1"
+                )
+            )
+        }
+        val knownRefs = refs.toSet()
+        // Report referencing a non-existent client => reject (orphan reports must have null ref).
+        backupData.reports.forEach { r ->
+            val ref = reportRefFor(r)
+            if (ref != null && ref !in knownRefs) {
+                return Result.failure(BackupImportException("Report con riferimento client inesistente: $ref"))
+            }
+        }
+
+        // Run import inside a single transaction. The rollback is delegated to Room;
+        // no manual post-failure restore is performed and rollback exceptions are not swallowed.
         return try {
             txRunner.runInTransaction {
-                // Delete all existing profiles
+                // Delete existing data (children first, then parents).
+                reportRepository.observeAllReports().first().forEach { report ->
+                    reportRepository.deleteReport(report)
+                }
                 testProfileRepository.observeAllProfiles().first().forEach { profile ->
                     testProfileRepository.deleteProfile(profile)
                 }
-
-
-                // Delete all existing clients
                 clientRepository.observeAllClients().first().forEach { client ->
                     clientRepository.deleteClient(client)
                 }
 
-                // Delete all existing reports
-                reportRepository.observeAllReports().first().forEach { report ->
-                    reportRepository.deleteReport(report)
-                }
-
-                // Save singleton probe if present (keep existing if null)
+                // Save singleton probe if present (keep existing if null). Credentials preserved.
                 backupData.probe?.let { probeRepository.saveProbeConfig(it) }
 
-                // Insert all clients and build clientKey -> newId map
-                val clientKeyToNewId = mutableMapOf<String, Long>()
+                // Insert all clients and build reference -> newId map.
+                val refToNewId = mutableMapOf<String, Long>()
                 backupData.clients.forEach { client ->
                     val newId = clientRepository.insertClient(
                         com.app.miklink.core.domain.model.Client(
@@ -154,17 +192,17 @@ class BackupManagerImpl @Inject constructor(
                             speedTestServerPassword = client.speedTestServerPassword
                         )
                     )
-                    clientKeyToNewId[client.clientKey] = newId
+                    refFor(client)?.let { refToNewId[it] = newId }
                 }
 
-                // Insert all profiles
+                // Insert all profiles.
                 backupData.profiles.forEach { profile ->
                     testProfileRepository.insertProfile(profile)
                 }
 
-                // Insert all reports and map clientKey -> new clientId if available
+                // Insert all reports, mapping the client reference to the new clientId (null = orphan).
                 backupData.reports.forEach { r ->
-                    val clientId = r.clientKey?.let { clientKeyToNewId[it] }
+                    val clientId = reportRefFor(r)?.let { refToNewId[it] }
                     reportRepository.saveReport(
                         com.app.miklink.core.domain.model.TestReport(
                             reportId = 0L,
@@ -183,25 +221,10 @@ class BackupManagerImpl @Inject constructor(
             }
             Result.success(Unit)
         } catch (e: Exception) {
-            // Optional automatic rollback by trying to restore previous backup
-            try {
-                val adapter = moshi.adapter(BackupData::class.java)
-                val originalBackup = adapter.fromJson(currentBackupJson)
-                if (originalBackup != null) {
-                    txRunner.runInTransaction {
-                        testProfileRepository.observeAllProfiles().first().forEach { profile ->
-                            testProfileRepository.deleteProfile(profile)
-                        }
-                        originalBackup.probe?.let { probeRepository.saveProbeConfig(it) }
-                        originalBackup.profiles.forEach { profile ->
-                            testProfileRepository.insertProfile(profile)
-                        }
-                    }
-                }
-            } catch (ex: Exception) {
-                // swallow second-level rollback exception but log if needed
-            }
             Result.failure(e)
         }
     }
 }
+
+/** Failure of backup import validation or execution. */
+class BackupImportException(message: String) : Exception(message)

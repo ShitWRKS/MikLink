@@ -15,7 +15,10 @@ import com.app.miklink.core.domain.model.PingThresholds
 import com.app.miklink.core.domain.model.SpeedThresholds
 import com.app.miklink.core.domain.model.GatewayUnresolvedPolicy
 import com.app.miklink.core.domain.usecase.testprofile.SaveTestProfileUseCase
+import com.app.miklink.core.domain.validation.StrictLinkRateParser
+import com.app.miklink.core.domain.validation.TestThresholdsValidator
 import com.app.miklink.ui.common.BaseEditViewModel
+import com.app.miklink.utils.NetworkValidator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -101,7 +104,9 @@ class TestProfileViewModel @Inject constructor(
     init { loadIfEditing() }
 
     fun saveProfile() {
+        if (!isValidForSave()) return
         viewModelScope.launch {
+            if (!isValidForSave()) return@launch
             val profile = TestProfile(
                 profileId = if (isEditing) entityId else 0,
                 profileName = profileName.value,
@@ -113,7 +118,8 @@ class TestProfileViewModel @Inject constructor(
                 pingTarget1 = pingTarget1.value.takeIf { it.isNotBlank() },
                 pingTarget2 = pingTarget2.value.takeIf { it.isNotBlank() },
                 pingTarget3 = pingTarget3.value.takeIf { it.isNotBlank() },
-                pingCount = pingCount.value.toIntOrNull()?.coerceIn(1, 20) ?: 4, // validation
+                // Invalid profile input must be rejected before persistence, not silently coerced.
+                pingCount = pingCount.value.toInt(),
                 runSpeedTest = runSpeedTest.value,
                 thresholds = buildThresholds()
             )
@@ -139,26 +145,127 @@ class TestProfileViewModel @Inject constructor(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 3)
 
     // Validation helper for UI/tests (not part of BaseEditViewModel contract)
-    fun isValidForSave(): Boolean = profileName.value.isNotBlank()
+    fun isValidForSave(): Boolean {
+        if (profileName.value.isBlank()) return false
+        if (!hasAtLeastOneTestEnabled()) return false
+        if (!areThresholdsValid()) return false
+        if (!runPing.value) return true
+        if (isPingCountInvalid()) return false
+        return listOf(pingTarget1.value, pingTarget2.value, pingTarget3.value).none { isPingTargetInvalid(it) }
+    }
+
+    fun hasAtLeastOneTestEnabled(): Boolean =
+        runLinkStatus.value || runTdr.value || runLldp.value || runPing.value || runSpeedTest.value
+
+    fun isPingCountInvalid(): Boolean {
+        if (!runPing.value) return false
+        val count = pingCount.value.toIntOrNull() ?: return true
+        return count !in 1..20
+    }
+
+    fun isPingTargetInvalid(value: String): Boolean {
+        if (!runPing.value) return false
+        return value.isNotBlank() && !NetworkValidator.isValidTarget(value)
+    }
+
+    fun isPercentageThresholdInvalid(value: String): Boolean =
+        !TestThresholdsValidator.isValidPercentageInput(value)
+
+    fun isNonNegativeThresholdInvalid(value: String): Boolean =
+        !TestThresholdsValidator.isValidNonNegativeInput(value)
+
+    fun isSpeedThroughputInvalid(value: String): Boolean =
+        !TestThresholdsValidator.isValidSpeedThroughputInput(value)
+
+    fun isLinkMinRateInvalid(): Boolean =
+        !StrictLinkRateParser.isValidOptional(linkMinRate.value)
+
+    fun effectiveLinkMinRateForPreview(): String? =
+        linkMinRate.value.ifBlank { defaultThresholds.linkMinRate }
+
+    fun effectivePingLocalMaxAvgRttForPreview(): Double? =
+        effectiveNonNegativeForPreview(pingLocalMaxAvgRtt.value, defaultThresholds.pingLocal.maxAvgRttMs)
+
+    fun effectivePingLocalMaxRttForPreview(): Double? =
+        effectiveNonNegativeForPreview(pingLocalMaxRtt.value, defaultThresholds.pingLocal.maxRttMs)
+
+    fun effectivePingExternalMaxAvgRttForPreview(): Double? =
+        effectiveNonNegativeForPreview(pingExternalMaxAvgRtt.value, defaultThresholds.pingExternal.maxAvgRttMs)
+
+    fun effectivePingExternalMaxRttForPreview(): Double? =
+        effectiveNonNegativeForPreview(pingExternalMaxRtt.value, defaultThresholds.pingExternal.maxRttMs)
+
+    fun effectiveSpeedMaxPingForPreview(): Double? =
+        effectiveNonNegativeForPreview(speedMaxPing.value, defaultThresholds.speed.maxPingMs)
+
+    fun effectiveSpeedMaxJitterForPreview(): Double? =
+        effectiveNonNegativeForPreview(speedMaxJitter.value, defaultThresholds.speed.maxJitterMs)
+
+    fun effectiveSpeedMaxLossForPreview(): Double? =
+        effectivePercentageForPreview(speedMaxLoss.value, defaultThresholds.speed.maxLossPercent)
+
+    fun effectiveSpeedMinDownloadForPreview(): Double? =
+        effectiveSpeedThroughputForPreview(speedMinDownload.value, defaultThresholds.speed.minDownloadMbps)
+
+    fun effectiveSpeedMinUploadForPreview(): Double? =
+        effectiveSpeedThroughputForPreview(speedMinUpload.value, defaultThresholds.speed.minUploadMbps)
+
+    private fun areThresholdsValid(): Boolean =
+        !isLinkMinRateInvalid() &&
+            listOf(pingLocalMaxLoss.value, pingExternalMaxLoss.value, speedMaxLoss.value)
+                .none(::isPercentageThresholdInvalid) &&
+            listOf(
+                pingLocalMaxAvgRtt.value,
+                pingLocalMaxRtt.value,
+                pingExternalMaxAvgRtt.value,
+                pingExternalMaxRtt.value,
+                  speedMaxPing.value,
+                  speedMaxJitter.value
+              ).none(::isNonNegativeThresholdInvalid) &&
+              listOf(speedMinDownload.value, speedMinUpload.value)
+                  .none(::isSpeedThroughputInvalid)
+
+    private fun effectiveNonNegativeForPreview(value: String, default: Double): Double? =
+        when {
+            value.isBlank() -> default
+            TestThresholdsValidator.isValidNonNegativeInput(value) -> value.toDoubleOrNull()
+            else -> null
+        }
+
+    private fun effectivePercentageForPreview(value: String, default: Double): Double? =
+        when {
+            value.isBlank() -> default
+            TestThresholdsValidator.isValidPercentageInput(value) -> value.toDoubleOrNull()
+            else -> null
+        }
+
+    private fun effectiveSpeedThroughputForPreview(value: String, default: Double): Double? =
+        when {
+            value.isBlank() -> default
+            TestThresholdsValidator.isValidSpeedThroughputInput(value) -> value.toDoubleOrNull()
+            else -> null
+        }
 
     private fun buildThresholds(): TestThresholds {
-        fun String.toDoubleOrDefault(default: Double) = this.toDoubleOrNull() ?: default
+        fun String.parseOrDefault(default: Double): Double =
+            if (isBlank()) default else requireNotNull(toDoubleOrNull()?.takeIf(Double::isFinite))
+
         val local = PingThresholds(
-            maxLossPercent = pingLocalMaxLoss.value.toDoubleOrDefault(defaultThresholds.pingLocal.maxLossPercent),
-            maxAvgRttMs = pingLocalMaxAvgRtt.value.toDoubleOrDefault(defaultThresholds.pingLocal.maxAvgRttMs),
-            maxRttMs = pingLocalMaxRtt.value.toDoubleOrDefault(defaultThresholds.pingLocal.maxRttMs)
+            maxLossPercent = pingLocalMaxLoss.value.parseOrDefault(defaultThresholds.pingLocal.maxLossPercent),
+            maxAvgRttMs = pingLocalMaxAvgRtt.value.parseOrDefault(defaultThresholds.pingLocal.maxAvgRttMs),
+            maxRttMs = pingLocalMaxRtt.value.parseOrDefault(defaultThresholds.pingLocal.maxRttMs)
         )
         val external = PingThresholds(
-            maxLossPercent = pingExternalMaxLoss.value.toDoubleOrDefault(defaultThresholds.pingExternal.maxLossPercent),
-            maxAvgRttMs = pingExternalMaxAvgRtt.value.toDoubleOrDefault(defaultThresholds.pingExternal.maxAvgRttMs),
-            maxRttMs = pingExternalMaxRtt.value.toDoubleOrDefault(defaultThresholds.pingExternal.maxRttMs)
+            maxLossPercent = pingExternalMaxLoss.value.parseOrDefault(defaultThresholds.pingExternal.maxLossPercent),
+            maxAvgRttMs = pingExternalMaxAvgRtt.value.parseOrDefault(defaultThresholds.pingExternal.maxAvgRttMs),
+            maxRttMs = pingExternalMaxRtt.value.parseOrDefault(defaultThresholds.pingExternal.maxRttMs)
         )
         val speed = SpeedThresholds(
-            maxPingMs = speedMaxPing.value.toDoubleOrDefault(defaultThresholds.speed.maxPingMs),
-            maxJitterMs = speedMaxJitter.value.toDoubleOrDefault(defaultThresholds.speed.maxJitterMs),
-            maxLossPercent = speedMaxLoss.value.toDoubleOrDefault(defaultThresholds.speed.maxLossPercent),
-            minDownloadMbps = speedMinDownload.value.toDoubleOrDefault(defaultThresholds.speed.minDownloadMbps),
-            minUploadMbps = speedMinUpload.value.toDoubleOrDefault(defaultThresholds.speed.minUploadMbps)
+            maxPingMs = speedMaxPing.value.parseOrDefault(defaultThresholds.speed.maxPingMs),
+            maxJitterMs = speedMaxJitter.value.parseOrDefault(defaultThresholds.speed.maxJitterMs),
+            maxLossPercent = speedMaxLoss.value.parseOrDefault(defaultThresholds.speed.maxLossPercent),
+            minDownloadMbps = speedMinDownload.value.parseOrDefault(defaultThresholds.speed.minDownloadMbps),
+            minUploadMbps = speedMinUpload.value.parseOrDefault(defaultThresholds.speed.minUploadMbps)
         )
         return TestThresholds(
             linkMinRate = linkMinRate.value.ifBlank { defaultThresholds.linkMinRate },

@@ -3,6 +3,7 @@
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.app.miklink.R
 import com.app.miklink.core.data.repository.BackupRepository
 import com.app.miklink.core.data.io.DocumentDestination
 import com.app.miklink.core.data.io.DocumentReader
@@ -12,12 +13,15 @@ import com.app.miklink.core.data.repository.preferences.UserPreferencesRepositor
 import com.app.miklink.core.domain.model.preferences.IdNumberingStrategy
 import com.app.miklink.core.domain.usecase.preferences.ObserveIdNumberingStrategyUseCase
 import com.app.miklink.core.domain.usecase.preferences.SetIdNumberingStrategyUseCase
+import com.app.miklink.ui.common.UiText
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.stateIn
 
 @HiltViewModel
@@ -31,7 +35,7 @@ class SettingsViewModel @Inject constructor(
     private val documentReader: DocumentReader
 ) : ViewModel() {
 
-    private val _backupStatus = MutableStateFlow("")
+    private val _backupStatus = MutableStateFlow<UiText?>(null)
     val backupStatus = _backupStatus.asStateFlow()
 
     val idNumberingStrategy = observeIdNumberingStrategyUseCase()
@@ -74,12 +78,21 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    val pdfReportTitle = userPreferencesRepository.pdfReportTitle
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = ""
-        )
+    private val _pdfReportTitle = MutableStateFlow("")
+    val pdfReportTitle = _pdfReportTitle.asStateFlow()
+    private var pdfTitlePersistJob: Job? = null
+    private var pdfTitleHasPendingWrite = false
+
+    init {
+        viewModelScope.launch {
+            userPreferencesRepository.pdfReportTitle.collect { persistedTitle ->
+                if (!pdfTitleHasPendingWrite || persistedTitle == _pdfReportTitle.value) {
+                    _pdfReportTitle.value = persistedTitle
+                    pdfTitleHasPendingWrite = false
+                }
+            }
+        }
+    }
 
     val pdfHideEmptyColumns = userPreferencesRepository.pdfHideEmptyColumns
         .stateIn(
@@ -89,7 +102,10 @@ class SettingsViewModel @Inject constructor(
         )
 
     fun updatePdfReportTitle(title: String) {
-        viewModelScope.launch {
+        _pdfReportTitle.value = title
+        pdfTitleHasPendingWrite = true
+        pdfTitlePersistJob?.cancel()
+        pdfTitlePersistJob = viewModelScope.launch {
             userPreferencesRepository.setPdfReportTitle(title)
         }
     }
@@ -141,6 +157,8 @@ class SettingsViewModel @Inject constructor(
     }
     
     fun resetPdfPreferences() {
+        pdfTitlePersistJob?.cancel()
+        pdfTitleHasPendingWrite = false
         viewModelScope.launch {
             userPreferencesRepository.resetPdfPreferencesToDefaults()
         }
@@ -158,21 +176,21 @@ class SettingsViewModel @Inject constructor(
     suspend fun importConfigSuspend(uri: Uri) {
         val readResult = documentReader.readText(DocumentDestination(uriString = uri.toString()))
         readResult.onFailure { error ->
-            _backupStatus.value = "Error restoring configuration: ${error.message}"
+            _backupStatus.value = UiText.Resource(R.string.backup_restore_error)
             return
         }
 
         val json = readResult.getOrNull()
         if (json.isNullOrBlank()) {
-            _backupStatus.value = "Error: Selected file is empty."
+            _backupStatus.value = UiText.Resource(R.string.backup_empty_file_error)
             return
         }
 
         val result = importBackupUseCase.execute(json)
         _backupStatus.value = if (result.isSuccess) {
-            "Configuration restored successfully."
+            UiText.Resource(R.string.backup_restore_success)
         } else {
-            "Error restoring configuration: ${result.exceptionOrNull()?.message}"
+            UiText.Resource(R.string.backup_restore_error)
         }
     }
 
@@ -186,12 +204,12 @@ class SettingsViewModel @Inject constructor(
                     "application/json"
                 )
                 _backupStatus.value = if (writeResult.isSuccess) {
-                    "Backup saved successfully."
+                    UiText.Resource(R.string.backup_save_success)
                 } else {
-                    "Error saving backup: ${writeResult.exceptionOrNull()?.message}"
+                    UiText.Resource(R.string.backup_save_error)
                 }
             } catch (e: Exception) {
-                _backupStatus.value = "Error saving backup: ${e.message}"
+                _backupStatus.value = UiText.Resource(R.string.backup_save_error)
             }
         }
     }

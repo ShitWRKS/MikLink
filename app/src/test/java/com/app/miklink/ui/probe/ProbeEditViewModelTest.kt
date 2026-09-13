@@ -11,6 +11,7 @@ import com.app.miklink.core.data.repository.ProbeCheckResult
 import com.app.miklink.core.data.repository.probe.ProbeConnectivityRepository
 import com.app.miklink.core.data.repository.probe.ProbeRepository
 import com.app.miklink.core.domain.model.ProbeConfig
+import com.app.miklink.core.domain.model.TdrCapability
 import com.app.miklink.testsupport.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -34,7 +35,7 @@ class ProbeEditViewModelTest {
     fun `verify success persists board name when saving`() = runTest {
         val fakeProbeRepository = FakeProbeRepository()
         val fakeConnectivityRepository = FakeProbeConnectivityRepository(
-            boardName = "hAP ax^2",
+            boardName = "RB4011iGS+RM",
             interfaces = listOf("ether1", "ether2")
         )
         val viewModel = ProbeEditViewModel(
@@ -54,10 +55,10 @@ class ProbeEditViewModelTest {
 
         val saved = fakeProbeRepository.lastSaved
         assertNotNull(saved)
-        assertEquals("hAP ax^2", saved?.modelName)
+        assertEquals("RB4011iGS+RM", saved?.modelName)
         // Also ensure we keep the interface chosen by verify flow
         assertEquals("ether1", saved?.testInterface)
-        assertTrue(saved?.tdrSupported == true)
+        assertTrue(saved?.tdrCapability == TdrCapability.SUPPORTED)
 
         // Recreate ViewModel (simulate reopening screen) and ensure persisted board is loaded
         val reloaded = ProbeEditViewModel(
@@ -69,7 +70,7 @@ class ProbeEditViewModelTest {
 
         val loadedState = reloaded.verificationState.value
         assertTrue(loadedState is VerificationState.Success)
-        assertEquals("hAP ax^2", (loadedState as VerificationState.Success).boardName)
+        assertEquals("RB4011iGS+RM", (loadedState as VerificationState.Success).boardName)
         assertEquals("ether1", reloaded.testInterface.value)
     }
 

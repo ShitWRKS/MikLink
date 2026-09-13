@@ -86,9 +86,9 @@ class ReportDetailViewModel @Inject constructor(
                     // Load client name
                     currentReport.clientId?.let { clientId ->
                         val client = clientRepository.getClient(clientId)
-                        _clientName.value = client?.companyName ?: "Unknown Client"
+                        _clientName.value = client?.companyName.orEmpty()
                     } ?: run {
-                        _clientName.value = "Unknown Client"
+                        _clientName.value = ""
                     }
                     
                     // Load profile

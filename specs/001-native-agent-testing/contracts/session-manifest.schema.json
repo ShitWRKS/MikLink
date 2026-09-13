@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://miklink.test/contracts/session-manifest.schema.json",
+  "title": "MikLink Test Session Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "sessionId", "startedAt", "endedAt", "build", "device", "policy", "scenarioIds", "artifacts", "cleanup"],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "sessionId": { "type": "string", "minLength": 1 },
+    "startedAt": { "type": "string", "format": "date-time" },
+    "endedAt": { "type": "string", "format": "date-time" },
+    "build": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["applicationId", "versionCode", "versionName", "variant", "sourceRevision"],
+      "properties": {
+        "applicationId": { "type": "string", "minLength": 1 },
+        "versionCode": { "type": "integer", "minimum": 1 },
+        "versionName": { "type": "string", "minLength": 1 },
+        "variant": { "enum": ["debug", "release"] },
+        "sourceRevision": { "type": "string", "minLength": 7 }
+      }
+    },
+    "device": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["serial", "model", "apiLevel", "state"],
+      "properties": {
+        "serial": { "type": "string", "minLength": 1 },
+        "model": { "type": "string", "minLength": 1 },
+        "apiLevel": { "type": "integer", "minimum": 30 },
+        "state": { "const": "device" }
+      }
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["disposableLocalState", "allowWifiDisruption", "hostControlRetained", "probeMutationMode"],
+      "properties": {
+        "disposableLocalState": { "type": "boolean" },
+        "allowWifiDisruption": { "type": "boolean" },
+        "hostControlRetained": { "type": "boolean" },
+        "probeMutationMode": { "const": "APP_PATH_ONLY" }
+      }
+    },
+    "scenarioIds": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "artifacts": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/artifact" }
+    },
+    "cleanup": { "$ref": "#/$defs/cleanup" }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "build": {
+            "properties": { "variant": { "const": "release" } },
+            "required": ["variant"]
+          }
+        },
+        "required": ["build"]
+      },
+      "then": {
+        "properties": {
+          "scenarioIds": {
+            "prefixItems": [{ "const": "release-smoke" }],
+            "minItems": 1,
+            "maxItems": 1
+          },
+          "policy": {
+            "properties": {
+              "disposableLocalState": { "const": false },
+              "allowWifiDisruption": { "const": false },
+              "hostControlRetained": { "const": false }
+            }
+          },
+          "artifacts": {
+            "items": {
+              "not": {
+                "anyOf": [
+                  { "properties": { "path": { "pattern": "\\.ndjson$" } }, "required": ["path"] },
+                  { "properties": { "mediaType": { "const": "application/x-ndjson" } }, "required": ["mediaType"] }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "mediaType", "sizeBytes", "sha256", "redactionStatus"],
+      "properties": {
+        "path": { "type": "string", "pattern": "^(?![/\\\\])(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*//).+" },
+        "mediaType": { "type": "string", "minLength": 1 },
+        "sizeBytes": { "type": "integer", "minimum": 0 },
+        "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "redactionStatus": { "enum": ["NOT_REQUIRED", "SANITIZED", "VERIFIED_SCAN"] }
+      }
+    },
+    "cleanup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": { "enum": ["NOT_REQUIRED", "PASS", "FAIL"] },
+        "reasonCode": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

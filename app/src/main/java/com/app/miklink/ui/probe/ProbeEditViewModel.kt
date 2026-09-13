@@ -8,11 +8,15 @@ package com.app.miklink.ui.probe
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
+import com.app.miklink.R
 import com.app.miklink.core.data.repository.ProbeCheckResult
 import com.app.miklink.core.data.repository.probe.ProbeConnectivityRepository
 import com.app.miklink.core.data.repository.probe.ProbeRepository
 import com.app.miklink.core.domain.model.ProbeConfig
+import com.app.miklink.core.domain.model.TdrCapability
+import com.app.miklink.core.domain.model.TdrCapabilityClassifier
 import com.app.miklink.ui.common.BaseEditViewModel
+import com.app.miklink.ui.common.UiText
 import com.app.miklink.utils.Compatibility
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,7 +42,7 @@ class ProbeEditViewModel @Inject constructor(
 
     private val _modelName = MutableStateFlow<String?>(null)
     private val _isOnline = MutableStateFlow(false)
-    private val _tdrSupported = MutableStateFlow(false)
+    private val _tdrCapability = MutableStateFlow(TdrCapability.UNKNOWN)
     private var suppressVerificationReset = false
     private var lastVerifiedConnection: ProbeConfig? = null
 
@@ -64,7 +68,7 @@ class ProbeEditViewModel @Inject constructor(
             testInterface = "", // Default value
             isOnline = false, // Default value
             modelName = null, // Default value
-            tdrSupported = false // Default value
+            tdrCapability = TdrCapability.UNKNOWN // Default value
         )
     }
     init {
@@ -77,7 +81,7 @@ class ProbeEditViewModel @Inject constructor(
                 isHttps.value = probe.isHttps
                 testInterface.value = probe.testInterface
                 _modelName.value = probe.modelName
-                _tdrSupported.value = probe.tdrSupported
+                _tdrCapability.value = probe.tdrCapability
                 _isOnline.value = probe.isOnline
                 if (probe.modelName != null) {
                     _verificationState.value = VerificationState.Success(
@@ -97,7 +101,9 @@ class ProbeEditViewModel @Inject constructor(
                 .collect { currentConfig ->
                     if (!suppressVerificationReset && _verificationState.value is VerificationState.Success) {
                         if (lastVerifiedConnection != null && lastVerifiedConnection != currentConfig) {
-                            _verificationState.value = VerificationState.Error("Probe details changed. Please verify again.")
+                            _verificationState.value = VerificationState.Error(
+                                UiText.Resource(R.string.probe_edit_details_changed)
+                            )
                         }
                     }
                 }
@@ -131,9 +137,10 @@ class ProbeEditViewModel @Inject constructor(
                     // Sync scheme with effective transport to reflect fallback or HTTPS success.
                     isHttps.value = result.effectiveIsHttps
                     _isOnline.value = true
-                    _tdrSupported.value = Compatibility.isTdrSupported(result.boardName)
+                    val detectedInterface = result.interfaces.firstOrNull()
+                    _tdrCapability.value = TdrCapabilityClassifier.classify(result.boardName, detectedInterface)
                     _modelName.value = result.boardName
-                    testInterface.value = result.interfaces.firstOrNull() ?: ""
+                    testInterface.value = detectedInterface ?: ""
                     lastVerifiedConnection = tempProbe.copy(isHttps = result.effectiveIsHttps)
                     _verificationState.value = VerificationState.Success(
                         boardName = result.boardName,
@@ -145,7 +152,7 @@ class ProbeEditViewModel @Inject constructor(
                 is ProbeCheckResult.Error -> {
                     _isOnline.value = false
                     lastVerifiedConnection = null
-                    _verificationState.value = VerificationState.Error(result.message)
+                    _verificationState.value = VerificationState.Error(UiText.Dynamic(result.message))
                 }
             }
             suppressVerificationReset = false
@@ -162,7 +169,7 @@ class ProbeEditViewModel @Inject constructor(
                 testInterface = testInterface.value,
                 isOnline = _isOnline.value,
                 modelName = _modelName.value,
-                tdrSupported = _tdrSupported.value
+                tdrCapability = _tdrCapability.value
             )
             probeRepository.saveProbeConfig(probeToSave)
             markSaved()
@@ -179,5 +186,5 @@ sealed class VerificationState {
         val didFallbackToHttp: Boolean,
         val warning: String?
     ) : VerificationState()
-    data class Error(val message: String) : VerificationState()
+    data class Error(val message: UiText) : VerificationState()
 }
