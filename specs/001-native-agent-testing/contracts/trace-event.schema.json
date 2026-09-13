@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://miklink.test/contracts/trace-event.schema.json",
+  "title": "MikLink Sanitized Trace Event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "timestamp", "sessionId", "scenarioId", "eventType", "payload"],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "sessionId": { "type": "string" },
+    "scenarioId": { "type": "string" },
+    "operationId": { "type": ["string", "null"] },
+    "exchangeId": { "type": ["string", "null"] },
+    "runId": { "type": "string" },
+    "seq": { "type": "integer", "minimum": 1 },
+    "event": { "type": "string" },
+    "eventType": {
+      "enum": [
+        "run_started", "run_finished", "profile_loaded", "test_enabled_state",
+        "thresholds_loaded", "scenario_started", "prerequisite", "step_started",
+        "step_finished", "mikrotik_request", "mikrotik_raw_response",
+        "probe_request", "probe_response", "probe_error",
+        "probe_exchange_completed", "parsed_response", "normalized_response",
+        "normalized_result", "threshold_evaluation", "test_decision",
+        "ui_snapshot", "technical_error", "cleanup", "scenario_finished"
+      ]
+    },
+    "payload": {
+      "type": "object",
+      "description": "Sanitized and size-bounded before serialization",
+      "additionalProperties": true
+    }
+  }
+}

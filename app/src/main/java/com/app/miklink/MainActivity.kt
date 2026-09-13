@@ -6,7 +6,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.Modifier
 import com.app.miklink.ui.NavGraph
+import com.app.miklink.ui.testing.AgentSemanticsConfig
 import com.app.miklink.ui.theme.MikLinkTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -23,7 +27,13 @@ class MainActivity : AppCompatActivity() {
             MikLinkTheme(
                 darkTheme = isDarkTheme
             ) {
-                NavGraph()
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .then(AgentSemanticsConfig.rootModifier())
+                ) {
+                    NavGraph()
+                }
             }
         }
     }

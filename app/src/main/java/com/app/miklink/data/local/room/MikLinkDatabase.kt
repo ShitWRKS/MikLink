@@ -18,7 +18,7 @@ import com.app.miklink.data.local.room.entity.TestReportEntity
         TestProfileEntity::class,
         TestReportEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = true
 )
 abstract class MikLinkDatabase : RoomDatabase() {

@@ -10,28 +10,50 @@ import android.content.Context
 import com.app.miklink.core.domain.model.Client
 import com.app.miklink.core.domain.model.NetworkMode
 import com.app.miklink.core.domain.model.ProbeConfig
+import com.app.miklink.core.domain.model.TdrCapability
 import com.app.miklink.data.remote.mikrotik.dto.IpAddressAdd
+import com.app.miklink.data.remote.mikrotik.dto.IpAddressEntry
+import com.app.miklink.data.remote.mikrotik.dto.DhcpClientStatus
 import com.app.miklink.data.remote.mikrotik.dto.RouteAdd
 import com.app.miklink.data.remote.mikrotik.service.MikroTikApiService
 import com.app.miklink.data.remote.mikrotik.service.MikroTikCallExecutor
 import com.app.miklink.data.remote.mikrotik.service.MikroTikServiceProvider
+import com.app.miklink.data.remote.mikrotik.service.RouterOsResponseDecoder
+import com.squareup.moshi.Moshi
 import com.app.miklink.data.repository.RouteManager
 import com.app.miklink.data.repository.mikrotik.MikroTikNetworkConfigRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
 import kotlinx.coroutines.runBlocking
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.ResponseBody.Companion.toResponseBody
+import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
+import org.junit.Before
 import org.junit.Test
+import retrofit2.Response
 
 class NetworkConfigRepositoryTest {
+
+    @Before
+    fun mockAndroidLog() {
+        mockkStatic("android.util.Log")
+        every { android.util.Log.isLoggable(any(), any()) } returns false
+        every { android.util.Log.d(any(), any()) } returns 0
+        every { android.util.Log.w(any(), any(), any()) } returns 0
+        every { android.util.Log.e(any(), any(), any()) } returns 0
+    }
 
     private val context: Context = mockk(relaxed = true)
     private val api: MikroTikApiService = mockk(relaxed = true)
     private val serviceProvider: MikroTikServiceProvider = mockk()
     private val routeManager: RouteManager = mockk(relaxed = true)
+    private val decoder: RouterOsResponseDecoder = RouterOsResponseDecoder(Moshi.Builder().build())
     private val callExecutor = MikroTikCallExecutor(serviceProvider)
-    private val repo = MikroTikNetworkConfigRepository(context, callExecutor, routeManager)
+    private val repo = MikroTikNetworkConfigRepository(context, callExecutor, decoder, routeManager)
 
     private val probe = ProbeConfig(
         ipAddress = "192.168.0.10",
@@ -41,14 +63,16 @@ class NetworkConfigRepositoryTest {
         isHttps = false,
         isOnline = true,
         modelName = "hAP",
-        tdrSupported = true
+        tdrCapability = TdrCapability.SUPPORTED
     )
 
     @Test
     fun `valid static config reaches api`() = runBlocking {
         coEvery { serviceProvider.build(probe) } returns api
-        coEvery { api.getDhcpClientStatus(any()) } returns emptyList()
-        coEvery { api.getIpAddresses(any()) } returns emptyList()
+        coEvery { api.getDhcpClientStatus(any()) } returns Response.success(emptyList())
+        coEvery { api.getIpAddresses(any()) } returns Response.success(emptyList())
+        coEvery { api.addIpAddress(any()) } returns Response.success(null)
+        coEvery { api.addRoute(any()) } returns Response.success(null)
 
         val client = baseClient().copy(
             networkMode = NetworkMode.STATIC,
@@ -65,8 +89,8 @@ class NetworkConfigRepositoryTest {
     @Test
     fun `invalid cidr fails fast`() = runBlocking {
         coEvery { serviceProvider.build(probe) } returns api
-        coEvery { api.getDhcpClientStatus(any()) } returns emptyList()
-        coEvery { api.getIpAddresses(any()) } returns emptyList()
+        coEvery { api.getDhcpClientStatus(any()) } returns Response.success(emptyList())
+        coEvery { api.getIpAddresses(any()) } returns Response.success(emptyList())
 
         val client = baseClient().copy(
             networkMode = NetworkMode.STATIC,
@@ -76,9 +100,14 @@ class NetworkConfigRepositoryTest {
 
         try {
             repo.applyClientNetworkConfig(probe, client, null)
-            fail("Expected IllegalArgumentException for invalid CIDR")
-        } catch (_: IllegalArgumentException) {
-            // Expected
+            fail("Expected failure for invalid CIDR")
+        } catch (e: Exception) {
+            // Validation errors propagate through TestExecutionException wrapping the classified error.
+            assertTrue(
+                "Expected a TestExecutionException with message about CIDR, got $e",
+                e is com.app.miklink.core.domain.test.model.TestExecutionException
+                        && e.error.message?.contains("CIDR") == true
+            )
         }
 
         coVerify(exactly = 0) { api.addIpAddress(any<IpAddressAdd>()) }
@@ -88,8 +117,8 @@ class NetworkConfigRepositoryTest {
     @Test
     fun `invalid gateway fails fast`() = runBlocking {
         coEvery { serviceProvider.build(probe) } returns api
-        coEvery { api.getDhcpClientStatus(any()) } returns emptyList()
-        coEvery { api.getIpAddresses(any()) } returns emptyList()
+        coEvery { api.getDhcpClientStatus(any()) } returns Response.success(emptyList())
+        coEvery { api.getIpAddresses(any()) } returns Response.success(emptyList())
 
         val client = baseClient().copy(
             networkMode = NetworkMode.STATIC,
@@ -99,14 +128,91 @@ class NetworkConfigRepositoryTest {
 
         try {
             repo.applyClientNetworkConfig(probe, client, null)
-            fail("Expected IllegalArgumentException for invalid gateway")
-        } catch (_: IllegalArgumentException) {
-            // Expected
+            fail("Expected failure for invalid gateway")
+        } catch (e: Exception) {
+            assertTrue(
+                "Expected a TestExecutionException with message about gateway, got $e",
+                e is com.app.miklink.core.domain.test.model.TestExecutionException
+                        && e.error.message?.contains("gateway", ignoreCase = true) == true
+            )
         }
 
         coVerify(exactly = 0) { api.addIpAddress(any<IpAddressAdd>()) }
         coVerify(exactly = 0) { api.addRoute(any<RouteAdd>()) }
     }
+
+    @Test
+    fun `addDhcpClient HTTP 400 fails without success feedback`() = runBlocking {
+        coEvery { serviceProvider.build(probe) } returns api
+        coEvery { api.getDhcpClientStatus(any()) } returns Response.success(emptyList())
+        coEvery { api.addDhcpClient(any()) } returns errorResponse(400)
+
+        assertRouterOsFailure(400) {
+            repo.applyClientNetworkConfig(probe, baseClient(), null)
+        }
+    }
+
+    @Test
+    fun `enableDhcpClient HTTP 401 fails with authentication`() = runBlocking {
+        coEvery { serviceProvider.build(probe) } returns api
+        coEvery { api.getDhcpClientStatus(any()) } returns Response.success(
+            listOf(DhcpClientStatus(id = "*1", disabled = "true", status = "stopped"))
+        )
+        coEvery { api.enableDhcpClient(any()) } returns errorResponse(401)
+
+        val failure = runCatching {
+            repo.applyClientNetworkConfig(probe, baseClient(), null)
+        }.exceptionOrNull() as com.app.miklink.core.domain.test.model.TestExecutionException
+
+        assertTrue(failure.error is com.app.miklink.core.domain.test.model.TestError.Authentication)
+    }
+
+    @Test
+    fun `disableDhcpClient HTTP 500 fails`() = runBlocking {
+        coEvery { serviceProvider.build(probe) } returns api
+        coEvery { api.getDhcpClientStatus(any()) } returns Response.success(
+            listOf(DhcpClientStatus(id = "*1", disabled = "false", status = "bound"))
+        )
+        coEvery { api.disableDhcpClient(any()) } returns errorResponse(500)
+
+        assertRouterOsFailure(500) {
+            repo.applyClientNetworkConfig(probe, validStaticClient(), null)
+        }
+    }
+
+    @Test
+    fun `removeIpAddress HTTP 500 fails`() = runBlocking {
+        coEvery { serviceProvider.build(probe) } returns api
+        coEvery { api.getDhcpClientStatus(any()) } returns Response.success(emptyList())
+        coEvery { api.getIpAddresses(any()) } returns Response.success(
+            listOf(IpAddressEntry(id = "*2", address = "192.168.0.2/24", iface = "ether1"))
+        )
+        coEvery { api.removeIpAddress(any()) } returns errorResponse(500)
+
+        assertRouterOsFailure(500) {
+            repo.applyClientNetworkConfig(probe, validStaticClient(), null)
+        }
+        coVerify(exactly = 0) { api.addIpAddress(any()) }
+    }
+
+    private suspend fun assertRouterOsFailure(code: Int, block: suspend () -> Unit) {
+        val failure = runCatching { block() }.exceptionOrNull()
+            as com.app.miklink.core.domain.test.model.TestExecutionException
+        val error = failure.error as com.app.miklink.core.domain.test.model.TestError.RouterOsError
+        org.junit.Assert.assertEquals(code, error.code)
+    }
+
+    private fun validStaticClient() = baseClient().copy(
+        networkMode = NetworkMode.STATIC,
+        staticCidr = "192.168.0.100/24",
+        staticGateway = "192.168.0.1"
+    )
+
+    private fun <T> errorResponse(code: Int): Response<T> = Response.error(
+        code,
+        """{"error":$code,"message":"request failed","detail":"failure"}"""
+            .toResponseBody("application/json".toMediaType())
+    )
 
     private fun baseClient() = Client(
         clientId = 1L,

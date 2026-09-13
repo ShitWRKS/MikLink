@@ -26,12 +26,22 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeout
+
+data class ReportSaveState(
+    val isSaving: Boolean = false,
+    val isSaved: Boolean = false,
+    val errorMessage: String? = null
+)
 
 @HiltViewModel
 class TestViewModel @Inject constructor(
@@ -56,8 +66,18 @@ class TestViewModel @Inject constructor(
     private val _logs = MutableStateFlow<List<String>>(emptyList())
     val logs: StateFlow<List<String>> = _logs.asStateFlow()
 
+    private val _reportSaveState = MutableStateFlow(ReportSaveState())
+    val reportSaveState: StateFlow<ReportSaveState> = _reportSaveState.asStateFlow()
+
     // Tracks the current test coroutine so it can be cancelled if a new test starts
     private var testJob: Job? = null
+
+    // Mutex serializes the start-replace sequence so two concurrent starts never interleave
+    private val startMutex = Mutex()
+    private val saveMutex = Mutex()
+
+    // Monotonic generation counter: only the current generation may touch UI state
+    private var runGeneration: Long = 0L
 
     companion object {
         // Global timeout to prevent indefinite test execution (e.g. stuck HTTP calls)
@@ -66,65 +86,104 @@ class TestViewModel @Inject constructor(
     }
 
     fun startTest() {
-        // Cancel any previous test still running (prevents stale coroutines and UI lock)
-        testJob?.cancel()
-
+        // Validate plan BEFORE cancelling any running test
         val plan = buildPlan() ?: return
 
-        testJob = viewModelScope.launch {
-            _snapshot.value = null
-            _uiState.value = UiState.Loading
-            _isRunning.value = true
-            logBuffer.clear()
-            _logs.value = emptyList()
+        viewModelScope.launch {
+            startMutex.withLock {
+                val myGeneration = ++runGeneration
 
-            try {
-                withTimeout(TEST_TIMEOUT_MS) {
-                    runTestUseCase.execute(plan)
-                        .catch { throwable ->
-                            handleFailure(throwable.message)
-                        }
-                        .collect { event ->
-                            when (event) {
-                                is TestEvent.Progress -> appendLog("[${event.progress.currentStep}] ${event.progress.message}")
-                                is TestEvent.LogLine -> appendLog(event.message)
-                                is TestEvent.SnapshotUpdated -> {
-                                    _snapshot.value = event.snapshot
+                // Cancel previous run and wait for it to fully terminate
+                testJob?.cancelAndJoin()
+                testJob = null
+
+                testJob = viewModelScope.launch {
+                    // Initialize state for the new run
+                    _snapshot.value = null
+                    _uiState.value = UiState.Loading
+                    _isRunning.value = true
+                    logBuffer.clear()
+                    _logs.value = emptyList()
+
+                    try {
+                        withTimeout(TEST_TIMEOUT_MS) {
+                            runTestUseCase.execute(plan)
+                                .catch { throwable ->
+                                    if (throwable is CancellationException) throw throwable
+                                    handleFailure(myGeneration, throwable.message)
                                 }
-                                is TestEvent.Completed -> {
-                                    _snapshot.value = event.outcome.finalSnapshot
-                                    handleCompletion(plan, event.outcome)
+                                .collect { event ->
+                                    if (!isCurrentRun(myGeneration)) return@collect
+                                    when (event) {
+                                        is TestEvent.Progress -> appendLog(myGeneration, "[${event.progress.currentStep}] ${event.progress.message}")
+                                        is TestEvent.LogLine -> appendLog(myGeneration, event.message)
+                                        is TestEvent.SnapshotUpdated -> {
+                                            if (isCurrentRun(myGeneration)) {
+                                                _snapshot.value = event.snapshot
+                                            }
+                                        }
+                                        is TestEvent.Completed -> {
+                                            if (isCurrentRun(myGeneration)) {
+                                                _snapshot.value = event.outcome.finalSnapshot
+                                                handleCompletion(myGeneration, plan, event.outcome)
+                                            }
+                                        }
+                                        is TestEvent.Failed -> handleFailure(myGeneration, event.error.message)
+                                    }
                                 }
-                                is TestEvent.Failed -> handleFailure(event.error.message)
-                            }
                         }
+                    } catch (e: TimeoutCancellationException) {
+                        handleFailure(myGeneration, context.getString(R.string.test_timeout_error, TEST_TIMEOUT_SECONDS))
+                    } finally {
+                        if (isCurrentRun(myGeneration)) {
+                            _isRunning.value = false
+                        }
+                    }
                 }
-            } catch (e: TimeoutCancellationException) {
-                handleFailure(context.getString(R.string.test_timeout_error, TEST_TIMEOUT_SECONDS))
-            } finally {
-                // Ensures isRunning is reset even if cancelled or timed out
-                _isRunning.value = false
             }
         }
     }
 
     fun saveReportToDb(report: TestReport) {
+        if (_reportSaveState.value.isSaved) return
+        if (!saveMutex.tryLock()) return
+        _reportSaveState.value = ReportSaveState(isSaving = true)
         viewModelScope.launch {
-            saveTestReportUseCase(report, incrementClientCounter = true)
+            try {
+                saveTestReportUseCase(report, incrementClientCounter = true)
+                _reportSaveState.value = ReportSaveState(isSaved = true)
+            } catch (exception: CancellationException) {
+                throw exception
+            } catch (_: Exception) {
+                _reportSaveState.value = ReportSaveState(
+                    errorMessage = context.getString(R.string.test_execution_save_error)
+                )
+            } finally {
+                saveMutex.unlock()
+            }
         }
     }
 
-    private fun handleCompletion(plan: TestPlan, outcome: TestOutcome) {
-        // Note: _isRunning reset moved to finally block in startTest()
+    private fun isCurrentRun(generation: Long): Boolean =
+        generation == runGeneration
+
+    private fun handleCompletion(generation: Long, plan: TestPlan, outcome: TestOutcome) {
+        if (!isCurrentRun(generation)) return
         _snapshot.value = outcome.finalSnapshot
         val report = buildReport(plan, outcome)
         _uiState.value = UiState.Success(report)
     }
 
-    private fun handleFailure(message: String?) {
-        // Note: _isRunning reset moved to finally block in startTest()
-        val errorMessage = message ?: "Errore sconosciuto"
+    private fun handleFailure(generation: Long, message: String?) {
+        if (!isCurrentRun(generation)) return
+        val errorMessage = message ?: context.getString(R.string.test_execution_unknown_error)
         _uiState.value = UiState.Error(errorMessage)
+    }
+
+    private fun appendLog(generation: Long, line: String) {
+        if (!isCurrentRun(generation)) return
+        logBuffer.append(line)
+        _logs.value = logBuffer.snapshot()
     }
 
     private fun buildPlan(): TestPlan? {
@@ -138,7 +197,7 @@ class TestViewModel @Inject constructor(
         }
 
         if (clientId <= 0 || profileId <= 0) {
-            _uiState.value = UiState.Error("Parametri di navigazione non validi.")
+            _uiState.value = UiState.Error(context.getString(R.string.test_execution_invalid_navigation))
             return null
         }
 
@@ -161,13 +220,8 @@ class TestViewModel @Inject constructor(
             profileName = null,
             overallStatus = outcome.overallStatus,
             resultFormatVersion = 1,
-            resultsJson = outcome.rawResultsJson ?: "{}"
+            resultsJson = outcome.rawResultsJson
         )
-    }
-
-    private fun appendLog(line: String) {
-        logBuffer.append(line)
-        _logs.value = logBuffer.snapshot()
     }
 
     private fun readId(key: String): Long {
@@ -175,6 +229,4 @@ class TestViewModel @Inject constructor(
             ?: savedStateHandle.get<String>(key)?.toLongOrNull()
             ?: -1L
     }
-
-    // appendLog removed: raw execution logs are not surfaced to the UI anymore
 }

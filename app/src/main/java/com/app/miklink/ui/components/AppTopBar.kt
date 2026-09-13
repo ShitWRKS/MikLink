@@ -20,6 +20,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -43,6 +44,8 @@ fun AppTopBar(
     onReport: (() -> Unit)? = null,
     onHistory: (() -> Unit)? = null,
     onSettings: (() -> Unit)? = null,
+    reportTestTag: String? = null,
+    settingsTestTag: String? = null,
     reportBadge: Boolean = false
 ) {
     TopAppBar(
@@ -87,7 +90,10 @@ fun AppTopBar(
         },
         actions = {
             if (onReport != null) {
-                IconButton(onClick = onReport) {
+                IconButton(
+                    onClick = onReport,
+                    modifier = reportTestTag?.let { Modifier.testTag(it) } ?: Modifier
+                ) {
                     if (reportBadge) {
                         BadgedBox(
                             badge = { Badge(containerColor = MaterialTheme.colorScheme.primary) }
@@ -114,7 +120,10 @@ fun AppTopBar(
                 }
             }
             if (onSettings != null) {
-                IconButton(onClick = onSettings) {
+                IconButton(
+                    onClick = onSettings,
+                    modifier = settingsTestTag?.let { Modifier.testTag(it) } ?: Modifier
+                ) {
                     Icon(
                         imageVector = Icons.Default.Settings,
                         contentDescription = stringResource(id = R.string.dashboard_btn_settings)

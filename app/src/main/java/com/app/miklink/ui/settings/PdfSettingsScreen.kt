@@ -16,6 +16,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -23,6 +24,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.app.miklink.R
 import com.app.miklink.core.data.pdf.ExportColumn
+import com.app.miklink.ui.testing.AgentUiTags
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,6 +40,7 @@ fun PdfSettingsScreen(
     var showResetDialog by remember { mutableStateOf(false) }
 
     Scaffold(
+        modifier = Modifier.testTag(AgentUiTags.Settings.PDF_SCREEN),
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.settings_pdf_preferences)) },
@@ -78,7 +81,7 @@ fun PdfSettingsScreen(
                     value = pdfReportTitle,
                     onValueChange = { viewModel.updatePdfReportTitle(it) },
                     label = { Text(stringResource(R.string.pdf_report_title)) },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().testTag(AgentUiTags.Settings.PDF_TITLE),
                     singleLine = true,
                     leadingIcon = { Icon(Icons.Default.PictureAsPdf, null) }
                 )
@@ -123,7 +126,11 @@ fun PdfSettingsScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        Switch(checked = pdfIncludeEmpty, onCheckedChange = { viewModel.updatePdfIncludeEmptyTests(it) })
+                        Switch(
+                            checked = pdfIncludeEmpty,
+                            onCheckedChange = { viewModel.updatePdfIncludeEmptyTests(it) },
+                            modifier = Modifier.testTag(AgentUiTags.Settings.PDF_INCLUDE_EMPTY)
+                        )
                     }
                 }
                 
@@ -155,7 +162,11 @@ fun PdfSettingsScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        Switch(checked = pdfHideEmptyColumns, onCheckedChange = { viewModel.updatePdfHideEmptyColumns(it) })
+                        Switch(
+                            checked = pdfHideEmptyColumns,
+                            onCheckedChange = { viewModel.updatePdfHideEmptyColumns(it) },
+                            modifier = Modifier.testTag(AgentUiTags.Settings.PDF_HIDE_EMPTY_COLUMNS)
+                        )
                     }
                 }
             }
@@ -175,6 +186,7 @@ fun PdfSettingsScreen(
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold
                     )
+                    // i18n-ignore: compact selected/total numeric counter.
                     Text(
                         text = "${currentColumns.size}/${ExportColumn.values().size}",
                         style = MaterialTheme.typography.labelMedium,
@@ -192,6 +204,7 @@ fun PdfSettingsScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .testTag("${AgentUiTags.Settings.PDF_COLUMN_PREFIX}_${col.name.lowercase()}")
                             .clickable {
                                 val newSet = if (currentColumns.contains(col.name)) {
                                     if (currentColumns.size > 1) currentColumns - col.name else currentColumns

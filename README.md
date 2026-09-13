@@ -276,9 +276,11 @@ I'm not responsible if:
 
 ---
 
-## 📄 License
+## License
 
-MIT – Do whatever you want, you owe me nothing.
+MikLink source code is licensed under the MIT License.
+
+Third-party components remain subject to their respective licenses.
 
 ---
 

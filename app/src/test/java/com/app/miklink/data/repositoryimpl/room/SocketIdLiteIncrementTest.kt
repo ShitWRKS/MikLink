@@ -54,13 +54,23 @@ class SocketIdLiteIncrementTest {
         override suspend fun deleteClient(client: Client) {
             map.remove(client.clientId)
         }
+
+        override suspend fun incrementNextIdNumber(clientId: Long): Int {
+            val current = map[clientId] ?: return 0
+            map[clientId] = current.copy(nextIdNumber = current.nextIdNumber + 1)
+            return 1
+        }
+    }
+
+    private class FakeTxRunner : com.app.miklink.core.data.transaction.TransactionRunner {
+        override suspend fun <T> runInTransaction(block: suspend () -> T): T = block()
     }
 
     private fun makeUseCase(client: Client): Pair<SaveTestReportUseCase, FakeClientRepository> {
         val fakeDao = FakeTestReportDao()
         val fakeClientRepo = FakeClientRepository(listOf(client))
         val reportRepository = RoomReportRepository(fakeDao)
-        val useCase = SaveTestReportUseCaseImpl(reportRepository, fakeClientRepo)
+        val useCase = SaveTestReportUseCaseImpl(reportRepository, fakeClientRepo, FakeTxRunner())
         return useCase to fakeClientRepo
     }
 

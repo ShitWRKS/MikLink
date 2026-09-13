@@ -7,11 +7,14 @@
 package com.app.miklink.core.data.repository.probe
 
 import com.app.miklink.core.domain.model.ProbeConfig
+import com.app.miklink.core.domain.model.TdrCapability
 import com.app.miklink.data.remote.mikrotik.dto.ProplistRequest
 import com.app.miklink.data.remote.mikrotik.dto.SystemResource
 import com.app.miklink.data.remote.mikrotik.service.MikroTikApiService
 import com.app.miklink.data.remote.mikrotik.service.MikroTikCallExecutor
 import com.app.miklink.data.remote.mikrotik.service.MikroTikServiceProvider
+import com.app.miklink.data.remote.mikrotik.service.RouterOsResponseDecoder
+import com.squareup.moshi.Moshi
 import com.app.miklink.core.data.repository.preferences.UserPreferencesRepository
 import com.app.miklink.core.data.repository.probe.ProbeRepository
 import com.app.miklink.data.repository.mikrotik.MikroTikProbeStatusRepository
@@ -24,6 +27,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.*
 import org.junit.Test
 import retrofit2.HttpException
+import retrofit2.Response
 
 /**
  * Contract test per ProbeStatusRepository.
@@ -35,10 +39,12 @@ class ProbeStatusRepositoryContractTest {
     private val mockServiceProvider = mockk<MikroTikServiceProvider>()
     private val mockApiService = mockk<MikroTikApiService>()
     private val mockUserPreferencesRepository = mockk<UserPreferencesRepository>()
+    private val mockDecoder = RouterOsResponseDecoder(Moshi.Builder().build())
     private val callExecutor = MikroTikCallExecutor(mockServiceProvider)
     private val repository: ProbeStatusRepository = MikroTikProbeStatusRepository(
         mockProbeRepository,
         callExecutor,
+        mockDecoder,
         mockUserPreferencesRepository
     )
 
@@ -49,7 +55,7 @@ class ProbeStatusRepositoryContractTest {
         testInterface = "ether1",
         isOnline = false,
         modelName = null,
-        tdrSupported = false,
+        tdrCapability = TdrCapability.UNKNOWN,
         isHttps = false
     )
 
@@ -58,8 +64,8 @@ class ProbeStatusRepositoryContractTest {
         // Given: Probe online (API risponde con successo)
         every { mockUserPreferencesRepository.probePollingInterval } returns flowOf(100L)
         every { mockServiceProvider.build(testProbe) } returns mockApiService
-        coEvery { mockApiService.getSystemResource(any()) } returns listOf(
-            SystemResource(boardName = "Test Board")
+        coEvery { mockApiService.getSystemResource(any()) } returns Response.success(
+            listOf(SystemResource(boardName = "Test Board"))
         )
 
         // When

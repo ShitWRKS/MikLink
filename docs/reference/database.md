@@ -8,7 +8,27 @@
 
 ## Policy pre-production
 
-In pre-production usiamo `fallbackToDestructiveMigration(dropAllTables = true)` (vedi `di/DatabaseModule.kt` e **ADR-0012**). Ogni bump di versione resetta i dati locali per velocizzare l'iterazione.
+Gli aggiornamenti di schema usano migrazioni Room esplicite e non distruttive registrate in `DatabaseMigrations.kt` (vedi **ADR-0014**).
+
+## Atomicità report + contatore (ADR-0010/ADR-0013)
+
+L'inserimento di un `TestReport` e l'incremento di `nextIdNumber` del client avvengono nella
+**stessa transazione** Room (via `TransactionRunner`, porta in `core/data`, implementazione in `data`).
+
+- `SaveTestReportUseCase` avvolge inserimento report + incremento quando `incrementClientCounter = true`.
+- Se `incrementClientCounter = false`: salva solo il report (nessun incremento).
+- Se `clientId` è `null`: report orfano (nessun incremento).
+- Se è richiesto l'incremento e il client non esiste: **fallisci e rollback** (no read-copy-update).
+
+Query atomica di incremento (restituisce il numero di righe aggiornate):
+
+```sql
+UPDATE clients
+SET nextIdNumber = nextIdNumber + 1
+WHERE clientId = :clientId
+```
+
+`0` righe aggiornate ⇒ client inesistente ⇒ rollback della transazione.
 
 ## Invarianti
 

@@ -5,12 +5,14 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.app.miklink.BuildConfig
+import com.app.miklink.R
 import com.app.miklink.core.data.repository.client.ClientRepository
 import com.app.miklink.core.data.repository.report.ReportRepository
 import com.app.miklink.core.domain.model.Client
 import com.app.miklink.core.data.pdf.ExportColumn
 import com.app.miklink.core.data.pdf.PdfExportConfig
 import com.app.miklink.core.data.pdf.PdfGenerator
+import com.app.miklink.ui.common.UiText
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -23,12 +25,12 @@ class ClientListViewModel @Inject constructor(
     private val pdfGenerator: PdfGenerator
 ) : ViewModel() {
 
-    private val _errorMessage = MutableStateFlow<String?>(null)
+    private val _errorMessage = MutableStateFlow<UiText?>(null)
     val errorMessage = _errorMessage.asStateFlow()
 
     val clients: StateFlow<List<Client>> = clientRepository.observeAllClients()
         .catch { throwable ->
-            _errorMessage.value = throwable.message ?: "Error loading clients"
+            _errorMessage.value = UiText.Resource(R.string.client_list_load_error)
             if (BuildConfig.DEBUG) Log.e("ClientListViewModel", "observeAllClients error", throwable)
             emit(emptyList())
         }
@@ -60,6 +62,7 @@ class ClientListViewModel @Inject constructor(
         val client = clientRepository.getClient(clientId)
         val clientName = client?.companyName?.replace(" ", "_") ?: "Client"
         val date = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.getDefault()).format(java.util.Date())
+        // i18n-ignore: generated PDF filename uses stable technical separators.
         val title = "${clientName}_Reports_${date}"
         
         return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {

@@ -22,7 +22,7 @@ class ReportDetailScreenTest {
     val composeRule = createComposeRule()
 
     private class FakeProvider : ReportDetailScreenStateProvider {
-        private val _report = MutableStateFlow(
+        private val _report = MutableStateFlow<TestReport?>(
             TestReport(
                 reportId = 1L,
                 clientId = null,

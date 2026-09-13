@@ -7,8 +7,17 @@
 package com.app.miklink.data.remote.mikrotik.service
 
 import com.app.miklink.core.domain.model.ProbeConfig
+import com.app.miklink.core.domain.test.model.TestError
+import com.app.miklink.core.domain.test.model.TestExecutionException
+import java.io.EOFException
+import java.net.ConnectException
+import java.net.NoRouteToHostException
+import java.net.SocketException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import javax.inject.Inject
 import javax.net.ssl.SSLHandshakeException
+import kotlinx.coroutines.CancellationException
 
 data class TransportMeta(
     val attemptedHttps: Boolean,
@@ -72,6 +81,7 @@ class MikroTikCallExecutor @Inject constructor(
                         )
                     )
                 } catch (httpError: Exception) {
+                    if (httpError is CancellationException) throw httpError
                     logWarn(
                         "HTTP fallback after TLS handshake failure also failed for ${probe.ipAddress}.",
                         httpError
@@ -89,6 +99,7 @@ class MikroTikCallExecutor @Inject constructor(
                     )
                 }
             } catch (error: Exception) {
+                if (error is CancellationException) throw error
                 logError("HTTPS call failed for ${probe.ipAddress}", error)
                 return CallOutcome.Failure(
                     meta = TransportMeta(
@@ -113,6 +124,7 @@ class MikroTikCallExecutor @Inject constructor(
                 )
             )
         } catch (error: Exception) {
+            if (error is CancellationException) throw error
             logError("HTTP call failed for ${probe.ipAddress}", error)
             CallOutcome.Failure(
                 meta = TransportMeta(
@@ -155,5 +167,54 @@ class MikroTikCallExecutor @Inject constructor(
             ?: IllegalStateException("CallOutcome.Failure without root cause")
         failures.drop(1).forEach { primary.addSuppressed(it.throwable) }
         return primary
+    }
+
+    /**
+     * Classifica un errore di trasporto in TestError secondo ADR-0013 (Fase 2).
+     * - CancellationException: rilancio
+     * - TestExecutionException: preserva il TestError tipizzato
+     * - ConnectException / NoRouteToHostException / UnknownHostException: ProbeUnavailable
+     * - EOF/connection reset/socket closed durante la chiamata: ProbeUnavailable
+     * - SSLHandshakeException finale: Tls
+     * - SocketTimeoutException: Timeout
+     * Nessun retry automatico.
+     */
+    fun classify(error: Throwable): TestError {
+        return when (error) {
+            is CancellationException -> throw error
+            is TestExecutionException -> error.error
+            is SSLHandshakeException -> TestError.Tls(
+                message = error.message ?: "TLS handshake failed",
+                cause = error
+            )
+            is SocketTimeoutException -> TestError.Timeout(
+                message = error.message ?: "Request timed out",
+                cause = error
+            )
+            is ConnectException -> TestError.ProbeUnavailable(
+                message = error.message ?: "Probe unreachable",
+                cause = error
+            )
+            is NoRouteToHostException -> TestError.ProbeUnavailable(
+                message = error.message ?: "No route to probe",
+                cause = error
+            )
+            is UnknownHostException -> TestError.ProbeUnavailable(
+                message = error.message ?: "Unknown probe host",
+                cause = error
+            )
+            is EOFException -> TestError.ProbeUnavailable(
+                message = error.message ?: "Connection closed by probe",
+                cause = error
+            )
+            is SocketException -> TestError.ProbeUnavailable(
+                message = error.message ?: "Probe connection lost",
+                cause = error
+            )
+            else -> TestError.Unexpected(
+                message = error.message ?: "Unexpected transport error",
+                cause = error
+            )
+        }
     }
 }

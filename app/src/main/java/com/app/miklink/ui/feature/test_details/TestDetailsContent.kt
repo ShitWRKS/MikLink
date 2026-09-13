@@ -104,7 +104,7 @@ private fun SectionCard(
                 )
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
-                        text = section.title ?: defaultTitle,
+                        text = defaultTitle,
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface
                     )

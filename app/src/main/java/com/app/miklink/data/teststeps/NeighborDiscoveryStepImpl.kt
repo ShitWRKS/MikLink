@@ -12,9 +12,11 @@ import com.app.miklink.core.domain.model.report.NeighborData
 import com.app.miklink.core.domain.test.model.StepResult
 import com.app.miklink.core.domain.test.model.TestError
 import com.app.miklink.core.domain.test.model.TestExecutionContext
+import com.app.miklink.core.domain.test.model.TestExecutionException
 import com.app.miklink.core.domain.test.step.NeighborDiscoveryStep
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 
 /**
  * Implementazione di NeighborDiscoveryStep.
@@ -35,8 +37,12 @@ class NeighborDiscoveryStepImpl @Inject constructor(
                 neighbor.matchesAnyProtocol(enabledProtocols)
             }
             StepResult.Success(neighbors)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: TestExecutionException) {
+            StepResult.Failed(e.error)
         } catch (e: Exception) {
-            StepResult.Failed(TestError.NetworkError(e.message ?: "Neighbor discovery failed"))
+            StepResult.Failed(TestError.Unexpected(e.message ?: "Neighbor discovery failed", e))
         }
     }
 

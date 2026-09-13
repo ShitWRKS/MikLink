@@ -21,3 +21,17 @@ Lo stream di esecuzione test usava chiavi stringa (`Map<String, String>`, `TestS
 - I test devono fallire se riemergono `Map<String,String>` nel contratto (scan guardrail).
 - I report v1 restano leggibili; eventuali nuovi campi devono essere opzionali con default.
 - Nuove feature sui test vanno modellate estendendo i payload tipizzati, non aggiungendo chiavi di testo.
+
+## Aggiornamento (termination reason additiva — ADR-0013)
+
+Il contratto di esecuzione guadagna informazioni di terminazione **additive**, mantenendo
+`resultFormatVersion = 1`. Vedi `core/domain/test/model/TestOutcome.kt`.
+
+- `enum class TestRunTermination { NORMAL, PROBE_UNAVAILABLE }` (source-compatible).
+- `TestOutcome.termination: TestRunTermination = TestRunTermination.NORMAL`.
+- `TestOutcome.terminalError: TestError? = null`.
+- `overallStatus` resta `PASS`/`FAIL` (nessun terzo valore).
+- Le informazioni di terminazione sono aggiunte al report in forma additiva
+  (campi opzionali), senza rompere la leggibilità v1.
+- In caso di perdita sonda: `termination = PROBE_UNAVAILABLE`, `terminalError = ProbeUnavailable`,
+  snapshot finale senza sezioni `RUNNING`/`PENDING`, report parziale salvabile.

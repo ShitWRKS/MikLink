@@ -6,13 +6,13 @@ import com.itextpdf.io.image.ImageData
 import com.itextpdf.kernel.colors.Color
 import com.itextpdf.kernel.colors.ColorConstants
 import com.itextpdf.kernel.colors.DeviceRgb
-import com.itextpdf.kernel.events.Event
-import com.itextpdf.kernel.events.IEventHandler
-import com.itextpdf.kernel.events.PdfDocumentEvent
 import com.itextpdf.kernel.font.PdfFont
 import com.itextpdf.kernel.font.PdfFontFactory
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas
 import com.itextpdf.kernel.pdf.canvas.draw.SolidLine
+import com.itextpdf.kernel.pdf.event.AbstractPdfDocumentEvent
+import com.itextpdf.kernel.pdf.event.AbstractPdfDocumentEventHandler
+import com.itextpdf.kernel.pdf.event.PdfDocumentEvent
 import com.itextpdf.layout.Document
 import com.itextpdf.layout.borders.Border
 import com.itextpdf.layout.borders.SolidBorder
@@ -29,7 +29,7 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * Helper class for PDF generation tasks using iText 7.
+ * Helper class for PDF generation tasks using iText Core Android.
  * Encapsulates styling, header/footer creation, and common element factories.
  */
 class PdfDocumentHelper {
@@ -190,8 +190,8 @@ class PdfDocumentHelper {
     /**
      * Event handler for adding page numbers to each page
      */
-    class PageNumberEventHandler : IEventHandler {
-        override fun handleEvent(event: Event) {
+    class PageNumberEventHandler : AbstractPdfDocumentEventHandler() {
+        override fun onAcceptedEvent(event: AbstractPdfDocumentEvent) {
             val docEvent = event as PdfDocumentEvent
             val pdfDoc = docEvent.document
             val page = docEvent.page

@@ -11,9 +11,10 @@ import com.app.miklink.core.domain.model.report.SpeedTestData
 import com.app.miklink.core.domain.test.model.StepResult
 import com.app.miklink.core.domain.test.model.TestError
 import com.app.miklink.core.domain.test.model.TestExecutionContext
-import com.app.miklink.core.domain.test.model.TestSkipReason
+import com.app.miklink.core.domain.test.model.TestExecutionException
 import com.app.miklink.core.domain.test.step.SpeedTestStep
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 
 /**
  * Implementazione di SpeedTestStep.
@@ -25,7 +26,9 @@ class SpeedTestStepImpl @Inject constructor(
     override suspend fun run(context: TestExecutionContext): StepResult<SpeedTestData> {
         val serverAddress = context.client.speedTestServerAddress
         if (serverAddress.isNullOrBlank()) {
-            return StepResult.Skipped(TestSkipReason.SPEED_NO_SERVER)
+            return StepResult.Failed(
+                TestError.ConfigurationError("Speed test server is not configured")
+            )
         }
 
         return try {
@@ -37,10 +40,12 @@ class SpeedTestStepImpl @Inject constructor(
                 duration = "5"
             )
             StepResult.Success(speedTestResult)
-        } catch (e: SecurityException) {
-            StepResult.Failed(TestError.AuthError(e.message ?: "Authentication failed"))
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: TestExecutionException) {
+            StepResult.Failed(e.error)
         } catch (e: Exception) {
-            StepResult.Failed(TestError.NetworkError(e.message ?: "Speed test failed"))
+            StepResult.Failed(TestError.Unexpected(e.message ?: "Speed test failed", e))
         }
     }
 }

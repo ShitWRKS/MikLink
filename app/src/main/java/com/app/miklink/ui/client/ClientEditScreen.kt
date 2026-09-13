@@ -17,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -28,6 +29,9 @@ import androidx.navigation.NavController
 import com.app.miklink.core.domain.model.NetworkMode
 import com.app.miklink.core.domain.policy.socketid.SocketIdLite
 import com.app.miklink.R
+import com.app.miklink.ui.common.asString
+import com.app.miklink.ui.testing.AgentUiTags
+import com.app.miklink.utils.NetworkValidator
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,12 +41,13 @@ fun ClientEditScreen(
 ) {
     val isSaved by viewModel.isSaved.collectAsStateWithLifecycle()
     val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
+    val resolvedErrorMessage = errorMessage?.asString()
     val snackbarHostState = remember { SnackbarHostState() }
     if (isSaved) {
         LaunchedEffect(Unit) { navController.popBackStack() }
     }
-    LaunchedEffect(errorMessage) {
-        errorMessage?.let { message ->
+    LaunchedEffect(resolvedErrorMessage) {
+        resolvedErrorMessage?.let { message ->
             snackbarHostState.showSnackbar(message)
             viewModel.consumeError()
         }
@@ -61,7 +66,12 @@ fun ClientEditScreen(
     val socketSuffix by viewModel.socketSuffix.collectAsStateWithLifecycle()
     val socketSeparator by viewModel.socketSeparator.collectAsStateWithLifecycle()
     val socketNumberPadding by viewModel.socketNumberPadding.collectAsStateWithLifecycle()
-    val isSaveEnabled = companyName.isNotBlank()
+    val isSaveEnabled = companyName.isNotBlank() && (
+        networkMode != NetworkMode.STATIC || (
+            NetworkValidator.isValidIpv4Cidr(staticCidr) &&
+                NetworkValidator.isValidIpv4WithoutCidr(staticGateway)
+        )
+    )
 
     // Speed Test configuration
     val speedTestServerAddress by viewModel.speedTestServerAddress.collectAsStateWithLifecycle()
@@ -91,6 +101,7 @@ fun ClientEditScreen(
     }
 
     Scaffold(
+        modifier = Modifier.testTag(AgentUiTags.Client.EDIT),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
@@ -128,7 +139,8 @@ fun ClientEditScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp)
-                    .navigationBarsPadding(),
+                    .navigationBarsPadding()
+                    .testTag(AgentUiTags.Client.SAVE),
                 enabled = isSaveEnabled
             ) {
                 Text(stringResource(R.string.client_edit_save))
@@ -145,14 +157,14 @@ fun ClientEditScreen(
             // === CLIENT INFO (Always Visible) ===
             SectionHeader(
                 icon = Icons.Default.Business,
-                title = "Client Info"
+                title = stringResource(R.string.client_edit_section_info)
             )
             
             LabeledTextField(
                 value = companyName,
                 onValueChange = { viewModel.companyName.value = it },
                 labelResId = R.string.client_edit_company_label,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().testTag(AgentUiTags.Client.NAME),
                 isError = companyName.isBlank()
             )
             
@@ -161,7 +173,7 @@ fun ClientEditScreen(
                 onValueChange = { viewModel.location.value = it },
                 labelResId = R.string.client_edit_location_label,
                 placeholderResId = R.string.client_edit_location_placeholder,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth().testTag(AgentUiTags.Client.LOCATION)
             )
             
             LabeledTextField(
@@ -169,7 +181,7 @@ fun ClientEditScreen(
                 onValueChange = { viewModel.notes.value = it },
                 labelResId = R.string.report_detail_edit_notes,
                 placeholderResId = R.string.client_edit_notes_placeholder,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().testTag(AgentUiTags.Client.NOTES),
                 singleLine = false,
                 minLines = 2,
                 maxLines = 4
@@ -202,7 +214,7 @@ fun ClientEditScreen(
                         onClick = { viewModel.networkMode.value = NetworkMode.DHCP },
                         icon = Icons.Default.Wifi,
                         labelResId = R.string.detail_value_dhcp,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f).testTag(AgentUiTags.Client.NETWORK_DHCP)
                     )
 
                     NetworkModeButton(
@@ -210,18 +222,26 @@ fun ClientEditScreen(
                         onClick = { viewModel.networkMode.value = NetworkMode.STATIC },
                         icon = Icons.Default.Settings,
                         labelResId = R.string.detail_value_static,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f).testTag(AgentUiTags.Client.NETWORK_STATIC)
                     )
                 }
 
                 if (networkMode == NetworkMode.STATIC) {
+                    val staticCidrInvalid = viewModel.isStaticCidrInvalid()
+                    val staticGatewayInvalid = viewModel.isStaticGatewayInvalid()
+
                     LabeledTextField(
                         value = staticCidr,
                         onValueChange = { viewModel.staticCidr.value = it },
                         labelResId = R.string.client_edit_static_ip_label,
                         placeholderResId = R.string.client_edit_static_ip_placeholder,
-                        supportingResId = R.string.client_edit_static_ip_support,
-                        modifier = Modifier.fillMaxWidth()
+                        supportingResId = when {
+                            staticCidr.isBlank() -> R.string.client_edit_static_cidr_required
+                            staticCidrInvalid -> R.string.client_edit_static_cidr_invalid
+                            else -> R.string.client_edit_static_ip_support
+                        },
+                        modifier = Modifier.fillMaxWidth().testTag(AgentUiTags.Client.STATIC_CIDR),
+                        isError = staticCidrInvalid
                     )
                     
                     LabeledTextField(
@@ -229,7 +249,13 @@ fun ClientEditScreen(
                         onValueChange = { viewModel.staticGateway.value = it },
                         labelResId = R.string.detail_label_gateway,
                         placeholderResId = R.string.client_edit_gateway_placeholder,
-                        modifier = Modifier.fillMaxWidth()
+                        supportingResId = when {
+                            staticGateway.isBlank() -> R.string.client_edit_static_gateway_required
+                            staticGatewayInvalid -> R.string.client_edit_static_gateway_invalid
+                            else -> null
+                        },
+                        modifier = Modifier.fillMaxWidth().testTag(AgentUiTags.Client.STATIC_GATEWAY),
+                        isError = staticGatewayInvalid
                     )
                 }
 
@@ -320,7 +346,7 @@ fun ClientEditScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            "Preview",
+                            stringResource(R.string.client_edit_preview),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
