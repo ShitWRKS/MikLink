@@ -222,7 +222,6 @@ Let's be real – this is beta software built with vibe coding. Here's what you 
 | Issue | Status | Notes |
 |-------|--------|-------|
 | **Incomplete translations** | 🟡 WIP | Italian/English mix. PRs welcome. |
-| **Rapid sequential tests** | 🟠 Bug | Starting tests too quickly can cause issues. Take a breath between tests. |
 | **HTTP communication** | 🟢 By design | Yes, it's HTTP(S) between your phone and the MikroTik. They're on the same WiFi. If someone's MITMing your probe's WiFi, you have bigger problems. |
 | **TDR implementation** | 🟡 Partial | The cable test doesn't strictly follow MikroTik's docs. It works, but don't bet your career on it. For real certifications, buy a Fluke. |
 
