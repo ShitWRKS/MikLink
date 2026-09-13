@@ -2,12 +2,12 @@
 
 ## Requisiti
 
-- Android Gradle Plugin (AGP): **9.3.1**
-- Gradle wrapper: **9.6.1**
+- Android Gradle Plugin (AGP): **9.4.0**
+- Gradle wrapper: **9.7.1**
 - JDK: **17**
-- Kotlin/KGP: **2.4.10**
-- KSP: **2.3.10**
-- Compose compiler plugin: **2.4.10**
+- Kotlin/KGP: **2.4.20**
+- KSP: **2.3.12**
+- Compose compiler plugin: **2.4.20**
 - Compile SDK: **37**
 - Min SDK: **30**
 - Target SDK: **36**
@@ -16,19 +16,19 @@ Version catalog: `gradle/libs.versions.toml`.
 
 ## Dipendenze principali (baseline corrente)
 
-- Compose BOM: **2026.06.01**
+- Compose BOM: **2026.09.00**
 - Hilt: **2.60.1** (Dagger) + AndroidX Hilt **1.4.0**
-- Room: **2.8.4** (plugin Room centralizzato nel catalog)
-- Retrofit: **3.0.0** + OkHttp **5.4.0**
+- Room: **2.8.5** (plugin Room centralizzato nel catalog)
+- Retrofit: **3.0.0** + OkHttp **5.5.0**
 - Moshi: **1.15.2** + Moshi codegen **1.15.2** (KSP)
 - Coroutines: **1.11.0**
 - Core KTX: **1.19.0**
 - Lifecycle: **2.11.0**
 - Activity Compose: **1.13.0**
-- Navigation Compose: **2.9.8**
+- Navigation Compose: **2.10.1**
 - DataStore: **1.2.1**
-- Tracing: **1.3.0**
-- Coil: **3.5.0** (`coil-compose` + `coil-gif`)
+- AppCompat: **1.8.0**
+- Coil: **3.6.2** (`coil-compose` + `coil-gif`)
 - AndroidX Test JUnit: **1.3.0**
 - Espresso: **3.7.0**
 - MockK: **1.14.11**
