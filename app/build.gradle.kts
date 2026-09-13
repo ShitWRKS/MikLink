@@ -158,8 +158,6 @@ dependencies {
     // Images
     implementation(libs.coil.compose)
 
-    // Tracing
-    implementation(libs.androidx.tracing)
 
     // Tests
     testImplementation(libs.junit)
